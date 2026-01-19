@@ -6,7 +6,10 @@
     "dev": "go run cmd/server/main.go",
     "build": "go build -o bin/server cmd/server/main.go",
     "test": "go test ./...",
-    "lint": "go vet ./...",
+    "test:coverage": "go test -cover ./...",
+    "test:verbose": "go test -v ./...",
+    "lint": "PATH=$PATH:$(go env GOPATH)/bin golangci-lint run ./...",
+    "lint:fix": "PATH=$PATH:$(go env GOPATH)/bin golangci-lint run --fix ./...",
     "clean": "rm -rf bin"
   }
 }
