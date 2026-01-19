@@ -1,13 +1,14 @@
 # Add Decision Documentation Workflow
 
 **Date**: 2026-01-19
-**Bean**: workspace-lkqt
+**Bean**: credfolio2-lkqt
 
 ## Context
 
 As the project grows, technical decisions accumulate but their rationale gets lost. Both human developers and AI agents need quick access to understand why certain choices were made, what patterns are in use, and what approaches have been deprecated.
 
 Without documented decisions:
+
 - New contributors spend time rediscovering context
 - Agents may suggest approaches that were previously rejected
 - The "why" behind technical choices fades over time
@@ -31,6 +32,7 @@ Implemented an Architecture Decision Record (ADR) system with:
 - **Minimal template**: Captures essential information without being burdensome
 
 Alternatives considered:
+
 - Wiki-based documentation: Rejected because it lives outside the repo and can drift
 - Single DECISIONS.md file: Rejected because it becomes unwieldy and hard to navigate
 - Numbered ADRs (ADR-001): Rejected in favor of timestamps which are more flexible
