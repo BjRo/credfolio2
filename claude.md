@@ -6,6 +6,7 @@
 /workspace/
 ├── .devcontainer/          # Dev container (Node 20 + Go 1.24.1)
 ├── .claude/                # Claude Code settings (Write/Edit permissions enabled)
+├── decisions/              # Architecture Decision Records (ADRs)
 ├── src/
 │   ├── frontend/           # Next.js 16 app (TypeScript, Tailwind CSS 4, React 19)
 │   │   ├── src/app/        # Next.js app directory structure
@@ -110,3 +111,31 @@ rm -rf .turbo                  # Clear Turborepo cache
 - Go 1.24.1 installed via wget during build
 - Includes: git, gh, fzf, zsh, and development tools
 - Rebuild required when Dockerfile changes
+
+## Decision Documentation
+
+This project maintains Architecture Decision Records (ADRs) in `/decisions/`.
+
+### When to Document
+
+After completing work that involves:
+- Adding or removing dependencies, frameworks, or tools
+- Introducing new architectural patterns or concepts
+- Deprecating existing approaches
+- Making significant technical choices
+
+### How to Document
+
+Use the `/decision` skill to create a new decision record:
+
+```
+/decision
+```
+
+This generates a timestamped file in `/decisions/` with the standard template.
+
+### Important
+
+- Include decision files in commits alongside related code changes
+- Reference the bean ID that introduced the decision
+- See `/decisions/README.md` for the full template and guidelines
