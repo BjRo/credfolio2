@@ -25,7 +25,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   jq \
   nano \
   vim \
+  wget \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Go
+ARG GO_VERSION=1.24.1
+RUN ARCH=$(dpkg --print-architecture) && \
+  if [ "$ARCH" = "amd64" ]; then GO_ARCH="amd64"; \
+  elif [ "$ARCH" = "arm64" ]; then GO_ARCH="arm64"; \
+  else GO_ARCH="$ARCH"; fi && \
+  wget "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
+  tar -C /usr/local -xzf "go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
+  rm "go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"
+
+ENV PATH=$PATH:/usr/local/go/bin:/home/node/go/bin
+ENV GOPATH=/home/node/go
 
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \

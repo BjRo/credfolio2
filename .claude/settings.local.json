@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(*)",
+      "Edit(*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm create:*)",
+      "Bash(go mod init:*)"
+    ]
+  }
+}
