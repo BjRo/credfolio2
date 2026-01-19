@@ -3,9 +3,7 @@
     "allow": [
       "Write(*)",
       "Edit(*)",
-      "Bash(git *)",
-      "Bash(pnpm *)",
-      "Bash(go *)"
+      "Bash"
     ]
   },
   "hooks": {
