@@ -79,6 +79,9 @@ RUN ARCH=$(dpkg --print-architecture) && \
   mv beans /usr/local/bin/ && \
   rm "beans_Linux_${BEANS_ARCH}.tar.gz"
 
+# Enable Corepack for pnpm support (uses packageManager field in package.json)
+RUN corepack enable
+
 # Set up non-root user
 USER node
 
