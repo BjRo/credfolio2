@@ -36,7 +36,8 @@
           "zsh": {
             "path": "zsh"
           }
-        }
+        },
+        "claude-code.dangerouslySkipPermissions": true
       }
     }
   },
