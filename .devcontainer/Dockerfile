@@ -68,6 +68,17 @@ RUN ARCH=$(dpkg --print-architecture) && \
   sudo dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
+# Install beans (issue tracker)
+ARG BEANS_VERSION=0.3.4
+RUN ARCH=$(dpkg --print-architecture) && \
+  if [ "$ARCH" = "amd64" ]; then BEANS_ARCH="x86_64"; \
+  elif [ "$ARCH" = "arm64" ]; then BEANS_ARCH="arm64"; \
+  else BEANS_ARCH="$ARCH"; fi && \
+  wget "https://github.com/hmans/beans/releases/download/v${BEANS_VERSION}/beans_Linux_${BEANS_ARCH}.tar.gz" && \
+  tar -xzf "beans_Linux_${BEANS_ARCH}.tar.gz" && \
+  mv beans /usr/local/bin/ && \
+  rm "beans_Linux_${BEANS_ARCH}.tar.gz"
+
 # Set up non-root user
 USER node
 

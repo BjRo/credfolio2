@@ -26,9 +26,9 @@ cd "${CLAUDE_PROJECT_DIR:-/workspace}"
 
 echo "Pre-commit hook: Running lint and tests before commit..." >&2
 
-# Run linter
+# Run linter (use npm exec to ensure pnpm is available)
 echo "Running linter..." >&2
-if ! pnpm lint 2>&1; then
+if ! npm exec -- pnpm lint 2>&1; then
     echo "" >&2
     echo "========================================" >&2
     echo "COMMIT BLOCKED: Linter failed" >&2
@@ -39,9 +39,9 @@ if ! pnpm lint 2>&1; then
     exit 2
 fi
 
-# Run tests
+# Run tests (use npm exec to ensure pnpm is available)
 echo "Running tests..." >&2
-if ! pnpm test 2>&1; then
+if ! npm exec -- pnpm test 2>&1; then
     echo "" >&2
     echo "========================================" >&2
     echo "COMMIT BLOCKED: Tests failed" >&2
