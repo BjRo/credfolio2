@@ -8,6 +8,7 @@ node_modules/
 dist/
 build/
 .next/
+bin/
 
 # Turborepo
 .turbo/
@@ -23,6 +24,9 @@ build/
 *.swp
 *.swo
 *~
+
+# Claude Code
+.claude/settings.local.json
 
 # OS
 .DS_Store
@@ -42,3 +46,6 @@ vendor/
 # Logs
 *.log
 logs/
+
+# Test coverage
+coverage/
