@@ -2,27 +2,34 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
+	"backend/internal/handler"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = fmt.Fprintf(w, "Hello from Go backend!")
-	})
+	r := chi.NewRouter()
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprintf(w, `{"status":"ok"}`)
-	})
+	// Middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.RequestID)
+
+	// Routes
+	r.Get("/", handler.NewRootHandler().ServeHTTP)
+	r.Get("/health", handler.NewHealthHandler().ServeHTTP)
 
 	port := ":8080"
 	log.Printf("Server starting on http://localhost%s\n", port)
 
 	server := &http.Server{
 		Addr:         port,
+		Handler:      r,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,

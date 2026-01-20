@@ -8,8 +8,8 @@
     "test": "go test ./...",
     "test:coverage": "go test -cover ./...",
     "test:verbose": "go test -v ./...",
-    "lint": "PATH=$PATH:$(go env GOPATH)/bin golangci-lint run ./...",
-    "lint:fix": "PATH=$PATH:$(go env GOPATH)/bin golangci-lint run --fix ./...",
+    "lint": "golangci-lint run ./...",
+    "lint:fix": "golangci-lint run --fix ./...",
     "clean": "rm -rf bin"
   }
 }

@@ -41,6 +41,14 @@ RUN ARCH=$(dpkg --print-architecture) && \
 ENV PATH=$PATH:/usr/local/go/bin:/home/node/go/bin
 ENV GOPATH=/home/node/go
 
+# Install golangci-lint
+ARG GOLANGCI_LINT_VERSION=1.64.5
+RUN ARCH=$(dpkg --print-architecture) && \
+  wget "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}.tar.gz" && \
+  tar -xzf "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}.tar.gz" && \
+  mv "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}/golangci-lint" /usr/local/bin/ && \
+  rm -rf "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}" "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}.tar.gz"
+
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \
   chown -R node:node /usr/local/share
