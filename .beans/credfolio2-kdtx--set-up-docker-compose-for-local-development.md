@@ -1,11 +1,11 @@
 ---
 # credfolio2-kdtx
 title: Set up Docker Compose for local development
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-20T11:26:05Z
-updated_at: 2026-01-20T12:05:47Z
+updated_at: 2026-01-20T12:31:59Z
 parent: credfolio2-jpin
 blocking:
     - credfolio2-3gnq
