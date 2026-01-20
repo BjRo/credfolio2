@@ -110,12 +110,26 @@ EOF
 
 ### 8. After Merge: Complete the Bean
 
-Once the PR is merged by a human:
+Once the PR is merged by a human, use the automated post-merge command:
 
 ```bash
-git checkout main
-git pull origin main
+/post-merge <bean-id>
+```
+
+This automatically:
+- Verifies the PR is merged
+- Switches to main and pulls latest
+- Deletes the local and remote feature branches
+- Marks the bean as completed
+- Commits and pushes the bean status change
+
+**Manual alternative** (if needed):
+
+```bash
+git checkout main && git pull origin main
+git branch -d <branch-name>
 beans update <bean-id> --status completed
+git add .beans/ && git commit -m "chore: Mark <bean-id> as completed" && git push
 ```
 
 ## Quick Reference
@@ -138,9 +152,8 @@ git push -u origin <branch-name>
 gh pr create --title "..." --body "..."
 # WAIT for human review and merge
 
-# After merge
-git checkout main && git pull origin main
-beans update <bean-id> --status completed
+# After merge (automated)
+/post-merge <bean-id>
 ```
 
 ## Rules
