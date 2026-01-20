@@ -74,9 +74,10 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid MINIO_USE_SSL: %w", err)
 	}
 
+	// Default hosts use docker container names for devcontainer environment
 	cfg := &Config{
 		Database: DatabaseConfig{
-			Host:     getEnv("POSTGRES_HOST", "localhost"),
+			Host:     getEnv("POSTGRES_HOST", "credfolio2-postgres"),
 			Port:     dbPort,
 			User:     getEnv("POSTGRES_USER", "credfolio"),
 			Password: getEnv("POSTGRES_PASSWORD", "credfolio_dev"),
@@ -85,7 +86,7 @@ func Load() (*Config, error) {
 			url:      os.Getenv("DATABASE_URL"),
 		},
 		TestDatabase: DatabaseConfig{
-			Host:     getEnv("POSTGRES_HOST", "localhost"),
+			Host:     getEnv("POSTGRES_HOST", "credfolio2-postgres"),
 			Port:     dbPort,
 			User:     getEnv("POSTGRES_USER", "credfolio"),
 			Password: getEnv("POSTGRES_PASSWORD", "credfolio_dev"),
@@ -94,7 +95,7 @@ func Load() (*Config, error) {
 			url:      os.Getenv("DATABASE_URL_TEST"),
 		},
 		MinIO: MinIOConfig{
-			Endpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
+			Endpoint:  getEnv("MINIO_ENDPOINT", "credfolio2-minio:9000"),
 			AccessKey: getEnv("MINIO_ROOT_USER", "minioadmin"),
 			SecretKey: getEnv("MINIO_ROOT_PASSWORD", "minioadmin"),
 			UseSSL:    useSSL,

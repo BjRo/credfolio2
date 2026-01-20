@@ -2,7 +2,8 @@
 # Uses golang-migrate for database schema migrations
 
 # Database connection settings (loaded from environment or defaults)
-POSTGRES_HOST ?= localhost
+# Default host is the docker container name when running in devcontainer
+POSTGRES_HOST ?= credfolio2-postgres
 POSTGRES_PORT ?= 5432
 POSTGRES_USER ?= credfolio
 POSTGRES_PASSWORD ?= credfolio_dev

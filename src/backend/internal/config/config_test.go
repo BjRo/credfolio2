@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-// Default values matching docker-compose.yml
+// Default values matching docker container names for devcontainer environment
 const (
-	defaultDBHost     = "localhost"
+	defaultDBHost     = "credfolio2-postgres"
 	defaultDBPort     = 5432
 	defaultDBUser     = "credfolio"
 	defaultDBPassword = "credfolio_dev" //nolint:gosec // test credentials
@@ -15,7 +15,7 @@ const (
 	defaultDBNameTest = "credfolio_test"
 	defaultDBSSLMode  = "disable"
 
-	defaultMinIOEndpoint  = "localhost:9000"
+	defaultMinIOEndpoint  = "credfolio2-minio:9000"
 	defaultMinIOAccessKey = "minioadmin"
 	defaultMinIOSecretKey = "minioadmin" //nolint:gosec // test credentials
 	defaultMinIOBucket    = "credfolio"
@@ -88,7 +88,7 @@ func TestLoad_TestDatabaseURL_Computed(t *testing.T) {
 	}
 
 	// #nosec G101 - test credentials only
-	want := "postgres://credfolio:credfolio_dev@localhost:5432/credfolio_test?sslmode=disable"
+	want := "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio_test?sslmode=disable"
 	if cfg.TestDatabase.URL() != want {
 		t.Errorf("TestDatabase.URL() = %q, want %q", cfg.TestDatabase.URL(), want)
 	}
@@ -256,7 +256,7 @@ func TestLoad_DatabaseURL_Computed(t *testing.T) {
 	}
 
 	// #nosec G101 - test credentials only
-	want := "postgres://credfolio:credfolio_dev@localhost:5432/credfolio?sslmode=disable"
+	want := "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio?sslmode=disable"
 	if cfg.Database.URL() != want {
 		t.Errorf("Database.URL() = %q, want %q", cfg.Database.URL(), want)
 	}
