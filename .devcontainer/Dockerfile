@@ -49,6 +49,14 @@ RUN ARCH=$(dpkg --print-architecture) && \
   mv "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}/golangci-lint" /usr/local/bin/ && \
   rm -rf "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}" "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}.tar.gz"
 
+# Install golang-migrate for database migrations
+ARG GOLANG_MIGRATE_VERSION=4.18.1
+RUN ARCH=$(dpkg --print-architecture) && \
+  wget "https://github.com/golang-migrate/migrate/releases/download/v${GOLANG_MIGRATE_VERSION}/migrate.linux-${ARCH}.tar.gz" && \
+  tar -xzf "migrate.linux-${ARCH}.tar.gz" && \
+  mv migrate /usr/local/bin/ && \
+  rm "migrate.linux-${ARCH}.tar.gz"
+
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \
   chown -R node:node /usr/local/share

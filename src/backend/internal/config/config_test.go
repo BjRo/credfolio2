@@ -5,22 +5,52 @@ import (
 	"time"
 )
 
-// Default values matching docker-compose.yml
+// Default values matching docker container names for devcontainer environment
 const (
-	defaultDBHost     = "localhost"
+	defaultDBHost     = "credfolio2-postgres"
 	defaultDBPort     = 5432
 	defaultDBUser     = "credfolio"
 	defaultDBPassword = "credfolio_dev" //nolint:gosec // test credentials
-	defaultDBName     = "credfolio"
 	defaultDBSSLMode  = "disable"
 
-	defaultMinIOEndpoint  = "localhost:9000"
+	defaultMinIOEndpoint  = "credfolio2-minio:9000"
 	defaultMinIOAccessKey = "minioadmin"
 	defaultMinIOSecretKey = "minioadmin" //nolint:gosec // test credentials
 	defaultMinIOBucket    = "credfolio"
 
 	defaultServerPort = 8080
 )
+
+func TestLoad_EnvironmentDefaults(t *testing.T) {
+	clearEnv(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.Environment != "dev" {
+		t.Errorf("Environment = %q, want %q", cfg.Environment, "dev")
+	}
+}
+
+func TestLoad_EnvironmentOverride(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("CREDFOLIO_ENV", "test")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.Environment != "test" {
+		t.Errorf("Environment = %q, want %q", cfg.Environment, "test")
+	}
+
+	if cfg.Database.Name != "credfolio_test" {
+		t.Errorf("Database.Name = %q, want %q", cfg.Database.Name, "credfolio_test")
+	}
+}
 
 func TestLoad_DatabaseDefaults(t *testing.T) {
 	clearEnv(t)
@@ -39,7 +69,7 @@ func TestLoad_DatabaseDefaults(t *testing.T) {
 		{"Port", cfg.Database.Port, defaultDBPort},
 		{"User", cfg.Database.User, defaultDBUser},
 		{"Password", cfg.Database.Password, defaultDBPassword},
-		{"Name", cfg.Database.Name, defaultDBName},
+		{"Name", cfg.Database.Name, "credfolio_dev"},
 		{"SSLMode", cfg.Database.SSLMode, defaultDBSSLMode},
 	}
 
@@ -47,6 +77,49 @@ func TestLoad_DatabaseDefaults(t *testing.T) {
 		if tt.got != tt.want {
 			t.Errorf("Database.%s = %v, want %v", tt.name, tt.got, tt.want)
 		}
+	}
+}
+
+func TestLoad_DatabaseName_FromEnvironment(t *testing.T) {
+	tests := []struct {
+		name    string
+		env     string
+		wantDB  string
+		wantURL string
+	}{
+		{
+			name:    "dev environment",
+			env:     "dev",
+			wantDB:  "credfolio_dev",
+			wantURL: "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio_dev?sslmode=disable",
+		},
+		{
+			name:    "test environment",
+			env:     "test",
+			wantDB:  "credfolio_test",
+			wantURL: "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio_test?sslmode=disable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clearEnv(t)
+			t.Setenv("CREDFOLIO_ENV", tt.env)
+
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+
+			if cfg.Database.Name != tt.wantDB {
+				t.Errorf("Database.Name = %q, want %q", cfg.Database.Name, tt.wantDB)
+			}
+
+			// #nosec G101 - test credentials only
+			if cfg.Database.URL() != tt.wantURL {
+				t.Errorf("Database.URL() = %q, want %q", cfg.Database.URL(), tt.wantURL)
+			}
+		})
 	}
 }
 
@@ -110,7 +183,6 @@ func TestLoad_DatabaseOverrides(t *testing.T) {
 	t.Setenv("POSTGRES_PORT", "5433")
 	t.Setenv("POSTGRES_USER", "myuser")
 	t.Setenv("POSTGRES_PASSWORD", "mypassword")
-	t.Setenv("POSTGRES_DB", "mydb")
 	t.Setenv("POSTGRES_SSLMODE", "require")
 
 	cfg, err := Load()
@@ -127,7 +199,6 @@ func TestLoad_DatabaseOverrides(t *testing.T) {
 		{"Port", cfg.Database.Port, 5433},
 		{"User", cfg.Database.User, "myuser"},
 		{"Password", cfg.Database.Password, "mypassword"},
-		{"Name", cfg.Database.Name, "mydb"},
 		{"SSLMode", cfg.Database.SSLMode, "require"},
 	}
 
@@ -195,7 +266,7 @@ func TestLoad_DatabaseURL_Computed(t *testing.T) {
 	}
 
 	// #nosec G101 - test credentials only
-	want := "postgres://credfolio:credfolio_dev@localhost:5432/credfolio?sslmode=disable"
+	want := "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio_dev?sslmode=disable"
 	if cfg.Database.URL() != want {
 		t.Errorf("Database.URL() = %q, want %q", cfg.Database.URL(), want)
 	}
@@ -208,15 +279,15 @@ func TestLoad_DatabaseURL_WithOverrides(t *testing.T) {
 	t.Setenv("POSTGRES_PORT", "5433")
 	t.Setenv("POSTGRES_USER", "myuser")
 	t.Setenv("POSTGRES_PASSWORD", "mypassword")
-	t.Setenv("POSTGRES_DB", "mydb")
 	t.Setenv("POSTGRES_SSLMODE", "require")
+	t.Setenv("CREDFOLIO_ENV", "test")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	want := "postgres://myuser:mypassword@db.example.com:5433/mydb?sslmode=require"
+	want := "postgres://myuser:mypassword@db.example.com:5433/credfolio_test?sslmode=require"
 	if cfg.Database.URL() != want {
 		t.Errorf("Database.URL() = %q, want %q", cfg.Database.URL(), want)
 	}
@@ -267,12 +338,12 @@ func clearEnv(t *testing.T) {
 	t.Helper()
 
 	vars := []string{
+		"CREDFOLIO_ENV",
 		"DATABASE_URL",
 		"POSTGRES_HOST",
 		"POSTGRES_PORT",
 		"POSTGRES_USER",
 		"POSTGRES_PASSWORD",
-		"POSTGRES_DB",
 		"POSTGRES_SSLMODE",
 		"MINIO_ENDPOINT",
 		"MINIO_ROOT_USER",
