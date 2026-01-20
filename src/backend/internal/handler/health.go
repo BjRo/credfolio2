@@ -16,5 +16,5 @@ func NewHealthHandler() *HealthHandler {
 // ServeHTTP implements the http.Handler interface.
 func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_, _ = fmt.Fprintf(w, `{"status":"ok"}`)
+	fmt.Fprint(w, `{"status":"ok"}`) //nolint:errcheck // ResponseWriter errors are not actionable
 }

@@ -15,5 +15,5 @@ func NewRootHandler() *RootHandler {
 
 // ServeHTTP implements the http.Handler interface.
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
-	_, _ = fmt.Fprintf(w, "Hello from Go backend!")
+	fmt.Fprint(w, "Hello from Go backend!") //nolint:errcheck // ResponseWriter errors are not actionable
 }
