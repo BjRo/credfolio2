@@ -27,6 +27,7 @@ bin/
 
 # Claude Code
 .claude/settings.local.json
+*.local.md
 
 # OS
 .DS_Store

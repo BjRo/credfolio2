@@ -98,12 +98,43 @@ rm -rf .turbo                  # Clear Turborepo cache
 - Turborepo config: `turbo.json`
 - Workspace definition: `pnpm-workspace.yaml`
 
-## Git Workflow
+## Development Workflow
+
+This project follows a strict workflow for all feature development. See `.claude/skills/dev-workflow/SKILL.md` for full details.
+
+### Key Principles
+
+1. **Feature Branches**: Never commit directly to main
+2. **TDD**: Write tests before implementation (see `/skill tdd`)
+3. **PR Review**: All changes require human review before merge
+4. **Beans Tracking**: Use beans to track all work (see `/skill issue-tracking-with-beans`)
+
+### Quick Reference
+
+```bash
+# Start work on a bean
+git checkout main && git pull origin main
+git checkout -b feat/<bean-id>-<description>
+beans update <bean-id> --status in-progress
+
+# Work using TDD, update bean checklist, commit with bean file
+
+# When done
+git push -u origin <branch>
+gh pr create --title "..." --body "Closes beans-<id>"
+# WAIT for human review - do NOT merge yourself
+
+# After human merges
+git checkout main && git pull origin main
+beans update <bean-id> --status completed
+```
+
+## Git Details
 
 - Main branch: `main`
 - Remote: `github.com:BjRo/credfolio2.git`
 - Commits use `--no-gpg-sign` flag
-- Co-authored by: `Claude Sonnet 4.5 <noreply@anthropic.com>`
+- Co-authored by: `Claude <noreply@anthropic.com>`
 
 ## Devcontainer Notes
 
