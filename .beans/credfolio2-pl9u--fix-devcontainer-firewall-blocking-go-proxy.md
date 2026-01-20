@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: normal
 created_at: 2026-01-20T13:35:34Z
-updated_at: 2026-01-20T13:44:45Z
+updated_at: 2026-01-20T13:50:14Z
 ---
 
 The pre-commit hook blocks commits because backend tests fail. The Go chi router dependency cannot be downloaded because proxy.golang.org is blocked by the devcontainer firewall.
