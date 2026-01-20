@@ -6,22 +6,30 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
 	"backend/internal/handler"
 )
 
 func main() {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
 
-	// Register handlers
-	mux.Handle("/", handler.NewRootHandler())
-	mux.Handle("/health", handler.NewHealthHandler())
+	// Middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.RequestID)
+
+	// Routes
+	r.Get("/", handler.NewRootHandler().ServeHTTP)
+	r.Get("/health", handler.NewHealthHandler().ServeHTTP)
 
 	port := ":8080"
 	log.Printf("Server starting on http://localhost%s\n", port)
 
 	server := &http.Server{
 		Addr:         port,
-		Handler:      mux,
+		Handler:      r,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
