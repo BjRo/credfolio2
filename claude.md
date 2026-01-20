@@ -50,6 +50,13 @@
 - Runs on port 8080
 - Routes: `/` (hello), `/health` (health check)
 
+### Database
+
+- PostgreSQL 16 (via docker-compose)
+- Development database: `credfolio`
+- Test database: `credfolio_test`
+- Migrations: golang-migrate with timestamp versioning
+
 ## Common Commands
 
 ```bash
@@ -67,6 +74,19 @@ cd src/backend && pnpm build   # Compiles to bin/server
 # Cleanup
 pnpm clean                     # Clean all packages
 rm -rf .turbo                  # Clear Turborepo cache
+
+# Database (run from host, not devcontainer)
+docker-compose up -d           # Start PostgreSQL and MinIO
+docker-compose down            # Stop services
+
+# Migrations (run from src/backend/)
+cd src/backend
+make help                      # Show all migration commands
+make migration name=create_users  # Create new migration
+make migrate-up                # Run pending migrations (dev)
+make migrate-down              # Rollback last migration (dev)
+make migrate-up-test           # Run migrations on test database
+make migrate-status            # Show migration status
 ```
 
 ## Important Context
@@ -92,11 +112,15 @@ rm -rf .turbo                  # Clear Turborepo cache
 ### File Locations to Remember
 
 - Backend entry point: `src/backend/cmd/server/main.go`
+- Backend config: `src/backend/internal/config/config.go`
+- Backend Makefile: `src/backend/Makefile`
+- Migrations: `src/backend/migrations/`
 - Frontend layout: `src/frontend/src/app/layout.tsx`
 - Frontend homepage: `src/frontend/src/app/page.tsx`
 - Next.js config: `src/frontend/next.config.ts`
 - Turborepo config: `turbo.json`
 - Workspace definition: `pnpm-workspace.yaml`
+- Docker services: `docker-compose.yml`
 
 ## Development Workflow
 

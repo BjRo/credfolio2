@@ -10,9 +10,10 @@ import (
 
 // Config holds all application configuration.
 type Config struct {
-	Database DatabaseConfig
-	MinIO    MinIOConfig
-	Server   ServerConfig
+	Database     DatabaseConfig
+	TestDatabase DatabaseConfig
+	MinIO        MinIOConfig
+	Server       ServerConfig
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -82,6 +83,15 @@ func Load() (*Config, error) {
 			Name:     getEnv("POSTGRES_DB", "credfolio"),
 			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
 			url:      os.Getenv("DATABASE_URL"),
+		},
+		TestDatabase: DatabaseConfig{
+			Host:     getEnv("POSTGRES_HOST", "localhost"),
+			Port:     dbPort,
+			User:     getEnv("POSTGRES_USER", "credfolio"),
+			Password: getEnv("POSTGRES_PASSWORD", "credfolio_dev"),
+			Name:     getEnv("POSTGRES_DB_TEST", "credfolio_test"),
+			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
+			url:      os.Getenv("DATABASE_URL_TEST"),
 		},
 		MinIO: MinIOConfig{
 			Endpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),

@@ -12,6 +12,7 @@ const (
 	defaultDBUser     = "credfolio"
 	defaultDBPassword = "credfolio_dev" //nolint:gosec // test credentials
 	defaultDBName     = "credfolio"
+	defaultDBNameTest = "credfolio_test"
 	defaultDBSSLMode  = "disable"
 
 	defaultMinIOEndpoint  = "localhost:9000"
@@ -47,6 +48,66 @@ func TestLoad_DatabaseDefaults(t *testing.T) {
 		if tt.got != tt.want {
 			t.Errorf("Database.%s = %v, want %v", tt.name, tt.got, tt.want)
 		}
+	}
+}
+
+func TestLoad_TestDatabaseDefaults(t *testing.T) {
+	clearEnv(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	tests := []struct {
+		name string
+		got  any
+		want any
+	}{
+		{"Host", cfg.TestDatabase.Host, defaultDBHost},
+		{"Port", cfg.TestDatabase.Port, defaultDBPort},
+		{"User", cfg.TestDatabase.User, defaultDBUser},
+		{"Password", cfg.TestDatabase.Password, defaultDBPassword},
+		{"Name", cfg.TestDatabase.Name, defaultDBNameTest},
+		{"SSLMode", cfg.TestDatabase.SSLMode, defaultDBSSLMode},
+	}
+
+	for _, tt := range tests {
+		if tt.got != tt.want {
+			t.Errorf("TestDatabase.%s = %v, want %v", tt.name, tt.got, tt.want)
+		}
+	}
+}
+
+func TestLoad_TestDatabaseURL_Computed(t *testing.T) {
+	clearEnv(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	// #nosec G101 - test credentials only
+	want := "postgres://credfolio:credfolio_dev@localhost:5432/credfolio_test?sslmode=disable"
+	if cfg.TestDatabase.URL() != want {
+		t.Errorf("TestDatabase.URL() = %q, want %q", cfg.TestDatabase.URL(), want)
+	}
+}
+
+func TestLoad_TestDatabaseURL_FromEnvVar(t *testing.T) {
+	clearEnv(t)
+
+	// DATABASE_URL_TEST should take precedence over individual settings
+	customURL := "postgres://override:pass@custom.host:5555/test_overridedb?sslmode=verify-full"
+	t.Setenv("DATABASE_URL_TEST", customURL)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.TestDatabase.URL() != customURL {
+		t.Errorf("TestDatabase.URL() = %q, want %q", cfg.TestDatabase.URL(), customURL)
 	}
 }
 
@@ -268,11 +329,13 @@ func clearEnv(t *testing.T) {
 
 	vars := []string{
 		"DATABASE_URL",
+		"DATABASE_URL_TEST",
 		"POSTGRES_HOST",
 		"POSTGRES_PORT",
 		"POSTGRES_USER",
 		"POSTGRES_PASSWORD",
 		"POSTGRES_DB",
+		"POSTGRES_DB_TEST",
 		"POSTGRES_SSLMODE",
 		"MINIO_ENDPOINT",
 		"MINIO_ROOT_USER",
