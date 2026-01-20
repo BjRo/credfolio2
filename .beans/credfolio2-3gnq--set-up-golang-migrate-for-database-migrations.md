@@ -1,14 +1,14 @@
 ---
 # credfolio2-3gnq
 title: Set up golang-migrate for database migrations
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-20T11:26:06Z
-updated_at: 2026-01-20T14:34:27Z
+updated_at: 2026-01-20T15:18:53Z
 parent: credfolio2-jpin
 blocking:
-  - credfolio2-x9d6
+    - credfolio2-x9d6
 ---
 
 Configure database migration tooling using golang-migrate.
