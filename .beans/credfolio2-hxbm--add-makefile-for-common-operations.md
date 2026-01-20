@@ -1,10 +1,11 @@
 ---
 # credfolio2-hxbm
 title: Add Makefile for common operations
-status: todo
+status: scrapped
 type: task
+priority: normal
 created_at: 2026-01-20T11:26:30Z
-updated_at: 2026-01-20T11:26:30Z
+updated_at: 2026-01-20T15:23:04Z
 parent: credfolio2-jpin
 ---
 

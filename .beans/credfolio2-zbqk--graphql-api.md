@@ -3,9 +3,10 @@
 title: GraphQL API
 status: draft
 type: epic
+priority: normal
 created_at: 2026-01-20T11:24:59Z
-updated_at: 2026-01-20T11:24:59Z
-parent: credfolio2-1fwu
+updated_at: 2026-01-20T15:26:58Z
+parent: credfolio2-tikg
 ---
 
 Set up GraphQL API with gqlgen for serving profile and reference letter data.
