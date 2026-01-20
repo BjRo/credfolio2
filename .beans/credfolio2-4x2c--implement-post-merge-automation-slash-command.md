@@ -1,10 +1,11 @@
 ---
 # credfolio2-4x2c
 title: Implement post-merge automation slash command
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-01-20T11:51:16Z
-updated_at: 2026-01-20T11:51:16Z
+updated_at: 2026-01-20T11:58:28Z
 ---
 
 Create a /post-merge slash command that automates cleanup after a PR is merged:
