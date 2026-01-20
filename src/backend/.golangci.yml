@@ -37,3 +37,9 @@ issues:
   exclude-dirs:
     - bin
     - vendor
+  exclude-rules:
+    # fieldalignment is not meaningful for small inline test structs
+    - path: _test\.go
+      linters:
+        - govet
+      text: "fieldalignment"

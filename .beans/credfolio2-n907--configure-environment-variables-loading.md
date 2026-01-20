@@ -1,10 +1,11 @@
 ---
 # credfolio2-n907
 title: Configure environment variables loading
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-01-20T11:26:27Z
-updated_at: 2026-01-20T11:26:27Z
+updated_at: 2026-01-20T14:29:10Z
 parent: credfolio2-jpin
 ---
 
