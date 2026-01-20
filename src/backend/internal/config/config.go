@@ -10,10 +10,10 @@ import (
 
 // Config holds all application configuration.
 type Config struct {
-	Database     DatabaseConfig
-	TestDatabase DatabaseConfig
-	MinIO        MinIOConfig
-	Server       ServerConfig
+	Environment string
+	Database    DatabaseConfig
+	MinIO       MinIOConfig
+	Server      ServerConfig
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -74,25 +74,21 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid MINIO_USE_SSL: %w", err)
 	}
 
+	// Environment determines database name: credfolio_dev or credfolio_test
+	env := getEnv("CREDFOLIO_ENV", "dev")
+	dbName := "credfolio_" + env
+
 	// Default hosts use docker container names for devcontainer environment
 	cfg := &Config{
+		Environment: env,
 		Database: DatabaseConfig{
 			Host:     getEnv("POSTGRES_HOST", "credfolio2-postgres"),
 			Port:     dbPort,
 			User:     getEnv("POSTGRES_USER", "credfolio"),
 			Password: getEnv("POSTGRES_PASSWORD", "credfolio_dev"),
-			Name:     getEnv("POSTGRES_DB", "credfolio"),
+			Name:     dbName,
 			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
 			url:      os.Getenv("DATABASE_URL"),
-		},
-		TestDatabase: DatabaseConfig{
-			Host:     getEnv("POSTGRES_HOST", "credfolio2-postgres"),
-			Port:     dbPort,
-			User:     getEnv("POSTGRES_USER", "credfolio"),
-			Password: getEnv("POSTGRES_PASSWORD", "credfolio_dev"),
-			Name:     getEnv("POSTGRES_DB_TEST", "credfolio_test"),
-			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
-			url:      os.Getenv("DATABASE_URL_TEST"),
 		},
 		MinIO: MinIOConfig{
 			Endpoint:  getEnv("MINIO_ENDPOINT", "credfolio2-minio:9000"),

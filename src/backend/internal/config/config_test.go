@@ -11,8 +11,6 @@ const (
 	defaultDBPort     = 5432
 	defaultDBUser     = "credfolio"
 	defaultDBPassword = "credfolio_dev" //nolint:gosec // test credentials
-	defaultDBName     = "credfolio"
-	defaultDBNameTest = "credfolio_test"
 	defaultDBSSLMode  = "disable"
 
 	defaultMinIOEndpoint  = "credfolio2-minio:9000"
@@ -22,6 +20,37 @@ const (
 
 	defaultServerPort = 8080
 )
+
+func TestLoad_EnvironmentDefaults(t *testing.T) {
+	clearEnv(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.Environment != "dev" {
+		t.Errorf("Environment = %q, want %q", cfg.Environment, "dev")
+	}
+}
+
+func TestLoad_EnvironmentOverride(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("CREDFOLIO_ENV", "test")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.Environment != "test" {
+		t.Errorf("Environment = %q, want %q", cfg.Environment, "test")
+	}
+
+	if cfg.Database.Name != "credfolio_test" {
+		t.Errorf("Database.Name = %q, want %q", cfg.Database.Name, "credfolio_test")
+	}
+}
 
 func TestLoad_DatabaseDefaults(t *testing.T) {
 	clearEnv(t)
@@ -40,7 +69,7 @@ func TestLoad_DatabaseDefaults(t *testing.T) {
 		{"Port", cfg.Database.Port, defaultDBPort},
 		{"User", cfg.Database.User, defaultDBUser},
 		{"Password", cfg.Database.Password, defaultDBPassword},
-		{"Name", cfg.Database.Name, defaultDBName},
+		{"Name", cfg.Database.Name, "credfolio_dev"},
 		{"SSLMode", cfg.Database.SSLMode, defaultDBSSLMode},
 	}
 
@@ -51,63 +80,46 @@ func TestLoad_DatabaseDefaults(t *testing.T) {
 	}
 }
 
-func TestLoad_TestDatabaseDefaults(t *testing.T) {
-	clearEnv(t)
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
-	}
-
+func TestLoad_DatabaseName_FromEnvironment(t *testing.T) {
 	tests := []struct {
-		name string
-		got  any
-		want any
+		name    string
+		env     string
+		wantDB  string
+		wantURL string
 	}{
-		{"Host", cfg.TestDatabase.Host, defaultDBHost},
-		{"Port", cfg.TestDatabase.Port, defaultDBPort},
-		{"User", cfg.TestDatabase.User, defaultDBUser},
-		{"Password", cfg.TestDatabase.Password, defaultDBPassword},
-		{"Name", cfg.TestDatabase.Name, defaultDBNameTest},
-		{"SSLMode", cfg.TestDatabase.SSLMode, defaultDBSSLMode},
+		{
+			name:    "dev environment",
+			env:     "dev",
+			wantDB:  "credfolio_dev",
+			wantURL: "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio_dev?sslmode=disable",
+		},
+		{
+			name:    "test environment",
+			env:     "test",
+			wantDB:  "credfolio_test",
+			wantURL: "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio_test?sslmode=disable",
+		},
 	}
 
 	for _, tt := range tests {
-		if tt.got != tt.want {
-			t.Errorf("TestDatabase.%s = %v, want %v", tt.name, tt.got, tt.want)
-		}
-	}
-}
+		t.Run(tt.name, func(t *testing.T) {
+			clearEnv(t)
+			t.Setenv("CREDFOLIO_ENV", tt.env)
 
-func TestLoad_TestDatabaseURL_Computed(t *testing.T) {
-	clearEnv(t)
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
 
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
-	}
+			if cfg.Database.Name != tt.wantDB {
+				t.Errorf("Database.Name = %q, want %q", cfg.Database.Name, tt.wantDB)
+			}
 
-	// #nosec G101 - test credentials only
-	want := "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio_test?sslmode=disable"
-	if cfg.TestDatabase.URL() != want {
-		t.Errorf("TestDatabase.URL() = %q, want %q", cfg.TestDatabase.URL(), want)
-	}
-}
-
-func TestLoad_TestDatabaseURL_FromEnvVar(t *testing.T) {
-	clearEnv(t)
-
-	// DATABASE_URL_TEST should take precedence over individual settings
-	customURL := "postgres://override:pass@custom.host:5555/test_overridedb?sslmode=verify-full"
-	t.Setenv("DATABASE_URL_TEST", customURL)
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
-	}
-
-	if cfg.TestDatabase.URL() != customURL {
-		t.Errorf("TestDatabase.URL() = %q, want %q", cfg.TestDatabase.URL(), customURL)
+			// #nosec G101 - test credentials only
+			if cfg.Database.URL() != tt.wantURL {
+				t.Errorf("Database.URL() = %q, want %q", cfg.Database.URL(), tt.wantURL)
+			}
+		})
 	}
 }
 
@@ -171,7 +183,6 @@ func TestLoad_DatabaseOverrides(t *testing.T) {
 	t.Setenv("POSTGRES_PORT", "5433")
 	t.Setenv("POSTGRES_USER", "myuser")
 	t.Setenv("POSTGRES_PASSWORD", "mypassword")
-	t.Setenv("POSTGRES_DB", "mydb")
 	t.Setenv("POSTGRES_SSLMODE", "require")
 
 	cfg, err := Load()
@@ -188,7 +199,6 @@ func TestLoad_DatabaseOverrides(t *testing.T) {
 		{"Port", cfg.Database.Port, 5433},
 		{"User", cfg.Database.User, "myuser"},
 		{"Password", cfg.Database.Password, "mypassword"},
-		{"Name", cfg.Database.Name, "mydb"},
 		{"SSLMode", cfg.Database.SSLMode, "require"},
 	}
 
@@ -256,7 +266,7 @@ func TestLoad_DatabaseURL_Computed(t *testing.T) {
 	}
 
 	// #nosec G101 - test credentials only
-	want := "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio?sslmode=disable"
+	want := "postgres://credfolio:credfolio_dev@credfolio2-postgres:5432/credfolio_dev?sslmode=disable"
 	if cfg.Database.URL() != want {
 		t.Errorf("Database.URL() = %q, want %q", cfg.Database.URL(), want)
 	}
@@ -269,15 +279,15 @@ func TestLoad_DatabaseURL_WithOverrides(t *testing.T) {
 	t.Setenv("POSTGRES_PORT", "5433")
 	t.Setenv("POSTGRES_USER", "myuser")
 	t.Setenv("POSTGRES_PASSWORD", "mypassword")
-	t.Setenv("POSTGRES_DB", "mydb")
 	t.Setenv("POSTGRES_SSLMODE", "require")
+	t.Setenv("CREDFOLIO_ENV", "test")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	want := "postgres://myuser:mypassword@db.example.com:5433/mydb?sslmode=require"
+	want := "postgres://myuser:mypassword@db.example.com:5433/credfolio_test?sslmode=require"
 	if cfg.Database.URL() != want {
 		t.Errorf("Database.URL() = %q, want %q", cfg.Database.URL(), want)
 	}
@@ -328,14 +338,12 @@ func clearEnv(t *testing.T) {
 	t.Helper()
 
 	vars := []string{
+		"CREDFOLIO_ENV",
 		"DATABASE_URL",
-		"DATABASE_URL_TEST",
 		"POSTGRES_HOST",
 		"POSTGRES_PORT",
 		"POSTGRES_USER",
 		"POSTGRES_PASSWORD",
-		"POSTGRES_DB",
-		"POSTGRES_DB_TEST",
 		"POSTGRES_SSLMODE",
 		"MINIO_ENDPOINT",
 		"MINIO_ROOT_USER",

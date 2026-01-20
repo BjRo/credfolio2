@@ -5,15 +5,14 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-credfolio}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-credfolio_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-credfolio}
-      POSTGRES_DB_TEST: ${POSTGRES_DB_TEST:-credfolio_test}
+      POSTGRES_DB: postgres
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-credfolio} -d ${POSTGRES_DB:-credfolio}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-credfolio}"]
       interval: 5s
       timeout: 5s
       retries: 5
