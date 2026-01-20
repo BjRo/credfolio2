@@ -5,6 +5,24 @@ description: Use when starting work, tracking tasks, or deciding where to record
 
 # Task Tracking Hierarchy
 
+> **Before starting work on a bean**, invoke the `dev-workflow` skill (`/skill dev-workflow`) for the complete git and TDD workflow.
+
+## Quick Start: Working on a Bean
+
+```bash
+# 1. Sync main and create branch
+git checkout main && git pull origin main
+git checkout -b feat/<bean-id>-<short-description>
+
+# 2. Mark bean in-progress
+beans update <bean-id> --status in-progress
+
+# 3. Work using TDD (see /skill tdd)
+# 4. Update bean checklist as you go
+# 5. Push and create PR (wait for human review)
+# 6. After merge: beans update <bean-id> --status completed
+```
+
 Two systems serve different purposes. Use the right tool for the job.
 
 | System        | Purpose                    | Persistence  | Audience                |
