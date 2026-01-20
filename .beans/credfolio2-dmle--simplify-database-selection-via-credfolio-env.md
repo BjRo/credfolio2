@@ -1,10 +1,11 @@
 ---
 # credfolio2-dmle
 title: Simplify database selection via CREDFOLIO_ENV
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-01-20T15:02:48Z
-updated_at: 2026-01-20T15:02:48Z
+updated_at: 2026-01-20T15:11:16Z
 ---
 
 Replace separate dev/test migration commands with a single set that uses CREDFOLIO_ENV (defaults to 'dev'). Database name becomes credfolio_${CREDFOLIO_ENV}.
