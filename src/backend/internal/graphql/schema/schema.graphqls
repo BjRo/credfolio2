@@ -1,0 +1,84 @@
+# GraphQL schema for Credfolio2
+
+scalar DateTime
+scalar JSON
+
+"""
+A user account in the system.
+"""
+type User {
+  id: ID!
+  email: String!
+  name: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+An uploaded file stored in object storage.
+"""
+type File {
+  id: ID!
+  filename: String!
+  contentType: String!
+  sizeBytes: Int!
+  storageKey: String!
+  createdAt: DateTime!
+  user: User!
+}
+
+"""
+Processing status of a reference letter.
+"""
+enum ReferenceLetterStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+"""
+A reference letter with extracted data.
+"""
+type ReferenceLetter {
+  id: ID!
+  title: String
+  authorName: String
+  authorTitle: String
+  organization: String
+  dateWritten: DateTime
+  rawText: String
+  extractedData: JSON
+  status: ReferenceLetterStatus!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  user: User!
+  file: File
+}
+
+type Query {
+  """
+  Get a user by ID.
+  """
+  user(id: ID!): User
+
+  """
+  Get a file by ID.
+  """
+  file(id: ID!): File
+
+  """
+  Get all files for a user.
+  """
+  files(userId: ID!): [File!]!
+
+  """
+  Get a reference letter by ID.
+  """
+  referenceLetter(id: ID!): ReferenceLetter
+
+  """
+  Get all reference letters for a user.
+  """
+  referenceLetters(userId: ID!): [ReferenceLetter!]!
+}
