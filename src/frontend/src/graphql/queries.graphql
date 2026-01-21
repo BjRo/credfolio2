@@ -1,0 +1,59 @@
+query GetReferenceLetter($id: ID!) {
+  referenceLetter(id: $id) {
+    id
+    title
+    authorName
+    authorTitle
+    organization
+    dateWritten
+    rawText
+    extractedData
+    status
+    createdAt
+    updatedAt
+    user {
+      id
+      email
+      name
+    }
+    file {
+      id
+      filename
+      contentType
+      sizeBytes
+    }
+  }
+}
+
+query GetReferenceLetters($userId: ID!) {
+  referenceLetters(userId: $userId) {
+    id
+    title
+    authorName
+    authorTitle
+    organization
+    status
+    createdAt
+  }
+}
+
+query GetUser($id: ID!) {
+  user(id: $id) {
+    id
+    email
+    name
+    createdAt
+    updatedAt
+  }
+}
+
+query GetFiles($userId: ID!) {
+  files(userId: $userId) {
+    id
+    filename
+    contentType
+    sizeBytes
+    storageKey
+    createdAt
+  }
+}
