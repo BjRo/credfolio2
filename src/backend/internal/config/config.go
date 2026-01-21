@@ -4,8 +4,11 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // Config holds all application configuration.
@@ -59,6 +62,10 @@ type ServerConfig struct {
 // Load reads configuration from environment variables.
 // It uses sensible defaults matching docker-compose.yml for local development.
 func Load() (*Config, error) {
+	// Load .env file if present (silently ignore if not found).
+	// Try to find .env by walking up from current directory to project root.
+	loadEnvFiles()
+
 	dbPort, err := getEnvInt("POSTGRES_PORT", 5432)
 	if err != nil {
 		return nil, fmt.Errorf("invalid POSTGRES_PORT: %w", err)
@@ -106,6 +113,33 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// loadEnvFiles attempts to load .env files from the current directory
+// and by walking up the directory tree to find the project root.
+func loadEnvFiles() {
+	var envPaths []string
+
+	// Walk up the directory tree to find .env files
+	if cwd, err := os.Getwd(); err == nil {
+		dir := cwd
+		for i := 0; i < 10; i++ { // Limit search depth
+			envPath := filepath.Join(dir, ".env")
+			if _, err := os.Stat(envPath); err == nil {
+				envPaths = append(envPaths, envPath)
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break // Reached filesystem root
+			}
+			dir = parent
+		}
+	}
+
+	// Load all found .env files (first one wins for each variable)
+	if len(envPaths) > 0 {
+		_ = godotenv.Load(envPaths...)
+	}
 }
 
 // getEnv returns the environment variable value or a default.

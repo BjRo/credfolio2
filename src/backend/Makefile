@@ -1,11 +1,14 @@
 # Database Migration Makefile
 # Uses golang-migrate for database schema migrations
 
+# Load .env from project root if it exists (won't fail if missing)
+-include ../../.env
+
 # Environment selection (dev or test)
 # Usage: CREDFOLIO_ENV=test make migrate-up
 CREDFOLIO_ENV ?= dev
 
-# Database connection settings (loaded from environment or defaults)
+# Database connection settings (loaded from .env, environment, or defaults)
 # Default host is the docker container name when running in devcontainer
 POSTGRES_HOST ?= credfolio2-postgres
 POSTGRES_PORT ?= 5432

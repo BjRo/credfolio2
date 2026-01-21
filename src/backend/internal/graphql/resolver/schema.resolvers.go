@@ -13,27 +13,27 @@ import (
 )
 
 // User is the resolver for the user field.
-func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
+func (r *queryResolver) User(_ context.Context, _ string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: User - user"))
 }
 
 // File is the resolver for the file field.
-func (r *queryResolver) File(ctx context.Context, id string) (*model.File, error) {
+func (r *queryResolver) File(_ context.Context, _ string) (*model.File, error) {
 	panic(fmt.Errorf("not implemented: File - file"))
 }
 
 // Files is the resolver for the files field.
-func (r *queryResolver) Files(ctx context.Context, userID string) ([]*model.File, error) {
+func (r *queryResolver) Files(_ context.Context, _ string) ([]*model.File, error) {
 	panic(fmt.Errorf("not implemented: Files - files"))
 }
 
 // ReferenceLetter is the resolver for the referenceLetter field.
-func (r *queryResolver) ReferenceLetter(ctx context.Context, id string) (*model.ReferenceLetter, error) {
+func (r *queryResolver) ReferenceLetter(_ context.Context, _ string) (*model.ReferenceLetter, error) {
 	panic(fmt.Errorf("not implemented: ReferenceLetter - referenceLetter"))
 }
 
 // ReferenceLetters is the resolver for the referenceLetters field.
-func (r *queryResolver) ReferenceLetters(ctx context.Context, userID string) ([]*model.ReferenceLetter, error) {
+func (r *queryResolver) ReferenceLetters(_ context.Context, _ string) ([]*model.ReferenceLetter, error) {
 	panic(fmt.Errorf("not implemented: ReferenceLetters - referenceLetters"))
 }
 
