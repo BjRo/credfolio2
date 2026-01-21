@@ -3,9 +3,12 @@
 import { useQuery } from "urql";
 import { graphql } from "@/graphql/generated";
 
+// Use a valid UUID format for the test query
+const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";
+
 const TestQuery = graphql(`
-  query TestConnection {
-    referenceLetters(userId: "test-user") {
+  query TestConnection($userId: ID!) {
+    referenceLetters(userId: $userId) {
       id
       title
       status
@@ -16,7 +19,10 @@ const TestQuery = graphql(`
 `);
 
 export default function GraphQLTestPage() {
-  const [result] = useQuery({ query: TestQuery });
+  const [result] = useQuery({
+    query: TestQuery,
+    variables: { userId: TEST_USER_ID },
+  });
 
   const { data, fetching, error } = result;
 
@@ -49,12 +55,11 @@ export default function GraphQLTestPage() {
       )}
 
       {data && (
-        <section style={{ marginTop: "1rem" }}>
-          <h2>Reference Letters ({data.referenceLetters.length})</h2>
+        <section style={{ marginTop: "1rem", color: "green" }}>
+          <h2>✓ Connection Successful!</h2>
+          <p>Reference Letters found: {data.referenceLetters.length}</p>
           {data.referenceLetters.length === 0 ? (
-            <p>
-              No reference letters found for test-user (this is expected if the database is empty)
-            </p>
+            <p style={{ color: "#666" }}>(Empty result is expected - no data for test user UUID)</p>
           ) : (
             <ul>
               {data.referenceLetters.map((letter) => (
@@ -77,7 +82,7 @@ export default function GraphQLTestPage() {
           <li>
             Ensure PostgreSQL is running: <code>docker-compose up -d</code>
           </li>
-          <li>If you see data or an empty array, the connection works!</li>
+          <li>If you see &quot;Connection Successful&quot; above, everything works!</li>
           <li>If you see a network error, check that the backend is running on port 8080</li>
         </ol>
       </section>

@@ -14,11 +14,11 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
-    "\n  query TestConnection {\n    referenceLetters(userId: \"test-user\") {\n      id\n      title\n      status\n      authorName\n      createdAt\n    }\n  }\n": typeof types.TestConnectionDocument,
+    "\n  query TestConnection($userId: ID!) {\n    referenceLetters(userId: $userId) {\n      id\n      title\n      status\n      authorName\n      createdAt\n    }\n  }\n": typeof types.TestConnectionDocument,
     "query GetReferenceLetter($id: ID!) {\n  referenceLetter(id: $id) {\n    id\n    title\n    authorName\n    authorTitle\n    organization\n    dateWritten\n    rawText\n    extractedData\n    status\n    createdAt\n    updatedAt\n    user {\n      id\n      email\n      name\n    }\n    file {\n      id\n      filename\n      contentType\n      sizeBytes\n    }\n  }\n}\n\nquery GetReferenceLetters($userId: ID!) {\n  referenceLetters(userId: $userId) {\n    id\n    title\n    authorName\n    authorTitle\n    organization\n    status\n    createdAt\n  }\n}\n\nquery GetUser($id: ID!) {\n  user(id: $id) {\n    id\n    email\n    name\n    createdAt\n    updatedAt\n  }\n}\n\nquery GetFiles($userId: ID!) {\n  files(userId: $userId) {\n    id\n    filename\n    contentType\n    sizeBytes\n    storageKey\n    createdAt\n  }\n}": typeof types.GetReferenceLetterDocument,
 };
 const documents: Documents = {
-    "\n  query TestConnection {\n    referenceLetters(userId: \"test-user\") {\n      id\n      title\n      status\n      authorName\n      createdAt\n    }\n  }\n": types.TestConnectionDocument,
+    "\n  query TestConnection($userId: ID!) {\n    referenceLetters(userId: $userId) {\n      id\n      title\n      status\n      authorName\n      createdAt\n    }\n  }\n": types.TestConnectionDocument,
     "query GetReferenceLetter($id: ID!) {\n  referenceLetter(id: $id) {\n    id\n    title\n    authorName\n    authorTitle\n    organization\n    dateWritten\n    rawText\n    extractedData\n    status\n    createdAt\n    updatedAt\n    user {\n      id\n      email\n      name\n    }\n    file {\n      id\n      filename\n      contentType\n      sizeBytes\n    }\n  }\n}\n\nquery GetReferenceLetters($userId: ID!) {\n  referenceLetters(userId: $userId) {\n    id\n    title\n    authorName\n    authorTitle\n    organization\n    status\n    createdAt\n  }\n}\n\nquery GetUser($id: ID!) {\n  user(id: $id) {\n    id\n    email\n    name\n    createdAt\n    updatedAt\n  }\n}\n\nquery GetFiles($userId: ID!) {\n  files(userId: $userId) {\n    id\n    filename\n    contentType\n    sizeBytes\n    storageKey\n    createdAt\n  }\n}": types.GetReferenceLetterDocument,
 };
 
@@ -39,7 +39,7 @@ export function graphql(source: string): unknown;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query TestConnection {\n    referenceLetters(userId: \"test-user\") {\n      id\n      title\n      status\n      authorName\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  query TestConnection {\n    referenceLetters(userId: \"test-user\") {\n      id\n      title\n      status\n      authorName\n      createdAt\n    }\n  }\n"];
+export function graphql(source: "\n  query TestConnection($userId: ID!) {\n    referenceLetters(userId: $userId) {\n      id\n      title\n      status\n      authorName\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  query TestConnection($userId: ID!) {\n    referenceLetters(userId: $userId) {\n      id\n      title\n      status\n      authorName\n      createdAt\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
