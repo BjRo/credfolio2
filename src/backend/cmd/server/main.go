@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"backend/internal/config"
+	"backend/internal/graphql"
 	"backend/internal/handler"
 	"backend/internal/infrastructure/database"
 )
@@ -49,6 +50,10 @@ func run() error {
 	// Routes
 	r.Get("/", handler.NewRootHandler().ServeHTTP)
 	r.Get("/health", handler.NewHealthHandler(db).ServeHTTP)
+
+	// GraphQL API
+	r.Handle("/graphql", graphql.NewHandler())
+	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	log.Printf("Server starting on http://localhost%s\n", addr)

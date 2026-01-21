@@ -1,28 +1,27 @@
 ---
 # credfolio2-zbqk
 title: GraphQL API
-status: todo
+status: in-progress
 type: epic
 priority: normal
 created_at: 2026-01-20T11:24:59Z
-updated_at: 2026-01-21T14:24:37Z
+updated_at: 2026-01-21T14:27:28Z
 parent: credfolio2-tikg
 ---
 
-Set up GraphQL API with gqlgen for serving profile and reference letter data.
+Set up GraphQL API with gqlgen for serving data to the frontend.
 
 ## Goals
 - Configure gqlgen with schema-first approach
-- Define GraphQL schema for profiles, positions, skills
-- Implement resolvers connecting to Bun ORM
-- Set up URQL client on frontend
+- Define GraphQL schema for existing domain entities (User, File, ReferenceLetter)
+- Implement resolvers connecting to Bun ORM repositories
+- Set up URQL client on frontend with typed hooks
 
-## Checklist
-- [ ] Add gqlgen dependency and initialize
-- [ ] Define GraphQL schema (profile, position, skill, referenceFile types)
-- [ ] Generate resolver stubs
-- [ ] Implement profile queries
-- [ ] Implement reference letter queries
-- [ ] Set up URQL client in Next.js
-- [ ] Create typed query hooks
-- [ ] Add GraphQL playground for development
+## Scope Refinement
+Initial implementation focuses on existing domain entities to support the "First Vertical Slice" milestone. Profile/Position/Skill types are tracked separately for future expansion.
+
+## Child Beans
+- `credfolio2-ozxj` - Backend: gqlgen setup and schema
+- `credfolio2-5l5u` - Backend: Implement GraphQL resolvers (blocked by ozxj)
+- `credfolio2-ui1x` - Frontend: URQL client setup (blocked by ozxj)
+- `credfolio2-7h7b` - Future: Profile, Position, Skill types (draft)

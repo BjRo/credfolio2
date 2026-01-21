@@ -1,0 +1,31 @@
+# gqlgen configuration
+# See https://gqlgen.com/config/ for documentation
+
+schema:
+  - internal/graphql/schema/*.graphqls
+
+exec:
+  filename: internal/graphql/generated/generated.go
+  package: generated
+
+model:
+  filename: internal/graphql/model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: internal/graphql/resolver
+  package: resolver
+  filename_template: "{name}.resolvers.go"
+
+# Map GraphQL scalars to Go types
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+  DateTime:
+    model:
+      - github.com/99designs/gqlgen/graphql.Time
+  JSON:
+    model:
+      - github.com/99designs/gqlgen/graphql.Map
