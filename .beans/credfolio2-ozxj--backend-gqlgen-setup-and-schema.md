@@ -1,11 +1,11 @@
 ---
 # credfolio2-ozxj
 title: 'Backend: gqlgen setup and schema'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-21T14:27:41Z
-updated_at: 2026-01-21T14:30:58Z
+updated_at: 2026-01-21T15:20:32Z
 parent: credfolio2-zbqk
 blocking:
     - credfolio2-5l5u
