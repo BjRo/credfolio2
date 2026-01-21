@@ -1,11 +1,11 @@
 ---
 # credfolio2-5l5u
 title: 'Backend: Implement GraphQL resolvers'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-21T14:27:51Z
-updated_at: 2026-01-21T15:23:13Z
+updated_at: 2026-01-21T15:42:45Z
 parent: credfolio2-zbqk
 ---
 
