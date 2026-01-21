@@ -1,11 +1,11 @@
 ---
 # credfolio2-5r8s
 title: LLM Gateway Service
-status: draft
+status: todo
 type: epic
 priority: normal
 created_at: 2026-01-20T11:24:26Z
-updated_at: 2026-01-20T11:26:52Z
+updated_at: 2026-01-21T14:24:39Z
 parent: credfolio2-tikg
 blocking:
     - credfolio2-tmlf

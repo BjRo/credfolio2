@@ -1,11 +1,11 @@
 ---
 # credfolio2-zbqk
 title: GraphQL API
-status: draft
+status: todo
 type: epic
 priority: normal
 created_at: 2026-01-20T11:24:59Z
-updated_at: 2026-01-20T15:26:58Z
+updated_at: 2026-01-21T14:24:37Z
 parent: credfolio2-tikg
 ---
 
