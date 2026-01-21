@@ -138,7 +138,7 @@ func loadEnvFiles() {
 
 	// Load all found .env files (first one wins for each variable)
 	if len(envPaths) > 0 {
-		_ = godotenv.Load(envPaths...)
+		_ = godotenv.Load(envPaths...) //nolint:errcheck // Best effort, env vars may come from system
 	}
 }
 

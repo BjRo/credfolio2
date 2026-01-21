@@ -1,11 +1,11 @@
 ---
 # credfolio2-5l5u
 title: 'Backend: Implement GraphQL resolvers'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-21T14:27:51Z
-updated_at: 2026-01-21T14:28:41Z
+updated_at: 2026-01-21T15:23:13Z
 parent: credfolio2-zbqk
 ---
 
@@ -30,17 +30,17 @@ Implement resolvers for all queries and types:
 - File.user - Resolve user relation
 
 ## Checklist
-- [ ] Inject repository dependencies into resolver struct
-- [ ] Implement user query resolver
-- [ ] Implement referenceLetters query resolver
-- [ ] Implement referenceLetter query resolver
-- [ ] Implement files query resolver
-- [ ] Implement file query resolver
-- [ ] Implement ReferenceLetter.user field resolver
-- [ ] Implement ReferenceLetter.file field resolver
-- [ ] Implement File.user field resolver
-- [ ] Add resolver tests
-- [ ] Verify queries work via GraphQL playground
+- [x] Inject repository dependencies into resolver struct
+- [x] Implement user query resolver
+- [x] Implement referenceLetters query resolver
+- [x] Implement referenceLetter query resolver
+- [x] Implement files query resolver
+- [x] Implement file query resolver
+- [x] Implement ReferenceLetter.user field resolver
+- [x] Implement ReferenceLetter.file field resolver
+- [x] Implement File.user field resolver
+- [x] Add resolver tests
+- [x] Verify queries work via GraphQL playground
 
 ## Notes
 - Use TDD approach per project workflow

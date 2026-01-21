@@ -15,6 +15,7 @@ import (
 	"backend/internal/graphql"
 	"backend/internal/handler"
 	"backend/internal/infrastructure/database"
+	"backend/internal/repository/postgres"
 )
 
 func main() {
@@ -40,6 +41,11 @@ func run() error {
 
 	log.Printf("Connected to database: %s", cfg.Database.Name)
 
+	// Create repositories
+	userRepo := postgres.NewUserRepository(db)
+	fileRepo := postgres.NewFileRepository(db)
+	refLetterRepo := postgres.NewReferenceLetterRepository(db)
+
 	r := chi.NewRouter()
 
 	// Middleware
@@ -52,7 +58,7 @@ func run() error {
 	r.Get("/health", handler.NewHealthHandler(db).ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler())
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
