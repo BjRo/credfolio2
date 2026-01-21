@@ -1,11 +1,11 @@
 ---
 # credfolio2-jpin
 title: Infrastructure Foundation
-status: in-progress
+status: completed
 type: epic
 priority: normal
 created_at: 2026-01-20T11:24:12Z
-updated_at: 2026-01-20T13:51:58Z
+updated_at: 2026-01-21T13:37:32Z
 parent: credfolio2-tikg
 blocking:
     - credfolio2-k38n
