@@ -31,10 +31,10 @@ Set up the development infrastructure: Docker Compose, database migrations, proj
 - Environment-based configuration
 
 ## Checklist
-- [ ] Create Docker Compose with PostgreSQL and MinIO services
-- [ ] Set up golang-migrate for database migrations
-- [ ] Create initial database schema (users, files, reference_letters tables)
-- [ ] Establish Go backend folder structure (cmd, internal, pkg)
-- [ ] Configure environment variables loading
-- [ ] Update CLAUDE.md with new infrastructure details
-- [ ] Add Makefile/scripts for common operations
+- [x] Create Docker Compose with PostgreSQL and MinIO services
+- [x] Set up golang-migrate for database migrations
+- [x] Create initial database schema (users, files, reference_letters tables)
+- [x] Establish Go backend folder structure (cmd, internal, pkg)
+- [x] Configure environment variables loading
+- [x] Update CLAUDE.md with new infrastructure details
+- [x] Add Makefile/scripts for common operations
