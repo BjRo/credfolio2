@@ -1,11 +1,11 @@
 ---
 # credfolio2-ui1x
 title: 'Frontend: URQL client setup'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-21T14:28:04Z
-updated_at: 2026-01-21T15:45:16Z
+updated_at: 2026-01-21T16:20:38Z
 parent: credfolio2-zbqk
 ---
 
