@@ -2,17 +2,43 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
-	"time"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"backend/internal/config"
 	"backend/internal/handler"
+	"backend/internal/infrastructure/database"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Printf("Server error: %v", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Connect to database
+	db, err := database.Connect(context.Background(), cfg.Database)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close() //nolint:errcheck // Best effort cleanup on shutdown
+
+	log.Printf("Connected to database: %s", cfg.Database.Name)
+
 	r := chi.NewRouter()
 
 	// Middleware
@@ -22,20 +48,18 @@ func main() {
 
 	// Routes
 	r.Get("/", handler.NewRootHandler().ServeHTTP)
-	r.Get("/health", handler.NewHealthHandler().ServeHTTP)
+	r.Get("/health", handler.NewHealthHandler(db).ServeHTTP)
 
-	port := ":8080"
-	log.Printf("Server starting on http://localhost%s\n", port)
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
+	log.Printf("Server starting on http://localhost%s\n", addr)
 
 	server := &http.Server{
-		Addr:         port,
+		Addr:         addr,
 		Handler:      r,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
-	}
+	return server.ListenAndServe()
 }

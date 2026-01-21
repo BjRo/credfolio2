@@ -1,11 +1,11 @@
 ---
 # credfolio2-tikg
 title: Foundation & First Vertical Slice
-status: draft
+status: in-progress
 type: milestone
 priority: normal
 created_at: 2026-01-20T11:24:04Z
-updated_at: 2026-01-20T11:26:54Z
+updated_at: 2026-01-21T13:51:56Z
 blocking:
     - credfolio2-1fwu
 ---
