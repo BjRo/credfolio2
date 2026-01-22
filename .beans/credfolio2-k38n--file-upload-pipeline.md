@@ -25,6 +25,6 @@ Enable users to upload reference letter documents (PDF, DOCX, TXT) and store the
 - [x] Implement file upload GraphQL mutation
 - [x] Create file metadata database table and model (already exists)
 - [x] Implement River job for document processing
-- [ ] Build upload UI component with drag-and-drop
+- [x] Build upload UI component with drag-and-drop
 - [x] Add file type validation (PDF, DOCX, TXT only)
-- [ ] Show upload progress and status
+- [x] Show upload progress and status
