@@ -7,14 +7,18 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/riverqueue/river"
 
 	"backend/internal/config"
 	"backend/internal/graphql"
 	"backend/internal/handler"
 	"backend/internal/infrastructure/database"
+	"backend/internal/infrastructure/queue"
 	"backend/internal/infrastructure/storage"
 	"backend/internal/repository/postgres"
 )
@@ -49,11 +53,29 @@ func run() error {
 	}
 
 	// Ensure bucket exists
-	if err := fileStorage.EnsureBucket(context.Background()); err != nil {
-		return fmt.Errorf("failed to ensure storage bucket: %w", err)
+	if bucketErr := fileStorage.EnsureBucket(context.Background()); bucketErr != nil {
+		return fmt.Errorf("failed to ensure storage bucket: %w", bucketErr)
 	}
 
 	log.Printf("Connected to storage: %s/%s", cfg.MinIO.Endpoint, cfg.MinIO.Bucket)
+
+	// Create job queue workers
+	workers := river.NewWorkers()
+	// Workers will be registered here as they are implemented
+
+	// Create job queue client
+	queueClient, err := queue.NewClient(context.Background(), cfg.Database, cfg.Queue, workers)
+	if err != nil {
+		return fmt.Errorf("failed to create queue client: %w", err)
+	}
+	defer queueClient.Close()
+
+	// Start job queue processing
+	if err := queueClient.Start(context.Background()); err != nil {
+		return fmt.Errorf("failed to start queue client: %w", err)
+	}
+
+	log.Printf("Job queue started with %d max workers", cfg.Queue.MaxWorkers)
 
 	// Create repositories
 	userRepo := postgres.NewUserRepository(db)
@@ -86,5 +108,37 @@ func run() error {
 		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
-	return server.ListenAndServe()
+	// Start server in goroutine
+	serverErr := make(chan error, 1)
+	go func() {
+		serverErr <- server.ListenAndServe()
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErr:
+		return err
+	case sig := <-quit:
+		log.Printf("Received signal %s, shutting down...", sig)
+	}
+
+	// Graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.WriteTimeout)
+	defer cancel()
+
+	// Stop queue processing
+	if err := queueClient.Stop(ctx); err != nil {
+		log.Printf("Error stopping queue client: %v", err)
+	}
+
+	// Shutdown HTTP server
+	if err := server.Shutdown(ctx); err != nil {
+		return fmt.Errorf("server shutdown error: %w", err)
+	}
+
+	log.Println("Server stopped gracefully")
+	return nil
 }

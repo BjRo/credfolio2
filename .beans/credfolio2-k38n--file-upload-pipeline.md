@@ -20,7 +20,7 @@ Enable users to upload reference letter documents (PDF, DOCX, TXT) and store the
 - Basic upload UI in Next.js
 
 ## Checklist
-- [ ] Add River job queue dependency and setup
+- [x] Add River job queue dependency and setup
 - [x] Create file storage abstraction layer (supports MinIO/S3/local)
 - [x] Implement file upload GraphQL mutation
 - [x] Create file metadata database table and model (already exists)
