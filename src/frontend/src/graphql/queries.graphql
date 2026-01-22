@@ -7,7 +7,50 @@ query GetReferenceLetter($id: ID!) {
     organization
     dateWritten
     rawText
-    extractedData
+    extractedData {
+      author {
+        name
+        title
+        organization
+        relationship
+        relationshipDetails
+        confidence
+      }
+      skills {
+        name
+        normalizedName
+        category
+        mentions
+        context
+        confidence
+      }
+      qualities {
+        trait
+        evidence
+        confidence
+      }
+      accomplishments {
+        description
+        impact
+        timeframe
+        confidence
+      }
+      recommendation {
+        strength
+        sentiment
+        keyQuotes
+        summary
+        confidence
+      }
+      metadata {
+        extractedAt
+        modelVersion
+        overallConfidence
+        processingTimeMs
+        warningsCount
+        warnings
+      }
+    }
     status
     createdAt
     updatedAt

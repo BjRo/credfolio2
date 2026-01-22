@@ -26,14 +26,15 @@ type Query struct {
 
 // A reference letter with extracted data.
 type ReferenceLetter struct {
-	ID            string                `json:"id"`
-	Title         *string               `json:"title,omitempty"`
-	AuthorName    *string               `json:"authorName,omitempty"`
-	AuthorTitle   *string               `json:"authorTitle,omitempty"`
-	Organization  *string               `json:"organization,omitempty"`
-	DateWritten   *time.Time            `json:"dateWritten,omitempty"`
-	RawText       *string               `json:"rawText,omitempty"`
-	ExtractedData map[string]any        `json:"extractedData,omitempty"`
+	ID           string     `json:"id"`
+	Title        *string    `json:"title,omitempty"`
+	AuthorName   *string    `json:"authorName,omitempty"`
+	AuthorTitle  *string    `json:"authorTitle,omitempty"`
+	Organization *string    `json:"organization,omitempty"`
+	DateWritten  *time.Time `json:"dateWritten,omitempty"`
+	RawText      *string    `json:"rawText,omitempty"`
+	// Structured data extracted from the letter by LLM processing.
+	ExtractedData *ExtractedLetterData  `json:"extractedData,omitempty"`
 	Status        ReferenceLetterStatus `json:"status"`
 	CreatedAt     time.Time             `json:"createdAt"`
 	UpdatedAt     time.Time             `json:"updatedAt"`

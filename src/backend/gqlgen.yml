@@ -29,3 +29,37 @@ models:
   JSON:
     model:
       - github.com/99designs/gqlgen/graphql.Map
+
+  # Extraction enums - map to domain constants
+  AuthorRelationship:
+    model:
+      - backend/internal/domain.AuthorRelationship
+  SkillCategory:
+    model:
+      - backend/internal/domain.SkillCategory
+  RecommendationStrength:
+    model:
+      - backend/internal/domain.RecommendationStrength
+
+  # Extraction types - map to GraphQL model types
+  ExtractedLetterData:
+    model:
+      - backend/internal/graphql/model.ExtractedLetterData
+  ExtractedAuthor:
+    model:
+      - backend/internal/graphql/model.ExtractedAuthor
+  ExtractedSkill:
+    model:
+      - backend/internal/graphql/model.ExtractedSkill
+  ExtractedQuality:
+    model:
+      - backend/internal/graphql/model.ExtractedQuality
+  ExtractedAccomplishment:
+    model:
+      - backend/internal/graphql/model.ExtractedAccomplishment
+  ExtractedRecommendation:
+    model:
+      - backend/internal/graphql/model.ExtractedRecommendation
+  ExtractionMetadata:
+    model:
+      - backend/internal/graphql/model.ExtractionMetadata
