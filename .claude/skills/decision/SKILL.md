@@ -62,11 +62,20 @@ Use the current timestamp. Convert the title to kebab-case (lowercase, hyphens i
 What should future developers/agents know about this decision?]
 ```
 
-### 4. Remind About Committing
+### 4. Update the Decision Index
+
+After creating the decision file, update `/decisions/CLAUDE.md` to add a new row to the index table:
+
+```markdown
+| [filename.md](filename.md) | Title | YYYY-MM-DD | Brief one-line summary |
+```
+
+### 5. Remind About Committing
 
 After creating the decision file, remind the user to:
 - Include the decision file in their next commit
-- Commit it alongside the related code changes
+- Include the updated `CLAUDE.md` index
+- Commit alongside the related code changes
 
 ## Example
 
