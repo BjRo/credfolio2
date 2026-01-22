@@ -11,9 +11,10 @@ import "backend/internal/domain"
 // Resolver is the root resolver for the GraphQL schema.
 // It holds dependencies needed by query and mutation resolvers.
 type Resolver struct {
-	userRepo          domain.UserRepository
-	fileRepo          domain.FileRepository
-	refLetterRepo     domain.ReferenceLetterRepository
+	userRepo      domain.UserRepository
+	fileRepo      domain.FileRepository
+	refLetterRepo domain.ReferenceLetterRepository
+	storage       domain.Storage
 }
 
 // NewResolver creates a new Resolver with the given repositories.
@@ -21,10 +22,12 @@ func NewResolver(
 	userRepo domain.UserRepository,
 	fileRepo domain.FileRepository,
 	refLetterRepo domain.ReferenceLetterRepository,
+	storage domain.Storage,
 ) *Resolver {
 	return &Resolver{
-		userRepo:          userRepo,
-		fileRepo:          fileRepo,
-		refLetterRepo:     refLetterRepo,
+		userRepo:      userRepo,
+		fileRepo:      fileRepo,
+		refLetterRepo: refLetterRepo,
+		storage:       storage,
 	}
 }

@@ -15,6 +15,7 @@ import (
 	"backend/internal/graphql"
 	"backend/internal/handler"
 	"backend/internal/infrastructure/database"
+	"backend/internal/infrastructure/storage"
 	"backend/internal/repository/postgres"
 )
 
@@ -41,6 +42,19 @@ func run() error {
 
 	log.Printf("Connected to database: %s", cfg.Database.Name)
 
+	// Create storage
+	fileStorage, err := storage.NewMinIOStorage(cfg.MinIO)
+	if err != nil {
+		return fmt.Errorf("failed to create storage client: %w", err)
+	}
+
+	// Ensure bucket exists
+	if err := fileStorage.EnsureBucket(context.Background()); err != nil {
+		return fmt.Errorf("failed to ensure storage bucket: %w", err)
+	}
+
+	log.Printf("Connected to storage: %s/%s", cfg.MinIO.Endpoint, cfg.MinIO.Bucket)
+
 	// Create repositories
 	userRepo := postgres.NewUserRepository(db)
 	fileRepo := postgres.NewFileRepository(db)
@@ -58,7 +72,7 @@ func run() error {
 	r.Get("/health", handler.NewHealthHandler(db).ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo))
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, fileStorage))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)

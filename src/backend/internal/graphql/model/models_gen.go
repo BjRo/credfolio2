@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+// Union type for upload result - either success or validation error.
+type UploadFileResponse interface {
+	IsUploadFileResponse()
+}
+
 // An uploaded file stored in object storage.
 type File struct {
 	ID          string    `json:"id"`
@@ -19,6 +24,19 @@ type File struct {
 	StorageKey  string    `json:"storageKey"`
 	CreatedAt   time.Time `json:"createdAt"`
 	User        *User     `json:"user"`
+}
+
+// Error returned when file validation fails.
+type FileValidationError struct {
+	// Error message describing the validation failure.
+	Message string `json:"message"`
+	// The field that failed validation (e.g., 'contentType', 'size').
+	Field string `json:"field"`
+}
+
+func (FileValidationError) IsUploadFileResponse() {}
+
+type Mutation struct {
 }
 
 type Query struct {
@@ -41,6 +59,16 @@ type ReferenceLetter struct {
 	User          *User                 `json:"user"`
 	File          *File                 `json:"file,omitempty"`
 }
+
+// Result of a file upload operation.
+type UploadFileResult struct {
+	// The uploaded file metadata.
+	File *File `json:"file"`
+	// The reference letter created for processing.
+	ReferenceLetter *ReferenceLetter `json:"referenceLetter"`
+}
+
+func (UploadFileResult) IsUploadFileResponse() {}
 
 // A user account in the system.
 type User struct {

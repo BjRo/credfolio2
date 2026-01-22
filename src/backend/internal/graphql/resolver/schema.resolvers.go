@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/google/uuid"
 )
 
@@ -28,6 +29,101 @@ func (r *extractedRecommendationResolver) Strength(ctx context.Context, obj *mod
 // Category is the resolver for the category field.
 func (r *extractedSkillResolver) Category(ctx context.Context, obj *model.ExtractedSkill) (domain.SkillCategory, error) {
 	panic(fmt.Errorf("not implemented: Category - category"))
+}
+
+// UploadFile is the resolver for the uploadFile field.
+func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error) {
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return &model.FileValidationError{
+			Message: "invalid user ID format",
+			Field:   "userId",
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		return &model.FileValidationError{
+			Message: "user not found",
+			Field:   "userId",
+		}, nil
+	}
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"application/pdf": true,
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
+		"text/plain": true,
+	}
+
+	if !allowedTypes[file.ContentType] {
+		return &model.FileValidationError{
+			Message: "file type not allowed: must be PDF, DOCX, or TXT",
+			Field:   "contentType",
+		}, nil
+	}
+
+	// Validate file size (max 10MB)
+	const maxSize = 10 * 1024 * 1024
+	if file.Size > maxSize {
+		return &model.FileValidationError{
+			Message: "file too large: maximum size is 10MB",
+			Field:   "size",
+		}, nil
+	}
+
+	// Generate storage key
+	fileID := uuid.New()
+	storageKey := fmt.Sprintf("uploads/%s/%s/%s", uid.String(), fileID.String(), file.Filename)
+
+	// Upload to storage
+	_, err = r.storage.Upload(ctx, storageKey, file.File, file.Size, file.ContentType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload file to storage: %w", err)
+	}
+
+	// Create file record
+	domainFile := &domain.File{
+		ID:          fileID,
+		UserID:      uid,
+		Filename:    file.Filename,
+		ContentType: file.ContentType,
+		SizeBytes:   file.Size,
+		StorageKey:  storageKey,
+	}
+
+	if err := r.fileRepo.Create(ctx, domainFile); err != nil {
+		// Attempt to clean up uploaded file
+		_ = r.storage.Delete(ctx, storageKey) //nolint:errcheck // Best effort cleanup
+		return nil, fmt.Errorf("failed to create file record: %w", err)
+	}
+
+	// Create reference letter record with pending status
+	refLetter := &domain.ReferenceLetter{
+		ID:     uuid.New(),
+		UserID: uid,
+		FileID: &fileID,
+		Status: domain.ReferenceLetterStatusPending,
+	}
+
+	if err := r.refLetterRepo.Create(ctx, refLetter); err != nil {
+		return nil, fmt.Errorf("failed to create reference letter record: %w", err)
+	}
+
+	// Build response
+	gqlUser := toGraphQLUser(user)
+	gqlFile := toGraphQLFile(domainFile, gqlUser)
+	gqlRefLetter := toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile)
+
+	return &model.UploadFileResult{
+		File:            gqlFile,
+		ReferenceLetter: gqlRefLetter,
+	}, nil
 }
 
 // User is the resolver for the user field.
@@ -198,10 +294,14 @@ func (r *Resolver) ExtractedSkill() generated.ExtractedSkillResolver {
 	return &extractedSkillResolver{r}
 }
 
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type extractedAuthorResolver struct{ *Resolver }
 type extractedRecommendationResolver struct{ *Resolver }
 type extractedSkillResolver struct{ *Resolver }
+type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

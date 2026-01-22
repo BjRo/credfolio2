@@ -22,9 +22,9 @@ Enable users to upload reference letter documents (PDF, DOCX, TXT) and store the
 ## Checklist
 - [ ] Add River job queue dependency and setup
 - [x] Create file storage abstraction layer (supports MinIO/S3/local)
-- [ ] Implement file upload GraphQL mutation
+- [x] Implement file upload GraphQL mutation
 - [x] Create file metadata database table and model (already exists)
 - [ ] Implement River job for document processing
 - [ ] Build upload UI component with drag-and-drop
-- [ ] Add file type validation (PDF, DOCX, TXT only)
+- [x] Add file type validation (PDF, DOCX, TXT only)
 - [ ] Show upload progress and status

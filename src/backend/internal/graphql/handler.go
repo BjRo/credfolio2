@@ -17,10 +17,11 @@ func NewHandler(
 	userRepo domain.UserRepository,
 	fileRepo domain.FileRepository,
 	refLetterRepo domain.ReferenceLetterRepository,
+	storage domain.Storage,
 ) http.Handler {
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(generated.Config{
-			Resolvers: resolver.NewResolver(userRepo, fileRepo, refLetterRepo),
+			Resolvers: resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage),
 		}),
 	)
 	return srv
