@@ -12,6 +12,7 @@ import (
 
 	"backend/internal/domain"
 	"backend/internal/job"
+	"backend/internal/logger"
 )
 
 // mockReferenceLetterRepository is a mock implementation of domain.ReferenceLetterRepository.
@@ -115,6 +116,11 @@ func (s *errorStorage) Exists(_ context.Context, _ string) (bool, error) {
 	return false, errors.New("storage error")
 }
 
+// testLogger returns a logger that discards all output (for tests).
+func testLogger() logger.Logger {
+	return logger.NewStdoutLogger(logger.WithMinLevel(logger.Severity(100))) // level 100 = discard all
+}
+
 func TestDocumentProcessingArgs_Kind(t *testing.T) {
 	args := job.DocumentProcessingArgs{}
 	if got := args.Kind(); got != "document_processing" {
@@ -147,7 +153,7 @@ func TestDocumentProcessingWorker_Work(t *testing.T) {
 		// Add file to storage
 		storage.addKey(storageKey)
 
-		worker := job.NewDocumentProcessingWorker(refLetterRepo, storage)
+		worker := job.NewDocumentProcessingWorker(refLetterRepo, storage, testLogger())
 
 		args := job.DocumentProcessingArgs{
 			StorageKey:        storageKey,
@@ -194,7 +200,7 @@ func TestDocumentProcessingWorker_Work(t *testing.T) {
 
 		// Do NOT add file to storage
 
-		worker := job.NewDocumentProcessingWorker(refLetterRepo, storage)
+		worker := job.NewDocumentProcessingWorker(refLetterRepo, storage, testLogger())
 
 		args := job.DocumentProcessingArgs{
 			StorageKey:        storageKey,
@@ -239,7 +245,7 @@ func TestDocumentProcessingWorker_Work(t *testing.T) {
 			t.Fatalf("failed to create letter: %v", err)
 		}
 
-		worker := job.NewDocumentProcessingWorker(refLetterRepo, storage)
+		worker := job.NewDocumentProcessingWorker(refLetterRepo, storage, testLogger())
 
 		args := job.DocumentProcessingArgs{
 			StorageKey:        storageKey,
@@ -276,7 +282,7 @@ func TestDocumentProcessingWorker_Work(t *testing.T) {
 
 		storage.addKey(storageKey)
 
-		worker := job.NewDocumentProcessingWorker(refLetterRepo, storage)
+		worker := job.NewDocumentProcessingWorker(refLetterRepo, storage, testLogger())
 
 		args := job.DocumentProcessingArgs{
 			StorageKey:        storageKey,

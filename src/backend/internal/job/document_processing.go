@@ -3,12 +3,12 @@ package job
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 
 	"backend/internal/domain"
+	"backend/internal/logger"
 )
 
 // DocumentProcessingArgs contains the arguments for a document processing job.
@@ -28,23 +28,31 @@ type DocumentProcessingWorker struct {
 	river.WorkerDefaults[DocumentProcessingArgs]
 	refLetterRepo domain.ReferenceLetterRepository
 	storage       domain.Storage
+	log           logger.Logger
 }
 
 // NewDocumentProcessingWorker creates a new document processing worker.
 func NewDocumentProcessingWorker(
 	refLetterRepo domain.ReferenceLetterRepository,
 	storage domain.Storage,
+	log logger.Logger,
 ) *DocumentProcessingWorker {
 	return &DocumentProcessingWorker{
 		refLetterRepo: refLetterRepo,
 		storage:       storage,
+		log:           log,
 	}
 }
 
 // Work processes a document and updates the reference letter status.
 func (w *DocumentProcessingWorker) Work(ctx context.Context, job *river.Job[DocumentProcessingArgs]) error {
 	args := job.Args
-	log.Printf("Processing document for reference letter %s (file: %s)", args.ReferenceLetterID, args.FileID)
+	w.log.Info("Processing document",
+		logger.Feature("jobs"),
+		logger.String("reference_letter_id", args.ReferenceLetterID.String()),
+		logger.String("file_id", args.FileID.String()),
+		logger.String("storage_key", args.StorageKey),
+	)
 
 	// Update status to processing
 	if err := w.updateStatus(ctx, args.ReferenceLetterID, domain.ReferenceLetterStatusProcessing); err != nil {
@@ -54,15 +62,34 @@ func (w *DocumentProcessingWorker) Work(ctx context.Context, job *river.Job[Docu
 	// Verify file exists in storage
 	exists, err := w.storage.Exists(ctx, args.StorageKey)
 	if err != nil {
+		w.log.Error("Storage check failed",
+			logger.Feature("jobs"),
+			logger.String("reference_letter_id", args.ReferenceLetterID.String()),
+			logger.String("storage_key", args.StorageKey),
+			logger.Err(err),
+		)
 		if statusErr := w.updateStatus(ctx, args.ReferenceLetterID, domain.ReferenceLetterStatusFailed); statusErr != nil {
-			log.Printf("Failed to update status after storage check error: %v", statusErr)
+			w.log.Warning("Failed to update status after storage check error",
+				logger.Feature("jobs"),
+				logger.String("reference_letter_id", args.ReferenceLetterID.String()),
+				logger.Err(statusErr),
+			)
 		}
 		return fmt.Errorf("failed to check file existence: %w", err)
 	}
 
 	if !exists {
+		w.log.Error("File not found in storage",
+			logger.Feature("jobs"),
+			logger.String("reference_letter_id", args.ReferenceLetterID.String()),
+			logger.String("storage_key", args.StorageKey),
+		)
 		if statusErr := w.updateStatus(ctx, args.ReferenceLetterID, domain.ReferenceLetterStatusFailed); statusErr != nil {
-			log.Printf("Failed to update status after file not found: %v", statusErr)
+			w.log.Warning("Failed to update status after file not found",
+				logger.Feature("jobs"),
+				logger.String("reference_letter_id", args.ReferenceLetterID.String()),
+				logger.Err(statusErr),
+			)
 		}
 		return fmt.Errorf("file not found in storage: %s", args.StorageKey)
 	}
@@ -80,7 +107,10 @@ func (w *DocumentProcessingWorker) Work(ctx context.Context, job *river.Job[Docu
 		return fmt.Errorf("failed to update status to completed: %w", err)
 	}
 
-	log.Printf("Document processing completed for reference letter %s", args.ReferenceLetterID)
+	w.log.Info("Document processing completed",
+		logger.Feature("jobs"),
+		logger.String("reference_letter_id", args.ReferenceLetterID.String()),
+	)
 	return nil
 }
 
