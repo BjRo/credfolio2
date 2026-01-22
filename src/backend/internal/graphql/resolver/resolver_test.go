@@ -9,6 +9,7 @@ import (
 
 	"backend/internal/domain"
 	"backend/internal/graphql/resolver"
+	"backend/internal/infrastructure/storage"
 )
 
 // mustCreateUser creates a user in the mock repository. Panics on error (should never happen with mocks).
@@ -185,6 +186,20 @@ func (r *errorUserRepository) Delete(_ context.Context, _ uuid.UUID) error {
 	return errors.New("database error")
 }
 
+// mockJobEnqueuer is a mock implementation of domain.JobEnqueuer.
+type mockJobEnqueuer struct {
+	enqueuedJobs []domain.DocumentProcessingRequest
+}
+
+func newMockJobEnqueuer() *mockJobEnqueuer {
+	return &mockJobEnqueuer{enqueuedJobs: make([]domain.DocumentProcessingRequest, 0)}
+}
+
+func (e *mockJobEnqueuer) EnqueueDocumentProcessing(_ context.Context, req domain.DocumentProcessingRequest) error {
+	e.enqueuedJobs = append(e.enqueuedJobs, req)
+	return nil
+}
+
 
 func TestUserQuery(t *testing.T) {
 	userRepo := newMockUserRepository()
@@ -203,7 +218,7 @@ func TestUserQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo)
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer())
 	query := r.Query()
 
 	t.Run("returns user when found", func(t *testing.T) {
@@ -249,7 +264,7 @@ func TestUserQuery(t *testing.T) {
 	})
 
 	t.Run("returns error when repository fails", func(t *testing.T) {
-		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo)
+		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer())
 		errorQuery := errorR.Query()
 
 		_, err := errorQuery.User(ctx, uuid.New().String())
@@ -284,7 +299,7 @@ func TestFileQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, file)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo)
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer())
 	query := r.Query()
 
 	t.Run("returns file when found", func(t *testing.T) {
@@ -388,7 +403,7 @@ func TestFilesQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, otherFile)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo)
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer())
 	query := r.Query()
 
 	t.Run("returns files for user", func(t *testing.T) {
@@ -484,7 +499,7 @@ func TestReferenceLetterQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, letter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo)
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer())
 	query := r.Query()
 
 	t.Run("returns reference letter when found", func(t *testing.T) {
@@ -632,7 +647,7 @@ func TestReferenceLettersQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, otherLetter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo)
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer())
 	query := r.Query()
 
 	t.Run("returns reference letters for user", func(t *testing.T) {

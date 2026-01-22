@@ -2,6 +2,7 @@
 
 scalar DateTime
 scalar JSON
+scalar Upload
 
 """
 A user account in the system.
@@ -234,4 +235,47 @@ type Query {
   Get all reference letters for a user.
   """
   referenceLetters(userId: ID!): [ReferenceLetter!]!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+"""
+Result of a file upload operation.
+"""
+type UploadFileResult {
+  """The uploaded file metadata."""
+  file: File!
+  """The reference letter created for processing."""
+  referenceLetter: ReferenceLetter!
+}
+
+"""
+Error returned when file validation fails.
+"""
+type FileValidationError {
+  """Error message describing the validation failure."""
+  message: String!
+  """The field that failed validation (e.g., 'contentType', 'size')."""
+  field: String!
+}
+
+"""
+Union type for upload result - either success or validation error.
+"""
+union UploadFileResponse = UploadFileResult | FileValidationError
+
+type Mutation {
+  """
+  Upload a reference letter file for processing.
+  Accepts PDF, DOCX, or TXT files.
+  Creates a file record and queues the document for LLM extraction.
+  """
+  uploadFile(
+    """The user ID uploading the file."""
+    userId: ID!
+    """The file to upload (PDF, DOCX, or TXT only)."""
+    file: Upload!
+  ): UploadFileResponse!
 }

@@ -29,6 +29,9 @@ models:
   JSON:
     model:
       - github.com/99designs/gqlgen/graphql.Map
+  Upload:
+    model:
+      - github.com/99designs/gqlgen/graphql.Upload
 
   # Extraction enums - map to domain constants
   AuthorRelationship:

@@ -17,6 +17,7 @@ type Config struct {
 	Database    DatabaseConfig
 	MinIO       MinIOConfig
 	Server      ServerConfig
+	Queue       QueueConfig
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -59,6 +60,11 @@ type ServerConfig struct {
 	IdleTimeout  time.Duration
 }
 
+// QueueConfig holds River job queue settings.
+type QueueConfig struct {
+	MaxWorkers int
+}
+
 // Load reads configuration from environment variables.
 // It uses sensible defaults matching docker-compose.yml for local development.
 func Load() (*Config, error) {
@@ -79,6 +85,11 @@ func Load() (*Config, error) {
 	useSSL, err := getEnvBool("MINIO_USE_SSL", false)
 	if err != nil {
 		return nil, fmt.Errorf("invalid MINIO_USE_SSL: %w", err)
+	}
+
+	queueMaxWorkers, err := getEnvInt("QUEUE_MAX_WORKERS", 10)
+	if err != nil {
+		return nil, fmt.Errorf("invalid QUEUE_MAX_WORKERS: %w", err)
 	}
 
 	// Environment determines database name: credfolio_dev or credfolio_test
@@ -109,6 +120,9 @@ func Load() (*Config, error) {
 			ReadTimeout:  15 * time.Second,
 			WriteTimeout: 15 * time.Second,
 			IdleTimeout:  60 * time.Second,
+		},
+		Queue: QueueConfig{
+			MaxWorkers: queueMaxWorkers,
 		},
 	}
 
