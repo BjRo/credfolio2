@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-01-22T10:35:06Z
-updated_at: 2026-01-22T10:41:29Z
+updated_at: 2026-01-22T11:07:45Z
 ---
 
 Create a logger abstraction that:
