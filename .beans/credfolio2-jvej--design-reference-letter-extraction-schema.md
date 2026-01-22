@@ -1,11 +1,11 @@
 ---
 # credfolio2-jvej
 title: Design reference letter extraction schema
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-01-22T07:53:47Z
-updated_at: 2026-01-22T09:21:52Z
+updated_at: 2026-01-22T09:34:14Z
 parent: credfolio2-tmlf
 ---
 
