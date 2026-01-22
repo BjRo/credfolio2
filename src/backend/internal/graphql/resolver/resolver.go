@@ -15,6 +15,7 @@ type Resolver struct {
 	fileRepo      domain.FileRepository
 	refLetterRepo domain.ReferenceLetterRepository
 	storage       domain.Storage
+	jobEnqueuer   domain.JobEnqueuer
 }
 
 // NewResolver creates a new Resolver with the given repositories.
@@ -23,11 +24,13 @@ func NewResolver(
 	fileRepo domain.FileRepository,
 	refLetterRepo domain.ReferenceLetterRepository,
 	storage domain.Storage,
+	jobEnqueuer domain.JobEnqueuer,
 ) *Resolver {
 	return &Resolver{
 		userRepo:      userRepo,
 		fileRepo:      fileRepo,
 		refLetterRepo: refLetterRepo,
 		storage:       storage,
+		jobEnqueuer:   jobEnqueuer,
 	}
 }

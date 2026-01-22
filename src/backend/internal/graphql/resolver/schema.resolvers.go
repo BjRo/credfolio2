@@ -115,6 +115,17 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 		return nil, fmt.Errorf("failed to create reference letter record: %w", err)
 	}
 
+	// Enqueue document processing job
+	if r.jobEnqueuer != nil {
+		if enqueueErr := r.jobEnqueuer.EnqueueDocumentProcessing(ctx, domain.DocumentProcessingRequest{
+			ReferenceLetterID: refLetter.ID,
+			FileID:            fileID,
+			StorageKey:        storageKey,
+		}); enqueueErr != nil {
+			return nil, fmt.Errorf("failed to enqueue document processing: %w", enqueueErr)
+		}
+	}
+
 	// Build response
 	gqlUser := toGraphQLUser(user)
 	gqlFile := toGraphQLFile(domainFile, gqlUser)

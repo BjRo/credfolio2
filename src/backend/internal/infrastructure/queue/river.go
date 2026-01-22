@@ -14,6 +14,8 @@ import (
 	"github.com/riverqueue/river/rivertype"
 
 	"backend/internal/config"
+	"backend/internal/domain"
+	"backend/internal/job"
 )
 
 // Client wraps River client and pgx pool for job queue operations.
@@ -98,3 +100,22 @@ func (c *Client) Insert(ctx context.Context, args river.JobArgs, opts *river.Ins
 func (c *Client) River() *river.Client[pgx.Tx] {
 	return c.riverClient
 }
+
+// EnqueueDocumentProcessing adds a document processing job to the queue.
+func (c *Client) EnqueueDocumentProcessing(ctx context.Context, req domain.DocumentProcessingRequest) error {
+	args := job.DocumentProcessingArgs{
+		StorageKey:        req.StorageKey,
+		ReferenceLetterID: req.ReferenceLetterID,
+		FileID:            req.FileID,
+	}
+
+	_, err := c.riverClient.Insert(ctx, args, nil)
+	if err != nil {
+		return fmt.Errorf("failed to enqueue document processing job: %w", err)
+	}
+
+	return nil
+}
+
+// Verify Client implements domain.JobEnqueuer.
+var _ domain.JobEnqueuer = (*Client)(nil)

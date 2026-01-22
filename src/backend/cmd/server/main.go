@@ -20,6 +20,7 @@ import (
 	"backend/internal/infrastructure/database"
 	"backend/internal/infrastructure/queue"
 	"backend/internal/infrastructure/storage"
+	"backend/internal/job"
 	"backend/internal/repository/postgres"
 )
 
@@ -59,9 +60,14 @@ func run() error {
 
 	log.Printf("Connected to storage: %s/%s", cfg.MinIO.Endpoint, cfg.MinIO.Bucket)
 
+	// Create repositories (needed for workers)
+	userRepo := postgres.NewUserRepository(db)
+	fileRepo := postgres.NewFileRepository(db)
+	refLetterRepo := postgres.NewReferenceLetterRepository(db)
+
 	// Create job queue workers
 	workers := river.NewWorkers()
-	// Workers will be registered here as they are implemented
+	river.AddWorker(workers, job.NewDocumentProcessingWorker(refLetterRepo, fileStorage))
 
 	// Create job queue client
 	queueClient, err := queue.NewClient(context.Background(), cfg.Database, cfg.Queue, workers)
@@ -77,11 +83,6 @@ func run() error {
 
 	log.Printf("Job queue started with %d max workers", cfg.Queue.MaxWorkers)
 
-	// Create repositories
-	userRepo := postgres.NewUserRepository(db)
-	fileRepo := postgres.NewFileRepository(db)
-	refLetterRepo := postgres.NewReferenceLetterRepository(db)
-
 	r := chi.NewRouter()
 
 	// Middleware
@@ -94,7 +95,7 @@ func run() error {
 	r.Get("/health", handler.NewHealthHandler(db).ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, fileStorage))
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, fileStorage, queueClient))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
