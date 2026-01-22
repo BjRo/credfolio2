@@ -1,11 +1,11 @@
 ---
 # credfolio2-k38n
 title: File Upload Pipeline
-status: in-progress
+status: completed
 type: epic
 priority: normal
 created_at: 2026-01-20T11:24:19Z
-updated_at: 2026-01-22T09:37:20Z
+updated_at: 2026-01-22T10:27:38Z
 parent: credfolio2-tikg
 blocking:
     - credfolio2-tmlf
