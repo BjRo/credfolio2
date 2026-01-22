@@ -1,10 +1,11 @@
 ---
 # credfolio2-nfjx
 title: Fix Go dependency installation without container rebuild
-status: in-progress
+status: completed
 type: bug
+priority: normal
 created_at: 2026-01-22T08:08:30Z
-updated_at: 2026-01-22T09:20:00Z
+updated_at: 2026-01-22T08:51:02Z
 ---
 
 ## Problem
@@ -31,4 +32,6 @@ Use dnsmasq with ipset integration to dynamically add IPs to the whitelist as DN
   - Added 127.0.0.11 as dnsmasq upstream when Docker DNS is present
   - Added DNS verification with retry logic before GitHub API call
   - Added retry logic for curl command
-- [ ] Test the solution in VS Code devcontainer
+- [x] Test the solution in VS Code devcontainer
+  - Verified `go get github.com/riverqueue/river` downloads successfully
+  - All dynamic domains (proxy.golang.org, sum.golang.org, storage.googleapis.com) resolved correctly
