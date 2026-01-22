@@ -27,6 +27,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   nano \
   vim \
   wget \
+  # Playwright/Chromium dependencies for agent-browser
+  libnss3 \
+  libnspr4 \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libcups2 \
+  libxkbcommon0 \
+  libatspi2.0-0 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxfixes3 \
+  libxrandr2 \
+  libgbm1 \
+  libasound2 \
+  libpango-1.0-0 \
+  libcairo2 \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Go
@@ -125,6 +141,10 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 
 # Install Claude
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+
+# Install agent-browser for browser automation
+RUN npm install -g agent-browser && \
+  npx playwright install chromium
 
 
 # Copy and set up firewall scripts
