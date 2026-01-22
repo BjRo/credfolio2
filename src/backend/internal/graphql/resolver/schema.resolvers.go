@@ -34,19 +34,21 @@ func (r *extractedSkillResolver) Category(ctx context.Context, obj *model.Extrac
 
 // UploadFile is the resolver for the uploadFile field.
 func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error) {
-	r.log.Info("File upload started", logger.WithFeature("upload"), logger.WithData(map[string]any{
-		"user_id":      userID,
-		"filename":     file.Filename,
-		"content_type": file.ContentType,
-		"size_bytes":   file.Size,
-	}))
+	r.log.Info("File upload started",
+		logger.Feature("upload"),
+		logger.String("user_id", userID),
+		logger.String("filename", file.Filename),
+		logger.String("content_type", file.ContentType),
+		logger.Int64("size_bytes", file.Size),
+	)
 
 	// Parse and validate user ID
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		r.log.Warning("Invalid user ID format", logger.WithFeature("upload"), logger.WithData(map[string]any{
-			"user_id": userID,
-		}))
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+		)
 		return &model.FileValidationError{
 			Message: "invalid user ID format",
 			Field:   "userId",
@@ -56,16 +58,18 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 	// Verify user exists
 	user, err := r.userRepo.GetByID(ctx, uid)
 	if err != nil {
-		r.log.Error("Failed to verify user", logger.WithFeature("upload"), logger.WithData(map[string]any{
-			"user_id": userID,
-			"error":   err.Error(),
-		}))
+		r.log.Error("Failed to verify user",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
 		return nil, fmt.Errorf("failed to verify user: %w", err)
 	}
 	if user == nil {
-		r.log.Warning("User not found", logger.WithFeature("upload"), logger.WithData(map[string]any{
-			"user_id": userID,
-		}))
+		r.log.Warning("User not found",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+		)
 		return &model.FileValidationError{
 			Message: "user not found",
 			Field:   "userId",
@@ -80,10 +84,11 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 	}
 
 	if !allowedTypes[file.ContentType] {
-		r.log.Warning("File type not allowed", logger.WithFeature("upload"), logger.WithData(map[string]any{
-			"user_id":      userID,
-			"content_type": file.ContentType,
-		}))
+		r.log.Warning("File type not allowed",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("content_type", file.ContentType),
+		)
 		return &model.FileValidationError{
 			Message: "file type not allowed: must be PDF, DOCX, or TXT",
 			Field:   "contentType",
@@ -93,11 +98,12 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 	// Validate file size (max 10MB)
 	const maxSize = 10 * 1024 * 1024
 	if file.Size > maxSize {
-		r.log.Warning("File too large", logger.WithFeature("upload"), logger.WithData(map[string]any{
-			"user_id":    userID,
-			"size_bytes": file.Size,
-			"max_bytes":  maxSize,
-		}))
+		r.log.Warning("File too large",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Int64("size_bytes", file.Size),
+			logger.Int("max_bytes", maxSize),
+		)
 		return &model.FileValidationError{
 			Message: "file too large: maximum size is 10MB",
 			Field:   "size",
@@ -111,11 +117,12 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 	// Upload to storage
 	_, err = r.storage.Upload(ctx, storageKey, file.File, file.Size, file.ContentType)
 	if err != nil {
-		r.log.Error("Failed to upload file to storage", logger.WithFeature("upload"), logger.WithData(map[string]any{
-			"user_id":     userID,
-			"storage_key": storageKey,
-			"error":       err.Error(),
-		}))
+		r.log.Error("Failed to upload file to storage",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("storage_key", storageKey),
+			logger.Err(err),
+		)
 		return nil, fmt.Errorf("failed to upload file to storage: %w", err)
 	}
 
@@ -130,11 +137,12 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 	}
 
 	if err := r.fileRepo.Create(ctx, domainFile); err != nil {
-		r.log.Error("Failed to create file record", logger.WithFeature("upload"), logger.WithData(map[string]any{
-			"user_id": userID,
-			"file_id": fileID.String(),
-			"error":   err.Error(),
-		}))
+		r.log.Error("Failed to create file record",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
 		// Attempt to clean up uploaded file
 		_ = r.storage.Delete(ctx, storageKey) //nolint:errcheck // Best effort cleanup
 		return nil, fmt.Errorf("failed to create file record: %w", err)
@@ -149,11 +157,12 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 	}
 
 	if err := r.refLetterRepo.Create(ctx, refLetter); err != nil {
-		r.log.Error("Failed to create reference letter record", logger.WithFeature("upload"), logger.WithData(map[string]any{
-			"user_id": userID,
-			"file_id": fileID.String(),
-			"error":   err.Error(),
-		}))
+		r.log.Error("Failed to create reference letter record",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
 		return nil, fmt.Errorf("failed to create reference letter record: %w", err)
 	}
 
@@ -164,22 +173,24 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 			FileID:            fileID,
 			StorageKey:        storageKey,
 		}); enqueueErr != nil {
-			r.log.Error("Failed to enqueue document processing", logger.WithFeature("upload"), logger.WithData(map[string]any{
-				"user_id":             userID,
-				"file_id":             fileID.String(),
-				"reference_letter_id": refLetter.ID.String(),
-				"error":               enqueueErr.Error(),
-			}))
+			r.log.Error("Failed to enqueue document processing",
+				logger.Feature("upload"),
+				logger.String("user_id", userID),
+				logger.String("file_id", fileID.String()),
+				logger.String("reference_letter_id", refLetter.ID.String()),
+				logger.Err(enqueueErr),
+			)
 			return nil, fmt.Errorf("failed to enqueue document processing: %w", enqueueErr)
 		}
 	}
 
-	r.log.Info("File upload completed", logger.WithFeature("upload"), logger.WithData(map[string]any{
-		"user_id":             userID,
-		"file_id":             fileID.String(),
-		"reference_letter_id": refLetter.ID.String(),
-		"storage_key":         storageKey,
-	}))
+	r.log.Info("File upload completed",
+		logger.Feature("upload"),
+		logger.String("user_id", userID),
+		logger.String("file_id", fileID.String()),
+		logger.String("reference_letter_id", refLetter.ID.String()),
+		logger.String("storage_key", storageKey),
+	)
 
 	// Build response
 	gqlUser := toGraphQLUser(user)

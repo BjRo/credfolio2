@@ -24,7 +24,7 @@ func TestStdoutLogger_Log(t *testing.T) {
 func TestStdoutLogger_SeverityLevels(t *testing.T) {
 	tests := []struct {
 		name     string
-		logFunc  func(*StdoutLogger, string, ...LogOption)
+		logFunc  func(*StdoutLogger, string, ...Attr)
 		expected string
 	}{
 		{"Debug", (*StdoutLogger).Debug, "DEBUG"},
@@ -48,11 +48,11 @@ func TestStdoutLogger_SeverityLevels(t *testing.T) {
 	}
 }
 
-func TestStdoutLogger_WithFeature(t *testing.T) {
+func TestStdoutLogger_Feature(t *testing.T) {
 	var buf bytes.Buffer
 	log := NewStdoutLogger(WithOutput(&buf))
 
-	log.Info("test message", WithFeature("auth"))
+	log.Info("test message", Feature("auth"))
 
 	output := buf.String()
 	if !strings.Contains(output, "[auth]") {
@@ -60,14 +60,11 @@ func TestStdoutLogger_WithFeature(t *testing.T) {
 	}
 }
 
-func TestStdoutLogger_WithData(t *testing.T) {
+func TestStdoutLogger_TypedAttrs(t *testing.T) {
 	var buf bytes.Buffer
 	log := NewStdoutLogger(WithOutput(&buf))
 
-	log.Info("test message", WithData(map[string]any{
-		"user_id": "123",
-		"action":  "login",
-	}))
+	log.Info("test message", String("user_id", "123"), String("action", "login"))
 
 	output := buf.String()
 	if !strings.Contains(output, "user_id") {
@@ -106,16 +103,16 @@ func TestStdoutLogger_NestedData(t *testing.T) {
 	var buf bytes.Buffer
 	log := NewStdoutLogger(WithOutput(&buf))
 
-	log.Info("test message", WithData(map[string]any{
-		"user": map[string]any{
+	log.Info("test message",
+		Any("user", map[string]any{
 			"id":    "123",
 			"email": "test@example.com",
-		},
-		"metadata": map[string]any{
+		}),
+		Any("metadata", map[string]any{
 			"ip":      "192.168.1.1",
 			"browser": "Chrome",
-		},
-	}))
+		}),
+	)
 
 	output := buf.String()
 	if !strings.Contains(output, "test@example.com") {

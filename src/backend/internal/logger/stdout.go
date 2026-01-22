@@ -61,8 +61,8 @@ func NewStdoutLogger(opts ...StdoutOption) *StdoutLogger {
 	return l
 }
 
-// Log emits a log entry with the given severity and message.
-func (l *StdoutLogger) Log(severity Severity, message string, opts ...LogOption) {
+// log emits a log entry with the given severity and message.
+func (l *StdoutLogger) log(severity Severity, message string, attrs []Attr) {
 	if severity < l.minLevel {
 		return
 	}
@@ -70,10 +70,8 @@ func (l *StdoutLogger) Log(severity Severity, message string, opts ...LogOption)
 	entry := &LogEntry{
 		Severity:  severity,
 		Message:   message,
+		Attrs:     attrs,
 		Timestamp: time.Now(),
-	}
-	for _, opt := range opts {
-		opt(entry)
 	}
 
 	l.mu.Lock()
@@ -82,28 +80,28 @@ func (l *StdoutLogger) Log(severity Severity, message string, opts ...LogOption)
 }
 
 // Debug logs a debug-level message.
-func (l *StdoutLogger) Debug(message string, opts ...LogOption) {
-	l.Log(Debug, message, opts...)
+func (l *StdoutLogger) Debug(message string, attrs ...Attr) {
+	l.log(Debug, message, attrs)
 }
 
 // Info logs an info-level message.
-func (l *StdoutLogger) Info(message string, opts ...LogOption) {
-	l.Log(Info, message, opts...)
+func (l *StdoutLogger) Info(message string, attrs ...Attr) {
+	l.log(Info, message, attrs)
 }
 
 // Warning logs a warning-level message.
-func (l *StdoutLogger) Warning(message string, opts ...LogOption) {
-	l.Log(Warning, message, opts...)
+func (l *StdoutLogger) Warning(message string, attrs ...Attr) {
+	l.log(Warning, message, attrs)
 }
 
 // Error logs an error-level message.
-func (l *StdoutLogger) Error(message string, opts ...LogOption) {
-	l.Log(Error, message, opts...)
+func (l *StdoutLogger) Error(message string, attrs ...Attr) {
+	l.log(Error, message, attrs)
 }
 
 // Critical logs a critical-level message.
-func (l *StdoutLogger) Critical(message string, opts ...LogOption) {
-	l.Log(Critical, message, opts...)
+func (l *StdoutLogger) Critical(message string, attrs ...Attr) {
+	l.log(Critical, message, attrs)
 }
 
 // format creates a colored, human-readable log line.
@@ -122,12 +120,25 @@ func (l *StdoutLogger) format(entry *LogEntry) string {
 	b.WriteString(fmt.Sprintf("[%-8s]", entry.Severity.String()))
 	b.WriteString(colorReset)
 
+	// Extract feature and data attrs
+	var feature string
+	data := make(map[string]any)
+	for _, attr := range entry.Attrs {
+		if attr.Key == featureKey {
+			if s, ok := attr.Value.(string); ok {
+				feature = s
+			}
+		} else {
+			data[attr.Key] = attr.Value
+		}
+	}
+
 	// Feature tag in cyan (if present)
-	if entry.Feature != "" {
+	if feature != "" {
 		b.WriteString(" ")
 		b.WriteString(colorCyan)
 		b.WriteString("[")
-		b.WriteString(entry.Feature)
+		b.WriteString(feature)
 		b.WriteString("]")
 		b.WriteString(colorReset)
 	}
@@ -137,10 +148,10 @@ func (l *StdoutLogger) format(entry *LogEntry) string {
 	b.WriteString(entry.Message)
 
 	// Data as JSON (if present)
-	if len(entry.Data) > 0 {
+	if len(data) > 0 {
 		b.WriteString(" ")
 		b.WriteString(colorDim)
-		dataJSON, err := json.Marshal(entry.Data)
+		dataJSON, err := json.Marshal(data)
 		if err != nil {
 			b.WriteString("{\"_error\": \"failed to marshal data\"}")
 		} else {

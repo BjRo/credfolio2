@@ -29,9 +29,7 @@ func main() {
 	log := logger.NewStdoutLogger()
 
 	if err := run(log); err != nil {
-		log.Critical("Server error", logger.WithFeature("server"), logger.WithData(map[string]any{
-			"error": err.Error(),
-		}))
+		log.Critical("Server error", logger.Feature("server"), logger.Err(err))
 		os.Exit(1)
 	}
 }
@@ -50,9 +48,7 @@ func run(log logger.Logger) error {
 	}
 	defer db.Close() //nolint:errcheck // Best effort cleanup on shutdown
 
-	log.Info("Connected to database", logger.WithFeature("database"), logger.WithData(map[string]any{
-		"database": cfg.Database.Name,
-	}))
+	log.Info("Connected to database", logger.Feature("database"), logger.String("database", cfg.Database.Name))
 
 	// Create storage
 	fileStorage, err := storage.NewMinIOStorage(cfg.MinIO)
@@ -65,10 +61,7 @@ func run(log logger.Logger) error {
 		return fmt.Errorf("failed to ensure storage bucket: %w", bucketErr)
 	}
 
-	log.Info("Connected to storage", logger.WithFeature("storage"), logger.WithData(map[string]any{
-		"endpoint": cfg.MinIO.Endpoint,
-		"bucket":   cfg.MinIO.Bucket,
-	}))
+	log.Info("Connected to storage", logger.Feature("storage"), logger.String("endpoint", cfg.MinIO.Endpoint), logger.String("bucket", cfg.MinIO.Bucket))
 
 	// Create repositories (needed for workers)
 	userRepo := postgres.NewUserRepository(db)
@@ -91,9 +84,7 @@ func run(log logger.Logger) error {
 		return fmt.Errorf("failed to start queue client: %w", err)
 	}
 
-	log.Info("Job queue started", logger.WithFeature("queue"), logger.WithData(map[string]any{
-		"max_workers": cfg.Queue.MaxWorkers,
-	}))
+	log.Info("Job queue started", logger.Feature("queue"), logger.Int("max_workers", cfg.Queue.MaxWorkers))
 
 	r := chi.NewRouter()
 
@@ -119,10 +110,7 @@ func run(log logger.Logger) error {
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
-	log.Info("Server starting", logger.WithFeature("server"), logger.WithData(map[string]any{
-		"address": fmt.Sprintf("http://localhost%s", addr),
-		"port":    cfg.Server.Port,
-	}))
+	log.Info("Server starting", logger.Feature("server"), logger.String("address", fmt.Sprintf("http://localhost%s", addr)), logger.Int("port", cfg.Server.Port))
 
 	server := &http.Server{
 		Addr:         addr,
@@ -146,9 +134,7 @@ func run(log logger.Logger) error {
 	case err := <-serverErr:
 		return err
 	case sig := <-quit:
-		log.Info("Received shutdown signal", logger.WithFeature("server"), logger.WithData(map[string]any{
-			"signal": sig.String(),
-		}))
+		log.Info("Received shutdown signal", logger.Feature("server"), logger.String("signal", sig.String()))
 	}
 
 	// Graceful shutdown
@@ -157,9 +143,7 @@ func run(log logger.Logger) error {
 
 	// Stop queue processing
 	if err := queueClient.Stop(ctx); err != nil {
-		log.Error("Error stopping queue client", logger.WithFeature("queue"), logger.WithData(map[string]any{
-			"error": err.Error(),
-		}))
+		log.Error("Error stopping queue client", logger.Feature("queue"), logger.Err(err))
 	}
 
 	// Shutdown HTTP server
@@ -167,6 +151,6 @@ func run(log logger.Logger) error {
 		return fmt.Errorf("server shutdown error: %w", err)
 	}
 
-	log.Info("Server stopped gracefully", logger.WithFeature("server"))
+	log.Info("Server stopped gracefully", logger.Feature("server"))
 	return nil
 }
