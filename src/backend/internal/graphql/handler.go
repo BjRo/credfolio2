@@ -10,6 +10,7 @@ import (
 	"backend/internal/domain"
 	"backend/internal/graphql/generated"
 	"backend/internal/graphql/resolver"
+	"backend/internal/logger"
 )
 
 // NewHandler creates a new GraphQL HTTP handler with the given repositories.
@@ -19,10 +20,11 @@ func NewHandler(
 	refLetterRepo domain.ReferenceLetterRepository,
 	storage domain.Storage,
 	jobEnqueuer domain.JobEnqueuer,
+	log logger.Logger,
 ) http.Handler {
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(generated.Config{
-			Resolvers: resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage, jobEnqueuer),
+			Resolvers: resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage, jobEnqueuer, log),
 		}),
 	)
 	return srv
