@@ -2,52 +2,41 @@
 package llm
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"time"
+
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 
 	"backend/internal/domain"
 )
 
 const (
-	defaultAnthropicBaseURL = "https://api.anthropic.com"
-	defaultAnthropicModel   = "claude-sonnet-4-20250514"
-	defaultMaxTokens        = 4096
-	anthropicAPIVersion     = "2023-06-01"
+	defaultAnthropicModel = "claude-sonnet-4-20250514"
+	defaultMaxTokens      = 4096
+	// Beta header for structured outputs feature
+	structuredOutputsBeta anthropic.AnthropicBeta = "structured-outputs-2025-11-13"
 )
 
 // AnthropicConfig holds configuration for the Anthropic provider.
 type AnthropicConfig struct {
-	// APIKey is the Anthropic API key.
-	APIKey string
-
-	// BaseURL is the API base URL (optional, for testing).
-	BaseURL string
-
-	// DefaultModel is the model to use when not specified per-request.
-	// Defaults to claude-sonnet-4-20250514.
+	HTTPClient   *http.Client
+	APIKey       string
+	BaseURL      string
 	DefaultModel string
-
-	// Timeout is the HTTP client timeout (defaults to 60s).
-	Timeout time.Duration
+	Timeout      time.Duration
 }
 
 // AnthropicProvider implements domain.LLMProvider for Anthropic's Claude API.
-type AnthropicProvider struct { //nolint:govet // Field order prioritizes readability
+type AnthropicProvider struct {
 	config AnthropicConfig
-	client *http.Client
+	client anthropic.Client
 }
 
-// NewAnthropicProvider creates a new Anthropic provider.
+// NewAnthropicProvider creates a new Anthropic provider using the official SDK.
 func NewAnthropicProvider(config AnthropicConfig) *AnthropicProvider {
-	if config.BaseURL == "" {
-		config.BaseURL = defaultAnthropicBaseURL
-	}
 	if config.DefaultModel == "" {
 		config.DefaultModel = defaultAnthropicModel
 	}
@@ -55,11 +44,24 @@ func NewAnthropicProvider(config AnthropicConfig) *AnthropicProvider {
 		config.Timeout = 60 * time.Second
 	}
 
+	// Build client options
+	opts := []option.RequestOption{
+		option.WithAPIKey(config.APIKey),
+	}
+
+	if config.BaseURL != "" {
+		opts = append(opts, option.WithBaseURL(config.BaseURL))
+	}
+
+	if config.HTTPClient != nil {
+		opts = append(opts, option.WithHTTPClient(config.HTTPClient))
+	}
+
+	client := anthropic.NewClient(opts...)
+
 	return &AnthropicProvider{
+		client: client,
 		config: config,
-		client: &http.Client{
-			Timeout: config.Timeout,
-		},
 	}
 }
 
@@ -70,200 +72,191 @@ func (p *AnthropicProvider) Name() string {
 
 // Complete sends a request to the Anthropic API.
 func (p *AnthropicProvider) Complete(ctx context.Context, req domain.LLMRequest) (*domain.LLMResponse, error) {
-	// Build request body
-	body := p.buildRequestBody(req)
-
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, &domain.LLMError{
-			Provider: p.Name(),
-			Message:  "failed to marshal request",
-			Err:      err,
-		}
-	}
-
-	// Create HTTP request
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, p.config.BaseURL+"/v1/messages", bytes.NewReader(jsonBody))
-	if err != nil {
-		return nil, &domain.LLMError{
-			Provider: p.Name(),
-			Message:  "failed to create request",
-			Err:      err,
-		}
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("x-api-key", p.config.APIKey)
-	httpReq.Header.Set("anthropic-version", anthropicAPIVersion)
-
-	// Send request
-	resp, err := p.client.Do(httpReq)
-	if err != nil {
-		return nil, &domain.LLMError{
-			Provider:  p.Name(),
-			Message:   "request failed",
-			Retryable: true,
-			Err:       err,
-		}
-	}
-	defer resp.Body.Close() //nolint:errcheck // Best effort cleanup
-
-	// Read response body
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, &domain.LLMError{
-			Provider: p.Name(),
-			Message:  "failed to read response",
-			Err:      err,
-		}
-	}
-
-	// Handle errors
-	if resp.StatusCode != http.StatusOK {
-		return nil, p.parseError(resp.StatusCode, respBody)
-	}
-
-	// Parse successful response
-	return p.parseResponse(respBody)
-}
-
-// buildRequestBody constructs the Anthropic API request body.
-func (p *AnthropicProvider) buildRequestBody(req domain.LLMRequest) map[string]any {
-	// Use request model if specified, otherwise use config default
+	// Determine model and max tokens
 	model := req.Model
 	if model == "" {
 		model = p.config.DefaultModel
 	}
-
-	body := map[string]any{
-		"model":    model,
-		"messages": p.convertMessages(req.Messages),
-	}
-
-	// Set max_tokens
 	maxTokens := req.MaxTokens
 	if maxTokens == 0 {
 		maxTokens = defaultMaxTokens
 	}
-	body["max_tokens"] = maxTokens
 
-	// Set optional fields
-	if req.SystemPrompt != "" {
-		body["system"] = req.SystemPrompt
+	// Choose API based on whether structured output is requested
+	if req.OutputSchema != nil {
+		return p.completeWithStructuredOutput(ctx, req, model, maxTokens)
 	}
-
-	if req.Temperature > 0 {
-		body["temperature"] = req.Temperature
-	}
-
-	return body
+	return p.completeStandard(ctx, req, model, maxTokens)
 }
 
-// convertMessages converts domain messages to Anthropic API format.
-func (p *AnthropicProvider) convertMessages(messages []domain.Message) []map[string]any {
-	result := make([]map[string]any, 0, len(messages))
+// completeStandard handles regular (non-structured) completions.
+func (p *AnthropicProvider) completeStandard(
+	ctx context.Context,
+	req domain.LLMRequest,
+	model string,
+	maxTokens int,
+) (*domain.LLMResponse, error) {
+	// Convert domain messages to SDK messages
+	messages := p.convertMessages(req.Messages)
+
+	params := anthropic.MessageNewParams{
+		Model:     anthropic.Model(model),
+		MaxTokens: int64(maxTokens),
+		Messages:  messages,
+	}
+
+	// Add system prompt if provided
+	if req.SystemPrompt != "" {
+		params.System = []anthropic.TextBlockParam{
+			{Text: req.SystemPrompt},
+		}
+	}
+
+	// Add temperature if provided
+	if req.Temperature > 0 {
+		params.Temperature = anthropic.Float(req.Temperature)
+	}
+
+	msg, err := p.client.Messages.New(ctx, params)
+	if err != nil {
+		return nil, p.convertError(err)
+	}
+
+	return p.parseResponse(msg)
+}
+
+// completeWithStructuredOutput handles completions with JSON schema output.
+func (p *AnthropicProvider) completeWithStructuredOutput(
+	ctx context.Context,
+	req domain.LLMRequest,
+	model string,
+	maxTokens int,
+) (*domain.LLMResponse, error) {
+	// Convert domain messages to beta SDK messages
+	messages := p.convertBetaMessages(req.Messages)
+
+	params := anthropic.BetaMessageNewParams{
+		Model:     anthropic.Model(model),
+		MaxTokens: int64(maxTokens),
+		Messages:  messages,
+		Betas:     []anthropic.AnthropicBeta{structuredOutputsBeta},
+	}
+
+	// Add system prompt if provided
+	if req.SystemPrompt != "" {
+		params.System = []anthropic.BetaTextBlockParam{
+			{Text: req.SystemPrompt},
+		}
+	}
+
+	// Add temperature if provided
+	if req.Temperature > 0 {
+		params.Temperature = anthropic.Float(req.Temperature)
+	}
+
+	// Add output format with JSON schema
+	params.OutputFormat = anthropic.BetaJSONOutputFormatParam{
+		Schema: req.OutputSchema,
+	}
+
+	msg, err := p.client.Beta.Messages.New(ctx, params)
+	if err != nil {
+		return nil, p.convertError(err)
+	}
+
+	return p.parseBetaResponse(msg)
+}
+
+// convertMessages converts domain messages to SDK message params.
+func (p *AnthropicProvider) convertMessages(messages []domain.Message) []anthropic.MessageParam {
+	result := make([]anthropic.MessageParam, 0, len(messages))
 
 	for _, msg := range messages {
-		converted := map[string]any{
-			"role":    string(msg.Role),
-			"content": p.convertContentBlocks(msg.Content),
+		blocks := p.convertContentBlocks(msg.Content)
+		var param anthropic.MessageParam
+		switch msg.Role {
+		case domain.RoleUser:
+			param = anthropic.NewUserMessage(blocks...)
+		case domain.RoleAssistant:
+			param = anthropic.NewAssistantMessage(blocks...)
 		}
-		result = append(result, converted)
+		result = append(result, param)
 	}
 
 	return result
 }
 
-// convertContentBlocks converts domain content blocks to Anthropic API format.
-func (p *AnthropicProvider) convertContentBlocks(blocks []domain.ContentBlock) []map[string]any {
-	result := make([]map[string]any, 0, len(blocks))
+// convertBetaMessages converts domain messages to beta SDK message params.
+func (p *AnthropicProvider) convertBetaMessages(messages []domain.Message) []anthropic.BetaMessageParam {
+	result := make([]anthropic.BetaMessageParam, 0, len(messages))
+
+	for _, msg := range messages {
+		blocks := p.convertBetaContentBlocks(msg.Content)
+		var param anthropic.BetaMessageParam
+		switch msg.Role {
+		case domain.RoleUser:
+			param = anthropic.NewBetaUserMessage(blocks...)
+		case domain.RoleAssistant:
+			// No NewBetaAssistantMessage helper, construct manually
+			param = anthropic.BetaMessageParam{
+				Role:    anthropic.BetaMessageParamRoleAssistant,
+				Content: blocks,
+			}
+		}
+		result = append(result, param)
+	}
+
+	return result
+}
+
+// convertContentBlocks converts domain content blocks to SDK content block unions.
+func (p *AnthropicProvider) convertContentBlocks(blocks []domain.ContentBlock) []anthropic.ContentBlockParamUnion {
+	result := make([]anthropic.ContentBlockParamUnion, 0, len(blocks))
 
 	for _, block := range blocks {
 		switch block.Type {
 		case domain.ContentTypeText:
-			result = append(result, map[string]any{
-				"type": "text",
-				"text": block.Text,
-			})
+			result = append(result, anthropic.NewTextBlock(block.Text))
 		case domain.ContentTypeImage:
-			result = append(result, map[string]any{
-				"type": "image",
-				"source": map[string]any{
-					"type":       "base64",
-					"media_type": string(block.ImageMediaType),
-					"data":       base64.StdEncoding.EncodeToString(block.ImageData),
-				},
-			})
+			encoded := base64.StdEncoding.EncodeToString(block.ImageData)
+			result = append(result, anthropic.NewImageBlockBase64(
+				string(block.ImageMediaType),
+				encoded,
+			))
 		}
 	}
 
 	return result
 }
 
-// anthropicErrorResponse represents an error response from the API.
-type anthropicErrorResponse struct {
-	Type  string `json:"type"`
-	Error struct {
-		Type    string `json:"type"`
-		Message string `json:"message"`
-	} `json:"error"`
-}
+// convertBetaContentBlocks converts domain content blocks to beta SDK content block unions.
+func (p *AnthropicProvider) convertBetaContentBlocks(blocks []domain.ContentBlock) []anthropic.BetaContentBlockParamUnion {
+	result := make([]anthropic.BetaContentBlockParamUnion, 0, len(blocks))
 
-// parseError converts an API error response to a domain error.
-func (p *AnthropicProvider) parseError(statusCode int, body []byte) error {
-	var errResp anthropicErrorResponse
-	if err := json.Unmarshal(body, &errResp); err != nil {
-		return &domain.LLMError{
-			Provider: p.Name(),
-			Message:  fmt.Sprintf("HTTP %d: %s", statusCode, string(body)),
-			Err:      err,
+	for _, block := range blocks {
+		switch block.Type {
+		case domain.ContentTypeText:
+			result = append(result, anthropic.NewBetaTextBlock(block.Text))
+		case domain.ContentTypeImage:
+			encoded := base64.StdEncoding.EncodeToString(block.ImageData)
+			// Use NewBetaImageBlock with BetaBase64ImageSourceParam
+			result = append(result, anthropic.NewBetaImageBlock(
+				anthropic.BetaBase64ImageSourceParam{
+					MediaType: anthropic.BetaBase64ImageSourceMediaType(block.ImageMediaType),
+					Data:      encoded,
+				},
+			))
 		}
 	}
 
-	// Determine if error is retryable
-	retryable := statusCode == http.StatusTooManyRequests ||
-		statusCode == http.StatusServiceUnavailable ||
-		statusCode >= 500
-
-	return &domain.LLMError{
-		Provider:  p.Name(),
-		Code:      errResp.Error.Type,
-		Message:   errResp.Error.Message,
-		Retryable: retryable,
-	}
+	return result
 }
 
-// anthropicResponse represents a successful response from the API.
-type anthropicResponse struct {
-	ID         string `json:"id"`
-	Type       string `json:"type"`
-	Role       string `json:"role"`
-	Model      string `json:"model"`
-	StopReason string `json:"stop_reason"`
-	Content    []struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
-	} `json:"content"`
-	Usage struct {
-		InputTokens  int `json:"input_tokens"`
-		OutputTokens int `json:"output_tokens"`
-	} `json:"usage"`
-}
-
-// parseResponse converts an API response to a domain response.
-func (p *AnthropicProvider) parseResponse(body []byte) (*domain.LLMResponse, error) {
-	var resp anthropicResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, &domain.LLMError{
-			Provider: p.Name(),
-			Message:  "failed to parse response",
-			Err:      err,
-		}
-	}
-
-	// Extract text content
+// parseResponse converts an SDK message to a domain response.
+func (p *AnthropicProvider) parseResponse(msg *anthropic.Message) (*domain.LLMResponse, error) {
+	// Extract text content from response blocks
 	var content string
-	for _, block := range resp.Content {
+	for _, block := range msg.Content {
 		if block.Type == "text" {
 			content += block.Text
 		}
@@ -271,11 +264,55 @@ func (p *AnthropicProvider) parseResponse(body []byte) (*domain.LLMResponse, err
 
 	return &domain.LLMResponse{
 		Content:      content,
-		Model:        resp.Model,
-		InputTokens:  resp.Usage.InputTokens,
-		OutputTokens: resp.Usage.OutputTokens,
-		StopReason:   resp.StopReason,
+		Model:        string(msg.Model),
+		InputTokens:  int(msg.Usage.InputTokens),
+		OutputTokens: int(msg.Usage.OutputTokens),
+		StopReason:   string(msg.StopReason),
 	}, nil
+}
+
+// parseBetaResponse converts a beta SDK message to a domain response.
+func (p *AnthropicProvider) parseBetaResponse(msg *anthropic.BetaMessage) (*domain.LLMResponse, error) {
+	// Extract text content from response blocks
+	var content string
+	for _, block := range msg.Content {
+		if block.Type == "text" {
+			content += block.Text
+		}
+	}
+
+	return &domain.LLMResponse{
+		Content:      content,
+		Model:        string(msg.Model),
+		InputTokens:  int(msg.Usage.InputTokens),
+		OutputTokens: int(msg.Usage.OutputTokens),
+		StopReason:   string(msg.StopReason),
+	}, nil
+}
+
+// convertError converts SDK errors to domain errors.
+func (p *AnthropicProvider) convertError(err error) error {
+	// Check for API errors from the SDK
+	if apiErr, ok := err.(*anthropic.Error); ok {
+		retryable := apiErr.StatusCode == http.StatusTooManyRequests ||
+			apiErr.StatusCode == http.StatusServiceUnavailable ||
+			apiErr.StatusCode >= 500
+
+		return &domain.LLMError{
+			Provider:  p.Name(),
+			Message:   err.Error(),
+			Retryable: retryable,
+			Err:       err,
+		}
+	}
+
+	// Generic error (network, etc.) - assume retryable
+	return &domain.LLMError{
+		Provider:  p.Name(),
+		Message:   err.Error(),
+		Retryable: true,
+		Err:       err,
+	}
 }
 
 // Verify AnthropicProvider implements domain.LLMProvider.

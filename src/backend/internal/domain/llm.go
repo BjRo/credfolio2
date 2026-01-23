@@ -112,6 +112,12 @@ type LLMRequest struct { //nolint:govet // Field order prioritizes readability
 
 	// Temperature controls randomness (0.0-1.0). If 0, uses provider default.
 	Temperature float64 `json:"temperature,omitempty"`
+
+	// OutputSchema defines a JSON schema for structured output responses.
+	// When set, the response Content will be valid JSON matching this schema.
+	// Uses the provider's native structured output feature (e.g., Anthropic's
+	// constrained decoding). If nil, the response is unstructured text.
+	OutputSchema map[string]any `json:"outputSchema,omitempty"`
 }
 
 // LLMProvider defines the interface for LLM service providers.

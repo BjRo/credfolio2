@@ -3,7 +3,6 @@ package llm_test
 
 import (
 	"context"
-	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -47,14 +46,10 @@ func TestResilientProvider_RetriesAndSucceeds(t *testing.T) {
 	}
 
 	provider := llm.NewResilientProvider(inner, llm.ResilientConfig{
-		RetryConfig: llm.RetrierConfig{
-			MaxAttempts: 5,
-			BaseDelay:   10 * time.Millisecond,
-		},
-		CircuitBreakerConfig: llm.CircuitBreakerConfig{
-			FailureThreshold: 10, // High threshold to not trip
-			ResetTimeout:     100 * time.Millisecond,
-		},
+		MaxAttempts:      5,
+		BaseDelay:        10 * time.Millisecond,
+		FailureThreshold: 10, // High threshold to not trip
+		ResetTimeout:     100 * time.Millisecond,
 	})
 
 	resp, err := provider.Complete(context.Background(), domain.LLMRequest{
@@ -80,14 +75,10 @@ func TestResilientProvider_CircuitBreaksAfterFailures(t *testing.T) {
 	}
 
 	provider := llm.NewResilientProvider(inner, llm.ResilientConfig{
-		RetryConfig: llm.RetrierConfig{
-			MaxAttempts: 2,
-			BaseDelay:   5 * time.Millisecond,
-		},
-		CircuitBreakerConfig: llm.CircuitBreakerConfig{
-			FailureThreshold: 3, // Trip after 3 failures
-			ResetTimeout:     1 * time.Second,
-		},
+		MaxAttempts:      2,
+		BaseDelay:        5 * time.Millisecond,
+		FailureThreshold: 3, // Trip after 3 failures
+		ResetTimeout:     1 * time.Second,
 	})
 
 	req := domain.LLMRequest{
@@ -96,12 +87,12 @@ func TestResilientProvider_CircuitBreaksAfterFailures(t *testing.T) {
 		},
 	}
 
-	// Make requests until circuit opens (3 failed retries = 6 total attempts)
-	var circuitOpenErr error
+	// Make requests until circuit opens
+	var circuitOpenErr *domain.LLMError
 	for i := 0; i < 10; i++ {
 		_, err := provider.Complete(context.Background(), req)
-		if errors.Is(err, llm.ErrCircuitOpen) {
-			circuitOpenErr = err
+		if llmErr, ok := err.(*domain.LLMError); ok && llmErr.Code == "circuit_open" {
+			circuitOpenErr = llmErr
 			break
 		}
 	}
@@ -128,10 +119,8 @@ func TestResilientProvider_DoesNotRetryNonRetryableErrors(t *testing.T) {
 	}
 
 	provider := llm.NewResilientProvider(countingProvider, llm.ResilientConfig{
-		RetryConfig: llm.RetrierConfig{
-			MaxAttempts: 5,
-			BaseDelay:   10 * time.Millisecond,
-		},
+		MaxAttempts: 5,
+		BaseDelay:   10 * time.Millisecond,
 	})
 
 	_, err := provider.Complete(context.Background(), domain.LLMRequest{
