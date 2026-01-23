@@ -73,6 +73,18 @@ Requires `ANTHROPIC_API_KEY` in environment. Without it, extraction returns 503.
 - [x] Update documentation (doc.go)
 - [x] Add E2E test page (/extract-test)
 
+## Bug Fixes (2026-01-23)
+
+1. **PDF media type error** - PDFs were being sent as image blocks, but Anthropic API requires document blocks. Fixed in `anthropic.go` to use `NewDocumentBlock` with `Base64PDFSourceParam` for PDFs.
+
+2. **Server WriteTimeout too short** - Default 15s timeout caused connection drops during 60s+ extractions. Increased to 120s in `config.go`.
+
+3. **CORS issues** - Added Next.js API route proxy (`/api/extract`) to avoid browser CORS problems with long requests.
+
+## Follow-up Work
+
+See **credfolio2-he9y** for remaining improvements (progress indication, browser timeout handling).
+
 ## Next Steps (after PR merge)
 
 - Mark this bean as completed

@@ -164,9 +164,9 @@ func TestLoad_ServerDefaults(t *testing.T) {
 		want any
 	}{
 		{"Port", cfg.Server.Port, defaultServerPort},
-		{"ReadTimeout", cfg.Server.ReadTimeout, 15 * time.Second},
-		{"WriteTimeout", cfg.Server.WriteTimeout, 15 * time.Second},
-		{"IdleTimeout", cfg.Server.IdleTimeout, 60 * time.Second},
+		{"ReadTimeout", cfg.Server.ReadTimeout, 30 * time.Second},
+		{"WriteTimeout", cfg.Server.WriteTimeout, 120 * time.Second},
+		{"IdleTimeout", cfg.Server.IdleTimeout, 120 * time.Second},
 	}
 
 	for _, tt := range tests {

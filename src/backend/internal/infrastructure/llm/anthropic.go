@@ -219,10 +219,17 @@ func (p *AnthropicProvider) convertContentBlocks(blocks []domain.ContentBlock) [
 			result = append(result, anthropic.NewTextBlock(block.Text))
 		case domain.ContentTypeImage:
 			encoded := base64.StdEncoding.EncodeToString(block.ImageData)
-			result = append(result, anthropic.NewImageBlockBase64(
-				string(block.ImageMediaType),
-				encoded,
-			))
+			// PDFs use document blocks, images use image blocks
+			if block.ImageMediaType == domain.ImageMediaTypePDF {
+				result = append(result, anthropic.NewDocumentBlock(
+					anthropic.Base64PDFSourceParam{Data: encoded},
+				))
+			} else {
+				result = append(result, anthropic.NewImageBlockBase64(
+					string(block.ImageMediaType),
+					encoded,
+				))
+			}
 		}
 	}
 
@@ -239,13 +246,19 @@ func (p *AnthropicProvider) convertBetaContentBlocks(blocks []domain.ContentBloc
 			result = append(result, anthropic.NewBetaTextBlock(block.Text))
 		case domain.ContentTypeImage:
 			encoded := base64.StdEncoding.EncodeToString(block.ImageData)
-			// Use NewBetaImageBlock with BetaBase64ImageSourceParam
-			result = append(result, anthropic.NewBetaImageBlock(
-				anthropic.BetaBase64ImageSourceParam{
-					MediaType: anthropic.BetaBase64ImageSourceMediaType(block.ImageMediaType),
-					Data:      encoded,
-				},
-			))
+			// PDFs use document blocks, images use image blocks
+			if block.ImageMediaType == domain.ImageMediaTypePDF {
+				result = append(result, anthropic.NewBetaDocumentBlock(
+					anthropic.BetaBase64PDFSourceParam{Data: encoded},
+				))
+			} else {
+				result = append(result, anthropic.NewBetaImageBlock(
+					anthropic.BetaBase64ImageSourceParam{
+						MediaType: anthropic.BetaBase64ImageSourceMediaType(block.ImageMediaType),
+						Data:      encoded,
+					},
+				))
+			}
 		}
 	}
 

@@ -8,7 +8,8 @@ const SUPPORTED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+// Use local API route to avoid CORS issues
+const API_URL = "";
 
 interface ExtractionResult {
   text: string;
@@ -92,13 +93,17 @@ export default function ExtractTestPage() {
       });
 
       const data = await response.json();
+      console.log("Response status:", response.status);
+      console.log("Response data:", data);
 
       if (!response.ok) {
         throw new Error(data.error || "Extraction failed");
       }
 
       setResult(data as ExtractionResult);
+      console.log("Result set successfully");
     } catch (err) {
+      console.error("Extraction error:", err);
       setError(err instanceof Error ? err.message : "Unknown error occurred");
     } finally {
       setIsLoading(false);
