@@ -12,12 +12,13 @@ import (
 )
 
 // Config holds all application configuration.
-type Config struct {
+type Config struct { //nolint:govet // Field order prioritizes readability
 	Environment string
 	Database    DatabaseConfig
 	MinIO       MinIOConfig
 	Server      ServerConfig
 	Queue       QueueConfig
+	Anthropic   AnthropicConfig
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -63,6 +64,12 @@ type ServerConfig struct {
 // QueueConfig holds River job queue settings.
 type QueueConfig struct {
 	MaxWorkers int
+}
+
+// AnthropicConfig holds Anthropic API settings.
+// Note: Model selection is done per-request, not globally configured.
+type AnthropicConfig struct {
+	APIKey string
 }
 
 // Load reads configuration from environment variables.
@@ -123,6 +130,9 @@ func Load() (*Config, error) {
 		},
 		Queue: QueueConfig{
 			MaxWorkers: queueMaxWorkers,
+		},
+		Anthropic: AnthropicConfig{
+			APIKey: os.Getenv("ANTHROPIC_API_KEY"),
 		},
 	}
 
