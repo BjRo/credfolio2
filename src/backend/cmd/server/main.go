@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,6 +19,7 @@ import (
 	"backend/internal/graphql"
 	"backend/internal/handler"
 	"backend/internal/infrastructure/database"
+	"backend/internal/infrastructure/llm"
 	"backend/internal/infrastructure/queue"
 	"backend/internal/infrastructure/storage"
 	"backend/internal/job"
@@ -86,6 +88,23 @@ func run(log logger.Logger) error {
 
 	log.Info("Job queue started", logger.Feature("queue"), logger.Int("max_workers", cfg.Queue.MaxWorkers))
 
+	// Create LLM extraction handler (optional - only if API key configured)
+	var extractHandler http.Handler
+	if cfg.Anthropic.APIKey != "" {
+		anthropicProvider := llm.NewAnthropicProvider(llm.AnthropicConfig{
+			APIKey: cfg.Anthropic.APIKey,
+		})
+		resilientProvider := llm.NewResilientProvider(anthropicProvider, llm.ResilientConfig{
+			RequestTimeout: 120 * time.Second, // Extraction can be slow for large docs
+		})
+		extractor := llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{})
+		extractHandler = handler.NewExtractHandler(extractor, log)
+		log.Info("LLM extraction enabled", logger.Feature("llm"))
+	} else {
+		extractHandler = handler.NewExtractUnavailableHandler()
+		log.Warning("LLM extraction disabled (ANTHROPIC_API_KEY not set)", logger.Feature("llm"))
+	}
+
 	r := chi.NewRouter()
 
 	// Middleware
@@ -104,6 +123,9 @@ func run(log logger.Logger) error {
 	// Routes
 	r.Get("/", handler.NewRootHandler().ServeHTTP)
 	r.Get("/health", handler.NewHealthHandler(db).ServeHTTP)
+
+	// Document extraction API (for testing)
+	r.Post("/api/extract", extractHandler.ServeHTTP)
 
 	// GraphQL API
 	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, fileStorage, queueClient, log))
