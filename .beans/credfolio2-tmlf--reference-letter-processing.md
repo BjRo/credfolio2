@@ -1,11 +1,11 @@
 ---
 # credfolio2-tmlf
 title: Reference Letter Processing
-status: draft
+status: scrapped
 type: epic
 priority: normal
 created_at: 2026-01-20T11:24:33Z
-updated_at: 2026-01-22T07:54:35Z
+updated_at: 2026-01-23T16:31:36Z
 parent: credfolio2-tikg
 blocking:
     - credfolio2-jijw

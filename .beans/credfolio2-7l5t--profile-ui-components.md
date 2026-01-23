@@ -1,10 +1,11 @@
 ---
 # credfolio2-7l5t
 title: Profile UI Components
-status: draft
+status: scrapped
 type: epic
+priority: normal
 created_at: 2026-01-20T11:25:00Z
-updated_at: 2026-01-20T11:25:00Z
+updated_at: 2026-01-23T16:31:36Z
 parent: credfolio2-1fwu
 ---
 

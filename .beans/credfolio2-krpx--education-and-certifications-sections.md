@@ -1,0 +1,41 @@
+---
+# credfolio2-krpx
+title: Education and certifications sections
+status: draft
+type: task
+created_at: 2026-01-23T16:28:02Z
+updated_at: 2026-01-23T16:28:02Z
+parent: credfolio2-umxd
+---
+
+Display education history and certifications.
+
+## EducationCard Component
+
+- Institution name
+- Degree + field of study
+- Date range
+- GPA if present
+- Highlights
+
+## CertificationItem Component
+
+- Certification name
+- Issuer
+- Date
+- Link to credential (if URL provided)
+
+## Layout
+
+- Education section with cards
+- Certifications as compact list
+- Both below experience, above skills
+- Or: sidebar placement for certifications
+
+## Checklist
+
+- [ ] Create EducationCard component
+- [ ] Create EducationSection container
+- [ ] Create CertificationItem component
+- [ ] Create CertificationsSection container
+- [ ] Style consistently with rest of profile
