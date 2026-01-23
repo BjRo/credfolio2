@@ -1,10 +1,11 @@
 ---
 # credfolio2-7h7b
 title: 'Future: Profile, Position, Skill GraphQL types'
-status: draft
+status: scrapped
 type: task
+priority: normal
 created_at: 2026-01-21T14:28:15Z
-updated_at: 2026-01-21T14:28:15Z
+updated_at: 2026-01-23T16:32:36Z
 parent: credfolio2-zbqk
 ---
 

@@ -1,11 +1,11 @@
 ---
 # credfolio2-1fwu
 title: Profile Display
-status: draft
+status: scrapped
 type: milestone
 priority: normal
 created_at: 2026-01-20T11:24:40Z
-updated_at: 2026-01-20T11:26:55Z
+updated_at: 2026-01-23T16:31:36Z
 blocking:
     - credfolio2-2b75
 ---
