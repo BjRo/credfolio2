@@ -5,11 +5,10 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-01-23T15:56:45Z
-updated_at: 2026-01-23T16:29:47Z
+updated_at: 2026-01-23T16:37:31Z
 parent: credfolio2-6oza
 blocking:
-    - credfolio2-brav
-    - credfolio2-63w0
+    - credfolio2-jijw
 ---
 
 Implement async document processing for resume/CV parsing with structured output, replacing the synchronous test endpoint.

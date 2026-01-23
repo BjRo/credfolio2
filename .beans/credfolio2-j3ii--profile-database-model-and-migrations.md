@@ -5,10 +5,11 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-01-23T16:27:32Z
-updated_at: 2026-01-23T16:29:47Z
+updated_at: 2026-01-23T16:37:22Z
 parent: credfolio2-6oza
 blocking:
     - credfolio2-he9y
+    - credfolio2-jijw
 ---
 
 Create the database schema for storing extracted profile data.
