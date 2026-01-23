@@ -1,11 +1,11 @@
 ---
 # credfolio2-vwxr
 title: Document extraction test page
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-23T15:07:45Z
-updated_at: 2026-01-23T15:15:37Z
+updated_at: 2026-01-23T16:04:06Z
 ---
 
 Build a simple UI page to manually test document extraction via the LLM gateway. Upload a document image/PDF and see the extracted text.
