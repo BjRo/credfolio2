@@ -145,11 +145,14 @@ func contentTypeToMediaType(contentType string) (domain.ImageMediaType, error) {
 }
 
 const resumeExtractionPrompt = `Extract structured profile data from the following resume text.
-Extract all information present; use null for missing optional fields.
-For dates, use the format found in the document (e.g., "Jan 2020", "2020", "January 2020").
-Set isCurrent to true if the job end date is "Present" or similar.
-Skills should be a flat array of individual skills.
-Confidence should reflect how clear and complete the resume text was (0.0 to 1.0).
+
+IMPORTANT RULES:
+- Use null for missing optional fields (do NOT use empty strings or placeholder values)
+- Dates should be in ISO format (YYYY-MM-DD) when a specific date is known, or human-readable ("Jan 2020", "2020") otherwise
+- GPA must be a numeric value like "3.8" or "3.8/4.0" - NEVER put a date in the GPA field
+- Each field must contain the correct type of data - do not mix up fields
+- Set isCurrent to true if the job end date is "Present" or similar
+- Skills should be a flat array of individual skill names
 
 Resume text:
 `
@@ -199,11 +202,11 @@ var resumeOutputSchema = map[string]any{
 					},
 					"startDate": map[string]any{
 						"type":        "string",
-						"description": "Start date (e.g., 'Jan 2020')",
+						"description": "Start date in ISO format (YYYY-MM-DD) or human-readable (e.g., Jan 2020)",
 					},
 					"endDate": map[string]any{
 						"type":        "string",
-						"description": "End date or 'Present'",
+						"description": "End date in ISO format (YYYY-MM-DD), human-readable, or Present for current",
 					},
 					"isCurrent": map[string]any{
 						"type":        "boolean",
@@ -237,15 +240,15 @@ var resumeOutputSchema = map[string]any{
 					},
 					"startDate": map[string]any{
 						"type":        "string",
-						"description": "Start date if found",
+						"description": "Start date in ISO format (YYYY-MM-DD) or human-readable (e.g., Sep 2016)",
 					},
 					"endDate": map[string]any{
 						"type":        "string",
-						"description": "End/graduation date",
+						"description": "Graduation date in ISO format (YYYY-MM-DD) or human-readable (e.g., May 2020)",
 					},
 					"gpa": map[string]any{
 						"type":        "string",
-						"description": "GPA if mentioned",
+						"description": "GPA as numeric string like 3.8 or 3.8/4.0. Only if explicitly stated. Not a date.",
 					},
 					"achievements": map[string]any{
 						"type":        "string",

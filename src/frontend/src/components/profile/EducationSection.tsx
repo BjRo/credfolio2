@@ -1,4 +1,5 @@
 import { GraduationCap } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 import type { Education } from "./types";
 
 interface EducationCardProps {
@@ -7,11 +8,14 @@ interface EducationCardProps {
 }
 
 function EducationCard({ education, isFirst }: EducationCardProps) {
-  const dateRange = education.startDate
-    ? `${education.startDate} - ${education.endDate || "Present"}`
-    : null;
+  const startDate = formatDate(education.startDate);
+  const endDate = formatDate(education.endDate) || "Present";
+  const dateRange = startDate ? `${startDate} - ${endDate}` : null;
 
   const degreeField = [education.degree, education.field].filter(Boolean).join(" in ");
+
+  // Validate GPA - should be numeric, not a date or garbage
+  const isValidGpa = education.gpa && /^[\d./]+$/.test(education.gpa.trim());
 
   return (
     <div className={!isFirst ? "pt-6 border-t border-gray-200" : ""}>
@@ -23,7 +27,7 @@ function EducationCard({ education, isFirst }: EducationCardProps) {
           <div className="min-w-0">
             <h3 className="text-lg font-semibold text-gray-900">{education.institution}</h3>
             {degreeField && <p className="text-gray-700">{degreeField}</p>}
-            {education.gpa && (
+            {isValidGpa && (
               <p className="text-sm text-gray-500">
                 <span className="font-medium">GPA:</span> {education.gpa}
               </p>

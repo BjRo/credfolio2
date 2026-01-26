@@ -2,6 +2,7 @@
 
 import { Briefcase, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { useState } from "react";
+import { formatDate } from "@/lib/utils";
 import type { WorkExperience } from "./types";
 
 interface ExperienceCardProps {
@@ -16,9 +17,9 @@ function ExperienceCard({ experience, isFirst }: ExperienceCardProps) {
   const hasLongDescription =
     experience.description && experience.description.length > DESCRIPTION_COLLAPSE_THRESHOLD;
 
-  const dateRange = experience.startDate
-    ? `${experience.startDate} - ${experience.isCurrent ? "Present" : experience.endDate || "N/A"}`
-    : null;
+  const startDate = formatDate(experience.startDate);
+  const endDate = experience.isCurrent ? "Present" : formatDate(experience.endDate) || "N/A";
+  const dateRange = startDate ? `${startDate} - ${endDate}` : null;
 
   return (
     <div
