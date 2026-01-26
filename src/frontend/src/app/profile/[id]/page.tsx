@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useCallback } from "react";
 import { useQuery } from "urql";
 import {
   EducationSection,
@@ -35,10 +36,10 @@ export default function ProfilePage() {
   const { data, fetching, error } = resumeResult;
   const profile = profileResult.data?.profile;
 
-  // Refetch profile when mutations succeed
-  const handleMutationSuccess = () => {
+  // Refetch profile when mutations succeed - memoized to prevent unnecessary re-renders
+  const handleMutationSuccess = useCallback(() => {
     reexecuteProfileQuery({ requestPolicy: "network-only" });
-  };
+  }, [reexecuteProfileQuery]);
 
   if (fetching) {
     return (
