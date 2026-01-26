@@ -54,7 +54,51 @@ Follow the TDD skill (`/skill tdd`):
 
 Commit frequently with meaningful messages.
 
-### 5. Update Bean Checklist as You Go
+### 5. Smoke Test with Browser Automation
+
+After implementation is complete, verify the feature works end-to-end:
+
+1. **Start the dev servers** (if not already running):
+   ```bash
+   pnpm dev  # Starts frontend on :3000, backend on :8080
+   ```
+
+2. **Run browser smoke tests** using `agent-browser`:
+   ```bash
+   # Open the app
+   agent-browser open http://localhost:3000
+
+   # Get interactive elements
+   agent-browser snapshot -i
+
+   # Interact and verify (example)
+   agent-browser click @e1
+   agent-browser wait --load networkidle
+   agent-browser snapshot -i  # Check result
+
+   # Take screenshot as evidence (optional)
+   agent-browser screenshot ./smoke-test.png
+
+   # Close when done
+   agent-browser close
+   ```
+
+3. **What to verify**:
+   - Page loads without errors
+   - Key elements render correctly
+   - User interactions work as expected
+   - Backend integration functions (API calls succeed)
+   - No console errors (`agent-browser errors`)
+
+4. **For backend-only changes**, verify the API:
+   ```bash
+   agent-browser open http://localhost:8080/health
+   agent-browser snapshot
+   ```
+
+This self-verification catches integration issues before human review.
+
+### 6. Update Bean Checklist as You Go
 
 After completing each checklist item in the bean:
 
@@ -69,7 +113,7 @@ git commit -m "feat: implement X
 - Includes tests for Z"
 ```
 
-### 6. Push and Open Pull Request
+### 7. Push and Open Pull Request
 
 When the bean checklist is complete:
 
@@ -91,6 +135,7 @@ Closes beans-<id>
 - [ ] Tests pass (`pnpm test`)
 - [ ] Build succeeds (`pnpm build`)
 - [ ] TDD followed (tests written first)
+- [ ] Smoke tested with browser automation
 
 ## Test Plan
 How to verify this works.
@@ -100,7 +145,7 @@ EOF
 )"
 ```
 
-### 7. Wait for Human Review
+### 8. Wait for Human Review
 
 **IMPORTANT**: Do NOT merge the PR yourself.
 
@@ -108,7 +153,7 @@ EOF
 - Address review feedback with additional commits
 - Wait for explicit approval
 
-### 8. After Merge: Complete the Bean
+### 9. After Merge: Complete the Bean
 
 Once the PR is merged by a human, use the automated post-merge command:
 
@@ -140,12 +185,19 @@ git checkout main && git pull origin main
 git checkout -b feat/<bean-id>-<description>
 beans update <bean-id> --status in-progress
 
-# During work (repeat)
+# During work (repeat TDD cycle)
 # 1. Write failing test
 # 2. Make it pass
 # 3. Refactor
 # 4. Update bean checklist
 # 5. Commit with bean file
+
+# After implementation - smoke test
+pnpm dev  # Start servers if not running
+agent-browser open http://localhost:3000
+agent-browser snapshot -i
+# Interact and verify feature works
+agent-browser close
 
 # Finish work
 git push -u origin <branch-name>
@@ -162,5 +214,6 @@ gh pr create --title "..." --body "..."
 2. **Never merge your own PRs** - Wait for human review
 3. **Always pull main before branching** - Avoid merge conflicts
 4. **Always use TDD** - Tests before implementation
-5. **Always update bean checklists** - Track progress persistently
-6. **Include bean files in commits** - Keep state synchronized
+5. **Always smoke test** - Verify features work in browser before PR
+6. **Always update bean checklists** - Track progress persistently
+7. **Include bean files in commits** - Keep state synchronized
