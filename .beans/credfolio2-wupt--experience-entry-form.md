@@ -1,11 +1,11 @@
 ---
 # credfolio2-wupt
 title: Experience entry form
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-23T16:29:28Z
-updated_at: 2026-01-26T11:46:44Z
+updated_at: 2026-01-26T16:35:30Z
 parent: credfolio2-v5dw
 ---
 
