@@ -101,7 +101,7 @@ func (h *ExtractHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Extract text
-	result, err := h.extractor.ExtractText(r.Context(), llm.ExtractionRequest{
+	result, err := h.extractor.ExtractTextWithRequest(r.Context(), llm.ExtractionRequest{
 		Document:  data,
 		MediaType: mediaType,
 	})

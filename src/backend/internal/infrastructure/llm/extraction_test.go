@@ -9,7 +9,7 @@ import (
 	"backend/internal/infrastructure/llm"
 )
 
-func TestDocumentExtractor_ExtractText(t *testing.T) {
+func TestDocumentExtractor_ExtractTextWithRequest(t *testing.T) {
 	// Mock provider that returns extracted text
 	inner := &mockProvider{
 		response: &domain.LLMResponse{
@@ -26,13 +26,13 @@ func TestDocumentExtractor_ExtractText(t *testing.T) {
 	// Fake JPEG image data
 	imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0} // JPEG magic bytes
 
-	result, err := extractor.ExtractText(context.Background(), llm.ExtractionRequest{
+	result, err := extractor.ExtractTextWithRequest(context.Background(), llm.ExtractionRequest{
 		Document:  imageData,
 		MediaType: domain.ImageMediaTypeJPEG,
 	})
 
 	if err != nil {
-		t.Fatalf("ExtractText() error = %v", err)
+		t.Fatalf("ExtractTextWithRequest() error = %v", err)
 	}
 
 	if result.Text != inner.response.Content {
@@ -46,7 +46,7 @@ func TestDocumentExtractor_ExtractText(t *testing.T) {
 	}
 }
 
-func TestDocumentExtractor_ExtractText_PDF(t *testing.T) {
+func TestDocumentExtractor_ExtractTextWithRequest_PDF(t *testing.T) {
 	inner := &mockProvider{
 		response: &domain.LLMResponse{
 			Content:      "PDF content extracted",
@@ -61,13 +61,13 @@ func TestDocumentExtractor_ExtractText_PDF(t *testing.T) {
 	// Fake PDF data
 	pdfData := []byte("%PDF-1.4") // PDF magic bytes
 
-	result, err := extractor.ExtractText(context.Background(), llm.ExtractionRequest{
+	result, err := extractor.ExtractTextWithRequest(context.Background(), llm.ExtractionRequest{
 		Document:  pdfData,
 		MediaType: domain.ImageMediaTypePDF,
 	})
 
 	if err != nil {
-		t.Fatalf("ExtractText() error = %v", err)
+		t.Fatalf("ExtractTextWithRequest() error = %v", err)
 	}
 
 	if result.Text != "PDF content extracted" {
@@ -75,7 +75,7 @@ func TestDocumentExtractor_ExtractText_PDF(t *testing.T) {
 	}
 }
 
-func TestDocumentExtractor_ExtractText_CustomPrompt(t *testing.T) {
+func TestDocumentExtractor_ExtractTextWithRequest_CustomPrompt(t *testing.T) {
 	var capturedReq domain.LLMRequest
 	inner := &capturingProvider{
 		response: &domain.LLMResponse{
@@ -87,14 +87,14 @@ func TestDocumentExtractor_ExtractText_CustomPrompt(t *testing.T) {
 	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
 	customPrompt := "Extract the author name and date from this letter."
-	_, err := extractor.ExtractText(context.Background(), llm.ExtractionRequest{
+	_, err := extractor.ExtractTextWithRequest(context.Background(), llm.ExtractionRequest{
 		Document:     []byte{0xFF, 0xD8, 0xFF},
 		MediaType:    domain.ImageMediaTypeJPEG,
 		CustomPrompt: customPrompt,
 	})
 
 	if err != nil {
-		t.Fatalf("ExtractText() error = %v", err)
+		t.Fatalf("ExtractTextWithRequest() error = %v", err)
 	}
 
 	// Verify custom prompt was used
@@ -114,7 +114,7 @@ func TestDocumentExtractor_ExtractText_CustomPrompt(t *testing.T) {
 	}
 }
 
-func TestDocumentExtractor_ExtractText_CustomModel(t *testing.T) {
+func TestDocumentExtractor_ExtractTextWithRequest_CustomModel(t *testing.T) {
 	var capturedReq domain.LLMRequest
 	inner := &capturingProvider{
 		response: &domain.LLMResponse{
@@ -125,14 +125,14 @@ func TestDocumentExtractor_ExtractText_CustomModel(t *testing.T) {
 
 	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
-	_, err := extractor.ExtractText(context.Background(), llm.ExtractionRequest{
+	_, err := extractor.ExtractTextWithRequest(context.Background(), llm.ExtractionRequest{
 		Document:  []byte{0xFF, 0xD8, 0xFF},
 		MediaType: domain.ImageMediaTypeJPEG,
 		Model:     "claude-3-haiku-20240307",
 	})
 
 	if err != nil {
-		t.Fatalf("ExtractText() error = %v", err)
+		t.Fatalf("ExtractTextWithRequest() error = %v", err)
 	}
 
 	if capturedReq.Model != "claude-3-haiku-20240307" {
@@ -140,7 +140,7 @@ func TestDocumentExtractor_ExtractText_CustomModel(t *testing.T) {
 	}
 }
 
-func TestDocumentExtractor_ExtractText_Error(t *testing.T) {
+func TestDocumentExtractor_ExtractTextWithRequest_Error(t *testing.T) {
 	inner := &mockProvider{
 		err: &domain.LLMError{
 			Provider: "mock",
@@ -150,7 +150,7 @@ func TestDocumentExtractor_ExtractText_Error(t *testing.T) {
 
 	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
-	_, err := extractor.ExtractText(context.Background(), llm.ExtractionRequest{
+	_, err := extractor.ExtractTextWithRequest(context.Background(), llm.ExtractionRequest{
 		Document:  []byte{0xFF, 0xD8, 0xFF},
 		MediaType: domain.ImageMediaTypeJPEG,
 	})

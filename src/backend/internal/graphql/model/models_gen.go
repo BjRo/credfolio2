@@ -15,6 +15,29 @@ type UploadFileResponse interface {
 	IsUploadFileResponse()
 }
 
+// Union type for resume upload result - either success or validation error.
+type UploadResumeResponse interface {
+	IsUploadResumeResponse()
+}
+
+// An education entry from a resume.
+type Education struct {
+	// Name of the institution.
+	Institution string `json:"institution"`
+	// Degree obtained (e.g., 'Bachelor of Science', 'PhD').
+	Degree *string `json:"degree,omitempty"`
+	// Field of study (e.g., 'Computer Science').
+	Field *string `json:"field,omitempty"`
+	// Start date.
+	StartDate *string `json:"startDate,omitempty"`
+	// End date or expected graduation.
+	EndDate *string `json:"endDate,omitempty"`
+	// GPA if mentioned.
+	Gpa *string `json:"gpa,omitempty"`
+	// Notable achievements or honors.
+	Achievements *string `json:"achievements,omitempty"`
+}
+
 // An uploaded file stored in object storage.
 type File struct {
 	ID          string    `json:"id"`
@@ -35,6 +58,8 @@ type FileValidationError struct {
 }
 
 func (FileValidationError) IsUploadFileResponse() {}
+
+func (FileValidationError) IsUploadResumeResponse() {}
 
 type Mutation struct {
 }
@@ -60,6 +85,45 @@ type ReferenceLetter struct {
 	File          *File                 `json:"file,omitempty"`
 }
 
+// An uploaded resume with extracted profile data.
+type Resume struct {
+	ID string `json:"id"`
+	// Processing status of the resume.
+	Status ResumeStatus `json:"status"`
+	// Structured data extracted from the resume by LLM processing.
+	ExtractedData *ResumeExtractedData `json:"extractedData,omitempty"`
+	// Error message if processing failed.
+	ErrorMessage *string   `json:"errorMessage,omitempty"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	User         *User     `json:"user"`
+	File         *File     `json:"file"`
+}
+
+// Structured data extracted from a resume.
+type ResumeExtractedData struct {
+	// Full name of the candidate.
+	Name string `json:"name"`
+	// Email address.
+	Email *string `json:"email,omitempty"`
+	// Phone number.
+	Phone *string `json:"phone,omitempty"`
+	// Location (city, state, country).
+	Location *string `json:"location,omitempty"`
+	// Professional summary or objective.
+	Summary *string `json:"summary,omitempty"`
+	// Work experience entries.
+	Experience []*WorkExperience `json:"experience"`
+	// Education entries.
+	Education []*Education `json:"education"`
+	// Skills list.
+	Skills []string `json:"skills"`
+	// When the extraction was performed.
+	ExtractedAt time.Time `json:"extractedAt"`
+	// Overall confidence score (0.0 to 1.0).
+	Confidence float64 `json:"confidence"`
+}
+
 // Result of a file upload operation.
 type UploadFileResult struct {
 	// The uploaded file metadata.
@@ -70,6 +134,16 @@ type UploadFileResult struct {
 
 func (UploadFileResult) IsUploadFileResponse() {}
 
+// Result of a resume upload operation.
+type UploadResumeResult struct {
+	// The uploaded file metadata.
+	File *File `json:"file"`
+	// The resume created for processing.
+	Resume *Resume `json:"resume"`
+}
+
+func (UploadResumeResult) IsUploadResumeResponse() {}
+
 // A user account in the system.
 type User struct {
 	ID        string    `json:"id"`
@@ -77,6 +151,24 @@ type User struct {
 	Name      *string   `json:"name,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// A work experience entry from a resume.
+type WorkExperience struct {
+	// Company or organization name.
+	Company string `json:"company"`
+	// Job title or position.
+	Title string `json:"title"`
+	// Location of the job.
+	Location *string `json:"location,omitempty"`
+	// Start date (e.g., 'Jan 2020', '2020').
+	StartDate *string `json:"startDate,omitempty"`
+	// End date (e.g., 'Dec 2023', 'Present').
+	EndDate *string `json:"endDate,omitempty"`
+	// Whether this is the current job.
+	IsCurrent bool `json:"isCurrent"`
+	// Job description or responsibilities.
+	Description *string `json:"description,omitempty"`
 }
 
 // Processing status of a reference letter.
@@ -134,6 +226,66 @@ func (e *ReferenceLetterStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e ReferenceLetterStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+// Processing status of a resume.
+type ResumeStatus string
+
+const (
+	ResumeStatusPending    ResumeStatus = "PENDING"
+	ResumeStatusProcessing ResumeStatus = "PROCESSING"
+	ResumeStatusCompleted  ResumeStatus = "COMPLETED"
+	ResumeStatusFailed     ResumeStatus = "FAILED"
+)
+
+var AllResumeStatus = []ResumeStatus{
+	ResumeStatusPending,
+	ResumeStatusProcessing,
+	ResumeStatusCompleted,
+	ResumeStatusFailed,
+}
+
+func (e ResumeStatus) IsValid() bool {
+	switch e {
+	case ResumeStatusPending, ResumeStatusProcessing, ResumeStatusCompleted, ResumeStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e ResumeStatus) String() string {
+	return string(e)
+}
+
+func (e *ResumeStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ResumeStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ResumeStatus", str)
+	}
+	return nil
+}
+
+func (e ResumeStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ResumeStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ResumeStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

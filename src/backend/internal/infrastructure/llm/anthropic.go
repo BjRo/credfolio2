@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	defaultAnthropicModel = "claude-sonnet-4-20250514"
+	// Claude Sonnet 4.5 supports structured outputs
+	defaultAnthropicModel = "claude-sonnet-4-5-20250929"
 	defaultMaxTokens      = 4096
 	// Beta header for structured outputs feature
 	structuredOutputsBeta anthropic.AnthropicBeta = "structured-outputs-2025-11-13"
@@ -154,10 +155,8 @@ func (p *AnthropicProvider) completeWithStructuredOutput(
 		params.Temperature = anthropic.Float(req.Temperature)
 	}
 
-	// Add output format with JSON schema
-	params.OutputFormat = anthropic.BetaJSONOutputFormatParam{
-		Schema: req.OutputSchema,
-	}
+	// Add output format with JSON schema using the SDK helper
+	params.OutputFormat = anthropic.BetaJSONSchemaOutputFormat(req.OutputSchema)
 
 	msg, err := p.client.Beta.Messages.New(ctx, params)
 	if err != nil {

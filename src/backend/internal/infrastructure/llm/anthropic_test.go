@@ -44,9 +44,9 @@ func TestAnthropicProvider_Complete_TextMessage(t *testing.T) {
 			t.Fatalf("failed to parse request body: %v", err)
 		}
 
-		// Verify model
-		if req["model"] != "claude-sonnet-4-20250514" {
-			t.Errorf("model = %v, want claude-sonnet-4-20250514", req["model"])
+		// Verify model (Claude Sonnet 4.5 for structured output support)
+		if req["model"] != "claude-sonnet-4-5-20250929" {
+			t.Errorf("model = %v, want claude-sonnet-4-5-20250929", req["model"])
 		}
 
 		// Verify max_tokens
