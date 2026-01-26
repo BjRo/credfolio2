@@ -16,6 +16,14 @@ export function UrqlProvider({ children }: UrqlProviderProps) {
       url: GRAPHQL_ENDPOINT,
       exchanges: [cacheExchange, ssr, fetchExchange],
       suspense: true,
+      // Disable GET method to avoid URL length issues
+      preferGetMethod: false,
+      fetchOptions: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
     });
     return [client, ssr];
   }, []);

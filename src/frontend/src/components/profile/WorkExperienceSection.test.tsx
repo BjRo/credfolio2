@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import type { WorkExperience } from "./types";
+import type { ProfileExperience, WorkExperience } from "./types";
 import { WorkExperienceSection } from "./WorkExperienceSection";
 
 const mockExperiences: WorkExperience[] = [
@@ -143,6 +143,97 @@ describe("WorkExperienceSection", () => {
         "aria-expanded",
         "true"
       );
+    });
+  });
+
+  describe("Merging resume and profile experiences", () => {
+    const resumeExperiences: WorkExperience[] = [
+      {
+        company: "TechCorp",
+        title: "Senior Engineer",
+        location: "San Francisco, CA",
+        startDate: "Jan 2020",
+        endDate: "Dec 2023",
+        isCurrent: false,
+        description: "Original description from resume.",
+      },
+      {
+        company: "StartupCo",
+        title: "Software Engineer",
+        location: "New York, NY",
+        startDate: "Jun 2018",
+        endDate: null,
+        isCurrent: true,
+        description: null,
+      },
+    ];
+
+    const profileExperiences: ProfileExperience[] = [
+      {
+        id: "exp-1",
+        company: "TechCorp",
+        title: "Senior Engineer",
+        location: "San Francisco, CA",
+        startDate: "2020-01-01",
+        endDate: "2023-12-31",
+        isCurrent: false,
+        description: "Updated description from profile.",
+        highlights: ["Led team of 5"],
+      },
+    ];
+
+    it("shows profile experience instead of matching resume experience", () => {
+      // Note: not passing userId to avoid rendering form dialogs that need urql provider
+      render(
+        <WorkExperienceSection
+          experiences={resumeExperiences}
+          profileExperiences={profileExperiences}
+        />
+      );
+
+      // Should show updated description from profile, not original
+      expect(screen.getByText("Updated description from profile.")).toBeInTheDocument();
+      expect(screen.queryByText("Original description from resume.")).not.toBeInTheDocument();
+    });
+
+    it("shows unmatched resume experiences alongside profile experiences", () => {
+      render(
+        <WorkExperienceSection
+          experiences={resumeExperiences}
+          profileExperiences={profileExperiences}
+        />
+      );
+
+      // Should show both TechCorp (from profile) and StartupCo (from resume)
+      expect(screen.getByText("TechCorp")).toBeInTheDocument();
+      expect(screen.getByText("StartupCo")).toBeInTheDocument();
+    });
+
+    it("matches experiences case-insensitively", () => {
+      const caseVariantProfile: ProfileExperience[] = [
+        {
+          id: "exp-1",
+          company: "TECHCORP", // Different case
+          title: "senior engineer", // Different case
+          location: "San Francisco, CA",
+          startDate: "2020-01-01",
+          endDate: "2023-12-31",
+          isCurrent: false,
+          description: "Profile version.",
+          highlights: [],
+        },
+      ];
+
+      render(
+        <WorkExperienceSection
+          experiences={resumeExperiences}
+          profileExperiences={caseVariantProfile}
+        />
+      );
+
+      // Should not show duplicate TechCorp entries
+      const techCorpElements = screen.getAllByText(/techcorp/i);
+      expect(techCorpElements).toHaveLength(1);
     });
   });
 });

@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
   experimental: {
     webpackMemoryOptimizations: true,
   },
+
+  // Proxy API requests through Next.js to avoid port forwarding issues in devcontainer
+  async rewrites() {
+    return [
+      {
+        source: "/api/graphql",
+        destination: "http://localhost:8080/graphql",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -18,8 +18,10 @@ describe("URQL Client", () => {
   });
 
   describe("GRAPHQL_ENDPOINT", () => {
-    it("should point to backend GraphQL endpoint", () => {
-      expect(GRAPHQL_ENDPOINT).toBe("http://localhost:8080/graphql");
+    it("should use proxied endpoint in browser environment", () => {
+      // Tests run with happy-dom which provides window, so it uses client URL
+      // SSR (no window) would use http://localhost:8080/graphql
+      expect(GRAPHQL_ENDPOINT).toBe("/api/graphql");
     });
   });
 });

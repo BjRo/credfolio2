@@ -39,11 +39,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
   const dateRange = startDate ? `${startDate} - ${endDate}` : null;
 
   return (
-    <div
-      className={`${!isFirst ? "pt-6 border-t border-gray-200" : ""} ${
-        experience.isCurrent ? "relative" : ""
-      }`}
-    >
+    <div className={`relative ${!isFirst ? "pt-6 border-t border-gray-200" : ""}`}>
       {experience.isCurrent && (
         <span className="absolute -left-3 top-6 w-1.5 h-1.5 bg-green-500 rounded-full" />
       )}
@@ -166,29 +162,43 @@ export function WorkExperienceSection({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedExperience, setSelectedExperience] = useState<ExperienceItem | null>(null);
 
-  // Use profile experiences if available, otherwise fall back to resume-extracted
-  const hasProfileExperiences = profileExperiences.length > 0;
-  const displayExperiences: ExperienceItem[] = hasProfileExperiences
-    ? profileExperiences.map((exp) => ({
-        id: exp.id,
-        company: exp.company,
-        title: exp.title,
-        location: exp.location,
-        startDate: exp.startDate,
-        endDate: exp.endDate,
-        isCurrent: exp.isCurrent,
-        description: exp.description,
-        highlights: exp.highlights,
-      }))
-    : experiences.map((exp) => ({
-        company: exp.company,
-        title: exp.title,
-        location: exp.location,
-        startDate: exp.startDate,
-        endDate: exp.endDate,
-        isCurrent: exp.isCurrent,
-        description: exp.description,
-      }));
+  // Merge profile experiences with resume-extracted experiences
+  // Profile experiences have IDs and are editable, resume-extracted don't have IDs
+  // We try to match by company+title to avoid showing duplicates
+  const profileExperienceKeys = new Set(
+    profileExperiences.map((exp) => `${exp.company.toLowerCase()}|${exp.title.toLowerCase()}`)
+  );
+
+  const profileItems: ExperienceItem[] = profileExperiences.map((exp) => ({
+    id: exp.id,
+    company: exp.company,
+    title: exp.title,
+    location: exp.location,
+    startDate: exp.startDate,
+    endDate: exp.endDate,
+    isCurrent: exp.isCurrent,
+    description: exp.description,
+    highlights: exp.highlights,
+  }));
+
+  // Only include resume-extracted experiences that don't have a matching profile experience
+  const resumeItems: ExperienceItem[] = experiences
+    .filter((exp) => {
+      const key = `${exp.company.toLowerCase()}|${exp.title.toLowerCase()}`;
+      return !profileExperienceKeys.has(key);
+    })
+    .map((exp) => ({
+      company: exp.company,
+      title: exp.title,
+      location: exp.location,
+      startDate: exp.startDate,
+      endDate: exp.endDate,
+      isCurrent: exp.isCurrent,
+      description: exp.description,
+    }));
+
+  // Show profile experiences first, then unmatched resume experiences
+  const displayExperiences: ExperienceItem[] = [...profileItems, ...resumeItems];
 
   const isEditable = !!userId;
 
