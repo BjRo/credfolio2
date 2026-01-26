@@ -1,10 +1,11 @@
 ---
 # credfolio2-q3qj
 title: Enforce dev-workflow compliance with mandatory checklists
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-01-26T16:46:01Z
-updated_at: 2026-01-26T16:46:01Z
+updated_at: 2026-01-26T16:50:38Z
 ---
 
 Add mandatory Definition of Done checklist items and pre-completion reminder to ensure consistent test running, linting, and visual verification before marking work complete.
