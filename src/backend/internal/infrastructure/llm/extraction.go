@@ -148,11 +148,21 @@ const resumeExtractionPrompt = `Extract structured profile data from the followi
 
 IMPORTANT RULES:
 - Use null for missing optional fields (do NOT use empty strings or placeholder values)
-- ALL dates MUST be in ISO format YYYY-MM-DD (e.g., "2020-01-01"). If only month/year is known, use the 1st of the month (e.g., "Sep 2018" → "2018-09-01"). If only year is known, use January 1st (e.g., "2020" → "2020-01-01").
 - For current jobs, set isCurrent to true and use null for endDate
 - GPA must be a numeric value like "3.8" or "3.8/4.0" - NEVER put a date in the GPA field
 - Each field must contain the correct type of data - do not mix up fields
 - Skills should be a flat array of individual skill names
+
+DATE EXTRACTION RULES (CRITICAL):
+- ALL dates MUST be in ISO format: YYYY-MM-DD (e.g., "2020-01-15")
+- The YEAR is REQUIRED. If you cannot determine the year, return null for that date field
+- Expanding partial dates:
+  - Month + Year (e.g., "Sep 2018") → "2018-09-01" (use 1st of month)
+  - Year only (e.g., "2020") → "2020-01-01" (use January 1st)
+  - Month only without year (e.g., "September") → null (year is required)
+- If a date cannot be parsed or is ambiguous, return null
+- NEVER return malformed dates like "-09-01" or "0000-09-01"
+- Common patterns: "Present", "Current", "Now" for endDate means isCurrent=true and endDate=null
 
 Resume text:
 `
@@ -202,11 +212,11 @@ var resumeOutputSchema = map[string]any{
 					},
 					"startDate": map[string]any{
 						"type":        "string",
-						"description": "Start date in ISO format YYYY-MM-DD (use 01 for day if unknown, e.g., 2018-09-01)",
+						"description": "Start date in ISO format YYYY-MM-DD. Year is REQUIRED. Use 01 for unknown day/month. Return null if year cannot be determined.",
 					},
 					"endDate": map[string]any{
 						"type":        "string",
-						"description": "End date in ISO format YYYY-MM-DD, or null if isCurrent is true",
+						"description": "End date in ISO format YYYY-MM-DD, or null if isCurrent is true or year cannot be determined.",
 					},
 					"isCurrent": map[string]any{
 						"type":        "boolean",
@@ -240,11 +250,11 @@ var resumeOutputSchema = map[string]any{
 					},
 					"startDate": map[string]any{
 						"type":        "string",
-						"description": "Start date in ISO format YYYY-MM-DD (use 01 for day if unknown, e.g., 2016-09-01)",
+						"description": "Start date in ISO format YYYY-MM-DD. Year is REQUIRED. Use 01 for unknown day/month. Return null if year cannot be determined.",
 					},
 					"endDate": map[string]any{
 						"type":        "string",
-						"description": "Graduation date in ISO format YYYY-MM-DD (use 01 for day if unknown, e.g., 2020-05-01)",
+						"description": "Graduation/end date in ISO format YYYY-MM-DD. Year is REQUIRED. Use 01 for unknown day/month. Return null if year cannot be determined.",
 					},
 					"gpa": map[string]any{
 						"type":        "string",
