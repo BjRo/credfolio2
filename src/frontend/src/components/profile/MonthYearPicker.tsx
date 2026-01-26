@@ -40,18 +40,45 @@ interface MonthYearPickerProps {
 }
 
 /**
- * Parses a date string like "Jan 2020" or "2020" into MonthYearValue.
+ * Parses a date string into MonthYearValue.
+ * Handles formats:
+ * - ISO full: "2020-01-15", "2020-01-15T00:00:00Z"
+ * - ISO year-month: "2020-01"
+ * - Human readable: "Jan 2020", "January 2020"
+ * - Slash format: "01/2020", "1/2020"
+ * - Year only: "2020"
  */
 export function parseDateString(dateStr: string | null | undefined): MonthYearValue {
   if (!dateStr) return { month: "", year: "" };
 
+  const trimmed = dateStr.trim();
+
   // Handle "Present" or "Current"
-  if (dateStr.toLowerCase() === "present" || dateStr.toLowerCase() === "current") {
+  if (trimmed.toLowerCase() === "present" || trimmed.toLowerCase() === "current") {
     return { month: "", year: "" };
   }
 
-  // Try to parse "Jan 2020" format
-  const monthYearMatch = dateStr.match(/^([A-Za-z]+)\s+(\d{4})$/);
+  // Try to parse ISO format with day (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)
+  const isoFullMatch = trimmed.match(/^(\d{4})-(\d{2})-\d{2}/);
+  if (isoFullMatch) {
+    return { month: isoFullMatch[2], year: isoFullMatch[1] };
+  }
+
+  // Try to parse ISO year-month format (YYYY-MM)
+  const isoYearMonthMatch = trimmed.match(/^(\d{4})-(\d{2})$/);
+  if (isoYearMonthMatch) {
+    return { month: isoYearMonthMatch[2], year: isoYearMonthMatch[1] };
+  }
+
+  // Try to parse slash format (MM/YYYY or M/YYYY)
+  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{4})$/);
+  if (slashMatch) {
+    const month = slashMatch[1].padStart(2, "0");
+    return { month, year: slashMatch[2] };
+  }
+
+  // Try to parse "Jan 2020" or "January 2020" format (month name + year)
+  const monthYearMatch = trimmed.match(/^([A-Za-z]+)\s+(\d{4})$/);
   if (monthYearMatch) {
     const monthStr = monthYearMatch[1].toLowerCase();
     const year = monthYearMatch[2];
@@ -64,9 +91,14 @@ export function parseDateString(dateStr: string | null | undefined): MonthYearVa
   }
 
   // Try to parse year-only format
-  const yearMatch = dateStr.match(/^(\d{4})$/);
+  const yearMatch = trimmed.match(/^(\d{4})$/);
   if (yearMatch) {
     return { month: "", year: yearMatch[1] };
+  }
+
+  // Debug: log unrecognized format
+  if (typeof window !== "undefined") {
+    console.warn(`[parseDateString] Unrecognized date format: "${dateStr}"`);
   }
 
   return { month: "", year: "" };

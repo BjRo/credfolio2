@@ -148,10 +148,10 @@ const resumeExtractionPrompt = `Extract structured profile data from the followi
 
 IMPORTANT RULES:
 - Use null for missing optional fields (do NOT use empty strings or placeholder values)
-- Dates should be in ISO format (YYYY-MM-DD) when a specific date is known, or human-readable ("Jan 2020", "2020") otherwise
+- ALL dates MUST be in ISO format YYYY-MM-DD (e.g., "2020-01-01"). If only month/year is known, use the 1st of the month (e.g., "Sep 2018" → "2018-09-01"). If only year is known, use January 1st (e.g., "2020" → "2020-01-01").
+- For current jobs, set isCurrent to true and use null for endDate
 - GPA must be a numeric value like "3.8" or "3.8/4.0" - NEVER put a date in the GPA field
 - Each field must contain the correct type of data - do not mix up fields
-- Set isCurrent to true if the job end date is "Present" or similar
 - Skills should be a flat array of individual skill names
 
 Resume text:
@@ -202,11 +202,11 @@ var resumeOutputSchema = map[string]any{
 					},
 					"startDate": map[string]any{
 						"type":        "string",
-						"description": "Start date in ISO format (YYYY-MM-DD) or human-readable (e.g., Jan 2020)",
+						"description": "Start date in ISO format YYYY-MM-DD (use 01 for day if unknown, e.g., 2018-09-01)",
 					},
 					"endDate": map[string]any{
 						"type":        "string",
-						"description": "End date in ISO format (YYYY-MM-DD), human-readable, or Present for current",
+						"description": "End date in ISO format YYYY-MM-DD, or null if isCurrent is true",
 					},
 					"isCurrent": map[string]any{
 						"type":        "boolean",
@@ -240,11 +240,11 @@ var resumeOutputSchema = map[string]any{
 					},
 					"startDate": map[string]any{
 						"type":        "string",
-						"description": "Start date in ISO format (YYYY-MM-DD) or human-readable (e.g., Sep 2016)",
+						"description": "Start date in ISO format YYYY-MM-DD (use 01 for day if unknown, e.g., 2016-09-01)",
 					},
 					"endDate": map[string]any{
 						"type":        "string",
-						"description": "Graduation date in ISO format (YYYY-MM-DD) or human-readable (e.g., May 2020)",
+						"description": "Graduation date in ISO format YYYY-MM-DD (use 01 for day if unknown, e.g., 2020-05-01)",
 					},
 					"gpa": map[string]any{
 						"type":        "string",
