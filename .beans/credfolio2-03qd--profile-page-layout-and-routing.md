@@ -1,7 +1,7 @@
 ---
 # credfolio2-03qd
 title: Profile page layout and routing
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-01-23T16:28:03Z
@@ -45,9 +45,9 @@ Create the profile page that assembles all components.
 
 ## Checklist
 
-- [ ] Create profile/[id]/page.tsx
-- [ ] Set up data fetching via GraphQL
-- [ ] Compose all profile components
-- [ ] Add action buttons area
-- [ ] Handle profile not found
-- [ ] Add loading skeleton
+- [x] Create profile/[id]/page.tsx
+- [x] Set up data fetching via GraphQL
+- [x] Compose all profile components
+- [x] Add action buttons area
+- [x] Handle profile not found
+- [x] Add loading skeleton
