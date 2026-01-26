@@ -94,19 +94,19 @@ type ResumeExtractedData struct {
 - [x] Update Resume record with extracted data or error
 
 ### Frontend: Upload Flow
-- [ ] Update upload page to call `uploadResume` mutation
-- [ ] Implement polling for resume status (useQuery with pollInterval or manual)
-- [ ] Show processing indicator while status is pending/processing
-- [ ] Auto-redirect to `/profile/{resumeId}` when status is completed
+- [x] Update upload page to call `uploadResume` mutation
+- [x] Implement polling for resume status (useQuery with pollInterval or manual)
+- [x] Show processing indicator while status is pending/processing
+- [x] Auto-redirect to `/profile/{resumeId}` when status is completed
 
 ### Frontend: Profile Page
-- [ ] Create `/profile/[id]/page.tsx` route
-- [ ] Query resume by ID with extracted data
-- [ ] Display: name, contact info, summary
-- [ ] Display: work experience list (company, title, dates, description)
-- [ ] Display: education list
-- [ ] Display: skills as tags/chips
-- [ ] Handle loading and error states
+- [x] Create `/profile/[id]/page.tsx` route
+- [x] Query resume by ID with extracted data
+- [x] Display: name, contact info, summary
+- [x] Display: work experience list (company, title, dates, description)
+- [x] Display: education list
+- [x] Display: skills as tags/chips
+- [x] Handle loading and error states
 
 ### Integration & Testing
 - [ ] Manual E2E test: upload real resume PDF → see profile

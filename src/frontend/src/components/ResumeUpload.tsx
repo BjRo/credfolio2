@@ -1,0 +1,452 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { type ChangeEvent, type DragEvent, useCallback, useEffect, useState } from "react";
+import { GRAPHQL_ENDPOINT } from "@/lib/urql/client";
+
+const ALLOWED_TYPES = {
+  "application/pdf": ".pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  "text/plain": ".txt",
+};
+
+const ALLOWED_EXTENSIONS = Object.values(ALLOWED_TYPES).join(", ");
+const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const POLL_INTERVAL_MS = 2000; // Poll every 2 seconds
+
+type UploadStatus = "idle" | "uploading" | "processing" | "success" | "error";
+type ResumeStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+interface ResumeUploadResult {
+  __typename: "UploadResumeResult";
+  file: {
+    id: string;
+    filename: string;
+  };
+  resume: {
+    id: string;
+    status: ResumeStatus;
+  };
+}
+
+interface ValidationError {
+  __typename: "FileValidationError";
+  message: string;
+  field: string;
+}
+
+interface ResumeUploadProps {
+  userId: string;
+  onUploadComplete?: (result: ResumeUploadResult) => void;
+  onProcessingComplete?: (resumeId: string) => void;
+  onError?: (error: string) => void;
+}
+
+export function ResumeUpload({
+  userId,
+  onUploadComplete,
+  onProcessingComplete,
+  onError,
+}: ResumeUploadProps) {
+  const router = useRouter();
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [status, setStatus] = useState<UploadStatus>("idle");
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadedResume, setUploadedResume] = useState<ResumeUploadResult | null>(null);
+
+  const validateFile = useCallback((file: File): string | null => {
+    if (!Object.keys(ALLOWED_TYPES).includes(file.type)) {
+      return `Invalid file type. Allowed types: ${ALLOWED_EXTENSIONS}`;
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      return `File too large. Maximum size is ${MAX_SIZE_BYTES / (1024 * 1024)}MB`;
+    }
+    return null;
+  }, []);
+
+  // Poll for resume status
+  useEffect(() => {
+    if (status !== "processing" || !uploadedResume) return;
+
+    const pollStatus = async () => {
+      try {
+        const response = await fetch(GRAPHQL_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `
+              query GetResumeStatus($id: ID!) {
+                resume(id: $id) {
+                  id
+                  status
+                }
+              }
+            `,
+            variables: { id: uploadedResume.resume.id },
+          }),
+        });
+
+        const result = await response.json();
+        const resumeStatus = result.data?.resume?.status as ResumeStatus | undefined;
+
+        if (resumeStatus === "COMPLETED") {
+          setStatus("success");
+          onProcessingComplete?.(uploadedResume.resume.id);
+          // Auto-redirect to profile page
+          router.push(`/profile/${uploadedResume.resume.id}`);
+        } else if (resumeStatus === "FAILED") {
+          setStatus("error");
+          setError("Resume processing failed. Please try again.");
+          onError?.("Resume processing failed");
+        }
+      } catch (err) {
+        console.error("Failed to poll resume status:", err);
+      }
+    };
+
+    const intervalId = setInterval(pollStatus, POLL_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [status, uploadedResume, router, onProcessingComplete, onError]);
+
+  const uploadFile = useCallback(
+    async (file: File) => {
+      const validationError = validateFile(file);
+      if (validationError) {
+        setError(validationError);
+        setStatus("error");
+        onError?.(validationError);
+        return;
+      }
+
+      setStatus("uploading");
+      setProgress(0);
+      setError(null);
+
+      const operations = JSON.stringify({
+        query: `
+          mutation UploadResume($userId: ID!, $file: Upload!) {
+            uploadResume(userId: $userId, file: $file) {
+              ... on UploadResumeResult {
+                __typename
+                file {
+                  id
+                  filename
+                  contentType
+                  sizeBytes
+                }
+                resume {
+                  id
+                  status
+                }
+              }
+              ... on FileValidationError {
+                __typename
+                message
+                field
+              }
+            }
+          }
+        `,
+        variables: {
+          userId,
+          file: null,
+        },
+      });
+
+      const map = JSON.stringify({
+        "0": ["variables.file"],
+      });
+
+      const formData = new FormData();
+      formData.append("operations", operations);
+      formData.append("map", map);
+      formData.append("0", file);
+
+      try {
+        const result = await new Promise<ResumeUploadResult>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+
+          xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = Math.round((event.loaded / event.total) * 100);
+              setProgress(percentComplete);
+            }
+          });
+
+          xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.errors?.length) {
+                  reject(new Error(response.errors[0].message));
+                  return;
+                }
+                const data = response.data?.uploadResume;
+                if (!data) {
+                  reject(new Error("No data returned from upload"));
+                  return;
+                }
+                // Check for validation error union type
+                if (data.__typename === "FileValidationError") {
+                  const validationErr = data as ValidationError;
+                  reject(new Error(validationErr.message));
+                  return;
+                }
+                resolve(data as ResumeUploadResult);
+              } catch (_parseError) {
+                reject(new Error("Failed to parse response"));
+              }
+            } else {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          });
+
+          xhr.addEventListener("error", () => {
+            reject(new Error("Network error during upload"));
+          });
+
+          xhr.addEventListener("abort", () => {
+            reject(new Error("Upload was cancelled"));
+          });
+
+          xhr.open("POST", GRAPHQL_ENDPOINT);
+          xhr.send(formData);
+        });
+
+        setStatus("processing");
+        setUploadedResume(result);
+        onUploadComplete?.(result);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Upload failed";
+        setError(errorMessage);
+        setStatus("error");
+        onError?.(errorMessage);
+      }
+    },
+    [userId, validateFile, onUploadComplete, onError]
+  );
+
+  const handleDragOver = useCallback((e: DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: DragEvent<HTMLLabelElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        uploadFile(files[0]);
+      }
+    },
+    [uploadFile]
+  );
+
+  const handleFileSelect = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        uploadFile(files[0]);
+      }
+      e.target.value = "";
+    },
+    [uploadFile]
+  );
+
+  const handleReset = useCallback(() => {
+    setStatus("idle");
+    setProgress(0);
+    setError(null);
+    setUploadedResume(null);
+  }, []);
+
+  return (
+    <div className="w-full max-w-xl mx-auto">
+      {status === "processing" && uploadedResume ? (
+        <div className="p-6 border-2 border-blue-500 bg-blue-50 rounded-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <svg
+              role="img"
+              aria-label="Processing"
+              className="w-8 h-8 text-blue-500 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            <h3 className="text-lg font-medium text-blue-700">Processing Resume</h3>
+          </div>
+          <p className="text-sm text-blue-600 mb-2">
+            File &quot;{uploadedResume.file.filename}&quot; uploaded successfully.
+          </p>
+          <p className="text-sm text-blue-600">
+            Extracting profile information... You&apos;ll be redirected automatically when complete.
+          </p>
+        </div>
+      ) : status === "success" ? (
+        <div className="p-6 border-2 border-green-500 bg-green-50 rounded-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <svg
+              role="img"
+              aria-label="Success"
+              className="w-8 h-8 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <h3 className="text-lg font-medium text-green-700">Processing Complete</h3>
+          </div>
+          <p className="text-sm text-green-600 mb-4">Redirecting to your profile...</p>
+        </div>
+      ) : (
+        <label
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`
+            relative p-8 border-2 border-dashed rounded-lg transition-colors cursor-pointer block
+            ${
+              isDragOver
+                ? "border-blue-500 bg-blue-50"
+                : status === "error"
+                  ? "border-red-300 bg-red-50"
+                  : "border-gray-300 hover:border-gray-400 bg-white"
+            }
+          `}
+        >
+          <input
+            type="file"
+            accept={Object.keys(ALLOWED_TYPES).join(",")}
+            onChange={handleFileSelect}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={status === "uploading"}
+          />
+
+          <div className="text-center">
+            {status === "uploading" ? (
+              <>
+                <svg
+                  role="img"
+                  aria-label="Uploading"
+                  className="w-12 h-12 mx-auto text-blue-500 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <p className="mt-4 text-sm font-medium text-gray-700">Uploading... {progress}%</p>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <svg
+                  role="img"
+                  aria-label="Upload"
+                  className="w-12 h-12 mx-auto text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+                <p className="mt-4 text-sm font-medium text-gray-700">
+                  {isDragOver
+                    ? "Drop your resume here"
+                    : "Drag and drop your resume, or click to browse"}
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                  Supported formats: PDF, DOCX, TXT (max 10MB)
+                </p>
+              </>
+            )}
+          </div>
+
+          {status === "error" && error && (
+            <div className="mt-4 p-3 bg-red-100 border border-red-200 rounded-md">
+              <div className="flex items-start gap-2">
+                <svg
+                  role="img"
+                  aria-label="Error"
+                  className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-red-700">Upload failed</p>
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="mt-2 text-sm text-red-600 hover:text-red-700 underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+        </label>
+      )}
+    </div>
+  );
+}
