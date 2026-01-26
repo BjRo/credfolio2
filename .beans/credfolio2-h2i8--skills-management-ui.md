@@ -1,10 +1,11 @@
 ---
 # credfolio2-h2i8
 title: Skills management UI
-status: draft
+status: todo
 type: feature
+priority: high
 created_at: 2026-01-23T16:29:31Z
-updated_at: 2026-01-23T16:29:31Z
+updated_at: 2026-01-26T16:41:07Z
 parent: credfolio2-v5dw
 ---
 
@@ -31,15 +32,38 @@ Add, edit, remove, and categorize skills.
 - Add skill input per category or global
 - Inline editing on click
 
+## Data Model Decision
+
+Manual skills need a `profile_skills` table to coexist with extraction-sourced skills. Each skill should track:
+- Name and normalized name (for deduplication)
+- Category (using existing `SkillCategory` enum)
+- Source: `manual` vs `extraction` (with optional source_resume_id)
+- Display order within category
+
 ## Checklist
 
-- [ ] Add GraphQL mutations for skill CRUD (add, update, delete)
-- [ ] Add "add skill" UI per category
-- [ ] Add remove button to skill tags
-- [ ] Implement skill rename (connect to mutation)
-- [ ] Implement category change (connect to mutation)
-- [ ] Handle skills with sources carefully (warn on delete)
+### Backend
+
+- [ ] Create `profile_skills` database migration with columns: id, profile_id, name, normalized_name, category, source, source_resume_id, display_order, created_at, updated_at
+- [ ] Add `ProfileSkill` domain type in `internal/domain/profile.go`
+- [ ] Create `profile_skills_repository.go` with CRUD operations
+- [ ] Add GraphQL input types: `CreateSkillInput`, `UpdateSkillInput`
+- [ ] Add GraphQL mutations: `createSkill`, `updateSkill`, `deleteSkill`
+- [ ] Add resolver implementations for skill mutations
+- [ ] Update Profile query to merge manual skills with extraction skills
+
+### Frontend
+
+- [ ] Generate GraphQL types after backend is ready
+- [ ] Create `AddSkillInput` component (inline input with category dropdown)
+- [ ] Add "+" button per category section to trigger add input
+- [ ] Add "×" remove button to skill tags
+- [ ] Implement skill rename (click to edit inline)
+- [ ] Implement category change via dropdown
+- [ ] Show warning dialog when deleting extraction-sourced skills
+- [ ] Handle optimistic updates for snappy UX
 
 ## Out of Scope
 
 - Drag-and-drop reordering (deferred)
+- Skill autocomplete/suggestions (nice-to-have, separate task)

@@ -3,8 +3,9 @@
 title: Add location autocomplete to work experience form
 status: todo
 type: task
+priority: normal
 created_at: 2026-01-26T16:33:20Z
-updated_at: 2026-01-26T16:33:20Z
+updated_at: 2026-01-26T16:38:34Z
 parent: credfolio2-v5dw
 ---
 
