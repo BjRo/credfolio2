@@ -1,11 +1,11 @@
 ---
 # credfolio2-h2op
 title: Work experience timeline/cards
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-23T16:28:00Z
-updated_at: 2026-01-26T10:19:17Z
+updated_at: 2026-01-26T10:50:04Z
 parent: credfolio2-umxd
 ---
 
@@ -36,9 +36,9 @@ Recommendation: Cards for MVP, timeline as enhancement
 
 ## Checklist
 
-- [ ] Create ExperienceCard component
-- [ ] Create ExperienceList container
-- [ ] Add expand/collapse behavior
-- [ ] Style with proper spacing
-- [ ] Add source indicator badge
-- [ ] Handle "current" job styling
+- [x] Create ExperienceCard component
+- [x] Create WorkExperienceSection container
+- [x] Add expand/collapse behavior for long descriptions
+- [x] Style with proper spacing
+- [ ] ~~Add source indicator badge~~ (deferred: data model doesn't have source info for resumes)
+- [x] Handle "current" job styling (green badge + accent indicator)

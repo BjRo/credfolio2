@@ -44,7 +44,8 @@ describe("EducationSection", () => {
 
   it("renders GPA when provided", () => {
     render(<EducationSection education={mockEducation} />);
-    expect(screen.getByText("GPA: 3.9")).toBeInTheDocument();
+    expect(screen.getByText("GPA:")).toBeInTheDocument();
+    expect(screen.getByText("3.9")).toBeInTheDocument();
   });
 
   it("renders date ranges", () => {

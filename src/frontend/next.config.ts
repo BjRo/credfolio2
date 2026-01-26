@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Improve dev server stability in containerized environments
+  devIndicators: false,
+
+  // Use experimental webpackMemoryOptimizations to reduce memory pressure
+  experimental: {
+    webpackMemoryOptimizations: true,
+  },
 };
 
 export default nextConfig;

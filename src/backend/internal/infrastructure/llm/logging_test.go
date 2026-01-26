@@ -28,11 +28,21 @@ func (m *mockLogger) log(severity logger.Severity, message string, attrs ...logg
 	})
 }
 
-func (m *mockLogger) Debug(message string, attrs ...logger.Attr)    { m.log(logger.Debug, message, attrs...) }
-func (m *mockLogger) Info(message string, attrs ...logger.Attr)     { m.log(logger.Info, message, attrs...) }
-func (m *mockLogger) Warning(message string, attrs ...logger.Attr)  { m.log(logger.Warning, message, attrs...) }
-func (m *mockLogger) Error(message string, attrs ...logger.Attr)    { m.log(logger.Error, message, attrs...) }
-func (m *mockLogger) Critical(message string, attrs ...logger.Attr) { m.log(logger.Critical, message, attrs...) }
+func (m *mockLogger) Debug(message string, attrs ...logger.Attr) {
+	m.log(logger.Debug, message, attrs...)
+}
+func (m *mockLogger) Info(message string, attrs ...logger.Attr) {
+	m.log(logger.Info, message, attrs...)
+}
+func (m *mockLogger) Warning(message string, attrs ...logger.Attr) {
+	m.log(logger.Warning, message, attrs...)
+}
+func (m *mockLogger) Error(message string, attrs ...logger.Attr) {
+	m.log(logger.Error, message, attrs...)
+}
+func (m *mockLogger) Critical(message string, attrs ...logger.Attr) {
+	m.log(logger.Critical, message, attrs...)
+}
 
 func (m *mockLogger) getEntries() []logger.LogEntry {
 	m.mu.Lock()

@@ -1,3 +1,4 @@
+export { type Certification, CertificationsSection } from "./CertificationsSection";
 export { EducationSection } from "./EducationSection";
 export { ProfileActions } from "./ProfileActions";
 export { ProfileHeader } from "./ProfileHeader";

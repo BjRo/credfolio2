@@ -13,9 +13,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 
 	"backend/internal/config"
+	"backend/internal/domain"
 	"backend/internal/graphql"
 	"backend/internal/handler"
 	"backend/internal/infrastructure/database"
@@ -70,6 +72,11 @@ func run(log logger.Logger) error {
 	fileRepo := postgres.NewFileRepository(db)
 	refLetterRepo := postgres.NewReferenceLetterRepository(db)
 	resumeRepo := postgres.NewResumeRepository(db)
+
+	// Ensure demo user exists (development convenience)
+	if seedErr := ensureDemoUser(context.Background(), userRepo, log); seedErr != nil {
+		log.Warning("Failed to ensure demo user exists", logger.Feature("seed"), logger.Err(seedErr))
+	}
 
 	// Create LLM extractor (optional - only if API key configured)
 	var extractor *llm.DocumentExtractor
@@ -184,5 +191,45 @@ func run(log logger.Logger) error {
 	}
 
 	log.Info("Server stopped gracefully", logger.Feature("server"))
+	return nil
+}
+
+// demoUserID is the well-known ID for the demo user used in development.
+var demoUserID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
+
+// userCreator is the interface needed for creating users.
+type userCreator interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	Create(ctx context.Context, user *domain.User) error
+}
+
+// ensureDemoUser creates the demo user if it doesn't exist.
+// This provides a reliable way to have a demo user for development/testing
+// that doesn't depend on migrations being in a specific state.
+func ensureDemoUser(ctx context.Context, repo userCreator, log logger.Logger) error {
+	// Check if demo user already exists
+	existing, err := repo.GetByID(ctx, demoUserID)
+	if err != nil {
+		return fmt.Errorf("failed to check for demo user: %w", err)
+	}
+	if existing != nil {
+		log.Debug("Demo user already exists", logger.Feature("seed"))
+		return nil
+	}
+
+	// Create demo user
+	name := "Demo User"
+	demoUser := &domain.User{
+		ID:           demoUserID,
+		Email:        "demo@example.com",
+		PasswordHash: "demo_hash", // Not a real hash - demo user only
+		Name:         &name,
+	}
+
+	if err := repo.Create(ctx, demoUser); err != nil {
+		return fmt.Errorf("failed to create demo user: %w", err)
+	}
+
+	log.Info("Demo user created", logger.Feature("seed"), logger.String("user_id", demoUserID.String()))
 	return nil
 }
