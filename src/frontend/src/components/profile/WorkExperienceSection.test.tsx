@@ -56,12 +56,14 @@ describe("WorkExperienceSection", () => {
 
   it("renders date ranges", () => {
     render(<WorkExperienceSection experiences={mockExperiences} />);
-    expect(screen.getByText("Jan 2020 - Dec 2023")).toBeInTheDocument();
+    // Date appears twice (mobile + desktop views)
+    expect(screen.getAllByText("Jan 2020 - Dec 2023").length).toBeGreaterThan(0);
   });
 
   it("shows Present for current positions", () => {
     render(<WorkExperienceSection experiences={mockExperiences} />);
-    expect(screen.getByText("Jun 2018 - Present")).toBeInTheDocument();
+    // Date appears twice (mobile + desktop views)
+    expect(screen.getAllByText("Jun 2018 - Present").length).toBeGreaterThan(0);
   });
 
   it("renders description when provided", () => {
