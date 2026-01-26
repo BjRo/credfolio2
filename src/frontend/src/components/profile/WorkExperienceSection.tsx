@@ -17,7 +17,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatDate } from "@/lib/utils";
+import {
+  calculateDurationMonths,
+  calculateTotalTenure,
+  formatDate,
+  formatDuration,
+} from "@/lib/utils";
 import { DeleteExperienceDialog } from "./DeleteExperienceDialog";
 import type { ProfileExperience, WorkExperience } from "./types";
 import { WorkExperienceFormDialog } from "./WorkExperienceFormDialog";
@@ -37,23 +42,78 @@ interface ExperienceItem {
   highlights?: string[];
 }
 
-interface ExperienceCardProps {
-  experience: ExperienceItem;
-  isFirst: boolean;
+// Company group containing one or more roles
+interface CompanyGroup {
+  company: string;
+  location?: string | null;
+  totalTenureMonths: number | null;
+  hasCurrentRole: boolean;
+  roles: ExperienceItem[];
+}
+
+/**
+ * Group experiences by company name (case-insensitive).
+ * Roles within each group are sorted by start date (newest first).
+ */
+function groupExperiencesByCompany(experiences: ExperienceItem[]): CompanyGroup[] {
+  const groupMap = new Map<string, ExperienceItem[]>();
+
+  for (const exp of experiences) {
+    const key = exp.company.toLowerCase().trim();
+    const existing = groupMap.get(key) || [];
+    existing.push(exp);
+    groupMap.set(key, existing);
+  }
+
+  const groups: CompanyGroup[] = [];
+
+  for (const roles of groupMap.values()) {
+    // Sort by start date descending (newest first)
+    // Roles without dates go to the end
+    roles.sort((a, b) => {
+      if (!a.startDate && !b.startDate) return 0;
+      if (!a.startDate) return 1;
+      if (!b.startDate) return -1;
+      return b.startDate.localeCompare(a.startDate);
+    });
+
+    const company = roles[0].company; // Use original casing from first role
+    const location = roles[0].location; // Use location from most recent role
+    const hasCurrentRole = roles.some((r) => r.isCurrent);
+    const totalTenureMonths = calculateTotalTenure(roles);
+
+    groups.push({
+      company,
+      location,
+      totalTenureMonths,
+      hasCurrentRole,
+      roles,
+    });
+  }
+
+  // Sort groups by most recent role's start date
+  groups.sort((a, b) => {
+    const aDate = a.roles[0]?.startDate;
+    const bDate = b.roles[0]?.startDate;
+    if (!aDate && !bDate) return 0;
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return bDate.localeCompare(aDate);
+  });
+
+  return groups;
+}
+
+// Reusable action menu for edit/delete
+interface ActionMenuProps {
   onEdit?: () => void;
   onDelete?: () => void;
 }
 
-function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const hasLongDescription =
-    experience.description && experience.description.length > DESCRIPTION_COLLAPSE_THRESHOLD;
+function ActionMenu({ onEdit, onDelete }: ActionMenuProps) {
+  if (!onEdit && !onDelete) return null;
 
-  const startDate = formatDate(experience.startDate);
-  const endDate = experience.isCurrent ? "Present" : formatDate(experience.endDate) || "N/A";
-  const dateRange = startDate ? `${startDate} - ${endDate}` : null;
-
-  const ActionMenu = () => (
+  return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
@@ -83,6 +143,24 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+// Flat experience card for single roles at a company (original style)
+interface ExperienceCardProps {
+  experience: ExperienceItem;
+  isFirst: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}
+
+function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const hasLongDescription =
+    experience.description && experience.description.length > DESCRIPTION_COLLAPSE_THRESHOLD;
+
+  const startDate = formatDate(experience.startDate);
+  const endDate = experience.isCurrent ? "Present" : formatDate(experience.endDate) || "N/A";
+  const dateRange = startDate ? `${startDate} - ${endDate}` : null;
 
   return (
     <div className={`relative ${!isFirst ? "pt-6 border-t border-gray-200" : ""}`}>
@@ -98,7 +176,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
       {/* Mobile: kebab menu positioned top-right */}
       {(onEdit || onDelete) && (
         <div className={`absolute right-0 sm:hidden ${isFirst ? "top-0" : "top-6"}`}>
-          <ActionMenu />
+          <ActionMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       )}
 
@@ -130,7 +208,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
         {/* Desktop: date + kebab on right side */}
         <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
           {dateRange && <span className="text-sm text-gray-500">{dateRange}</span>}
-          {(onEdit || onDelete) && <ActionMenu />}
+          <ActionMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       </div>
 
@@ -173,6 +251,178 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Role card for displaying individual roles within a company group (multi-role)
+interface RoleCardProps {
+  role: ExperienceItem;
+  isFirst: boolean;
+  isLast: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}
+
+function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const hasLongDescription =
+    role.description && role.description.length > DESCRIPTION_COLLAPSE_THRESHOLD;
+
+  const startDate = formatDate(role.startDate);
+  const endDate = role.isCurrent ? "Present" : formatDate(role.endDate) || "N/A";
+  const dateRange = startDate ? `${startDate} - ${endDate}` : null;
+
+  const durationMonths = calculateDurationMonths(role.startDate, role.endDate, role.isCurrent);
+  const duration = durationMonths !== null ? formatDuration(durationMonths) : null;
+
+  return (
+    <div className={`relative ${!isFirst ? "mt-4" : ""}`}>
+      {/* Timeline connector - always shown for multi-role groups */}
+      {/* Dot */}
+      <span
+        className={`absolute left-0 w-2 h-2 rounded-full ${
+          role.isCurrent ? "bg-green-500" : "bg-gray-300"
+        }`}
+        style={{ top: "6px" }}
+      />
+      {/* Vertical line */}
+      {!isLast && (
+        <span
+          className="absolute left-[3px] w-0.5 bg-gray-200"
+          style={{ top: "14px", bottom: "-16px" }}
+        />
+      )}
+
+      <div className="pl-5">
+        {/* Mobile: kebab menu positioned top-right */}
+        {(onEdit || onDelete) && (
+          <div className="absolute right-0 top-0 sm:hidden">
+            <ActionMenu onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        )}
+
+        <div className="flex sm:justify-between sm:items-start gap-1 sm:gap-4 pr-8 sm:pr-0">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-base font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
+              {role.title}
+              {role.isCurrent && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  Current
+                </span>
+              )}
+            </h4>
+            {/* Date and duration */}
+            {dateRange && (
+              <p className="text-sm text-gray-500">
+                {dateRange}
+                {duration && <span className="hidden sm:inline"> · {duration}</span>}
+              </p>
+            )}
+            {/* Duration on mobile - separate line */}
+            {duration && dateRange && <p className="text-sm text-gray-500 sm:hidden">{duration}</p>}
+          </div>
+          {/* Desktop: kebab on right side */}
+          <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+            <ActionMenu onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        </div>
+
+        {role.description && (
+          <div className="mt-2">
+            <p
+              className={`text-gray-600 text-sm whitespace-pre-line ${
+                !isExpanded && hasLongDescription ? "line-clamp-3" : ""
+              }`}
+              style={
+                !isExpanded && hasLongDescription
+                  ? {
+                      display: "-webkit-box",
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }
+                  : undefined
+              }
+            >
+              {role.description}
+            </p>
+            {hasLongDescription && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-1 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                aria-expanded={isExpanded}
+              >
+                {isExpanded ? (
+                  <>
+                    Show less <ChevronUp className="w-4 h-4" aria-hidden="true" />
+                  </>
+                ) : (
+                  <>
+                    Show more <ChevronDown className="w-4 h-4" aria-hidden="true" />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Company group component showing company header and all roles
+interface CompanyExperienceGroupProps {
+  group: CompanyGroup;
+  isFirst: boolean;
+  isEditable: boolean;
+  onEdit: (experience: ExperienceItem) => void;
+  onDelete: (experience: ExperienceItem) => void;
+}
+
+function CompanyExperienceGroup({
+  group,
+  isFirst,
+  isEditable,
+  onEdit,
+  onDelete,
+}: CompanyExperienceGroupProps) {
+  const totalDuration =
+    group.totalTenureMonths !== null ? formatDuration(group.totalTenureMonths) : null;
+
+  return (
+    <div className={`relative ${!isFirst ? "pt-6 border-t border-gray-200" : ""}`}>
+      {/* Company header */}
+      <div className="flex gap-3 mb-4">
+        <div className="hidden sm:flex w-10 h-10 rounded-lg bg-gray-100 items-center justify-center flex-shrink-0">
+          <Briefcase className="w-5 h-5 text-gray-500" aria-hidden="true" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-lg font-semibold text-gray-900">{group.company}</h3>
+          {totalDuration && <p className="text-sm text-gray-500">{totalDuration}</p>}
+          {group.location && (
+            <p className="text-sm text-gray-500 flex items-center gap-1">
+              <MapPin className="w-3 h-3" aria-hidden="true" />
+              {group.location}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Roles list with timeline */}
+      <div className="sm:ml-13">
+        {group.roles.map((role, index) => (
+          <RoleCard
+            key={role.id ?? `${role.company}-${role.title}-${index}`}
+            role={role}
+            isFirst={index === 0}
+            isLast={index === group.roles.length - 1}
+            onEdit={isEditable ? () => onEdit(role) : undefined}
+            onDelete={isEditable && role.id ? () => onDelete(role) : undefined}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -233,8 +483,9 @@ export function WorkExperienceSection({
       description: exp.description,
     }));
 
-  // Show profile experiences first, then unmatched resume experiences
-  const displayExperiences: ExperienceItem[] = [...profileItems, ...resumeItems];
+  // Combine all experiences and group by company
+  const allExperiences: ExperienceItem[] = [...profileItems, ...resumeItems];
+  const companyGroups = groupExperiencesByCompany(allExperiences);
 
   const isEditable = !!userId;
 
@@ -271,7 +522,7 @@ export function WorkExperienceSection({
     onMutationSuccess?.();
   };
 
-  if (displayExperiences.length === 0 && !isEditable) {
+  if (companyGroups.length === 0 && !isEditable) {
     return null;
   }
 
@@ -291,21 +542,36 @@ export function WorkExperienceSection({
         )}
       </div>
 
-      {displayExperiences.length === 0 ? (
+      {companyGroups.length === 0 ? (
         <p className="text-gray-500 text-center py-8">
           No work experience yet. Click the + button to add your first position.
         </p>
       ) : (
         <div className="space-y-6 relative">
-          {displayExperiences.map((exp, index) => (
-            <ExperienceCard
-              key={exp.id ?? `${exp.company}-${exp.title}-${index}`}
-              experience={exp}
-              isFirst={index === 0}
-              onEdit={isEditable ? () => handleEdit(exp) : undefined}
-              onDelete={isEditable && exp.id ? () => handleDelete(exp) : undefined}
-            />
-          ))}
+          {companyGroups.map((group, index) =>
+            group.roles.length > 1 ? (
+              // Multi-role: show grouped view with company header and timeline
+              <CompanyExperienceGroup
+                key={`${group.company}-${index}`}
+                group={group}
+                isFirst={index === 0}
+                isEditable={isEditable}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            ) : (
+              // Single role: show flat card
+              <ExperienceCard
+                key={group.roles[0].id ?? `${group.company}-${group.roles[0].title}-${index}`}
+                experience={group.roles[0]}
+                isFirst={index === 0}
+                onEdit={isEditable ? () => handleEdit(group.roles[0]) : undefined}
+                onDelete={
+                  isEditable && group.roles[0].id ? () => handleDelete(group.roles[0]) : undefined
+                }
+              />
+            )
+          )}
         </div>
       )}
 
