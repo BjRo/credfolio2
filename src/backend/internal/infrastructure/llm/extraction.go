@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"backend/internal/domain"
 )
@@ -143,59 +145,167 @@ func contentTypeToMediaType(contentType string) (domain.ImageMediaType, error) {
 }
 
 const resumeExtractionPrompt = `Extract structured profile data from the following resume text.
-
-Return a JSON object with the following structure:
-{
-  "name": "Full name of the candidate",
-  "email": "Email address (if found)",
-  "phone": "Phone number (if found)",
-  "location": "City, State/Country (if found)",
-  "summary": "Professional summary or objective (if found)",
-  "experience": [
-    {
-      "company": "Company name",
-      "title": "Job title",
-      "location": "Job location (if found)",
-      "startDate": "Start date (e.g., 'Jan 2020')",
-      "endDate": "End date or 'Present'",
-      "isCurrent": true/false,
-      "description": "Job description or responsibilities"
-    }
-  ],
-  "education": [
-    {
-      "institution": "School/University name",
-      "degree": "Degree type (e.g., 'Bachelor of Science')",
-      "field": "Field of study",
-      "startDate": "Start date (if found)",
-      "endDate": "End/graduation date",
-      "gpa": "GPA (if mentioned)",
-      "achievements": "Notable achievements or honors"
-    }
-  ],
-  "skills": ["Skill 1", "Skill 2", "..."],
-  "confidence": 0.0 to 1.0 (your confidence in the accuracy of extraction)
-}
-
-Rules:
-- Extract all information present; use null for missing fields
-- For dates, use the format found in the document (e.g., "Jan 2020", "2020", "January 2020")
-- Set isCurrent to true if the job end date is "Present" or similar
-- Skills should be a flat array of individual skills
-- Confidence should reflect how clear and complete the resume text was
+Extract all information present; use null for missing optional fields.
+For dates, use the format found in the document (e.g., "Jan 2020", "2020", "January 2020").
+Set isCurrent to true if the job end date is "Present" or similar.
+Skills should be a flat array of individual skills.
+Confidence should reflect how clear and complete the resume text was (0.0 to 1.0).
 
 Resume text:
 `
 
+// resumeOutputSchema defines the JSON schema for structured resume extraction.
+// This schema is used with Anthropic's structured output feature to guarantee valid JSON.
+var resumeOutputSchema = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"name": map[string]any{
+			"type":        "string",
+			"description": "Full name of the candidate",
+		},
+		"email": map[string]any{
+			"type":        "string",
+			"description": "Email address if found",
+		},
+		"phone": map[string]any{
+			"type":        "string",
+			"description": "Phone number if found",
+		},
+		"location": map[string]any{
+			"type":        "string",
+			"description": "City, State/Country if found",
+		},
+		"summary": map[string]any{
+			"type":        "string",
+			"description": "Professional summary or objective if found",
+		},
+		"experience": map[string]any{
+			"type":        "array",
+			"description": "Work experience entries",
+			"items": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"company": map[string]any{
+						"type":        "string",
+						"description": "Company name",
+					},
+					"title": map[string]any{
+						"type":        "string",
+						"description": "Job title",
+					},
+					"location": map[string]any{
+						"type":        "string",
+						"description": "Job location if found",
+					},
+					"startDate": map[string]any{
+						"type":        "string",
+						"description": "Start date (e.g., 'Jan 2020')",
+					},
+					"endDate": map[string]any{
+						"type":        "string",
+						"description": "End date or 'Present'",
+					},
+					"isCurrent": map[string]any{
+						"type":        "boolean",
+						"description": "True if this is the current job",
+					},
+					"description": map[string]any{
+						"type":        "string",
+						"description": "Job description or responsibilities",
+					},
+				},
+				"required": []string{"company", "title"},
+			},
+		},
+		"education": map[string]any{
+			"type":        "array",
+			"description": "Education entries",
+			"items": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"institution": map[string]any{
+						"type":        "string",
+						"description": "School/University name",
+					},
+					"degree": map[string]any{
+						"type":        "string",
+						"description": "Degree type (e.g., 'Bachelor of Science')",
+					},
+					"field": map[string]any{
+						"type":        "string",
+						"description": "Field of study",
+					},
+					"startDate": map[string]any{
+						"type":        "string",
+						"description": "Start date if found",
+					},
+					"endDate": map[string]any{
+						"type":        "string",
+						"description": "End/graduation date",
+					},
+					"gpa": map[string]any{
+						"type":        "string",
+						"description": "GPA if mentioned",
+					},
+					"achievements": map[string]any{
+						"type":        "string",
+						"description": "Notable achievements or honors",
+					},
+				},
+				"required": []string{"institution"},
+			},
+		},
+		"skills": map[string]any{
+			"type":        "array",
+			"description": "List of skills",
+			"items": map[string]any{
+				"type": "string",
+			},
+		},
+		"confidence": map[string]any{
+			"type":        "number",
+			"description": "Confidence in extraction accuracy (0.0 to 1.0)",
+		},
+	},
+	"required": []string{"name", "experience", "education", "skills", "confidence"},
+}
+
+// stripMarkdownCodeBlock removes markdown code block delimiters from LLM responses.
+// LLMs often wrap JSON responses in ```json ... ``` blocks.
+func stripMarkdownCodeBlock(content string) string {
+	content = strings.TrimSpace(content)
+
+	// Check for ```json or ``` at the start
+	if strings.HasPrefix(content, "```json") {
+		content = strings.TrimPrefix(content, "```json")
+	} else if strings.HasPrefix(content, "```") {
+		content = strings.TrimPrefix(content, "```")
+	}
+
+	// Remove ``` at the end if present
+	content = strings.TrimSuffix(content, "```")
+
+	return strings.TrimSpace(content)
+}
+
+// trailingCommaRegex matches trailing commas before ] or }
+var trailingCommaRegex = regexp.MustCompile(`,\s*([\]}])`)
+
+// fixTrailingCommas removes trailing commas from JSON which Go's parser doesn't accept.
+func fixTrailingCommas(content string) string {
+	return trailingCommaRegex.ReplaceAllString(content, "$1")
+}
+
 // ExtractResumeData implements domain.DocumentExtractor interface.
-// It extracts structured resume data from text using LLM.
+// It extracts structured resume data from text using LLM with structured output.
 func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) (*domain.ResumeExtractedData, error) {
 	llmReq := domain.LLMRequest{
 		Messages: []domain.Message{
 			domain.NewTextMessage(domain.RoleUser, resumeExtractionPrompt+text),
 		},
-		Model:     e.config.DefaultModel,
-		MaxTokens: e.config.MaxTokens,
+		Model:        e.config.DefaultModel,
+		MaxTokens:    e.config.MaxTokens,
+		OutputSchema: resumeOutputSchema,
 	}
 
 	resp, err := e.provider.Complete(ctx, llmReq)
@@ -203,9 +313,13 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 		return nil, fmt.Errorf("LLM extraction failed: %w", err)
 	}
 
+	// Clean up the JSON response
+	jsonContent := stripMarkdownCodeBlock(resp.Content)
+	jsonContent = fixTrailingCommas(jsonContent)
+
 	// Parse JSON response
 	var data domain.ResumeExtractedData
-	if err := json.Unmarshal([]byte(resp.Content), &data); err != nil {
+	if err := json.Unmarshal([]byte(jsonContent), &data); err != nil {
 		return nil, fmt.Errorf("failed to parse extraction response: %w", err)
 	}
 
