@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+// Union type for experience create/update result.
+type ExperienceResponse interface {
+	IsExperienceResponse()
+}
+
 // Union type for upload result - either success or validation error.
 type UploadFileResponse interface {
 	IsUploadFileResponse()
@@ -18,6 +23,34 @@ type UploadFileResponse interface {
 // Union type for resume upload result - either success or validation error.
 type UploadResumeResponse interface {
 	IsUploadResumeResponse()
+}
+
+// Input for creating a new work experience.
+type CreateExperienceInput struct {
+	// Company or organization name (required).
+	Company string `json:"company"`
+	// Job title or position (required).
+	Title string `json:"title"`
+	// Location of the job.
+	Location *string `json:"location,omitempty"`
+	// Start date (e.g., 'Jan 2020', '2020').
+	StartDate *string `json:"startDate,omitempty"`
+	// End date (e.g., 'Dec 2023', 'Present').
+	EndDate *string `json:"endDate,omitempty"`
+	// Whether this is the current job.
+	IsCurrent bool `json:"isCurrent"`
+	// Job description or responsibilities.
+	Description *string `json:"description,omitempty"`
+	// Key achievements or highlights (bullet points).
+	Highlights []string `json:"highlights,omitempty"`
+}
+
+// Result of a delete operation.
+type DeleteResult struct {
+	// Whether the deletion was successful.
+	Success bool `json:"success"`
+	// ID of the deleted item.
+	DeletedID string `json:"deletedId"`
 }
 
 // An education entry from a resume.
@@ -37,6 +70,24 @@ type Education struct {
 	// Notable achievements or honors.
 	Achievements *string `json:"achievements,omitempty"`
 }
+
+// Result of a successful experience operation.
+type ExperienceResult struct {
+	// The created or updated experience.
+	Experience *ProfileExperience `json:"experience"`
+}
+
+func (ExperienceResult) IsExperienceResponse() {}
+
+// Error returned when experience validation fails.
+type ExperienceValidationError struct {
+	// Error message describing the validation failure.
+	Message string `json:"message"`
+	// The field that failed validation.
+	Field *string `json:"field,omitempty"`
+}
+
+func (ExperienceValidationError) IsExperienceResponse() {}
 
 // An uploaded file stored in object storage.
 type File struct {
@@ -62,6 +113,46 @@ func (FileValidationError) IsUploadFileResponse() {}
 func (FileValidationError) IsUploadResumeResponse() {}
 
 type Mutation struct {
+}
+
+// A user's profile containing manually editable data.
+type Profile struct {
+	ID string `json:"id"`
+	// The user who owns this profile.
+	User *User `json:"user"`
+	// Work experience entries.
+	Experiences []*ProfileExperience `json:"experiences"`
+	CreatedAt   time.Time            `json:"createdAt"`
+	UpdatedAt   time.Time            `json:"updatedAt"`
+}
+
+// A work experience entry in a user's profile.
+// Extends WorkExperience with ID for editing and highlights for achievements.
+type ProfileExperience struct {
+	// Unique identifier for the experience.
+	ID string `json:"id"`
+	// Company or organization name.
+	Company string `json:"company"`
+	// Job title or position.
+	Title string `json:"title"`
+	// Location of the job.
+	Location *string `json:"location,omitempty"`
+	// Start date (e.g., 'Jan 2020', '2020').
+	StartDate *string `json:"startDate,omitempty"`
+	// End date (e.g., 'Dec 2023', 'Present').
+	EndDate *string `json:"endDate,omitempty"`
+	// Whether this is the current job.
+	IsCurrent bool `json:"isCurrent"`
+	// Job description or responsibilities.
+	Description *string `json:"description,omitempty"`
+	// Key achievements or highlights (bullet points).
+	Highlights []string `json:"highlights"`
+	// Display order for sorting.
+	DisplayOrder int `json:"displayOrder"`
+	// Source of this experience entry.
+	Source    ExperienceSource `json:"source"`
+	CreatedAt time.Time        `json:"createdAt"`
+	UpdatedAt time.Time        `json:"updatedAt"`
 }
 
 type Query struct {
@@ -124,6 +215,26 @@ type ResumeExtractedData struct {
 	Confidence float64 `json:"confidence"`
 }
 
+// Input for updating an existing work experience.
+type UpdateExperienceInput struct {
+	// Company or organization name.
+	Company *string `json:"company,omitempty"`
+	// Job title or position.
+	Title *string `json:"title,omitempty"`
+	// Location of the job.
+	Location *string `json:"location,omitempty"`
+	// Start date (e.g., 'Jan 2020', '2020').
+	StartDate *string `json:"startDate,omitempty"`
+	// End date (e.g., 'Dec 2023', 'Present').
+	EndDate *string `json:"endDate,omitempty"`
+	// Whether this is the current job.
+	IsCurrent *bool `json:"isCurrent,omitempty"`
+	// Job description or responsibilities.
+	Description *string `json:"description,omitempty"`
+	// Key achievements or highlights (bullet points).
+	Highlights []string `json:"highlights,omitempty"`
+}
+
 // Result of a file upload operation.
 type UploadFileResult struct {
 	// The uploaded file metadata.
@@ -169,6 +280,64 @@ type WorkExperience struct {
 	IsCurrent bool `json:"isCurrent"`
 	// Job description or responsibilities.
 	Description *string `json:"description,omitempty"`
+}
+
+// Source of a profile experience entry.
+type ExperienceSource string
+
+const (
+	// Manually entered by user.
+	ExperienceSourceManual ExperienceSource = "MANUAL"
+	// Extracted from an uploaded resume.
+	ExperienceSourceResumeExtracted ExperienceSource = "RESUME_EXTRACTED"
+)
+
+var AllExperienceSource = []ExperienceSource{
+	ExperienceSourceManual,
+	ExperienceSourceResumeExtracted,
+}
+
+func (e ExperienceSource) IsValid() bool {
+	switch e {
+	case ExperienceSourceManual, ExperienceSourceResumeExtracted:
+		return true
+	}
+	return false
+}
+
+func (e ExperienceSource) String() string {
+	return string(e)
+}
+
+func (e *ExperienceSource) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ExperienceSource(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ExperienceSource", str)
+	}
+	return nil
+}
+
+func (e ExperienceSource) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ExperienceSource) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ExperienceSource) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 // Processing status of a reference letter.

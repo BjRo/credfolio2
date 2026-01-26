@@ -295,3 +295,68 @@ func toGraphQLEducations(educations []domain.Education) []*model.Education {
 	}
 	return result
 }
+
+// toGraphQLProfile converts a domain Profile to a GraphQL Profile model.
+// The user and experiences must be provided separately.
+func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience) *model.Profile {
+	if p == nil {
+		return nil
+	}
+	return &model.Profile{
+		ID:          p.ID.String(),
+		User:        user,
+		Experiences: experiences,
+		CreatedAt:   p.CreatedAt,
+		UpdatedAt:   p.UpdatedAt,
+	}
+}
+
+// toGraphQLProfileExperience converts a domain ProfileExperience to a GraphQL ProfileExperience model.
+func toGraphQLProfileExperience(e *domain.ProfileExperience) *model.ProfileExperience {
+	if e == nil {
+		return nil
+	}
+
+	// Convert domain source to GraphQL source
+	var source model.ExperienceSource
+	switch e.Source {
+	case domain.ExperienceSourceManual:
+		source = model.ExperienceSourceManual
+	case domain.ExperienceSourceResumeExtracted:
+		source = model.ExperienceSourceResumeExtracted
+	default:
+		source = model.ExperienceSourceManual
+	}
+
+	// Convert highlights from pq.StringArray to []string
+	highlights := make([]string, len(e.Highlights))
+	copy(highlights, e.Highlights)
+
+	return &model.ProfileExperience{
+		ID:           e.ID.String(),
+		Company:      e.Company,
+		Title:        e.Title,
+		Location:     e.Location,
+		StartDate:    e.StartDate,
+		EndDate:      e.EndDate,
+		IsCurrent:    e.IsCurrent,
+		Description:  e.Description,
+		Highlights:   highlights,
+		DisplayOrder: e.DisplayOrder,
+		Source:       source,
+		CreatedAt:    e.CreatedAt,
+		UpdatedAt:    e.UpdatedAt,
+	}
+}
+
+// toGraphQLProfileExperiences converts a slice of domain ProfileExperience to GraphQL models.
+func toGraphQLProfileExperiences(experiences []*domain.ProfileExperience) []*model.ProfileExperience {
+	if len(experiences) == 0 {
+		return []*model.ProfileExperience{}
+	}
+	result := make([]*model.ProfileExperience, len(experiences))
+	for i, e := range experiences {
+		result[i] = toGraphQLProfileExperience(e)
+	}
+	return result
+}

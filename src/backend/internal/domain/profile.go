@@ -1,0 +1,101 @@
+// Package domain contains the core business entities and repository interfaces.
+package domain
+
+import (
+	"context"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/lib/pq"
+	"github.com/uptrace/bun"
+)
+
+// ExperienceSource represents where an experience entry came from.
+type ExperienceSource string
+
+// Experience source constants.
+const (
+	ExperienceSourceManual          ExperienceSource = "manual"
+	ExperienceSourceResumeExtracted ExperienceSource = "resume_extracted"
+)
+
+// Profile represents a user's profile containing manually editable data.
+type Profile struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
+	bun.BaseModel `bun:"table:profiles,alias:p"`
+
+	ID        uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	UserID    uuid.UUID `bun:"user_id,notnull,type:uuid"`
+	CreatedAt time.Time `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt time.Time `bun:"updated_at,notnull,default:current_timestamp"`
+
+	// Relations
+	User        *User                `bun:"rel:belongs-to,join:user_id=id"`
+	Experiences []*ProfileExperience `bun:"rel:has-many,join:id=profile_id"`
+}
+
+// ProfileExperience represents a work experience entry in a user's profile.
+type ProfileExperience struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
+	bun.BaseModel `bun:"table:profile_experiences,alias:pe"`
+
+	ID             uuid.UUID        `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileID      uuid.UUID        `bun:"profile_id,notnull,type:uuid"`
+	Company        string           `bun:"company,notnull"`
+	Title          string           `bun:"title,notnull"`
+	Location       *string          `bun:"location"`
+	StartDate      *string          `bun:"start_date"`
+	EndDate        *string          `bun:"end_date"`
+	IsCurrent      bool             `bun:"is_current,notnull,default:false"`
+	Description    *string          `bun:"description"`
+	Highlights     pq.StringArray   `bun:"highlights,type:text[],array"`
+	DisplayOrder   int              `bun:"display_order,notnull,default:0"`
+	Source         ExperienceSource `bun:"source,notnull,default:'manual'"`
+	SourceResumeID *uuid.UUID       `bun:"source_resume_id,type:uuid"`
+	CreatedAt      time.Time        `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt      time.Time        `bun:"updated_at,notnull,default:current_timestamp"`
+
+	// Relations
+	Profile      *Profile `bun:"rel:belongs-to,join:profile_id=id"`
+	SourceResume *Resume  `bun:"rel:belongs-to,join:source_resume_id=id"`
+}
+
+// ProfileRepository defines operations for profile persistence.
+type ProfileRepository interface {
+	// Create persists a new profile.
+	Create(ctx context.Context, profile *Profile) error
+
+	// GetByID retrieves a profile by its ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*Profile, error)
+
+	// GetByUserID retrieves a profile by user ID.
+	GetByUserID(ctx context.Context, userID uuid.UUID) (*Profile, error)
+
+	// GetOrCreateByUserID retrieves a profile by user ID, creating one if it doesn't exist.
+	GetOrCreateByUserID(ctx context.Context, userID uuid.UUID) (*Profile, error)
+
+	// Update persists changes to an existing profile.
+	Update(ctx context.Context, profile *Profile) error
+
+	// Delete removes a profile by its ID.
+	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+// ProfileExperienceRepository defines operations for profile experience persistence.
+type ProfileExperienceRepository interface {
+	// Create persists a new profile experience.
+	Create(ctx context.Context, experience *ProfileExperience) error
+
+	// GetByID retrieves a profile experience by its ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*ProfileExperience, error)
+
+	// GetByProfileID retrieves all profile experiences for a profile, ordered by display order.
+	GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*ProfileExperience, error)
+
+	// Update persists changes to an existing profile experience.
+	Update(ctx context.Context, experience *ProfileExperience) error
+
+	// Delete removes a profile experience by its ID.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// GetNextDisplayOrder returns the next display order value for a profile.
+	GetNextDisplayOrder(ctx context.Context, profileID uuid.UUID) (int, error)
+}
