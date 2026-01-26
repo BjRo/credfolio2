@@ -187,17 +187,71 @@ func (r *errorUserRepository) Delete(_ context.Context, _ uuid.UUID) error {
 	return errors.New("database error")
 }
 
+// mockResumeRepository is a mock implementation of domain.ResumeRepository.
+type mockResumeRepository struct {
+	resumes map[uuid.UUID]*domain.Resume
+}
+
+func newMockResumeRepository() *mockResumeRepository {
+	return &mockResumeRepository{resumes: make(map[uuid.UUID]*domain.Resume)}
+}
+
+func (r *mockResumeRepository) Create(_ context.Context, resume *domain.Resume) error {
+	if resume.ID == uuid.Nil {
+		resume.ID = uuid.New()
+	}
+	r.resumes[resume.ID] = resume
+	return nil
+}
+
+func (r *mockResumeRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Resume, error) {
+	resume, ok := r.resumes[id]
+	if !ok {
+		return nil, nil
+	}
+	return resume, nil
+}
+
+func (r *mockResumeRepository) GetByUserID(_ context.Context, userID uuid.UUID) ([]*domain.Resume, error) {
+	var result []*domain.Resume
+	for _, resume := range r.resumes {
+		if resume.UserID == userID {
+			result = append(result, resume)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockResumeRepository) Update(_ context.Context, resume *domain.Resume) error {
+	r.resumes[resume.ID] = resume
+	return nil
+}
+
+func (r *mockResumeRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.resumes, id)
+	return nil
+}
+
 // mockJobEnqueuer is a mock implementation of domain.JobEnqueuer.
 type mockJobEnqueuer struct {
-	enqueuedJobs []domain.DocumentProcessingRequest
+	enqueuedDocJobs    []domain.DocumentProcessingRequest
+	enqueuedResumeJobs []domain.ResumeProcessingRequest
 }
 
 func newMockJobEnqueuer() *mockJobEnqueuer {
-	return &mockJobEnqueuer{enqueuedJobs: make([]domain.DocumentProcessingRequest, 0)}
+	return &mockJobEnqueuer{
+		enqueuedDocJobs:    make([]domain.DocumentProcessingRequest, 0),
+		enqueuedResumeJobs: make([]domain.ResumeProcessingRequest, 0),
+	}
 }
 
 func (e *mockJobEnqueuer) EnqueueDocumentProcessing(_ context.Context, req domain.DocumentProcessingRequest) error {
-	e.enqueuedJobs = append(e.enqueuedJobs, req)
+	e.enqueuedDocJobs = append(e.enqueuedDocJobs, req)
+	return nil
+}
+
+func (e *mockJobEnqueuer) EnqueueResumeProcessing(_ context.Context, req domain.ResumeProcessingRequest) error {
+	e.enqueuedResumeJobs = append(e.enqueuedResumeJobs, req)
 	return nil
 }
 
@@ -223,7 +277,7 @@ func TestUserQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns user when found", func(t *testing.T) {
@@ -269,7 +323,7 @@ func TestUserQuery(t *testing.T) {
 	})
 
 	t.Run("returns error when repository fails", func(t *testing.T) {
-		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 		errorQuery := errorR.Query()
 
 		_, err := errorQuery.User(ctx, uuid.New().String())
@@ -304,7 +358,7 @@ func TestFileQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, file)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns file when found", func(t *testing.T) {
@@ -408,7 +462,7 @@ func TestFilesQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, otherFile)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns files for user", func(t *testing.T) {
@@ -504,7 +558,7 @@ func TestReferenceLetterQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, letter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letter when found", func(t *testing.T) {
@@ -652,7 +706,7 @@ func TestReferenceLettersQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, otherLetter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letters for user", func(t *testing.T) {

@@ -69,10 +69,37 @@ func run(log logger.Logger) error {
 	userRepo := postgres.NewUserRepository(db)
 	fileRepo := postgres.NewFileRepository(db)
 	refLetterRepo := postgres.NewReferenceLetterRepository(db)
+	resumeRepo := postgres.NewResumeRepository(db)
+
+	// Create LLM extractor (optional - only if API key configured)
+	var extractor *llm.DocumentExtractor
+	var extractHandler http.Handler
+	if cfg.Anthropic.APIKey != "" {
+		anthropicProvider := llm.NewAnthropicProvider(llm.AnthropicConfig{
+			APIKey: cfg.Anthropic.APIKey,
+		})
+		resilientProvider := llm.NewResilientProvider(anthropicProvider, llm.ResilientConfig{
+			RequestTimeout: 120 * time.Second, // Extraction can be slow for large docs
+		})
+		extractor = llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{})
+		extractHandler = handler.NewExtractHandler(extractor, log)
+		log.Info("LLM extraction enabled", logger.Feature("llm"))
+	} else {
+		extractHandler = handler.NewExtractUnavailableHandler()
+		log.Warning("LLM extraction disabled (ANTHROPIC_API_KEY not set)", logger.Feature("llm"))
+	}
 
 	// Create job queue workers
 	workers := river.NewWorkers()
 	river.AddWorker(workers, job.NewDocumentProcessingWorker(refLetterRepo, fileStorage, log))
+
+	// Register resume processing worker only if LLM is configured
+	if extractor != nil {
+		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, fileStorage, extractor, log))
+		log.Info("Resume processing worker registered", logger.Feature("jobs"))
+	} else {
+		log.Warning("Resume processing worker not registered (LLM not configured)", logger.Feature("jobs"))
+	}
 
 	// Create job queue client
 	queueClient, err := queue.NewClient(context.Background(), cfg.Database, cfg.Queue, workers)
@@ -87,23 +114,6 @@ func run(log logger.Logger) error {
 	}
 
 	log.Info("Job queue started", logger.Feature("queue"), logger.Int("max_workers", cfg.Queue.MaxWorkers))
-
-	// Create LLM extraction handler (optional - only if API key configured)
-	var extractHandler http.Handler
-	if cfg.Anthropic.APIKey != "" {
-		anthropicProvider := llm.NewAnthropicProvider(llm.AnthropicConfig{
-			APIKey: cfg.Anthropic.APIKey,
-		})
-		resilientProvider := llm.NewResilientProvider(anthropicProvider, llm.ResilientConfig{
-			RequestTimeout: 120 * time.Second, // Extraction can be slow for large docs
-		})
-		extractor := llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{})
-		extractHandler = handler.NewExtractHandler(extractor, log)
-		log.Info("LLM extraction enabled", logger.Feature("llm"))
-	} else {
-		extractHandler = handler.NewExtractUnavailableHandler()
-		log.Warning("LLM extraction disabled (ANTHROPIC_API_KEY not set)", logger.Feature("llm"))
-	}
 
 	r := chi.NewRouter()
 
@@ -128,7 +138,7 @@ func run(log logger.Logger) error {
 	r.Post("/api/extract", extractHandler.ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, fileStorage, queueClient, log))
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, fileStorage, queueClient, log))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)

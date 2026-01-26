@@ -162,3 +162,12 @@ func (e *LLMError) Error() string {
 func (e *LLMError) Unwrap() error {
 	return e.Err
 }
+
+// DocumentExtractor defines the interface for extracting data from documents using LLM.
+type DocumentExtractor interface {
+	// ExtractText extracts raw text from a document (image or PDF).
+	ExtractText(ctx context.Context, document []byte, contentType string) (string, error)
+
+	// ExtractResumeData extracts structured resume data from text using LLM.
+	ExtractResumeData(ctx context.Context, text string) (*ResumeExtractedData, error)
+}

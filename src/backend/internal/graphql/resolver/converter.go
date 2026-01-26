@@ -195,3 +195,103 @@ func toGraphQLExtractionMetadata(m *domain.ExtractionMetadata) *model.Extraction
 		Warnings:          m.Warnings,
 	}
 }
+
+// toGraphQLResume converts a domain Resume to a GraphQL Resume model.
+// The user and file relations must be provided separately.
+func toGraphQLResume(r *domain.Resume, user *model.User, file *model.File) *model.Resume {
+	if r == nil {
+		return nil
+	}
+
+	// Convert domain status to GraphQL status
+	var status model.ResumeStatus
+	switch r.Status {
+	case domain.ResumeStatusPending:
+		status = model.ResumeStatusPending
+	case domain.ResumeStatusProcessing:
+		status = model.ResumeStatusProcessing
+	case domain.ResumeStatusCompleted:
+		status = model.ResumeStatusCompleted
+	case domain.ResumeStatusFailed:
+		status = model.ResumeStatusFailed
+	default:
+		status = model.ResumeStatusPending
+	}
+
+	return &model.Resume{
+		ID:            r.ID.String(),
+		Status:        status,
+		ExtractedData: toGraphQLResumeExtractedData(r.ExtractedData),
+		ErrorMessage:  r.ErrorMessage,
+		CreatedAt:     r.CreatedAt,
+		UpdatedAt:     r.UpdatedAt,
+		User:          user,
+		File:          file,
+	}
+}
+
+// toGraphQLResumeExtractedData converts JSON raw message to typed ResumeExtractedData.
+func toGraphQLResumeExtractedData(raw json.RawMessage) *model.ResumeExtractedData {
+	if len(raw) == 0 || string(raw) == "null" {
+		return nil
+	}
+
+	var data domain.ResumeExtractedData
+	if err := json.Unmarshal(raw, &data); err != nil {
+		// Return nil for graceful degradation on parse errors
+		return nil
+	}
+
+	return &model.ResumeExtractedData{
+		Name:        data.Name,
+		Email:       data.Email,
+		Phone:       data.Phone,
+		Location:    data.Location,
+		Summary:     data.Summary,
+		Experience:  toGraphQLWorkExperiences(data.Experience),
+		Education:   toGraphQLEducations(data.Education),
+		Skills:      data.Skills,
+		ExtractedAt: data.ExtractedAt,
+		Confidence:  data.Confidence,
+	}
+}
+
+// toGraphQLWorkExperiences converts a slice of domain WorkExperience to GraphQL models.
+func toGraphQLWorkExperiences(experiences []domain.WorkExperience) []*model.WorkExperience {
+	if len(experiences) == 0 {
+		return []*model.WorkExperience{}
+	}
+	result := make([]*model.WorkExperience, len(experiences))
+	for i, e := range experiences {
+		result[i] = &model.WorkExperience{
+			Company:     e.Company,
+			Title:       e.Title,
+			Location:    e.Location,
+			StartDate:   e.StartDate,
+			EndDate:     e.EndDate,
+			IsCurrent:   e.IsCurrent,
+			Description: e.Description,
+		}
+	}
+	return result
+}
+
+// toGraphQLEducations converts a slice of domain Education to GraphQL models.
+func toGraphQLEducations(educations []domain.Education) []*model.Education {
+	if len(educations) == 0 {
+		return []*model.Education{}
+	}
+	result := make([]*model.Education, len(educations))
+	for i, e := range educations {
+		result[i] = &model.Education{
+			Institution:  e.Institution,
+			Degree:       e.Degree,
+			Field:        e.Field,
+			StartDate:    e.StartDate,
+			EndDate:      e.EndDate,
+			Gpa:          e.GPA,
+			Achievements: e.Achievements,
+		}
+	}
+	return result
+}

@@ -203,6 +203,178 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 	}, nil
 }
 
+// UploadResume is the resolver for the uploadResume field.
+func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file graphql.Upload) (model.UploadResumeResponse, error) {
+	r.log.Info("Resume upload started",
+		logger.Feature("upload"),
+		logger.String("user_id", userID),
+		logger.String("filename", file.Filename),
+		logger.String("content_type", file.ContentType),
+		logger.Int64("size_bytes", file.Size),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+		)
+		return &model.FileValidationError{
+			Message: "invalid user ID format",
+			Field:   "userId",
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		r.log.Warning("User not found",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+		)
+		return &model.FileValidationError{
+			Message: "user not found",
+			Field:   "userId",
+		}, nil
+	}
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"application/pdf": true,
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
+		"text/plain": true,
+	}
+
+	if !allowedTypes[file.ContentType] {
+		r.log.Warning("File type not allowed",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("content_type", file.ContentType),
+		)
+		return &model.FileValidationError{
+			Message: "file type not allowed: must be PDF, DOCX, or TXT",
+			Field:   "contentType",
+		}, nil
+	}
+
+	// Validate file size (max 10MB)
+	const maxSize = 10 * 1024 * 1024
+	if file.Size > maxSize {
+		r.log.Warning("File too large",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Int64("size_bytes", file.Size),
+			logger.Int("max_bytes", maxSize),
+		)
+		return &model.FileValidationError{
+			Message: "file too large: maximum size is 10MB",
+			Field:   "size",
+		}, nil
+	}
+
+	// Generate storage key
+	fileID := uuid.New()
+	storageKey := fmt.Sprintf("uploads/%s/%s/%s", uid.String(), fileID.String(), file.Filename)
+
+	// Upload to storage
+	_, err = r.storage.Upload(ctx, storageKey, file.File, file.Size, file.ContentType)
+	if err != nil {
+		r.log.Error("Failed to upload file to storage",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("storage_key", storageKey),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to upload file to storage: %w", err)
+	}
+
+	// Create file record
+	domainFile := &domain.File{
+		ID:          fileID,
+		UserID:      uid,
+		Filename:    file.Filename,
+		ContentType: file.ContentType,
+		SizeBytes:   file.Size,
+		StorageKey:  storageKey,
+	}
+
+	if err := r.fileRepo.Create(ctx, domainFile); err != nil {
+		r.log.Error("Failed to create file record",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
+		// Attempt to clean up uploaded file
+		_ = r.storage.Delete(ctx, storageKey) //nolint:errcheck // Best effort cleanup
+		return nil, fmt.Errorf("failed to create file record: %w", err)
+	}
+
+	// Create resume record with pending status
+	resume := &domain.Resume{
+		ID:     uuid.New(),
+		UserID: uid,
+		FileID: fileID,
+		Status: domain.ResumeStatusPending,
+	}
+
+	if err := r.resumeRepo.Create(ctx, resume); err != nil {
+		r.log.Error("Failed to create resume record",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to create resume record: %w", err)
+	}
+
+	// Enqueue resume processing job
+	if r.jobEnqueuer != nil {
+		if enqueueErr := r.jobEnqueuer.EnqueueResumeProcessing(ctx, domain.ResumeProcessingRequest{
+			ResumeID:    resume.ID,
+			FileID:      fileID,
+			StorageKey:  storageKey,
+			ContentType: file.ContentType,
+		}); enqueueErr != nil {
+			r.log.Error("Failed to enqueue resume processing",
+				logger.Feature("upload"),
+				logger.String("user_id", userID),
+				logger.String("file_id", fileID.String()),
+				logger.String("resume_id", resume.ID.String()),
+				logger.Err(enqueueErr),
+			)
+			return nil, fmt.Errorf("failed to enqueue resume processing: %w", enqueueErr)
+		}
+	}
+
+	r.log.Info("Resume upload completed",
+		logger.Feature("upload"),
+		logger.String("user_id", userID),
+		logger.String("file_id", fileID.String()),
+		logger.String("resume_id", resume.ID.String()),
+		logger.String("storage_key", storageKey),
+	)
+
+	// Build response
+	gqlUser := toGraphQLUser(user)
+	gqlFile := toGraphQLFile(domainFile, gqlUser)
+	gqlResume := toGraphQLResume(resume, gqlUser, gqlFile)
+
+	return &model.UploadResumeResult{
+		File:   gqlFile,
+		Resume: gqlResume,
+	}, nil
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	uid, err := uuid.Parse(id)
@@ -351,6 +523,86 @@ func (r *queryResolver) ReferenceLetters(ctx context.Context, userID string) ([]
 			gqlFile = fileMap[*l.FileID]
 		}
 		result[i] = toGraphQLReferenceLetter(l, gqlUser, gqlFile)
+	}
+
+	return result, nil
+}
+
+// Resume is the resolver for the resume field.
+func (r *queryResolver) Resume(ctx context.Context, id string) (*model.Resume, error) {
+	rid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid resume ID: %w", err)
+	}
+
+	resume, err := r.resumeRepo.GetByID(ctx, rid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resume: %w", err)
+	}
+
+	if resume == nil {
+		return nil, nil
+	}
+
+	// Fetch the user relation
+	user, err := r.userRepo.GetByID(ctx, resume.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user for resume: %w", err)
+	}
+
+	// Fetch the file relation
+	file, err := r.fileRepo.GetByID(ctx, resume.FileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file for resume: %w", err)
+	}
+
+	gqlUser := toGraphQLUser(user)
+	gqlFile := toGraphQLFile(file, gqlUser)
+
+	return toGraphQLResume(resume, gqlUser, gqlFile), nil
+}
+
+// Resumes is the resolver for the resumes field.
+func (r *queryResolver) Resumes(ctx context.Context, userID string) ([]*model.Resume, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	resumes, err := r.resumeRepo.GetByUserID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resumes: %w", err)
+	}
+
+	// Fetch the user once for all resumes
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user for resumes: %w", err)
+	}
+	gqlUser := toGraphQLUser(user)
+
+	// Collect all unique file IDs to batch fetch files
+	fileIDs := make(map[uuid.UUID]bool)
+	for _, res := range resumes {
+		fileIDs[res.FileID] = true
+	}
+
+	// Fetch all files and create a lookup map
+	fileMap := make(map[uuid.UUID]*model.File)
+	for fid := range fileIDs {
+		file, err := r.fileRepo.GetByID(ctx, fid)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get file for resume: %w", err)
+		}
+		if file != nil {
+			fileMap[fid] = toGraphQLFile(file, gqlUser)
+		}
+	}
+
+	result := make([]*model.Resume, len(resumes))
+	for i, res := range resumes {
+		gqlFile := fileMap[res.FileID]
+		result[i] = toGraphQLResume(res, gqlUser, gqlFile)
 	}
 
 	return result, nil

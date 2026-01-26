@@ -210,6 +210,103 @@ type ReferenceLetter {
   file: File
 }
 
+# ============================================================================
+# Resume Extraction Schema
+# ============================================================================
+
+"""
+Processing status of a resume.
+"""
+enum ResumeStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+"""
+A work experience entry from a resume.
+"""
+type WorkExperience {
+  """Company or organization name."""
+  company: String!
+  """Job title or position."""
+  title: String!
+  """Location of the job."""
+  location: String
+  """Start date (e.g., 'Jan 2020', '2020')."""
+  startDate: String
+  """End date (e.g., 'Dec 2023', 'Present')."""
+  endDate: String
+  """Whether this is the current job."""
+  isCurrent: Boolean!
+  """Job description or responsibilities."""
+  description: String
+}
+
+"""
+An education entry from a resume.
+"""
+type Education {
+  """Name of the institution."""
+  institution: String!
+  """Degree obtained (e.g., 'Bachelor of Science', 'PhD')."""
+  degree: String
+  """Field of study (e.g., 'Computer Science')."""
+  field: String
+  """Start date."""
+  startDate: String
+  """End date or expected graduation."""
+  endDate: String
+  """GPA if mentioned."""
+  gpa: String
+  """Notable achievements or honors."""
+  achievements: String
+}
+
+"""
+Structured data extracted from a resume.
+"""
+type ResumeExtractedData {
+  """Full name of the candidate."""
+  name: String!
+  """Email address."""
+  email: String
+  """Phone number."""
+  phone: String
+  """Location (city, state, country)."""
+  location: String
+  """Professional summary or objective."""
+  summary: String
+  """Work experience entries."""
+  experience: [WorkExperience!]!
+  """Education entries."""
+  education: [Education!]!
+  """Skills list."""
+  skills: [String!]!
+  """When the extraction was performed."""
+  extractedAt: DateTime!
+  """Overall confidence score (0.0 to 1.0)."""
+  confidence: Float!
+}
+
+"""
+An uploaded resume with extracted profile data.
+"""
+type Resume {
+  id: ID!
+  """Processing status of the resume."""
+  status: ResumeStatus!
+  """Structured data extracted from the resume by LLM processing."""
+  extractedData: ResumeExtractedData
+  """Error message if processing failed."""
+  errorMessage: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  user: User!
+  file: File!
+}
+
 type Query {
   """
   Get a user by ID.
@@ -235,6 +332,16 @@ type Query {
   Get all reference letters for a user.
   """
   referenceLetters(userId: ID!): [ReferenceLetter!]!
+
+  """
+  Get a resume by ID.
+  """
+  resume(id: ID!): Resume
+
+  """
+  Get all resumes for a user.
+  """
+  resumes(userId: ID!): [Resume!]!
 }
 
 # ============================================================================
@@ -266,6 +373,21 @@ Union type for upload result - either success or validation error.
 """
 union UploadFileResponse = UploadFileResult | FileValidationError
 
+"""
+Result of a resume upload operation.
+"""
+type UploadResumeResult {
+  """The uploaded file metadata."""
+  file: File!
+  """The resume created for processing."""
+  resume: Resume!
+}
+
+"""
+Union type for resume upload result - either success or validation error.
+"""
+union UploadResumeResponse = UploadResumeResult | FileValidationError
+
 type Mutation {
   """
   Upload a reference letter file for processing.
@@ -278,4 +400,16 @@ type Mutation {
     """The file to upload (PDF, DOCX, or TXT only)."""
     file: Upload!
   ): UploadFileResponse!
+
+  """
+  Upload a resume file for processing.
+  Accepts PDF, DOCX, or TXT files.
+  Creates a file record and queues the resume for LLM extraction.
+  """
+  uploadResume(
+    """The user ID uploading the resume."""
+    userId: ID!
+    """The resume file to upload (PDF, DOCX, or TXT only)."""
+    file: Upload!
+  ): UploadResumeResponse!
 }

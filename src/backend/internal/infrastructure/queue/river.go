@@ -117,5 +117,22 @@ func (c *Client) EnqueueDocumentProcessing(ctx context.Context, req domain.Docum
 	return nil
 }
 
+// EnqueueResumeProcessing adds a resume processing job to the queue.
+func (c *Client) EnqueueResumeProcessing(ctx context.Context, req domain.ResumeProcessingRequest) error {
+	args := job.ResumeProcessingArgs{
+		StorageKey:  req.StorageKey,
+		ResumeID:    req.ResumeID,
+		FileID:      req.FileID,
+		ContentType: req.ContentType,
+	}
+
+	_, err := c.riverClient.Insert(ctx, args, nil)
+	if err != nil {
+		return fmt.Errorf("failed to enqueue resume processing job: %w", err)
+	}
+
+	return nil
+}
+
 // Verify Client implements domain.JobEnqueuer.
 var _ domain.JobEnqueuer = (*Client)(nil)

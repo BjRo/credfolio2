@@ -51,6 +51,16 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Education struct {
+		Achievements func(childComplexity int) int
+		Degree       func(childComplexity int) int
+		EndDate      func(childComplexity int) int
+		Field        func(childComplexity int) int
+		Gpa          func(childComplexity int) int
+		Institution  func(childComplexity int) int
+		StartDate    func(childComplexity int) int
+	}
+
 	ExtractedAccomplishment struct {
 		Confidence  func(childComplexity int) int
 		Description func(childComplexity int) int
@@ -124,7 +134,8 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		UploadFile func(childComplexity int, userID string, file graphql.Upload) int
+		UploadFile   func(childComplexity int, userID string, file graphql.Upload) int
+		UploadResume func(childComplexity int, userID string, file graphql.Upload) int
 	}
 
 	Query struct {
@@ -132,6 +143,8 @@ type ComplexityRoot struct {
 		Files            func(childComplexity int, userID string) int
 		ReferenceLetter  func(childComplexity int, id string) int
 		ReferenceLetters func(childComplexity int, userID string) int
+		Resume           func(childComplexity int, id string) int
+		Resumes          func(childComplexity int, userID string) int
 		User             func(childComplexity int, id string) int
 	}
 
@@ -151,9 +164,38 @@ type ComplexityRoot struct {
 		User          func(childComplexity int) int
 	}
 
+	Resume struct {
+		CreatedAt     func(childComplexity int) int
+		ErrorMessage  func(childComplexity int) int
+		ExtractedData func(childComplexity int) int
+		File          func(childComplexity int) int
+		ID            func(childComplexity int) int
+		Status        func(childComplexity int) int
+		UpdatedAt     func(childComplexity int) int
+		User          func(childComplexity int) int
+	}
+
+	ResumeExtractedData struct {
+		Confidence  func(childComplexity int) int
+		Education   func(childComplexity int) int
+		Email       func(childComplexity int) int
+		Experience  func(childComplexity int) int
+		ExtractedAt func(childComplexity int) int
+		Location    func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Phone       func(childComplexity int) int
+		Skills      func(childComplexity int) int
+		Summary     func(childComplexity int) int
+	}
+
 	UploadFileResult struct {
 		File            func(childComplexity int) int
 		ReferenceLetter func(childComplexity int) int
+	}
+
+	UploadResumeResult struct {
+		File   func(childComplexity int) int
+		Resume func(childComplexity int) int
 	}
 
 	User struct {
@@ -162,6 +204,16 @@ type ComplexityRoot struct {
 		ID        func(childComplexity int) int
 		Name      func(childComplexity int) int
 		UpdatedAt func(childComplexity int) int
+	}
+
+	WorkExperience struct {
+		Company     func(childComplexity int) int
+		Description func(childComplexity int) int
+		EndDate     func(childComplexity int) int
+		IsCurrent   func(childComplexity int) int
+		Location    func(childComplexity int) int
+		StartDate   func(childComplexity int) int
+		Title       func(childComplexity int) int
 	}
 }
 
@@ -176,6 +228,7 @@ type ExtractedSkillResolver interface {
 }
 type MutationResolver interface {
 	UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error)
+	UploadResume(ctx context.Context, userID string, file graphql.Upload) (model.UploadResumeResponse, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, id string) (*model.User, error)
@@ -183,6 +236,8 @@ type QueryResolver interface {
 	Files(ctx context.Context, userID string) ([]*model.File, error)
 	ReferenceLetter(ctx context.Context, id string) (*model.ReferenceLetter, error)
 	ReferenceLetters(ctx context.Context, userID string) ([]*model.ReferenceLetter, error)
+	Resume(ctx context.Context, id string) (*model.Resume, error)
+	Resumes(ctx context.Context, userID string) ([]*model.Resume, error)
 }
 
 type executableSchema struct {
@@ -203,6 +258,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Education.achievements":
+		if e.complexity.Education.Achievements == nil {
+			break
+		}
+
+		return e.complexity.Education.Achievements(childComplexity), true
+	case "Education.degree":
+		if e.complexity.Education.Degree == nil {
+			break
+		}
+
+		return e.complexity.Education.Degree(childComplexity), true
+	case "Education.endDate":
+		if e.complexity.Education.EndDate == nil {
+			break
+		}
+
+		return e.complexity.Education.EndDate(childComplexity), true
+	case "Education.field":
+		if e.complexity.Education.Field == nil {
+			break
+		}
+
+		return e.complexity.Education.Field(childComplexity), true
+	case "Education.gpa":
+		if e.complexity.Education.Gpa == nil {
+			break
+		}
+
+		return e.complexity.Education.Gpa(childComplexity), true
+	case "Education.institution":
+		if e.complexity.Education.Institution == nil {
+			break
+		}
+
+		return e.complexity.Education.Institution(childComplexity), true
+	case "Education.startDate":
+		if e.complexity.Education.StartDate == nil {
+			break
+		}
+
+		return e.complexity.Education.StartDate(childComplexity), true
 
 	case "ExtractedAccomplishment.confidence":
 		if e.complexity.ExtractedAccomplishment.Confidence == nil {
@@ -494,6 +592,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UploadFile(childComplexity, args["userId"].(string), args["file"].(graphql.Upload)), true
+	case "Mutation.uploadResume":
+		if e.complexity.Mutation.UploadResume == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_uploadResume_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UploadResume(childComplexity, args["userId"].(string), args["file"].(graphql.Upload)), true
 
 	case "Query.file":
 		if e.complexity.Query.File == nil {
@@ -539,6 +648,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.ReferenceLetters(childComplexity, args["userId"].(string)), true
+	case "Query.resume":
+		if e.complexity.Query.Resume == nil {
+			break
+		}
+
+		args, err := ec.field_Query_resume_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Resume(childComplexity, args["id"].(string)), true
+	case "Query.resumes":
+		if e.complexity.Query.Resumes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_resumes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Resumes(childComplexity, args["userId"].(string)), true
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -630,6 +761,116 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ReferenceLetter.User(childComplexity), true
 
+	case "Resume.createdAt":
+		if e.complexity.Resume.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Resume.CreatedAt(childComplexity), true
+	case "Resume.errorMessage":
+		if e.complexity.Resume.ErrorMessage == nil {
+			break
+		}
+
+		return e.complexity.Resume.ErrorMessage(childComplexity), true
+	case "Resume.extractedData":
+		if e.complexity.Resume.ExtractedData == nil {
+			break
+		}
+
+		return e.complexity.Resume.ExtractedData(childComplexity), true
+	case "Resume.file":
+		if e.complexity.Resume.File == nil {
+			break
+		}
+
+		return e.complexity.Resume.File(childComplexity), true
+	case "Resume.id":
+		if e.complexity.Resume.ID == nil {
+			break
+		}
+
+		return e.complexity.Resume.ID(childComplexity), true
+	case "Resume.status":
+		if e.complexity.Resume.Status == nil {
+			break
+		}
+
+		return e.complexity.Resume.Status(childComplexity), true
+	case "Resume.updatedAt":
+		if e.complexity.Resume.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Resume.UpdatedAt(childComplexity), true
+	case "Resume.user":
+		if e.complexity.Resume.User == nil {
+			break
+		}
+
+		return e.complexity.Resume.User(childComplexity), true
+
+	case "ResumeExtractedData.confidence":
+		if e.complexity.ResumeExtractedData.Confidence == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Confidence(childComplexity), true
+	case "ResumeExtractedData.education":
+		if e.complexity.ResumeExtractedData.Education == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Education(childComplexity), true
+	case "ResumeExtractedData.email":
+		if e.complexity.ResumeExtractedData.Email == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Email(childComplexity), true
+	case "ResumeExtractedData.experience":
+		if e.complexity.ResumeExtractedData.Experience == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Experience(childComplexity), true
+	case "ResumeExtractedData.extractedAt":
+		if e.complexity.ResumeExtractedData.ExtractedAt == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.ExtractedAt(childComplexity), true
+	case "ResumeExtractedData.location":
+		if e.complexity.ResumeExtractedData.Location == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Location(childComplexity), true
+	case "ResumeExtractedData.name":
+		if e.complexity.ResumeExtractedData.Name == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Name(childComplexity), true
+	case "ResumeExtractedData.phone":
+		if e.complexity.ResumeExtractedData.Phone == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Phone(childComplexity), true
+	case "ResumeExtractedData.skills":
+		if e.complexity.ResumeExtractedData.Skills == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Skills(childComplexity), true
+	case "ResumeExtractedData.summary":
+		if e.complexity.ResumeExtractedData.Summary == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Summary(childComplexity), true
+
 	case "UploadFileResult.file":
 		if e.complexity.UploadFileResult.File == nil {
 			break
@@ -642,6 +883,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UploadFileResult.ReferenceLetter(childComplexity), true
+
+	case "UploadResumeResult.file":
+		if e.complexity.UploadResumeResult.File == nil {
+			break
+		}
+
+		return e.complexity.UploadResumeResult.File(childComplexity), true
+	case "UploadResumeResult.resume":
+		if e.complexity.UploadResumeResult.Resume == nil {
+			break
+		}
+
+		return e.complexity.UploadResumeResult.Resume(childComplexity), true
 
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
@@ -673,6 +927,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.UpdatedAt(childComplexity), true
+
+	case "WorkExperience.company":
+		if e.complexity.WorkExperience.Company == nil {
+			break
+		}
+
+		return e.complexity.WorkExperience.Company(childComplexity), true
+	case "WorkExperience.description":
+		if e.complexity.WorkExperience.Description == nil {
+			break
+		}
+
+		return e.complexity.WorkExperience.Description(childComplexity), true
+	case "WorkExperience.endDate":
+		if e.complexity.WorkExperience.EndDate == nil {
+			break
+		}
+
+		return e.complexity.WorkExperience.EndDate(childComplexity), true
+	case "WorkExperience.isCurrent":
+		if e.complexity.WorkExperience.IsCurrent == nil {
+			break
+		}
+
+		return e.complexity.WorkExperience.IsCurrent(childComplexity), true
+	case "WorkExperience.location":
+		if e.complexity.WorkExperience.Location == nil {
+			break
+		}
+
+		return e.complexity.WorkExperience.Location(childComplexity), true
+	case "WorkExperience.startDate":
+		if e.complexity.WorkExperience.StartDate == nil {
+			break
+		}
+
+		return e.complexity.WorkExperience.StartDate(childComplexity), true
+	case "WorkExperience.title":
+		if e.complexity.WorkExperience.Title == nil {
+			break
+		}
+
+		return e.complexity.WorkExperience.Title(childComplexity), true
 
 	}
 	return 0, false
@@ -990,6 +1287,103 @@ type ReferenceLetter {
   file: File
 }
 
+# ============================================================================
+# Resume Extraction Schema
+# ============================================================================
+
+"""
+Processing status of a resume.
+"""
+enum ResumeStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+"""
+A work experience entry from a resume.
+"""
+type WorkExperience {
+  """Company or organization name."""
+  company: String!
+  """Job title or position."""
+  title: String!
+  """Location of the job."""
+  location: String
+  """Start date (e.g., 'Jan 2020', '2020')."""
+  startDate: String
+  """End date (e.g., 'Dec 2023', 'Present')."""
+  endDate: String
+  """Whether this is the current job."""
+  isCurrent: Boolean!
+  """Job description or responsibilities."""
+  description: String
+}
+
+"""
+An education entry from a resume.
+"""
+type Education {
+  """Name of the institution."""
+  institution: String!
+  """Degree obtained (e.g., 'Bachelor of Science', 'PhD')."""
+  degree: String
+  """Field of study (e.g., 'Computer Science')."""
+  field: String
+  """Start date."""
+  startDate: String
+  """End date or expected graduation."""
+  endDate: String
+  """GPA if mentioned."""
+  gpa: String
+  """Notable achievements or honors."""
+  achievements: String
+}
+
+"""
+Structured data extracted from a resume.
+"""
+type ResumeExtractedData {
+  """Full name of the candidate."""
+  name: String!
+  """Email address."""
+  email: String
+  """Phone number."""
+  phone: String
+  """Location (city, state, country)."""
+  location: String
+  """Professional summary or objective."""
+  summary: String
+  """Work experience entries."""
+  experience: [WorkExperience!]!
+  """Education entries."""
+  education: [Education!]!
+  """Skills list."""
+  skills: [String!]!
+  """When the extraction was performed."""
+  extractedAt: DateTime!
+  """Overall confidence score (0.0 to 1.0)."""
+  confidence: Float!
+}
+
+"""
+An uploaded resume with extracted profile data.
+"""
+type Resume {
+  id: ID!
+  """Processing status of the resume."""
+  status: ResumeStatus!
+  """Structured data extracted from the resume by LLM processing."""
+  extractedData: ResumeExtractedData
+  """Error message if processing failed."""
+  errorMessage: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  user: User!
+  file: File!
+}
+
 type Query {
   """
   Get a user by ID.
@@ -1015,6 +1409,16 @@ type Query {
   Get all reference letters for a user.
   """
   referenceLetters(userId: ID!): [ReferenceLetter!]!
+
+  """
+  Get a resume by ID.
+  """
+  resume(id: ID!): Resume
+
+  """
+  Get all resumes for a user.
+  """
+  resumes(userId: ID!): [Resume!]!
 }
 
 # ============================================================================
@@ -1046,6 +1450,21 @@ Union type for upload result - either success or validation error.
 """
 union UploadFileResponse = UploadFileResult | FileValidationError
 
+"""
+Result of a resume upload operation.
+"""
+type UploadResumeResult {
+  """The uploaded file metadata."""
+  file: File!
+  """The resume created for processing."""
+  resume: Resume!
+}
+
+"""
+Union type for resume upload result - either success or validation error.
+"""
+union UploadResumeResponse = UploadResumeResult | FileValidationError
+
 type Mutation {
   """
   Upload a reference letter file for processing.
@@ -1058,6 +1477,18 @@ type Mutation {
     """The file to upload (PDF, DOCX, or TXT only)."""
     file: Upload!
   ): UploadFileResponse!
+
+  """
+  Upload a resume file for processing.
+  Accepts PDF, DOCX, or TXT files.
+  Creates a file record and queues the resume for LLM extraction.
+  """
+  uploadResume(
+    """The user ID uploading the resume."""
+    userId: ID!
+    """The resume file to upload (PDF, DOCX, or TXT only)."""
+    file: Upload!
+  ): UploadResumeResponse!
 }
 `, BuiltIn: false},
 }
@@ -1068,6 +1499,22 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // region    ***************************** args.gotpl *****************************
 
 func (ec *executionContext) field_Mutation_uploadFile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "file", ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload)
+	if err != nil {
+		return nil, err
+	}
+	args["file"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_uploadResume_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
@@ -1128,6 +1575,28 @@ func (ec *executionContext) field_Query_referenceLetter_args(ctx context.Context
 }
 
 func (ec *executionContext) field_Query_referenceLetters_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_resume_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_resumes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
@@ -1200,6 +1669,209 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Education_institution(ctx context.Context, field graphql.CollectedField, obj *model.Education) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Education_institution,
+		func(ctx context.Context) (any, error) {
+			return obj.Institution, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Education_institution(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Education",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Education_degree(ctx context.Context, field graphql.CollectedField, obj *model.Education) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Education_degree,
+		func(ctx context.Context) (any, error) {
+			return obj.Degree, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Education_degree(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Education",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Education_field(ctx context.Context, field graphql.CollectedField, obj *model.Education) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Education_field,
+		func(ctx context.Context) (any, error) {
+			return obj.Field, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Education_field(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Education",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Education_startDate(ctx context.Context, field graphql.CollectedField, obj *model.Education) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Education_startDate,
+		func(ctx context.Context) (any, error) {
+			return obj.StartDate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Education_startDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Education",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Education_endDate(ctx context.Context, field graphql.CollectedField, obj *model.Education) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Education_endDate,
+		func(ctx context.Context) (any, error) {
+			return obj.EndDate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Education_endDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Education",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Education_gpa(ctx context.Context, field graphql.CollectedField, obj *model.Education) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Education_gpa,
+		func(ctx context.Context) (any, error) {
+			return obj.Gpa, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Education_gpa(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Education",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Education_achievements(ctx context.Context, field graphql.CollectedField, obj *model.Education) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Education_achievements,
+		func(ctx context.Context) (any, error) {
+			return obj.Achievements, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Education_achievements(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Education",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _ExtractedAccomplishment_description(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAccomplishment) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -2631,6 +3303,47 @@ func (ec *executionContext) fieldContext_Mutation_uploadFile(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_uploadResume(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_uploadResume,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UploadResume(ctx, fc.Args["userId"].(string), fc.Args["file"].(graphql.Upload))
+		},
+		nil,
+		ec.marshalNUploadResumeResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadResumeResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_uploadResume(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UploadResumeResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_uploadResume_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2930,6 +3643,124 @@ func (ec *executionContext) fieldContext_Query_referenceLetters(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_referenceLetters_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_resume(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_resume,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Resume(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOResume2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResume,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_resume(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Resume_id(ctx, field)
+			case "status":
+				return ec.fieldContext_Resume_status(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_Resume_extractedData(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_Resume_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Resume_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Resume_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_Resume_user(ctx, field)
+			case "file":
+				return ec.fieldContext_Resume_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Resume", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_resume_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_resumes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_resumes,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Resumes(ctx, fc.Args["userId"].(string))
+		},
+		nil,
+		ec.marshalNResume2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResumeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_resumes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Resume_id(ctx, field)
+			case "status":
+				return ec.fieldContext_Resume_status(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_Resume_extractedData(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_Resume_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Resume_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Resume_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_Resume_user(ctx, field)
+			case "file":
+				return ec.fieldContext_Resume_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Resume", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_resumes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3463,6 +4294,610 @@ func (ec *executionContext) fieldContext_ReferenceLetter_file(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Resume_id(ctx context.Context, field graphql.CollectedField, obj *model.Resume) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Resume_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Resume_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resume",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resume_status(ctx context.Context, field graphql.CollectedField, obj *model.Resume) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Resume_status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNResumeStatus2backendᚋinternalᚋgraphqlᚋmodelᚐResumeStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Resume_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resume",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ResumeStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resume_extractedData(ctx context.Context, field graphql.CollectedField, obj *model.Resume) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Resume_extractedData,
+		func(ctx context.Context) (any, error) {
+			return obj.ExtractedData, nil
+		},
+		nil,
+		ec.marshalOResumeExtractedData2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResumeExtractedData,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Resume_extractedData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resume",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_ResumeExtractedData_name(ctx, field)
+			case "email":
+				return ec.fieldContext_ResumeExtractedData_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_ResumeExtractedData_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_ResumeExtractedData_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_ResumeExtractedData_summary(ctx, field)
+			case "experience":
+				return ec.fieldContext_ResumeExtractedData_experience(ctx, field)
+			case "education":
+				return ec.fieldContext_ResumeExtractedData_education(ctx, field)
+			case "skills":
+				return ec.fieldContext_ResumeExtractedData_skills(ctx, field)
+			case "extractedAt":
+				return ec.fieldContext_ResumeExtractedData_extractedAt(ctx, field)
+			case "confidence":
+				return ec.fieldContext_ResumeExtractedData_confidence(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ResumeExtractedData", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resume_errorMessage(ctx context.Context, field graphql.CollectedField, obj *model.Resume) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Resume_errorMessage,
+		func(ctx context.Context) (any, error) {
+			return obj.ErrorMessage, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Resume_errorMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resume",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resume_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Resume) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Resume_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Resume_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resume",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resume_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.Resume) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Resume_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Resume_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resume",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resume_user(ctx context.Context, field graphql.CollectedField, obj *model.Resume) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Resume_user,
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		ec.marshalNUser2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Resume_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resume",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resume_file(ctx context.Context, field graphql.CollectedField, obj *model.Resume) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Resume_file,
+		func(ctx context.Context) (any, error) {
+			return obj.File, nil
+		},
+		nil,
+		ec.marshalNFile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐFile,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Resume_file(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resume",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_File_id(ctx, field)
+			case "filename":
+				return ec.fieldContext_File_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_File_contentType(ctx, field)
+			case "sizeBytes":
+				return ec.fieldContext_File_sizeBytes(ctx, field)
+			case "storageKey":
+				return ec.fieldContext_File_storageKey(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_File_createdAt(ctx, field)
+			case "user":
+				return ec.fieldContext_File_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type File", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_name(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_email(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_email,
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_phone(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_phone,
+		func(ctx context.Context) (any, error) {
+			return obj.Phone, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_phone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_location(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_location,
+		func(ctx context.Context) (any, error) {
+			return obj.Location, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_summary(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_summary,
+		func(ctx context.Context) (any, error) {
+			return obj.Summary, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_summary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_experience(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_experience,
+		func(ctx context.Context) (any, error) {
+			return obj.Experience, nil
+		},
+		nil,
+		ec.marshalNWorkExperience2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐWorkExperienceᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_experience(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "company":
+				return ec.fieldContext_WorkExperience_company(ctx, field)
+			case "title":
+				return ec.fieldContext_WorkExperience_title(ctx, field)
+			case "location":
+				return ec.fieldContext_WorkExperience_location(ctx, field)
+			case "startDate":
+				return ec.fieldContext_WorkExperience_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_WorkExperience_endDate(ctx, field)
+			case "isCurrent":
+				return ec.fieldContext_WorkExperience_isCurrent(ctx, field)
+			case "description":
+				return ec.fieldContext_WorkExperience_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type WorkExperience", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_education(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_education,
+		func(ctx context.Context) (any, error) {
+			return obj.Education, nil
+		},
+		nil,
+		ec.marshalNEducation2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐEducationᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_education(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "institution":
+				return ec.fieldContext_Education_institution(ctx, field)
+			case "degree":
+				return ec.fieldContext_Education_degree(ctx, field)
+			case "field":
+				return ec.fieldContext_Education_field(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Education_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Education_endDate(ctx, field)
+			case "gpa":
+				return ec.fieldContext_Education_gpa(ctx, field)
+			case "achievements":
+				return ec.fieldContext_Education_achievements(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Education", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_skills(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_skills,
+		func(ctx context.Context) (any, error) {
+			return obj.Skills, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_skills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_extractedAt(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_extractedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ExtractedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_extractedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_confidence(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_confidence,
+		func(ctx context.Context) (any, error) {
+			return obj.Confidence, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_confidence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UploadFileResult_file(ctx context.Context, field graphql.CollectedField, obj *model.UploadFileResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3560,6 +4995,98 @@ func (ec *executionContext) fieldContext_UploadFileResult_referenceLetter(_ cont
 				return ec.fieldContext_ReferenceLetter_file(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ReferenceLetter", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadResumeResult_file(ctx context.Context, field graphql.CollectedField, obj *model.UploadResumeResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UploadResumeResult_file,
+		func(ctx context.Context) (any, error) {
+			return obj.File, nil
+		},
+		nil,
+		ec.marshalNFile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐFile,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UploadResumeResult_file(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadResumeResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_File_id(ctx, field)
+			case "filename":
+				return ec.fieldContext_File_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_File_contentType(ctx, field)
+			case "sizeBytes":
+				return ec.fieldContext_File_sizeBytes(ctx, field)
+			case "storageKey":
+				return ec.fieldContext_File_storageKey(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_File_createdAt(ctx, field)
+			case "user":
+				return ec.fieldContext_File_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type File", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadResumeResult_resume(ctx context.Context, field graphql.CollectedField, obj *model.UploadResumeResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UploadResumeResult_resume,
+		func(ctx context.Context) (any, error) {
+			return obj.Resume, nil
+		},
+		nil,
+		ec.marshalNResume2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResume,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UploadResumeResult_resume(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadResumeResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Resume_id(ctx, field)
+			case "status":
+				return ec.fieldContext_Resume_status(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_Resume_extractedData(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_Resume_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Resume_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Resume_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_Resume_user(ctx, field)
+			case "file":
+				return ec.fieldContext_Resume_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Resume", field.Name)
 		},
 	}
 	return fc, nil
@@ -3705,6 +5232,209 @@ func (ec *executionContext) fieldContext_User_updatedAt(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkExperience_company(ctx context.Context, field graphql.CollectedField, obj *model.WorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WorkExperience_company,
+		func(ctx context.Context) (any, error) {
+			return obj.Company, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WorkExperience_company(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkExperience_title(ctx context.Context, field graphql.CollectedField, obj *model.WorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WorkExperience_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WorkExperience_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkExperience_location(ctx context.Context, field graphql.CollectedField, obj *model.WorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WorkExperience_location,
+		func(ctx context.Context) (any, error) {
+			return obj.Location, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WorkExperience_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkExperience_startDate(ctx context.Context, field graphql.CollectedField, obj *model.WorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WorkExperience_startDate,
+		func(ctx context.Context) (any, error) {
+			return obj.StartDate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WorkExperience_startDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkExperience_endDate(ctx context.Context, field graphql.CollectedField, obj *model.WorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WorkExperience_endDate,
+		func(ctx context.Context) (any, error) {
+			return obj.EndDate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WorkExperience_endDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkExperience_isCurrent(ctx context.Context, field graphql.CollectedField, obj *model.WorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WorkExperience_isCurrent,
+		func(ctx context.Context) (any, error) {
+			return obj.IsCurrent, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_WorkExperience_isCurrent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _WorkExperience_description(ctx context.Context, field graphql.CollectedField, obj *model.WorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_WorkExperience_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_WorkExperience_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "WorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5187,9 +6917,87 @@ func (ec *executionContext) _UploadFileResponse(ctx context.Context, sel ast.Sel
 	}
 }
 
+func (ec *executionContext) _UploadResumeResponse(ctx context.Context, sel ast.SelectionSet, obj model.UploadResumeResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UploadResumeResult:
+		return ec._UploadResumeResult(ctx, sel, &obj)
+	case *model.UploadResumeResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UploadResumeResult(ctx, sel, obj)
+	case model.FileValidationError:
+		return ec._FileValidationError(ctx, sel, &obj)
+	case *model.FileValidationError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._FileValidationError(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of UploadResumeResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var educationImplementors = []string{"Education"}
+
+func (ec *executionContext) _Education(ctx context.Context, sel ast.SelectionSet, obj *model.Education) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, educationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Education")
+		case "institution":
+			out.Values[i] = ec._Education_institution(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "degree":
+			out.Values[i] = ec._Education_degree(ctx, field, obj)
+		case "field":
+			out.Values[i] = ec._Education_field(ctx, field, obj)
+		case "startDate":
+			out.Values[i] = ec._Education_startDate(ctx, field, obj)
+		case "endDate":
+			out.Values[i] = ec._Education_endDate(ctx, field, obj)
+		case "gpa":
+			out.Values[i] = ec._Education_gpa(ctx, field, obj)
+		case "achievements":
+			out.Values[i] = ec._Education_achievements(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
 
 var extractedAccomplishmentImplementors = []string{"ExtractedAccomplishment"}
 
@@ -5738,7 +7546,7 @@ func (ec *executionContext) _File(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
-var fileValidationErrorImplementors = []string{"FileValidationError", "UploadFileResponse"}
+var fileValidationErrorImplementors = []string{"FileValidationError", "UploadFileResponse", "UploadResumeResponse"}
 
 func (ec *executionContext) _FileValidationError(ctx context.Context, sel ast.SelectionSet, obj *model.FileValidationError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, fileValidationErrorImplementors)
@@ -5804,6 +7612,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "uploadFile":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_uploadFile(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadResume":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_uploadResume(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5951,6 +7766,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "resume":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_resume(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "resumes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_resumes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -6057,6 +7913,146 @@ func (ec *executionContext) _ReferenceLetter(ctx context.Context, sel ast.Select
 	return out
 }
 
+var resumeImplementors = []string{"Resume"}
+
+func (ec *executionContext) _Resume(ctx context.Context, sel ast.SelectionSet, obj *model.Resume) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resumeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Resume")
+		case "id":
+			out.Values[i] = ec._Resume_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._Resume_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "extractedData":
+			out.Values[i] = ec._Resume_extractedData(ctx, field, obj)
+		case "errorMessage":
+			out.Values[i] = ec._Resume_errorMessage(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._Resume_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Resume_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "user":
+			out.Values[i] = ec._Resume_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "file":
+			out.Values[i] = ec._Resume_file(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var resumeExtractedDataImplementors = []string{"ResumeExtractedData"}
+
+func (ec *executionContext) _ResumeExtractedData(ctx context.Context, sel ast.SelectionSet, obj *model.ResumeExtractedData) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resumeExtractedDataImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResumeExtractedData")
+		case "name":
+			out.Values[i] = ec._ResumeExtractedData_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "email":
+			out.Values[i] = ec._ResumeExtractedData_email(ctx, field, obj)
+		case "phone":
+			out.Values[i] = ec._ResumeExtractedData_phone(ctx, field, obj)
+		case "location":
+			out.Values[i] = ec._ResumeExtractedData_location(ctx, field, obj)
+		case "summary":
+			out.Values[i] = ec._ResumeExtractedData_summary(ctx, field, obj)
+		case "experience":
+			out.Values[i] = ec._ResumeExtractedData_experience(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "education":
+			out.Values[i] = ec._ResumeExtractedData_education(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "skills":
+			out.Values[i] = ec._ResumeExtractedData_skills(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "extractedAt":
+			out.Values[i] = ec._ResumeExtractedData_extractedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "confidence":
+			out.Values[i] = ec._ResumeExtractedData_confidence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var uploadFileResultImplementors = []string{"UploadFileResult", "UploadFileResponse"}
 
 func (ec *executionContext) _UploadFileResult(ctx context.Context, sel ast.SelectionSet, obj *model.UploadFileResult) graphql.Marshaler {
@@ -6075,6 +8071,50 @@ func (ec *executionContext) _UploadFileResult(ctx context.Context, sel ast.Selec
 			}
 		case "referenceLetter":
 			out.Values[i] = ec._UploadFileResult_referenceLetter(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var uploadResumeResultImplementors = []string{"UploadResumeResult", "UploadResumeResponse"}
+
+func (ec *executionContext) _UploadResumeResult(ctx context.Context, sel ast.SelectionSet, obj *model.UploadResumeResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, uploadResumeResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UploadResumeResult")
+		case "file":
+			out.Values[i] = ec._UploadResumeResult_file(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resume":
+			out.Values[i] = ec._UploadResumeResult_resume(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -6134,6 +8174,63 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var workExperienceImplementors = []string{"WorkExperience"}
+
+func (ec *executionContext) _WorkExperience(ctx context.Context, sel ast.SelectionSet, obj *model.WorkExperience) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, workExperienceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WorkExperience")
+		case "company":
+			out.Values[i] = ec._WorkExperience_company(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._WorkExperience_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "location":
+			out.Values[i] = ec._WorkExperience_location(ctx, field, obj)
+		case "startDate":
+			out.Values[i] = ec._WorkExperience_startDate(ctx, field, obj)
+		case "endDate":
+			out.Values[i] = ec._WorkExperience_endDate(ctx, field, obj)
+		case "isCurrent":
+			out.Values[i] = ec._WorkExperience_isCurrent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._WorkExperience_description(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6541,6 +8638,60 @@ func (ec *executionContext) marshalNDateTime2timeᚐTime(ctx context.Context, se
 	return res
 }
 
+func (ec *executionContext) marshalNEducation2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐEducationᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Education) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEducation2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐEducation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNEducation2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐEducation(ctx context.Context, sel ast.SelectionSet, v *model.Education) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Education(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNExtractedAccomplishment2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedAccomplishmentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedAccomplishment) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6916,6 +9067,70 @@ func (ec *executionContext) marshalNReferenceLetterStatus2backendᚋinternalᚋg
 	return v
 }
 
+func (ec *executionContext) marshalNResume2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResumeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Resume) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNResume2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResume(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNResume2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResume(ctx context.Context, sel ast.SelectionSet, v *model.Resume) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Resume(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNResumeStatus2backendᚋinternalᚋgraphqlᚋmodelᚐResumeStatus(ctx context.Context, v any) (model.ResumeStatus, error) {
+	var res model.ResumeStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNResumeStatus2backendᚋinternalᚋgraphqlᚋmodelᚐResumeStatus(ctx context.Context, sel ast.SelectionSet, v model.ResumeStatus) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNSkillCategory2backendᚋinternalᚋdomainᚐSkillCategory(ctx context.Context, v any) (domain.SkillCategory, error) {
 	tmp, err := graphql.UnmarshalString(v)
 	res := domain.SkillCategory(tmp)
@@ -6949,6 +9164,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v any) (graphql.Upload, error) {
 	res, err := graphql.UnmarshalUpload(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6975,6 +9220,16 @@ func (ec *executionContext) marshalNUploadFileResponse2backendᚋinternalᚋgrap
 	return ec._UploadFileResponse(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNUploadResumeResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadResumeResponse(ctx context.Context, sel ast.SelectionSet, v model.UploadResumeResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UploadResumeResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNUser2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -6983,6 +9238,60 @@ func (ec *executionContext) marshalNUser2ᚖbackendᚋinternalᚋgraphqlᚋmodel
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNWorkExperience2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐWorkExperienceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.WorkExperience) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNWorkExperience2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐWorkExperience(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNWorkExperience2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐWorkExperience(ctx context.Context, sel ast.SelectionSet, v *model.WorkExperience) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._WorkExperience(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -7323,6 +9632,20 @@ func (ec *executionContext) marshalOReferenceLetter2ᚖbackendᚋinternalᚋgrap
 		return graphql.Null
 	}
 	return ec._ReferenceLetter(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOResume2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResume(ctx context.Context, sel ast.SelectionSet, v *model.Resume) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Resume(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOResumeExtractedData2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResumeExtractedData(ctx context.Context, sel ast.SelectionSet, v *model.ResumeExtractedData) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ResumeExtractedData(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
