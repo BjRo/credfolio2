@@ -253,6 +253,7 @@ export function EditableWorkExperienceSection({
       )}
 
       <WorkExperienceFormDialog
+        key={selectedExperience?.id ?? "new"}
         open={formDialogOpen}
         onOpenChange={handleFormDialogClose}
         userId={userId}
