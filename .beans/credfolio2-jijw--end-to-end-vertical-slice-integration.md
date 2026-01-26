@@ -1,11 +1,11 @@
 ---
 # credfolio2-jijw
 title: 'Minimal E2E integration: Resume upload to profile view'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-20T15:31:10Z
-updated_at: 2026-01-26T08:55:48Z
+updated_at: 2026-01-26T10:01:01Z
 parent: credfolio2-tikg
 blocking:
     - credfolio2-brav
