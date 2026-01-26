@@ -16,6 +16,7 @@ export type Scalars = {
   Float: { input: number; output: number; }
   DateTime: { input: string; output: string; }
   JSON: { input: Record<string, unknown>; output: Record<string, unknown>; }
+  Upload: { input: any; output: any; }
 };
 
 /** Relationship type between letter author and candidate. */
@@ -27,6 +28,25 @@ export enum AuthorRelationship {
   Other = 'OTHER',
   Professor = 'PROFESSOR'
 }
+
+/** An education entry from a resume. */
+export type Education = {
+  __typename?: 'Education';
+  /** Notable achievements or honors. */
+  achievements?: Maybe<Scalars['String']['output']>;
+  /** Degree obtained (e.g., 'Bachelor of Science', 'PhD'). */
+  degree?: Maybe<Scalars['String']['output']>;
+  /** End date or expected graduation. */
+  endDate?: Maybe<Scalars['String']['output']>;
+  /** Field of study (e.g., 'Computer Science'). */
+  field?: Maybe<Scalars['String']['output']>;
+  /** GPA if mentioned. */
+  gpa?: Maybe<Scalars['String']['output']>;
+  /** Name of the institution. */
+  institution: Scalars['String']['output'];
+  /** Start date. */
+  startDate?: Maybe<Scalars['String']['output']>;
+};
 
 /** An accomplishment cited in a reference letter. */
 export type ExtractedAccomplishment = {
@@ -147,6 +167,43 @@ export type File = {
   user: User;
 };
 
+/** Error returned when file validation fails. */
+export type FileValidationError = {
+  __typename?: 'FileValidationError';
+  /** The field that failed validation (e.g., 'contentType', 'size'). */
+  field: Scalars['String']['output'];
+  /** Error message describing the validation failure. */
+  message: Scalars['String']['output'];
+};
+
+export type Mutation = {
+  __typename?: 'Mutation';
+  /**
+   * Upload a reference letter file for processing.
+   * Accepts PDF, DOCX, or TXT files.
+   * Creates a file record and queues the document for LLM extraction.
+   */
+  uploadFile: UploadFileResponse;
+  /**
+   * Upload a resume file for processing.
+   * Accepts PDF, DOCX, or TXT files.
+   * Creates a file record and queues the resume for LLM extraction.
+   */
+  uploadResume: UploadResumeResponse;
+};
+
+
+export type MutationUploadFileArgs = {
+  file: Scalars['Upload']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationUploadResumeArgs = {
+  file: Scalars['Upload']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type Query = {
   __typename?: 'Query';
   /** Get a file by ID. */
@@ -157,6 +214,10 @@ export type Query = {
   referenceLetter?: Maybe<ReferenceLetter>;
   /** Get all reference letters for a user. */
   referenceLetters: Array<ReferenceLetter>;
+  /** Get a resume by ID. */
+  resume?: Maybe<Resume>;
+  /** Get all resumes for a user. */
+  resumes: Array<Resume>;
   /** Get a user by ID. */
   user?: Maybe<User>;
 };
@@ -178,6 +239,16 @@ export type QueryReferenceLetterArgs = {
 
 
 export type QueryReferenceLettersArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryResumeArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryResumesArgs = {
   userId: Scalars['ID']['input'];
 };
 
@@ -220,12 +291,85 @@ export enum ReferenceLetterStatus {
   Processing = 'PROCESSING'
 }
 
+/** An uploaded resume with extracted profile data. */
+export type Resume = {
+  __typename?: 'Resume';
+  createdAt: Scalars['DateTime']['output'];
+  /** Error message if processing failed. */
+  errorMessage?: Maybe<Scalars['String']['output']>;
+  /** Structured data extracted from the resume by LLM processing. */
+  extractedData?: Maybe<ResumeExtractedData>;
+  file: File;
+  id: Scalars['ID']['output'];
+  /** Processing status of the resume. */
+  status: ResumeStatus;
+  updatedAt: Scalars['DateTime']['output'];
+  user: User;
+};
+
+/** Structured data extracted from a resume. */
+export type ResumeExtractedData = {
+  __typename?: 'ResumeExtractedData';
+  /** Overall confidence score (0.0 to 1.0). */
+  confidence: Scalars['Float']['output'];
+  /** Education entries. */
+  education: Array<Education>;
+  /** Email address. */
+  email?: Maybe<Scalars['String']['output']>;
+  /** Work experience entries. */
+  experience: Array<WorkExperience>;
+  /** When the extraction was performed. */
+  extractedAt: Scalars['DateTime']['output'];
+  /** Location (city, state, country). */
+  location?: Maybe<Scalars['String']['output']>;
+  /** Full name of the candidate. */
+  name: Scalars['String']['output'];
+  /** Phone number. */
+  phone?: Maybe<Scalars['String']['output']>;
+  /** Skills list. */
+  skills: Array<Scalars['String']['output']>;
+  /** Professional summary or objective. */
+  summary?: Maybe<Scalars['String']['output']>;
+};
+
+/** Processing status of a resume. */
+export enum ResumeStatus {
+  Completed = 'COMPLETED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Processing = 'PROCESSING'
+}
+
 /** Skill category classification. */
 export enum SkillCategory {
   Domain = 'DOMAIN',
   Soft = 'SOFT',
   Technical = 'TECHNICAL'
 }
+
+/** Union type for upload result - either success or validation error. */
+export type UploadFileResponse = FileValidationError | UploadFileResult;
+
+/** Result of a file upload operation. */
+export type UploadFileResult = {
+  __typename?: 'UploadFileResult';
+  /** The uploaded file metadata. */
+  file: File;
+  /** The reference letter created for processing. */
+  referenceLetter: ReferenceLetter;
+};
+
+/** Union type for resume upload result - either success or validation error. */
+export type UploadResumeResponse = FileValidationError | UploadResumeResult;
+
+/** Result of a resume upload operation. */
+export type UploadResumeResult = {
+  __typename?: 'UploadResumeResult';
+  /** The uploaded file metadata. */
+  file: File;
+  /** The resume created for processing. */
+  resume: Resume;
+};
 
 /** A user account in the system. */
 export type User = {
@@ -235,6 +379,25 @@ export type User = {
   id: Scalars['ID']['output'];
   name?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
+};
+
+/** A work experience entry from a resume. */
+export type WorkExperience = {
+  __typename?: 'WorkExperience';
+  /** Company or organization name. */
+  company: Scalars['String']['output'];
+  /** Job description or responsibilities. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** End date (e.g., 'Dec 2023', 'Present'). */
+  endDate?: Maybe<Scalars['String']['output']>;
+  /** Whether this is the current job. */
+  isCurrent: Scalars['Boolean']['output'];
+  /** Location of the job. */
+  location?: Maybe<Scalars['String']['output']>;
+  /** Start date (e.g., 'Jan 2020', '2020'). */
+  startDate?: Maybe<Scalars['String']['output']>;
+  /** Job title or position. */
+  title: Scalars['String']['output'];
 };
 
 export type TestConnectionQueryVariables = Exact<{
@@ -272,9 +435,17 @@ export type GetFilesQueryVariables = Exact<{
 
 export type GetFilesQuery = { __typename?: 'Query', files: Array<{ __typename?: 'File', id: string, filename: string, contentType: string, sizeBytes: number, storageKey: string, createdAt: string }> };
 
+export type GetResumeQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetResumeQuery = { __typename?: 'Query', resume?: { __typename?: 'Resume', id: string, status: ResumeStatus, errorMessage?: string | null, createdAt: string, updatedAt: string, extractedData?: { __typename?: 'ResumeExtractedData', name: string, email?: string | null, phone?: string | null, location?: string | null, summary?: string | null, skills: Array<string>, extractedAt: string, confidence: number, experience: Array<{ __typename?: 'WorkExperience', company: string, title: string, location?: string | null, startDate?: string | null, endDate?: string | null, isCurrent: boolean, description?: string | null }>, education: Array<{ __typename?: 'Education', institution: string, degree?: string | null, field?: string | null, startDate?: string | null, endDate?: string | null, gpa?: string | null, achievements?: string | null }> } | null, user: { __typename?: 'User', id: string, email: string, name?: string | null }, file: { __typename?: 'File', id: string, filename: string, contentType: string } } | null };
+
 
 export const TestConnectionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"TestConnection"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetters"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<TestConnectionQuery, TestConnectionQueryVariables>;
 export const GetReferenceLetterDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetter"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"dateWritten"}},{"kind":"Field","name":{"kind":"Name","value":"rawText"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"relationship"}},{"kind":"Field","name":{"kind":"Name","value":"relationshipDetails"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}}]}},{"kind":"Field","name":{"kind":"Name","value":"skills"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"normalizedName"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"mentions"}},{"kind":"Field","name":{"kind":"Name","value":"context"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}}]}},{"kind":"Field","name":{"kind":"Name","value":"qualities"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trait"}},{"kind":"Field","name":{"kind":"Name","value":"evidence"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}}]}},{"kind":"Field","name":{"kind":"Name","value":"accomplishments"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"impact"}},{"kind":"Field","name":{"kind":"Name","value":"timeframe"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recommendation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"strength"}},{"kind":"Field","name":{"kind":"Name","value":"sentiment"}},{"kind":"Field","name":{"kind":"Name","value":"keyQuotes"}},{"kind":"Field","name":{"kind":"Name","value":"summary"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}}]}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"extractedAt"}},{"kind":"Field","name":{"kind":"Name","value":"modelVersion"}},{"kind":"Field","name":{"kind":"Name","value":"overallConfidence"}},{"kind":"Field","name":{"kind":"Name","value":"processingTimeMs"}},{"kind":"Field","name":{"kind":"Name","value":"warningsCount"}},{"kind":"Field","name":{"kind":"Name","value":"warnings"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"sizeBytes"}}]}}]}}]}}]} as unknown as DocumentNode<GetReferenceLetterQuery, GetReferenceLetterQueryVariables>;
 export const GetReferenceLettersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetters"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetters"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetReferenceLettersQuery, GetReferenceLettersQueryVariables>;
 export const GetUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"user"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetUserQuery, GetUserQueryVariables>;
 export const GetFilesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetFiles"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"files"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"sizeBytes"}},{"kind":"Field","name":{"kind":"Name","value":"storageKey"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetFilesQuery, GetFilesQueryVariables>;
+export const GetResumeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetResume"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"resume"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phone"}},{"kind":"Field","name":{"kind":"Name","value":"location"}},{"kind":"Field","name":{"kind":"Name","value":"summary"}},{"kind":"Field","name":{"kind":"Name","value":"experience"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"location"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"isCurrent"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}},{"kind":"Field","name":{"kind":"Name","value":"education"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"institution"}},{"kind":"Field","name":{"kind":"Name","value":"degree"}},{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"gpa"}},{"kind":"Field","name":{"kind":"Name","value":"achievements"}}]}},{"kind":"Field","name":{"kind":"Name","value":"skills"}},{"kind":"Field","name":{"kind":"Name","value":"extractedAt"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errorMessage"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}}]}}]}}]}}]} as unknown as DocumentNode<GetResumeQuery, GetResumeQueryVariables>;

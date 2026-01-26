@@ -100,3 +100,51 @@ query GetFiles($userId: ID!) {
     createdAt
   }
 }
+
+query GetResume($id: ID!) {
+  resume(id: $id) {
+    id
+    status
+    extractedData {
+      name
+      email
+      phone
+      location
+      summary
+      experience {
+        company
+        title
+        location
+        startDate
+        endDate
+        isCurrent
+        description
+      }
+      education {
+        institution
+        degree
+        field
+        startDate
+        endDate
+        gpa
+        achievements
+      }
+      skills
+      extractedAt
+      confidence
+    }
+    errorMessage
+    createdAt
+    updatedAt
+    user {
+      id
+      email
+      name
+    }
+    file {
+      id
+      filename
+      contentType
+    }
+  }
+}
