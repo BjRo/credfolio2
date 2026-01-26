@@ -1,10 +1,11 @@
 ---
 # credfolio2-c1nk
 title: Profile header component
-status: draft
+status: todo
 type: task
+priority: normal
 created_at: 2026-01-23T16:27:58Z
-updated_at: 2026-01-23T16:27:58Z
+updated_at: 2026-01-26T10:19:16Z
 parent: credfolio2-umxd
 ---
 

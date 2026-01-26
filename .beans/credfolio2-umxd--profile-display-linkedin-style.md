@@ -1,10 +1,11 @@
 ---
 # credfolio2-umxd
 title: Profile Display (LinkedIn-style)
-status: draft
+status: todo
 type: epic
+priority: normal
 created_at: 2026-01-23T16:26:56Z
-updated_at: 2026-01-23T16:26:56Z
+updated_at: 2026-01-26T10:19:09Z
 parent: credfolio2-dwid
 ---
 
