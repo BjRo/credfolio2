@@ -23,4 +23,17 @@ describe("SkillsSection", () => {
     const { container } = render(<SkillsSection skills={[]} />);
     expect(container.firstChild).toBeNull();
   });
+
+  describe("Accessibility", () => {
+    it("renders skills in an accessible list", () => {
+      render(<SkillsSection skills={mockSkills} />);
+      expect(screen.getByRole("list", { name: "Skills list" })).toBeInTheDocument();
+    });
+
+    it("renders each skill as a list item", () => {
+      render(<SkillsSection skills={mockSkills} />);
+      const listItems = screen.getAllByRole("listitem");
+      expect(listItems).toHaveLength(5);
+    });
+  });
 });

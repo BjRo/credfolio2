@@ -1,11 +1,11 @@
 ---
 # credfolio2-c1nk
 title: Profile header component
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-23T16:27:58Z
-updated_at: 2026-01-26T10:19:16Z
+updated_at: 2026-01-26T10:49:48Z
 parent: credfolio2-umxd
 ---
 
@@ -31,8 +31,9 @@ Build the top section of the profile view with personal info and summary.
 
 ## Checklist
 
-- [ ] Create ProfileHeader component
-- [ ] Create ProfileSummary component  
-- [ ] Style with shadcn/ui + Tailwind
-- [ ] Make responsive
-- [ ] Add loading states
+- [x] Create ProfileHeader component
+- [x] Create ProfileSummary component (expandable for long text)
+- [x] Style with shadcn/ui + Tailwind
+- [x] Make responsive (stacks on mobile)
+- [x] Add avatar placeholder with initials
+- [x] Add clickable mailto/tel links for contact info

@@ -1,11 +1,11 @@
 ---
 # credfolio2-krpx
 title: Education and certifications sections
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-23T16:28:02Z
-updated_at: 2026-01-26T10:19:17Z
+updated_at: 2026-01-26T10:50:35Z
 parent: credfolio2-umxd
 ---
 
@@ -35,8 +35,8 @@ Display education history and certifications.
 
 ## Checklist
 
-- [ ] Create EducationCard component
-- [ ] Create EducationSection container
-- [ ] Create CertificationItem component
-- [ ] Create CertificationsSection container
-- [ ] Style consistently with rest of profile
+- [x] Create EducationCard component
+- [x] Create EducationSection container
+- [x] Create CertificationItem component (with external link support)
+- [x] Create CertificationsSection container (ready for future data)
+- [x] Style consistently with rest of profile
