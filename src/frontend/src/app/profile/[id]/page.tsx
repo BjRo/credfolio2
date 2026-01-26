@@ -3,7 +3,6 @@
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "urql";
 import {
-  EditableWorkExperienceSection,
   EducationSection,
   ProfileActions,
   ProfileHeader,
@@ -132,33 +131,18 @@ export default function ProfilePage() {
     router.push("/upload-resume");
   };
 
-  // Use profile experiences if available (editable), otherwise fall back to extracted data
-  const hasProfileExperiences = profile && profile.experiences.length > 0;
-
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <ProfileHeader data={extractedData} />
 
-        {/* Show editable section for manual profile management */}
-        {userId && (
-          <EditableWorkExperienceSection
-            experiences={profile?.experiences ?? []}
-            userId={userId}
-            onMutationSuccess={handleMutationSuccess}
-          />
-        )}
-
-        {/* Also show extracted resume data if not yet migrated to profile */}
-        {!hasProfileExperiences && extractedData.experience.length > 0 && (
-          <div className="opacity-60">
-            <p className="text-sm text-gray-500 mb-4 text-center">
-              Below is data extracted from your resume. Use the section above to manually manage
-              your work experience.
-            </p>
-            <WorkExperienceSection experience={extractedData.experience} />
-          </div>
-        )}
+        {/* Unified work experience section - shows profile experiences if available, otherwise resume-extracted */}
+        <WorkExperienceSection
+          experiences={extractedData.experience}
+          profileExperiences={profile?.experiences ?? []}
+          userId={userId}
+          onMutationSuccess={handleMutationSuccess}
+        />
 
         <EducationSection education={extractedData.education} />
         <SkillsSection skills={extractedData.skills} />

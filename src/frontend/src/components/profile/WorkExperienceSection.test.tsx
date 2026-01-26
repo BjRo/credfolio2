@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { WorkExperience } from "./types";
 import { WorkExperienceSection } from "./WorkExperienceSection";
 
-const mockExperience: WorkExperience[] = [
+const mockExperiences: WorkExperience[] = [
   {
     company: "TechCorp",
     title: "Senior Engineer",
@@ -32,56 +32,56 @@ const longDescription =
 
 describe("WorkExperienceSection", () => {
   it("renders the section heading", () => {
-    render(<WorkExperienceSection experience={mockExperience} />);
+    render(<WorkExperienceSection experiences={mockExperiences} />);
     expect(screen.getByRole("heading", { level: 2, name: "Work Experience" })).toBeInTheDocument();
   });
 
   it("renders job titles", () => {
-    render(<WorkExperienceSection experience={mockExperience} />);
+    render(<WorkExperienceSection experiences={mockExperiences} />);
     expect(screen.getByText("Senior Engineer")).toBeInTheDocument();
     expect(screen.getByText("Software Engineer")).toBeInTheDocument();
   });
 
   it("renders company names", () => {
-    render(<WorkExperienceSection experience={mockExperience} />);
+    render(<WorkExperienceSection experiences={mockExperiences} />);
     expect(screen.getByText("TechCorp")).toBeInTheDocument();
     expect(screen.getByText("StartupCo")).toBeInTheDocument();
   });
 
   it("renders locations when provided", () => {
-    render(<WorkExperienceSection experience={mockExperience} />);
+    render(<WorkExperienceSection experiences={mockExperiences} />);
     expect(screen.getByText("San Francisco, CA")).toBeInTheDocument();
     expect(screen.getByText("New York, NY")).toBeInTheDocument();
   });
 
   it("renders date ranges", () => {
-    render(<WorkExperienceSection experience={mockExperience} />);
+    render(<WorkExperienceSection experiences={mockExperiences} />);
     expect(screen.getByText("Jan 2020 - Dec 2023")).toBeInTheDocument();
   });
 
   it("shows Present for current positions", () => {
-    render(<WorkExperienceSection experience={mockExperience} />);
+    render(<WorkExperienceSection experiences={mockExperiences} />);
     expect(screen.getByText("Jun 2018 - Present")).toBeInTheDocument();
   });
 
   it("renders description when provided", () => {
-    render(<WorkExperienceSection experience={mockExperience} />);
+    render(<WorkExperienceSection experiences={mockExperiences} />);
     expect(screen.getByText("Led development of core platform features.")).toBeInTheDocument();
   });
 
-  it("returns null when experience array is empty", () => {
-    const { container } = render(<WorkExperienceSection experience={[]} />);
+  it("returns null when experiences array is empty and not editable", () => {
+    const { container } = render(<WorkExperienceSection experiences={[]} />);
     expect(container.firstChild).toBeNull();
   });
 
   describe("Current Job Highlighting", () => {
     it("shows Current badge for current positions", () => {
-      render(<WorkExperienceSection experience={mockExperience} />);
+      render(<WorkExperienceSection experiences={mockExperiences} />);
       expect(screen.getByText("Current")).toBeInTheDocument();
     });
 
     it("does not show Current badge for past positions", () => {
-      const pastExperience: WorkExperience[] = [
+      const pastExperiences: WorkExperience[] = [
         {
           company: "OldCo",
           title: "Developer",
@@ -92,14 +92,14 @@ describe("WorkExperienceSection", () => {
           description: null,
         },
       ];
-      render(<WorkExperienceSection experience={pastExperience} />);
+      render(<WorkExperienceSection experiences={pastExperiences} />);
       expect(screen.queryByText("Current")).not.toBeInTheDocument();
     });
   });
 
   describe("Expandable Description", () => {
     it("shows expand button for long descriptions", () => {
-      const experienceWithLongDesc: WorkExperience[] = [
+      const experiencesWithLongDesc: WorkExperience[] = [
         {
           company: "TestCo",
           title: "Engineer",
@@ -110,18 +110,18 @@ describe("WorkExperienceSection", () => {
           description: longDescription,
         },
       ];
-      render(<WorkExperienceSection experience={experienceWithLongDesc} />);
+      render(<WorkExperienceSection experiences={experiencesWithLongDesc} />);
       expect(screen.getByRole("button", { name: /show more/i })).toBeInTheDocument();
     });
 
     it("does not show expand button for short descriptions", () => {
-      render(<WorkExperienceSection experience={mockExperience} />);
+      render(<WorkExperienceSection experiences={mockExperiences} />);
       expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
     });
 
     it("toggles description expansion when clicking button", async () => {
       const user = userEvent.setup();
-      const experienceWithLongDesc: WorkExperience[] = [
+      const experiencesWithLongDesc: WorkExperience[] = [
         {
           company: "TestCo",
           title: "Engineer",
@@ -132,7 +132,7 @@ describe("WorkExperienceSection", () => {
           description: longDescription,
         },
       ];
-      render(<WorkExperienceSection experience={experienceWithLongDesc} />);
+      render(<WorkExperienceSection experiences={experiencesWithLongDesc} />);
 
       const button = screen.getByRole("button", { name: /show more/i });
       expect(button).toHaveAttribute("aria-expanded", "false");
