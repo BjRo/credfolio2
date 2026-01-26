@@ -217,3 +217,39 @@ gh pr create --title "..." --body "..."
 5. **Always smoke test** - Verify features work in browser before PR
 6. **Always update bean checklists** - Track progress persistently
 7. **Include bean files in commits** - Keep state synchronized
+
+## Mandatory Definition of Done
+
+**Every bean MUST include a "Definition of Done" checklist at the end of its body.** Add this when creating the bean:
+
+```markdown
+## Definition of Done
+- [ ] Tests written (TDD: write tests before implementation)
+- [ ] `pnpm lint` passes with no errors
+- [ ] `pnpm test` passes with no failures
+- [ ] Visual verification with agent-browser (for UI changes)
+- [ ] All other checklist items above are completed
+```
+
+**You CANNOT mark a bean as completed while it has unchecked items.** This structurally enforces compliance.
+
+### Before Marking Work Complete
+
+Run this verification sequence:
+
+```bash
+# 1. Lint
+pnpm lint
+
+# 2. Test
+pnpm test
+
+# 3. Visual verification (for UI changes)
+pnpm dev  # if not running
+# Then use /skill agent-browser to verify
+
+# 4. Check off all Definition of Done items in the bean
+# 5. Only then: beans update <bean-id> --status completed
+```
+
+**DO NOT skip these steps. DO NOT tell the user "you can verify by running tests" — run them yourself.**
