@@ -1,10 +1,11 @@
 ---
 # credfolio2-v5dw
 title: Manual Profile Editing
-status: draft
+status: todo
 type: epic
+priority: normal
 created_at: 2026-01-23T16:27:00Z
-updated_at: 2026-01-23T16:27:00Z
+updated_at: 2026-01-26T11:43:52Z
 parent: credfolio2-dwid
 ---
 
@@ -13,7 +14,7 @@ Allow users to directly edit any part of their profile.
 ## Editable Fields
 
 - Personal info (name, headline, summary)
-- Work experience (add, edit, remove, reorder positions)
+- Work experience (add, edit, remove)
 - Skills (add, edit, remove, recategorize)
 - Education (add, edit, remove)
 - Any text field from extractions
@@ -30,17 +31,13 @@ Allow users to directly edit any part of their profile.
 - Add new items via form
 - Delete with confirmation
 
-### Drag-and-Drop
-- Reorder positions
-- Reorder skills within categories
-
 ## Validation
 
 - Required fields highlighted
 - Date validation (end after start)
 - Character limits where appropriate
 
-## Change Tracking
+## Out of Scope
 
-- All edits create history entries
-- Can undo individual edits
+- Drag-and-drop reordering (deferred)
+- Change history and undo (see credfolio2-09w1)

@@ -25,9 +25,6 @@ Add, edit, remove, and categorize skills.
 - Click to rename
 - Change category via dropdown
 
-### Reorder (future)
-- Drag and drop within category
-
 ## SkillManager Component
 
 - Shows all skills by category
@@ -36,10 +33,13 @@ Add, edit, remove, and categorize skills.
 
 ## Checklist
 
+- [ ] Add GraphQL mutations for skill CRUD (add, update, delete)
 - [ ] Add "add skill" UI per category
 - [ ] Add remove button to skill tags
-- [ ] Implement skill rename
-- [ ] Implement category change
-- [ ] Connect to mutations
-- [ ] Create version snapshots
+- [ ] Implement skill rename (connect to mutation)
+- [ ] Implement category change (connect to mutation)
 - [ ] Handle skills with sources carefully (warn on delete)
+
+## Out of Scope
+
+- Drag-and-drop reordering (deferred)

@@ -44,11 +44,11 @@ States:
 
 ## Checklist
 
+- [ ] Add GraphQL mutation for updating profile text fields
 - [ ] Create EditableText component
 - [ ] Create EditableTextArea component (multiline)
 - [ ] Add edit mode styling
-- [ ] Implement save handlers
+- [ ] Implement save handlers (connect to mutation)
 - [ ] Add to profile header fields
 - [ ] Add to experience cards
-- [ ] Create version snapshot on edit
 - [ ] Handle validation errors

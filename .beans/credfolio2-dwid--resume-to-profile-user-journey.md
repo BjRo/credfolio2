@@ -1,11 +1,11 @@
 ---
 # credfolio2-dwid
 title: Resume-to-Profile User Journey
-status: todo
+status: in-progress
 type: milestone
 priority: normal
 created_at: 2026-01-23T16:26:18Z
-updated_at: 2026-01-26T10:19:10Z
+updated_at: 2026-01-26T11:39:11Z
 ---
 
 Complete user flow from resume upload through profile enhancement and PDF export.

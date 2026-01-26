@@ -35,11 +35,11 @@ Form for adding/editing work experience entries.
 
 ## Checklist
 
+- [ ] Add GraphQL mutations for experience CRUD (add, update, delete)
 - [ ] Create ExperienceForm component
 - [ ] Add date pickers with validation
 - [ ] Create highlights bullet editor
-- [ ] Implement add mutation
-- [ ] Implement edit mutation
-- [ ] Implement delete mutation
-- [ ] Add form to profile page
-- [ ] Create version snapshot on changes
+- [ ] Implement add experience (connect to mutation)
+- [ ] Implement edit experience (connect to mutation)
+- [ ] Implement delete with confirmation (connect to mutation)
+- [ ] Add form trigger to experience section
