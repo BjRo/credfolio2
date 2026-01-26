@@ -17,11 +17,11 @@ Add mandatory Definition of Done checklist items and pre-completion reminder to 
 - [x] Research how to add bean templates or default checklist items
 - [x] Implement mandatory Definition of Done checklist for beans
 - [x] Add pre-completion reminder section to CLAUDE.md
-- [ ] Push to branch and open PR
+- [x] Push to branch and open PR
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation) — N/A: docs-only change
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures — N/A: docs-only change
+- [x] Visual verification with agent-browser (for UI changes) — N/A: no UI changes
+- [x] All other checklist items above are completed
