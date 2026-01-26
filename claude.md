@@ -1,5 +1,20 @@
 # Credfolio2 - Project Context for Claude Code
 
+## STOP — Before Marking Any Work Complete
+
+**You MUST complete ALL of these steps before marking a bean as completed or telling the user you're done:**
+
+1. **Run lint**: `pnpm lint` — fix all errors
+2. **Run tests**: `pnpm test` — all tests must pass
+3. **Visual verification** (for ANY UI changes): Use `/skill agent-browser` to verify the feature works in the browser
+4. **Bean checklist**: Ensure ALL checklist items in the bean are checked off
+
+**DO NOT skip these steps.**
+**DO NOT say "you can run tests to verify" — run them yourself.**
+**DO NOT mark a bean complete if it has unchecked checklist items.**
+
+---
+
 ## Directory Structure
 
 ```
@@ -132,6 +147,21 @@ This project follows a strict workflow for all feature development. See `.claude
 2. **TDD**: Write tests before implementation (see `/skill tdd`)
 3. **PR Review**: All changes require human review before merge
 4. **Beans Tracking**: Use beans to track all work (see `/skill issue-tracking-with-beans`)
+
+### Mandatory Bean Checklist Items
+
+**Every bean you create MUST include a "Definition of Done" checklist section.** This section should be at the end of the bean body and include these mandatory items:
+
+```markdown
+## Definition of Done
+- [ ] Tests written (TDD: write tests before implementation)
+- [ ] `pnpm lint` passes with no errors
+- [ ] `pnpm test` passes with no failures
+- [ ] Visual verification with agent-browser (for UI changes)
+- [ ] All other checklist items above are completed
+```
+
+You cannot mark a bean as completed while it has unchecked items. This structurally enforces the workflow compliance.
 
 ### Quick Reference
 
