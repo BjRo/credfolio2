@@ -148,3 +148,26 @@ query GetResume($id: ID!) {
     }
   }
 }
+
+query GetProfile($userId: ID!) {
+  profile(userId: $userId) {
+    id
+    experiences {
+      id
+      company
+      title
+      location
+      startDate
+      endDate
+      isCurrent
+      description
+      highlights
+      displayOrder
+      source
+      createdAt
+      updatedAt
+    }
+    createdAt
+    updatedAt
+  }
+}

@@ -45,18 +45,18 @@ Form for adding/editing work experience entries.
 - [x] Implement resolvers for experience CRUD
 
 ### Phase 2: Frontend UI Components
-- [ ] Add Radix UI Dialog dependency
-- [ ] Create shadcn/ui-style dialog, input, label, textarea, checkbox
-- [ ] Create MonthYearPicker component
-- [ ] Create HighlightsEditor component
+- [x] Add Radix UI Dialog dependency
+- [x] Create shadcn/ui-style dialog, input, label, textarea, checkbox
+- [x] Create MonthYearPicker component
+- [x] Create HighlightsEditor component
 
 ### Phase 3: Experience Form
-- [ ] Create WorkExperienceForm component
-- [ ] Create WorkExperienceFormDialog (modal wrapper)
-- [ ] Create DeleteExperienceDialog (confirmation)
-- [ ] Add GraphQL mutations to frontend
+- [x] Create WorkExperienceForm component
+- [x] Create WorkExperienceFormDialog (modal wrapper)
+- [x] Create DeleteExperienceDialog (confirmation)
+- [x] Add GraphQL mutations to frontend
 
 ### Phase 4: Integration
-- [ ] Update WorkExperienceSection with edit triggers
-- [ ] Connect form to mutations
-- [ ] End-to-end testing
+- [x] Update WorkExperienceSection with edit triggers
+- [x] Connect form to mutations
+- [x] End-to-end testing (build passes, backend tests pass)
