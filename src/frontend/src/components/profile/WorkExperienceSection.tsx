@@ -162,6 +162,13 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
   const endDate = experience.isCurrent ? "Present" : formatDate(experience.endDate) || "N/A";
   const dateRange = startDate ? `${startDate} - ${endDate}` : null;
 
+  const durationMonths = calculateDurationMonths(
+    experience.startDate,
+    experience.endDate,
+    experience.isCurrent
+  );
+  const duration = durationMonths !== null ? formatDuration(durationMonths) : null;
+
   return (
     <div className={`relative ${!isFirst ? "pt-6 border-t border-gray-200" : ""}`}>
       {/* Green current indicator - vertically centered with title row */}
@@ -195,19 +202,25 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
               )}
             </h3>
             <p className="text-gray-700">{experience.company}</p>
+            {/* Date and duration - below company */}
+            {dateRange && (
+              <p className="text-sm text-gray-500">
+                {dateRange}
+                {duration && <span className="hidden sm:inline"> · {duration}</span>}
+              </p>
+            )}
+            {/* Duration on mobile - separate line */}
+            {duration && dateRange && <p className="text-sm text-gray-500 sm:hidden">{duration}</p>}
             {experience.location && (
               <p className="text-sm text-gray-500 flex items-center gap-1">
                 <MapPin className="w-3 h-3" aria-hidden="true" />
                 {experience.location}
               </p>
             )}
-            {/* Date on mobile - appears below location */}
-            {dateRange && <p className="text-sm text-gray-500 sm:hidden">{dateRange}</p>}
           </div>
         </div>
-        {/* Desktop: date + kebab on right side */}
+        {/* Desktop: kebab on right side */}
         <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
-          {dateRange && <span className="text-sm text-gray-500">{dateRange}</span>}
           <ActionMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       </div>

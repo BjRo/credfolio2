@@ -33,31 +33,44 @@ export function formatDate(dateStr: string | null | undefined): string | null {
     return "Present";
   }
 
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
   // Try to parse ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)
   const isoMatch = dateStr.match(/^-?(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) {
     const year = isoMatch[1];
     const month = parseInt(isoMatch[2], 10);
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
 
     // Validate month
     if (month >= 1 && month <= 12) {
       return `${monthNames[month - 1]} ${year}`;
     }
     // If month is invalid, just return the year
+    return year;
+  }
+
+  // Try to parse partial ISO format (YYYY-MM without day)
+  const partialIsoMatch = dateStr.match(/^(\d{4})-(\d{2})$/);
+  if (partialIsoMatch) {
+    const year = partialIsoMatch[1];
+    const month = parseInt(partialIsoMatch[2], 10);
+
+    if (month >= 1 && month <= 12) {
+      return `${monthNames[month - 1]} ${year}`;
+    }
     return year;
   }
 
@@ -95,6 +108,14 @@ export function parseToDate(dateStr: string | null | undefined): Date | null {
     const month = parseInt(isoMatch[2], 10) - 1; // JS months are 0-indexed
     const day = parseInt(isoMatch[3], 10);
     return new Date(year, month, day);
+  }
+
+  // Try partial ISO format (YYYY-MM without day)
+  const partialIsoMatch = dateStr.match(/^(\d{4})-(\d{2})$/);
+  if (partialIsoMatch) {
+    const year = parseInt(partialIsoMatch[1], 10);
+    const month = parseInt(partialIsoMatch[2], 10) - 1; // JS months are 0-indexed
+    return new Date(year, month, 1);
   }
 
   // Try human-readable format (e.g., "Jan 2020", "January 2020", "2020")
