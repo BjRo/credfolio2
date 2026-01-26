@@ -375,6 +375,264 @@ func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file
 	}, nil
 }
 
+// CreateExperience is the resolver for the createExperience field.
+func (r *mutationResolver) CreateExperience(ctx context.Context, userID string, input model.CreateExperienceInput) (model.ExperienceResponse, error) {
+	r.log.Info("Creating work experience",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.ExperienceValidationError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		r.log.Warning("User not found",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.ExperienceValidationError{
+			Message: "user not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Get or create profile for user
+	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get or create profile",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Get next display order
+	displayOrder, err := r.profileExpRepo.GetNextDisplayOrder(ctx, profile.ID)
+	if err != nil {
+		r.log.Error("Failed to get next display order",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get next display order: %w", err)
+	}
+
+	// Convert highlights
+	var highlights []string
+	if input.Highlights != nil {
+		highlights = input.Highlights
+	}
+
+	// Create experience
+	experience := &domain.ProfileExperience{
+		ID:           uuid.New(),
+		ProfileID:    profile.ID,
+		Company:      input.Company,
+		Title:        input.Title,
+		Location:     input.Location,
+		StartDate:    input.StartDate,
+		EndDate:      input.EndDate,
+		IsCurrent:    input.IsCurrent,
+		Description:  input.Description,
+		Highlights:   highlights,
+		DisplayOrder: displayOrder,
+		Source:       domain.ExperienceSourceManual,
+	}
+
+	if err := r.profileExpRepo.Create(ctx, experience); err != nil {
+		r.log.Error("Failed to create experience",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to create experience: %w", err)
+	}
+
+	r.log.Info("Work experience created",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+		logger.String("experience_id", experience.ID.String()),
+	)
+
+	return &model.ExperienceResult{
+		Experience: toGraphQLProfileExperience(experience),
+	}, nil
+}
+
+// UpdateExperience is the resolver for the updateExperience field.
+func (r *mutationResolver) UpdateExperience(ctx context.Context, id string, input model.UpdateExperienceInput) (model.ExperienceResponse, error) {
+	r.log.Info("Updating work experience",
+		logger.Feature("profile"),
+		logger.String("experience_id", id),
+	)
+
+	// Parse and validate experience ID
+	expID, err := uuid.Parse(id)
+	if err != nil {
+		r.log.Warning("Invalid experience ID format",
+			logger.Feature("profile"),
+			logger.String("experience_id", id),
+		)
+		return &model.ExperienceValidationError{
+			Message: "invalid experience ID format",
+			Field:   stringPtr("id"),
+		}, nil
+	}
+
+	// Get existing experience
+	experience, err := r.profileExpRepo.GetByID(ctx, expID)
+	if err != nil {
+		r.log.Error("Failed to get experience",
+			logger.Feature("profile"),
+			logger.String("experience_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get experience: %w", err)
+	}
+	if experience == nil {
+		r.log.Warning("Experience not found",
+			logger.Feature("profile"),
+			logger.String("experience_id", id),
+		)
+		return &model.ExperienceValidationError{
+			Message: "experience not found",
+			Field:   stringPtr("id"),
+		}, nil
+	}
+
+	// Update fields if provided
+	if input.Company != nil {
+		experience.Company = *input.Company
+	}
+	if input.Title != nil {
+		experience.Title = *input.Title
+	}
+	if input.Location != nil {
+		experience.Location = input.Location
+	}
+	if input.StartDate != nil {
+		experience.StartDate = input.StartDate
+	}
+	if input.EndDate != nil {
+		experience.EndDate = input.EndDate
+	}
+	if input.IsCurrent != nil {
+		experience.IsCurrent = *input.IsCurrent
+	}
+	if input.Description != nil {
+		experience.Description = input.Description
+	}
+	if input.Highlights != nil {
+		experience.Highlights = input.Highlights
+	}
+
+	if err := r.profileExpRepo.Update(ctx, experience); err != nil {
+		r.log.Error("Failed to update experience",
+			logger.Feature("profile"),
+			logger.String("experience_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to update experience: %w", err)
+	}
+
+	r.log.Info("Work experience updated",
+		logger.Feature("profile"),
+		logger.String("experience_id", id),
+	)
+
+	return &model.ExperienceResult{
+		Experience: toGraphQLProfileExperience(experience),
+	}, nil
+}
+
+// DeleteExperience is the resolver for the deleteExperience field.
+func (r *mutationResolver) DeleteExperience(ctx context.Context, id string) (*model.DeleteResult, error) {
+	r.log.Info("Deleting work experience",
+		logger.Feature("profile"),
+		logger.String("experience_id", id),
+	)
+
+	// Parse and validate experience ID
+	expID, err := uuid.Parse(id)
+	if err != nil {
+		r.log.Warning("Invalid experience ID format",
+			logger.Feature("profile"),
+			logger.String("experience_id", id),
+		)
+		return &model.DeleteResult{
+			Success:   false,
+			DeletedID: id,
+		}, nil
+	}
+
+	// Check if experience exists
+	experience, err := r.profileExpRepo.GetByID(ctx, expID)
+	if err != nil {
+		r.log.Error("Failed to get experience",
+			logger.Feature("profile"),
+			logger.String("experience_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get experience: %w", err)
+	}
+	if experience == nil {
+		r.log.Warning("Experience not found",
+			logger.Feature("profile"),
+			logger.String("experience_id", id),
+		)
+		return &model.DeleteResult{
+			Success:   false,
+			DeletedID: id,
+		}, nil
+	}
+
+	// Delete experience
+	if err := r.profileExpRepo.Delete(ctx, expID); err != nil {
+		r.log.Error("Failed to delete experience",
+			logger.Feature("profile"),
+			logger.String("experience_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to delete experience: %w", err)
+	}
+
+	r.log.Info("Work experience deleted",
+		logger.Feature("profile"),
+		logger.String("experience_id", id),
+	)
+
+	return &model.DeleteResult{
+		Success:   true,
+		DeletedID: id,
+	}, nil
+}
+
+// stringPtr returns a pointer to a string.
+func stringPtr(s string) *string {
+	return &s
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	uid, err := uuid.Parse(id)
@@ -606,6 +864,57 @@ func (r *queryResolver) Resumes(ctx context.Context, userID string) ([]*model.Re
 	}
 
 	return result, nil
+}
+
+// Profile is the resolver for the profile field.
+func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Profile, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	// Get the profile
+	profile, err := r.profileRepo.GetByUserID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile: %w", err)
+	}
+	if profile == nil {
+		return nil, nil
+	}
+
+	// Fetch the user
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user for profile: %w", err)
+	}
+	gqlUser := toGraphQLUser(user)
+
+	// Fetch experiences
+	experiences, err := r.profileExpRepo.GetByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get experiences for profile: %w", err)
+	}
+	gqlExperiences := toGraphQLProfileExperiences(experiences)
+
+	return toGraphQLProfile(profile, gqlUser, gqlExperiences), nil
+}
+
+// ProfileExperience is the resolver for the profileExperience field.
+func (r *queryResolver) ProfileExperience(ctx context.Context, id string) (*model.ProfileExperience, error) {
+	expID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid experience ID: %w", err)
+	}
+
+	experience, err := r.profileExpRepo.GetByID(ctx, expID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get experience: %w", err)
+	}
+	if experience == nil {
+		return nil, nil
+	}
+
+	return toGraphQLProfileExperience(experience), nil
 }
 
 // ExtractedAuthor returns generated.ExtractedAuthorResolver implementation.

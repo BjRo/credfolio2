@@ -18,11 +18,11 @@
   "portsAttributes": {
     "3000": {
       "label": "Next.js Dev Server",
-      "onAutoForward": "notify"
+      "onAutoForward": "openBrowserOnce"
     },
     "8080": {
       "label": "Go Backend",
-      "onAutoForward": "notify"
+      "onAutoForward": "silent"
     }
   },
   "customizations": {

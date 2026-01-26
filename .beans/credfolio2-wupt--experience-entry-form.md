@@ -1,10 +1,11 @@
 ---
 # credfolio2-wupt
 title: Experience entry form
-status: draft
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-01-23T16:29:28Z
-updated_at: 2026-01-23T16:29:28Z
+updated_at: 2026-01-26T11:46:44Z
 parent: credfolio2-v5dw
 ---
 
@@ -35,11 +36,27 @@ Form for adding/editing work experience entries.
 
 ## Checklist
 
-- [ ] Add GraphQL mutations for experience CRUD (add, update, delete)
-- [ ] Create ExperienceForm component
-- [ ] Add date pickers with validation
-- [ ] Create highlights bullet editor
-- [ ] Implement add experience (connect to mutation)
-- [ ] Implement edit experience (connect to mutation)
-- [ ] Implement delete with confirmation (connect to mutation)
-- [ ] Add form trigger to experience section
+### Phase 1: Backend
+- [x] Create database migration for profiles and profile_experiences tables
+- [x] Add Profile and ProfileExperience domain entities
+- [x] Add ProfileRepository and ProfileExperienceRepository interfaces
+- [x] Implement Postgres repositories
+- [x] Add GraphQL schema (input types, mutations, Profile query)
+- [x] Implement resolvers for experience CRUD
+
+### Phase 2: Frontend UI Components
+- [x] Add Radix UI Dialog dependency
+- [x] Create shadcn/ui-style dialog, input, label, textarea, checkbox
+- [x] Create MonthYearPicker component
+- [x] Create HighlightsEditor component
+
+### Phase 3: Experience Form
+- [x] Create WorkExperienceForm component
+- [x] Create WorkExperienceFormDialog (modal wrapper)
+- [x] Create DeleteExperienceDialog (confirmation)
+- [x] Add GraphQL mutations to frontend
+
+### Phase 4: Integration
+- [x] Update WorkExperienceSection with edit triggers
+- [x] Connect form to mutations
+- [x] End-to-end testing (build passes, backend tests pass)

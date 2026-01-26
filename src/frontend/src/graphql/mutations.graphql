@@ -1,0 +1,58 @@
+mutation CreateExperience($userId: ID!, $input: CreateExperienceInput!) {
+  createExperience(userId: $userId, input: $input) {
+    ... on ExperienceResult {
+      experience {
+        id
+        company
+        title
+        location
+        startDate
+        endDate
+        isCurrent
+        description
+        highlights
+        displayOrder
+        source
+        createdAt
+        updatedAt
+      }
+    }
+    ... on ExperienceValidationError {
+      message
+      field
+    }
+  }
+}
+
+mutation UpdateExperience($id: ID!, $input: UpdateExperienceInput!) {
+  updateExperience(id: $id, input: $input) {
+    ... on ExperienceResult {
+      experience {
+        id
+        company
+        title
+        location
+        startDate
+        endDate
+        isCurrent
+        description
+        highlights
+        displayOrder
+        source
+        createdAt
+        updatedAt
+      }
+    }
+    ... on ExperienceValidationError {
+      message
+      field
+    }
+  }
+}
+
+mutation DeleteExperience($id: ID!) {
+  deleteExperience(id: $id) {
+    success
+    deletedId
+  }
+}

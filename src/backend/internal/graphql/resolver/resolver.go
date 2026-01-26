@@ -14,13 +14,15 @@ import (
 // Resolver is the root resolver for the GraphQL schema.
 // It holds dependencies needed by query and mutation resolvers.
 type Resolver struct {
-	userRepo      domain.UserRepository
-	fileRepo      domain.FileRepository
-	refLetterRepo domain.ReferenceLetterRepository
-	resumeRepo    domain.ResumeRepository
-	storage       domain.Storage
-	jobEnqueuer   domain.JobEnqueuer
-	log           logger.Logger
+	userRepo           domain.UserRepository
+	fileRepo           domain.FileRepository
+	refLetterRepo      domain.ReferenceLetterRepository
+	resumeRepo         domain.ResumeRepository
+	profileRepo        domain.ProfileRepository
+	profileExpRepo     domain.ProfileExperienceRepository
+	storage            domain.Storage
+	jobEnqueuer        domain.JobEnqueuer
+	log                logger.Logger
 }
 
 // NewResolver creates a new Resolver with the given repositories.
@@ -29,17 +31,21 @@ func NewResolver(
 	fileRepo domain.FileRepository,
 	refLetterRepo domain.ReferenceLetterRepository,
 	resumeRepo domain.ResumeRepository,
+	profileRepo domain.ProfileRepository,
+	profileExpRepo domain.ProfileExperienceRepository,
 	storage domain.Storage,
 	jobEnqueuer domain.JobEnqueuer,
 	log logger.Logger,
 ) *Resolver {
 	return &Resolver{
-		userRepo:      userRepo,
-		fileRepo:      fileRepo,
-		refLetterRepo: refLetterRepo,
-		resumeRepo:    resumeRepo,
-		storage:       storage,
-		jobEnqueuer:   jobEnqueuer,
-		log:           log,
+		userRepo:       userRepo,
+		fileRepo:       fileRepo,
+		refLetterRepo:  refLetterRepo,
+		resumeRepo:     resumeRepo,
+		profileRepo:    profileRepo,
+		profileExpRepo: profileExpRepo,
+		storage:        storage,
+		jobEnqueuer:    jobEnqueuer,
+		log:            log,
 	}
 }

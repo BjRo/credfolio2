@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useCallback } from "react";
 import { useQuery } from "urql";
 import {
   EducationSection,
@@ -11,19 +12,34 @@ import {
   WorkExperienceSection,
 } from "@/components/profile";
 import { Button } from "@/components/ui/button";
-import { GetResumeDocument, ResumeStatus } from "@/graphql/generated/graphql";
+import { GetProfileDocument, GetResumeDocument, ResumeStatus } from "@/graphql/generated/graphql";
 
 export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
   const resumeId = params.id as string;
 
-  const [result] = useQuery({
+  const [resumeResult, _reexecuteResumeQuery] = useQuery({
     query: GetResumeDocument,
     variables: { id: resumeId },
   });
 
-  const { data, fetching, error } = result;
+  // Get user ID from resume to fetch their profile
+  const userId = resumeResult.data?.resume?.user?.id;
+
+  const [profileResult, reexecuteProfileQuery] = useQuery({
+    query: GetProfileDocument,
+    variables: { userId: userId || "" },
+    pause: !userId, // Don't run until we have userId
+  });
+
+  const { data, fetching, error } = resumeResult;
+  const profile = profileResult.data?.profile;
+
+  // Refetch profile when mutations succeed - memoized to prevent unnecessary re-renders
+  const handleMutationSuccess = useCallback(() => {
+    reexecuteProfileQuery({ requestPolicy: "network-only" });
+  }, [reexecuteProfileQuery]);
 
   if (fetching) {
     return (
@@ -87,9 +103,9 @@ export default function ProfilePage() {
     );
   }
 
-  const profileData = resume.extractedData;
+  const extractedData = resume.extractedData;
 
-  if (!profileData) {
+  if (!extractedData) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
@@ -119,10 +135,18 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        <ProfileHeader data={profileData} />
-        <WorkExperienceSection experience={profileData.experience} />
-        <EducationSection education={profileData.education} />
-        <SkillsSection skills={profileData.skills} />
+        <ProfileHeader data={extractedData} />
+
+        {/* Unified work experience section - shows profile experiences if available, otherwise resume-extracted */}
+        <WorkExperienceSection
+          experiences={extractedData.experience}
+          profileExperiences={profile?.experiences ?? []}
+          userId={userId}
+          onMutationSuccess={handleMutationSuccess}
+        />
+
+        <EducationSection education={extractedData.education} />
+        <SkillsSection skills={extractedData.skills} />
         <ProfileActions
           onAddReference={handleAddReference}
           onExport={handleExport}

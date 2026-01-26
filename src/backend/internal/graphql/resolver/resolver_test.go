@@ -255,6 +255,117 @@ func (e *mockJobEnqueuer) EnqueueResumeProcessing(_ context.Context, req domain.
 	return nil
 }
 
+// mockProfileRepository is a mock implementation of domain.ProfileRepository.
+type mockProfileRepository struct {
+	profiles map[uuid.UUID]*domain.Profile
+}
+
+func newMockProfileRepository() *mockProfileRepository {
+	return &mockProfileRepository{profiles: make(map[uuid.UUID]*domain.Profile)}
+}
+
+func (r *mockProfileRepository) Create(_ context.Context, profile *domain.Profile) error {
+	if profile.ID == uuid.Nil {
+		profile.ID = uuid.New()
+	}
+	r.profiles[profile.ID] = profile
+	return nil
+}
+
+func (r *mockProfileRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Profile, error) {
+	profile, ok := r.profiles[id]
+	if !ok {
+		return nil, nil
+	}
+	return profile, nil
+}
+
+func (r *mockProfileRepository) GetByUserID(_ context.Context, userID uuid.UUID) (*domain.Profile, error) {
+	for _, profile := range r.profiles {
+		if profile.UserID == userID {
+			return profile, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *mockProfileRepository) GetOrCreateByUserID(ctx context.Context, userID uuid.UUID) (*domain.Profile, error) {
+	profile, err := r.GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if profile != nil {
+		return profile, nil
+	}
+	profile = &domain.Profile{
+		ID:     uuid.New(),
+		UserID: userID,
+	}
+	if err := r.Create(ctx, profile); err != nil {
+		return nil, err
+	}
+	return profile, nil
+}
+
+func (r *mockProfileRepository) Update(_ context.Context, profile *domain.Profile) error {
+	r.profiles[profile.ID] = profile
+	return nil
+}
+
+func (r *mockProfileRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.profiles, id)
+	return nil
+}
+
+// mockProfileExperienceRepository is a mock implementation of domain.ProfileExperienceRepository.
+type mockProfileExperienceRepository struct {
+	experiences map[uuid.UUID]*domain.ProfileExperience
+}
+
+func newMockProfileExperienceRepository() *mockProfileExperienceRepository {
+	return &mockProfileExperienceRepository{experiences: make(map[uuid.UUID]*domain.ProfileExperience)}
+}
+
+func (r *mockProfileExperienceRepository) Create(_ context.Context, experience *domain.ProfileExperience) error {
+	if experience.ID == uuid.Nil {
+		experience.ID = uuid.New()
+	}
+	r.experiences[experience.ID] = experience
+	return nil
+}
+
+func (r *mockProfileExperienceRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.ProfileExperience, error) {
+	experience, ok := r.experiences[id]
+	if !ok {
+		return nil, nil
+	}
+	return experience, nil
+}
+
+func (r *mockProfileExperienceRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.ProfileExperience, error) {
+	var result []*domain.ProfileExperience
+	for _, exp := range r.experiences {
+		if exp.ProfileID == profileID {
+			result = append(result, exp)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockProfileExperienceRepository) Update(_ context.Context, experience *domain.ProfileExperience) error {
+	r.experiences[experience.ID] = experience
+	return nil
+}
+
+func (r *mockProfileExperienceRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.experiences, id)
+	return nil
+}
+
+func (r *mockProfileExperienceRepository) GetNextDisplayOrder(_ context.Context, _ uuid.UUID) (int, error) {
+	return len(r.experiences), nil
+}
+
 // testLogger returns a logger that discards all output (for tests).
 func testLogger() logger.Logger {
 	return logger.NewStdoutLogger(logger.WithMinLevel(logger.Severity(100))) // level 100 = discard all
@@ -277,7 +388,7 @@ func TestUserQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns user when found", func(t *testing.T) {
@@ -323,7 +434,7 @@ func TestUserQuery(t *testing.T) {
 	})
 
 	t.Run("returns error when repository fails", func(t *testing.T) {
-		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 		errorQuery := errorR.Query()
 
 		_, err := errorQuery.User(ctx, uuid.New().String())
@@ -358,7 +469,7 @@ func TestFileQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, file)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns file when found", func(t *testing.T) {
@@ -462,7 +573,7 @@ func TestFilesQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, otherFile)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns files for user", func(t *testing.T) {
@@ -558,7 +669,7 @@ func TestReferenceLetterQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, letter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letter when found", func(t *testing.T) {
@@ -706,7 +817,7 @@ func TestReferenceLettersQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, otherLetter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letters for user", func(t *testing.T) {

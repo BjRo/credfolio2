@@ -15,7 +15,15 @@ export function UrqlProvider({ children }: UrqlProviderProps) {
     const client = createClient({
       url: GRAPHQL_ENDPOINT,
       exchanges: [cacheExchange, ssr, fetchExchange],
-      suspense: true,
+      suspense: false,
+      // Disable GET method to avoid URL length issues
+      preferGetMethod: false,
+      fetchOptions: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
     });
     return [client, ssr];
   }, []);

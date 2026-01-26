@@ -307,6 +307,141 @@ type Resume {
   file: File!
 }
 
+# ============================================================================
+# Profile Schema (Manual Editing)
+# ============================================================================
+
+"""
+Source of a profile experience entry.
+"""
+enum ExperienceSource {
+  """Manually entered by user."""
+  MANUAL
+  """Extracted from an uploaded resume."""
+  RESUME_EXTRACTED
+}
+
+"""
+A work experience entry in a user's profile.
+Extends WorkExperience with ID for editing and highlights for achievements.
+"""
+type ProfileExperience {
+  """Unique identifier for the experience."""
+  id: ID!
+  """Company or organization name."""
+  company: String!
+  """Job title or position."""
+  title: String!
+  """Location of the job."""
+  location: String
+  """Start date (e.g., 'Jan 2020', '2020')."""
+  startDate: String
+  """End date (e.g., 'Dec 2023', 'Present')."""
+  endDate: String
+  """Whether this is the current job."""
+  isCurrent: Boolean!
+  """Job description or responsibilities."""
+  description: String
+  """Key achievements or highlights (bullet points)."""
+  highlights: [String!]!
+  """Display order for sorting."""
+  displayOrder: Int!
+  """Source of this experience entry."""
+  source: ExperienceSource!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+A user's profile containing manually editable data.
+"""
+type Profile {
+  id: ID!
+  """The user who owns this profile."""
+  user: User!
+  """Work experience entries."""
+  experiences: [ProfileExperience!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Input for creating a new work experience.
+"""
+input CreateExperienceInput {
+  """Company or organization name (required)."""
+  company: String!
+  """Job title or position (required)."""
+  title: String!
+  """Location of the job."""
+  location: String
+  """Start date (e.g., 'Jan 2020', '2020')."""
+  startDate: String
+  """End date (e.g., 'Dec 2023', 'Present')."""
+  endDate: String
+  """Whether this is the current job."""
+  isCurrent: Boolean!
+  """Job description or responsibilities."""
+  description: String
+  """Key achievements or highlights (bullet points)."""
+  highlights: [String!]
+}
+
+"""
+Input for updating an existing work experience.
+"""
+input UpdateExperienceInput {
+  """Company or organization name."""
+  company: String
+  """Job title or position."""
+  title: String
+  """Location of the job."""
+  location: String
+  """Start date (e.g., 'Jan 2020', '2020')."""
+  startDate: String
+  """End date (e.g., 'Dec 2023', 'Present')."""
+  endDate: String
+  """Whether this is the current job."""
+  isCurrent: Boolean
+  """Job description or responsibilities."""
+  description: String
+  """Key achievements or highlights (bullet points)."""
+  highlights: [String!]
+}
+
+"""
+Result of a successful experience operation.
+"""
+type ExperienceResult {
+  """The created or updated experience."""
+  experience: ProfileExperience!
+}
+
+"""
+Error returned when experience validation fails.
+"""
+type ExperienceValidationError {
+  """Error message describing the validation failure."""
+  message: String!
+  """The field that failed validation."""
+  field: String
+}
+
+"""
+Union type for experience create/update result.
+"""
+union ExperienceResponse = ExperienceResult | ExperienceValidationError
+
+"""
+Result of a delete operation.
+"""
+type DeleteResult {
+  """Whether the deletion was successful."""
+  success: Boolean!
+  """ID of the deleted item."""
+  deletedId: ID!
+}
+
 type Query {
   """
   Get a user by ID.
@@ -342,6 +477,17 @@ type Query {
   Get all resumes for a user.
   """
   resumes(userId: ID!): [Resume!]!
+
+  """
+  Get a user's profile by user ID.
+  Returns null if no profile exists.
+  """
+  profile(userId: ID!): Profile
+
+  """
+  Get a single profile experience by ID.
+  """
+  profileExperience(id: ID!): ProfileExperience
 }
 
 # ============================================================================
@@ -412,4 +558,38 @@ type Mutation {
     """The resume file to upload (PDF, DOCX, or TXT only)."""
     file: Upload!
   ): UploadResumeResponse!
+
+  # ============================================================================
+  # Profile Experience Mutations
+  # ============================================================================
+
+  """
+  Create a new work experience for a user's profile.
+  Creates the profile if it doesn't exist.
+  """
+  createExperience(
+    """The user ID creating the experience."""
+    userId: ID!
+    """The experience data."""
+    input: CreateExperienceInput!
+  ): ExperienceResponse!
+
+  """
+  Update an existing work experience.
+  Only updates fields that are provided.
+  """
+  updateExperience(
+    """The experience ID to update."""
+    id: ID!
+    """The fields to update."""
+    input: UpdateExperienceInput!
+  ): ExperienceResponse!
+
+  """
+  Delete a work experience.
+  """
+  deleteExperience(
+    """The experience ID to delete."""
+    id: ID!
+  ): DeleteResult!
 }

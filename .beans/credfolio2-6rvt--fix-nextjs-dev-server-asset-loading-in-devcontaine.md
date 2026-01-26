@@ -1,10 +1,11 @@
 ---
 # credfolio2-6rvt
 title: Fix Next.js dev server asset loading in devcontainer
-status: in-progress
+status: completed
 type: bug
+priority: normal
 created_at: 2026-01-26T10:57:24Z
-updated_at: 2026-01-26T10:57:24Z
+updated_at: 2026-01-26T16:31:24Z
 ---
 
 After running the Next.js dev server for a while in the devcontainer, assets like JS chunks fail to load. Rebuilding the devcontainer fixes it temporarily. This is likely related to WebSocket/HMR connection issues or VSCode port forwarding instability in containerized environments.
