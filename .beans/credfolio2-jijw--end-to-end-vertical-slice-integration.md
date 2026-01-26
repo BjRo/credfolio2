@@ -7,9 +7,6 @@ priority: normal
 created_at: 2026-01-20T15:31:10Z
 updated_at: 2026-01-26T10:01:01Z
 parent: credfolio2-tikg
-blocking:
-    - credfolio2-brav
-    - credfolio2-63w0
 ---
 
 Wire together all components for the first working end-to-end flow: **Resume upload → LLM extraction → Profile display**.
