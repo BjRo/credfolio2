@@ -14,7 +14,7 @@ const themeIcons = {
 } as const;
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -23,7 +23,11 @@ export function ThemeToggle() {
 
   function cycleTheme() {
     const currentIndex = themeOrder.indexOf(theme as (typeof themeOrder)[number]);
-    const nextIndex = (currentIndex + 1) % themeOrder.length;
+    let nextIndex = (currentIndex === -1 ? 0 : currentIndex + 1) % themeOrder.length;
+    // Skip if the next theme resolves to the same appearance (e.g. "system" → "light" when OS is light)
+    if (resolvedTheme && themeOrder[nextIndex] === resolvedTheme) {
+      nextIndex = (nextIndex + 1) % themeOrder.length;
+    }
     setTheme(themeOrder[nextIndex]);
   }
 
