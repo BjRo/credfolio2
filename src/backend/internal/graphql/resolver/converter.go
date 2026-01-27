@@ -248,52 +248,10 @@ func toGraphQLResumeExtractedData(raw json.RawMessage) *model.ResumeExtractedDat
 		Phone:       data.Phone,
 		Location:    data.Location,
 		Summary:     data.Summary,
-		Experience:  toGraphQLWorkExperiences(data.Experience),
-		Education:   toGraphQLEducations(data.Education),
 		Skills:      data.Skills,
 		ExtractedAt: data.ExtractedAt,
 		Confidence:  data.Confidence,
 	}
-}
-
-// toGraphQLWorkExperiences converts a slice of domain WorkExperience to GraphQL models.
-func toGraphQLWorkExperiences(experiences []domain.WorkExperience) []*model.WorkExperience {
-	if len(experiences) == 0 {
-		return []*model.WorkExperience{}
-	}
-	result := make([]*model.WorkExperience, len(experiences))
-	for i, e := range experiences {
-		result[i] = &model.WorkExperience{
-			Company:     e.Company,
-			Title:       e.Title,
-			Location:    e.Location,
-			StartDate:   e.StartDate,
-			EndDate:     e.EndDate,
-			IsCurrent:   e.IsCurrent,
-			Description: e.Description,
-		}
-	}
-	return result
-}
-
-// toGraphQLEducations converts a slice of domain Education to GraphQL models.
-func toGraphQLEducations(educations []domain.Education) []*model.Education {
-	if len(educations) == 0 {
-		return []*model.Education{}
-	}
-	result := make([]*model.Education, len(educations))
-	for i, e := range educations {
-		result[i] = &model.Education{
-			Institution:  e.Institution,
-			Degree:       e.Degree,
-			Field:        e.Field,
-			StartDate:    e.StartDate,
-			EndDate:      e.EndDate,
-			Gpa:          e.GPA,
-			Achievements: e.Achievements,
-		}
-	}
-	return result
 }
 
 // toGraphQLProfile converts a domain Profile to a GraphQL Profile model.

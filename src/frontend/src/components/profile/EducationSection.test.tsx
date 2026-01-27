@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { ExperienceSource } from "@/graphql/generated/graphql";
 import { EducationSection } from "./EducationSection";
 import type { ProfileEducation } from "./types";
 
@@ -23,7 +24,7 @@ const mockProfileEducations: ProfileEducation[] = [
     gpa: "3.9",
     description: "Dean's List, Research Assistant",
     displayOrder: 0,
-    source: "MANUAL" as const,
+    source: ExperienceSource.Manual,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
   },
@@ -38,7 +39,7 @@ const mockProfileEducations: ProfileEducation[] = [
     gpa: null,
     description: null,
     displayOrder: 1,
-    source: "MANUAL" as const,
+    source: ExperienceSource.Manual,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
   },

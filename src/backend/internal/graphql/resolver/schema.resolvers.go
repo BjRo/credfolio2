@@ -1210,4 +1210,3 @@ type extractedRecommendationResolver struct{ *Resolver }
 type extractedSkillResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-

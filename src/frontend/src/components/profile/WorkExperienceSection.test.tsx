@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { ExperienceSource } from "@/graphql/generated/graphql";
 import type { ProfileExperience } from "./types";
 import { WorkExperienceSection } from "./WorkExperienceSection";
 
@@ -24,7 +25,7 @@ const mockProfileExperiences: ProfileExperience[] = [
     description: "Led development of core platform features.",
     highlights: [],
     displayOrder: 0,
-    source: "MANUAL" as const,
+    source: ExperienceSource.Manual,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
   },
@@ -39,7 +40,7 @@ const mockProfileExperiences: ProfileExperience[] = [
     description: null,
     highlights: [],
     displayOrder: 1,
-    source: "MANUAL" as const,
+    source: ExperienceSource.Manual,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
   },
@@ -115,7 +116,7 @@ describe("WorkExperienceSection", () => {
           description: null,
           highlights: [],
           displayOrder: 0,
-          source: "MANUAL" as const,
+          source: ExperienceSource.Manual,
           createdAt: "2026-01-01T00:00:00Z",
           updatedAt: "2026-01-01T00:00:00Z",
         },
@@ -139,7 +140,7 @@ describe("WorkExperienceSection", () => {
           description: longDescription,
           highlights: [],
           displayOrder: 0,
-          source: "MANUAL" as const,
+          source: ExperienceSource.Manual,
           createdAt: "2026-01-01T00:00:00Z",
           updatedAt: "2026-01-01T00:00:00Z",
         },
@@ -167,7 +168,7 @@ describe("WorkExperienceSection", () => {
           description: longDescription,
           highlights: [],
           displayOrder: 0,
-          source: "MANUAL" as const,
+          source: ExperienceSource.Manual,
           createdAt: "2026-01-01T00:00:00Z",
           updatedAt: "2026-01-01T00:00:00Z",
         },
@@ -200,7 +201,7 @@ describe("WorkExperienceSection", () => {
           description: null,
           highlights: [],
           displayOrder: 0,
-          source: "MANUAL" as const,
+          source: ExperienceSource.Manual,
           createdAt: "2026-01-01T00:00:00Z",
           updatedAt: "2026-01-01T00:00:00Z",
         },
@@ -215,7 +216,7 @@ describe("WorkExperienceSection", () => {
           description: null,
           highlights: [],
           displayOrder: 1,
-          source: "MANUAL" as const,
+          source: ExperienceSource.Manual,
           createdAt: "2026-01-01T00:00:00Z",
           updatedAt: "2026-01-01T00:00:00Z",
         },
