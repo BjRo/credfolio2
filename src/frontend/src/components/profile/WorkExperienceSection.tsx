@@ -105,7 +105,7 @@ function ActionMenu({ onEdit, onDelete }: ActionMenuProps) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
           aria-label="More actions"
         >
           <MoreVertical className="h-4 w-4" />
@@ -121,7 +121,7 @@ function ActionMenu({ onEdit, onDelete }: ActionMenuProps) {
         {onDelete && (
           <DropdownMenuItem
             onClick={onDelete}
-            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+            className="text-destructive focus:text-destructive focus:bg-destructive/10"
           >
             <Trash2 className="h-4 w-4" />
             Delete
@@ -157,7 +157,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
   const duration = durationMonths !== null ? formatDuration(durationMonths) : null;
 
   return (
-    <div className={`relative ${!isFirst ? "pt-6 border-t border-gray-200" : ""}`}>
+    <div className={`relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
       {/* Green current indicator - vertically centered with title row */}
       {experience.isCurrent && (
         <span
@@ -176,30 +176,32 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
 
       <div className="flex sm:justify-between sm:items-start gap-1 sm:gap-4 pr-8 sm:pr-0">
         <div className="flex gap-3">
-          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-gray-100 items-center justify-center flex-shrink-0">
-            <Briefcase className="w-5 h-5 text-gray-500" aria-hidden="true" />
+          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted items-center justify-center flex-shrink-0">
+            <Briefcase className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
               {experience.title}
               {experience.isCurrent && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                   Current
                 </span>
               )}
             </h3>
-            <p className="text-gray-700">{experience.company}</p>
+            <p className="text-foreground">{experience.company}</p>
             {/* Date and duration - below company */}
             {dateRange && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 {dateRange}
                 {duration && <span className="hidden sm:inline"> · {duration}</span>}
               </p>
             )}
             {/* Duration on mobile - separate line */}
-            {duration && dateRange && <p className="text-sm text-gray-500 sm:hidden">{duration}</p>}
+            {duration && dateRange && (
+              <p className="text-sm text-muted-foreground sm:hidden">{duration}</p>
+            )}
             {experience.location && (
-              <p className="text-sm text-gray-500 flex items-center gap-1">
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
                 <MapPin className="w-3 h-3" aria-hidden="true" />
                 {experience.location}
               </p>
@@ -215,7 +217,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
       {experience.description && (
         <div className="mt-3 sm:ml-13">
           <p
-            className={`text-gray-600 whitespace-pre-line ${
+            className={`text-muted-foreground whitespace-pre-line ${
               !isExpanded && hasLongDescription ? "line-clamp-3" : ""
             }`}
             style={
@@ -235,7 +237,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="mt-2 text-sm text-primary hover:text-primary/80 flex items-center gap-1"
               aria-expanded={isExpanded}
             >
               {isExpanded ? (
@@ -282,14 +284,14 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
       {/* Dot */}
       <span
         className={`absolute left-0 w-2 h-2 rounded-full ${
-          role.isCurrent ? "bg-green-500" : "bg-gray-300"
+          role.isCurrent ? "bg-green-500" : "bg-muted-foreground/30"
         }`}
         style={{ top: "6px" }}
       />
       {/* Vertical line */}
       {!isLast && (
         <span
-          className="absolute left-[3px] w-0.5 bg-gray-200"
+          className="absolute left-[3px] w-0.5 bg-border"
           style={{ top: "14px", bottom: "-16px" }}
         />
       )}
@@ -304,23 +306,25 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
 
         <div className="flex sm:justify-between sm:items-start gap-1 sm:gap-4 pr-8 sm:pr-0">
           <div className="min-w-0 flex-1">
-            <h4 className="text-base font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
+            <h4 className="text-base font-semibold text-foreground flex items-center gap-2 flex-wrap">
               {role.title}
               {role.isCurrent && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                   Current
                 </span>
               )}
             </h4>
             {/* Date and duration */}
             {dateRange && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 {dateRange}
                 {duration && <span className="hidden sm:inline"> · {duration}</span>}
               </p>
             )}
             {/* Duration on mobile - separate line */}
-            {duration && dateRange && <p className="text-sm text-gray-500 sm:hidden">{duration}</p>}
+            {duration && dateRange && (
+              <p className="text-sm text-muted-foreground sm:hidden">{duration}</p>
+            )}
           </div>
           {/* Desktop: kebab on right side */}
           <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
@@ -331,7 +335,7 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
         {role.description && (
           <div className="mt-2">
             <p
-              className={`text-gray-600 text-sm whitespace-pre-line ${
+              className={`text-muted-foreground text-sm whitespace-pre-line ${
                 !isExpanded && hasLongDescription ? "line-clamp-3" : ""
               }`}
               style={
@@ -351,7 +355,7 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
               <button
                 type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="mt-1 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                className="mt-1 text-sm text-primary hover:text-primary/80 flex items-center gap-1"
                 aria-expanded={isExpanded}
               >
                 {isExpanded ? (
@@ -392,17 +396,17 @@ function CompanyExperienceGroup({
     group.totalTenureMonths !== null ? formatDuration(group.totalTenureMonths) : null;
 
   return (
-    <div className={`relative ${!isFirst ? "pt-6 border-t border-gray-200" : ""}`}>
+    <div className={`relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
       {/* Company header */}
       <div className="flex gap-3 mb-4">
-        <div className="hidden sm:flex w-10 h-10 rounded-lg bg-gray-100 items-center justify-center flex-shrink-0">
-          <Briefcase className="w-5 h-5 text-gray-500" aria-hidden="true" />
+        <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted items-center justify-center flex-shrink-0">
+          <Briefcase className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-lg font-semibold text-gray-900">{group.company}</h3>
-          {totalDuration && <p className="text-sm text-gray-500">{totalDuration}</p>}
+          <h3 className="text-lg font-semibold text-foreground">{group.company}</h3>
+          {totalDuration && <p className="text-sm text-muted-foreground">{totalDuration}</p>}
           {group.location && (
-            <p className="text-sm text-gray-500 flex items-center gap-1">
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
               <MapPin className="w-3 h-3" aria-hidden="true" />
               {group.location}
             </p>
@@ -484,14 +488,14 @@ export function WorkExperienceSection({
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 sm:p-8">
+    <div className="bg-card shadow rounded-lg p-6 sm:p-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Work Experience</h2>
+        <h2 className="text-xl font-bold text-foreground">Work Experience</h2>
         {isEditable && (
           <button
             type="button"
             onClick={handleAddNew}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
             aria-label="Add work experience"
           >
             <Plus className="h-5 w-5" />
@@ -500,7 +504,7 @@ export function WorkExperienceSection({
       </div>
 
       {companyGroups.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           No work experience yet. Click the + button to add your first position.
         </p>
       ) : (

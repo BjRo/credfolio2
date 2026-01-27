@@ -4,7 +4,7 @@ interface SkillTagProps {
 
 function SkillTag({ skill }: SkillTagProps) {
   return (
-    <span className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-100 hover:bg-blue-100 transition-colors">
+    <span className="inline-flex items-center px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20 hover:bg-primary/20 transition-colors">
       {skill}
     </span>
   );
@@ -20,8 +20,8 @@ export function SkillsSection({ skills }: SkillsSectionProps) {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 sm:p-8">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Skills</h2>
+    <div className="bg-card shadow rounded-lg p-6 sm:p-8">
+      <h2 className="text-xl font-bold text-foreground mb-4">Skills</h2>
       <ul className="flex flex-wrap gap-2 list-none" aria-label="Skills list">
         {skills.map((skill) => (
           <li key={skill}>

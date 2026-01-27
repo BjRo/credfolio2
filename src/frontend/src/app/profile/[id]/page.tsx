@@ -43,7 +43,7 @@ export default function ProfilePage() {
 
   if (fetching) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <ProfileSkeleton />
         </div>
@@ -53,10 +53,10 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Profile</h1>
-          <p className="text-gray-600 mb-6">{error.message}</p>
+          <h1 className="text-2xl font-bold text-destructive mb-4">Error Loading Profile</h1>
+          <p className="text-muted-foreground mb-6">{error.message}</p>
           <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
@@ -67,10 +67,10 @@ export default function ProfilePage() {
 
   if (!resume) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Profile Not Found</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="text-2xl font-bold text-foreground mb-4">Profile Not Found</h1>
+          <p className="text-muted-foreground mb-6">
             The resume you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
           <Button onClick={() => router.push("/upload-resume")}>Upload a Resume</Button>
@@ -81,11 +81,13 @@ export default function ProfilePage() {
 
   if (resume.status === ResumeStatus.Pending || resume.status === ResumeStatus.Processing) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Profile Processing</h1>
-          <p className="text-gray-600 mb-6">Your resume is still being processed. Please wait...</p>
-          <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto" />
+          <h1 className="text-2xl font-bold text-foreground mb-4">Profile Processing</h1>
+          <p className="text-muted-foreground mb-6">
+            Your resume is still being processed. Please wait...
+          </p>
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
         </div>
       </div>
     );
@@ -93,10 +95,12 @@ export default function ProfilePage() {
 
   if (resume.status === ResumeStatus.Failed) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Processing Failed</h1>
-          <p className="text-gray-600 mb-6">{resume.errorMessage || "Failed to process resume"}</p>
+          <h1 className="text-2xl font-bold text-destructive mb-4">Processing Failed</h1>
+          <p className="text-muted-foreground mb-6">
+            {resume.errorMessage || "Failed to process resume"}
+          </p>
           <Button onClick={() => router.push("/upload-resume")}>Try Again</Button>
         </div>
       </div>
@@ -107,10 +111,10 @@ export default function ProfilePage() {
 
   if (!extractedData) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Profile Data</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="text-2xl font-bold text-foreground mb-4">No Profile Data</h1>
+          <p className="text-muted-foreground mb-6">
             The resume was processed but no data could be extracted.
           </p>
           <Button onClick={() => router.push("/upload-resume")}>Upload a Different Resume</Button>
@@ -133,7 +137,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <ProfileHeader data={extractedData} />
 

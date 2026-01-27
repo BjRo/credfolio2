@@ -15,7 +15,7 @@ describe("ProfileSkeleton", () => {
     const { container } = render(<ProfileSkeleton />);
 
     // Should have multiple card sections
-    const cards = container.querySelectorAll(".bg-white.shadow.rounded-lg");
+    const cards = container.querySelectorAll(".bg-card.shadow.rounded-lg");
     expect(cards.length).toBe(4); // Header, Experience, Education, Skills
   });
 });
