@@ -5,11 +5,13 @@ import { describe, expect, it, vi } from "vitest";
 const mockSetTheme = vi.fn();
 let mockTheme = "system";
 let mockResolvedTheme = "light";
+let mockSystemTheme: string | undefined = "light";
 
 vi.mock("next-themes", () => ({
   useTheme: () => ({
     theme: mockTheme,
     resolvedTheme: mockResolvedTheme,
+    systemTheme: mockSystemTheme,
     setTheme: mockSetTheme,
   }),
 }));
@@ -20,6 +22,7 @@ describe("ThemeToggle", () => {
   beforeEach(() => {
     mockTheme = "system";
     mockResolvedTheme = "light";
+    mockSystemTheme = "light";
     mockSetTheme.mockClear();
   });
 
@@ -62,11 +65,36 @@ describe("ThemeToggle", () => {
   it("cycles from system to light when system resolves to dark", async () => {
     mockTheme = "system";
     mockResolvedTheme = "dark";
+    mockSystemTheme = "dark";
     const user = userEvent.setup();
     render(<ThemeToggle />);
 
     // "system" → "light", resolvedTheme is "dark" so no skip needed
     await user.click(screen.getByRole("button", { name: /toggle theme/i }));
     expect(mockSetTheme).toHaveBeenCalledWith("light");
+  });
+
+  it("skips system when cycling from dark and OS also prefers dark", async () => {
+    mockTheme = "dark";
+    mockResolvedTheme = "dark";
+    mockSystemTheme = "dark";
+    const user = userEvent.setup();
+    render(<ThemeToggle />);
+
+    // "dark" → would be "system", but system resolves to "dark" too, so skip to "light"
+    await user.click(screen.getByRole("button", { name: /toggle theme/i }));
+    expect(mockSetTheme).toHaveBeenCalledWith("light");
+  });
+
+  it("skips system when cycling from light and OS also prefers light", async () => {
+    mockTheme = "light";
+    mockResolvedTheme = "light";
+    mockSystemTheme = "light";
+    const user = userEvent.setup();
+    render(<ThemeToggle />);
+
+    // "light" → would be "dark", no skip needed (dark !== light)
+    await user.click(screen.getByRole("button", { name: /toggle theme/i }));
+    expect(mockSetTheme).toHaveBeenCalledWith("dark");
   });
 });
