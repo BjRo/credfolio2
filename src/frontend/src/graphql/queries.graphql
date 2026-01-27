@@ -131,6 +131,13 @@ query GetResume($id: ID!) {
   }
 }
 
+query GetUserResumes($userId: ID!) {
+  resumes(userId: $userId) {
+    id
+    status
+  }
+}
+
 query GetProfile($userId: ID!) {
   profile(userId: $userId) {
     id
