@@ -335,7 +335,7 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
         {role.description && (
           <div className="mt-2">
             <p
-              className={`text-gray-600 text-sm whitespace-pre-line ${
+              className={`text-muted-foreground text-sm whitespace-pre-line ${
                 !isExpanded && hasLongDescription ? "line-clamp-3" : ""
               }`}
               style={

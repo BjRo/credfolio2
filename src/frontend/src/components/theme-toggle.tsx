@@ -2,6 +2,7 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const themeOrder = ["system", "light", "dark"] as const;
@@ -14,6 +15,11 @@ const themeIcons = {
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   function cycleTheme() {
     const currentIndex = themeOrder.indexOf(theme as (typeof themeOrder)[number]);
@@ -25,7 +31,7 @@ export function ThemeToggle() {
 
   return (
     <Button variant="ghost" size="icon" onClick={cycleTheme} aria-label="Toggle theme">
-      <Icon className="size-4" />
+      {mounted ? <Icon className="size-4" /> : <span className="size-4" />}
     </Button>
   );
 }

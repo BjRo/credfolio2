@@ -9,7 +9,7 @@ interface ProfileActionsProps {
 
 export function ProfileActions({ onAddReference, onExport, onUploadAnother }: ProfileActionsProps) {
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-card shadow rounded-lg p-6">
       <div className="flex flex-wrap justify-center gap-4">
         {onAddReference && (
           <Button variant="outline" onClick={onAddReference}>
