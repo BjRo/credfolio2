@@ -3,6 +3,7 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,6 +52,7 @@ type ProfileExperience struct { //nolint:govet // Field ordering prioritizes rea
 	DisplayOrder   int              `bun:"display_order,notnull,default:0"`
 	Source         ExperienceSource `bun:"source,notnull,default:'manual'"`
 	SourceResumeID *uuid.UUID       `bun:"source_resume_id,type:uuid"`
+	OriginalData   json.RawMessage  `bun:"original_data,type:jsonb"`
 	CreatedAt      time.Time        `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      time.Time        `bun:"updated_at,notnull,default:current_timestamp"`
 
@@ -76,6 +78,7 @@ type ProfileEducation struct { //nolint:govet // Field ordering prioritizes read
 	DisplayOrder   int              `bun:"display_order,notnull,default:0"`
 	Source         ExperienceSource `bun:"source,notnull,default:'manual'"`
 	SourceResumeID *uuid.UUID       `bun:"source_resume_id,type:uuid"`
+	OriginalData   json.RawMessage  `bun:"original_data,type:jsonb"`
 	CreatedAt      time.Time        `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      time.Time        `bun:"updated_at,notnull,default:current_timestamp"`
 
@@ -124,6 +127,9 @@ type ProfileExperienceRepository interface {
 
 	// GetNextDisplayOrder returns the next display order value for a profile.
 	GetNextDisplayOrder(ctx context.Context, profileID uuid.UUID) (int, error)
+
+	// DeleteBySourceResumeID removes all experiences extracted from a specific resume.
+	DeleteBySourceResumeID(ctx context.Context, sourceResumeID uuid.UUID) error
 }
 
 // ProfileEducationRepository defines operations for profile education persistence.
@@ -145,4 +151,7 @@ type ProfileEducationRepository interface {
 
 	// GetNextDisplayOrder returns the next display order value for a profile.
 	GetNextDisplayOrder(ctx context.Context, profileID uuid.UUID) (int, error)
+
+	// DeleteBySourceResumeID removes all education entries extracted from a specific resume.
+	DeleteBySourceResumeID(ctx context.Context, sourceResumeID uuid.UUID) error
 }

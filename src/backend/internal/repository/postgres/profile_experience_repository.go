@@ -81,5 +81,14 @@ func (r *ProfileExperienceRepository) GetNextDisplayOrder(ctx context.Context, p
 	return maxOrder + 1, nil
 }
 
+// DeleteBySourceResumeID removes all experiences extracted from a specific resume.
+func (r *ProfileExperienceRepository) DeleteBySourceResumeID(ctx context.Context, sourceResumeID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Model((*domain.ProfileExperience)(nil)).
+		Where("source_resume_id = ?", sourceResumeID).
+		Exec(ctx)
+	return err
+}
+
 // Compile-time check that ProfileExperienceRepository implements domain.ProfileExperienceRepository.
 var _ domain.ProfileExperienceRepository = (*ProfileExperienceRepository)(nil)

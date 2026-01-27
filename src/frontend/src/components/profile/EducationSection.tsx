@@ -11,21 +11,7 @@ import {
 import { formatDate } from "@/lib/utils";
 import { DeleteEducationDialog } from "./DeleteEducationDialog";
 import { EducationFormDialog } from "./EducationFormDialog";
-import type { Education, ProfileEducation } from "./types";
-
-// Unified education type that can hold both resume-extracted and profile data
-interface EducationItem {
-  id?: string; // Only profile educations have IDs
-  institution: string;
-  degree?: string | null;
-  field?: string | null;
-  startDate?: string | null;
-  endDate?: string | null;
-  isCurrent?: boolean;
-  description?: string | null;
-  gpa?: string | null;
-  achievements?: string | null;
-}
+import type { ProfileEducation } from "./types";
 
 interface ActionMenuProps {
   onEdit?: () => void;
@@ -68,7 +54,7 @@ function ActionMenu({ onEdit, onDelete }: ActionMenuProps) {
 }
 
 interface EducationCardProps {
-  education: EducationItem;
+  education: ProfileEducation;
   isFirst: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -83,9 +69,6 @@ function EducationCard({ education, isFirst, onEdit, onDelete }: EducationCardPr
 
   // Validate GPA - should be numeric, not a date or garbage
   const isValidGpa = education.gpa && /^[\d./]+$/.test(education.gpa.trim());
-
-  // Use description or achievements (resume-extracted uses achievements, profile uses description)
-  const descriptionText = education.description || education.achievements;
 
   return (
     <div className={`relative ${!isFirst ? "pt-6 border-t border-gray-200" : ""}`}>
@@ -124,76 +107,36 @@ function EducationCard({ education, isFirst, onEdit, onDelete }: EducationCardPr
           <ActionMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       </div>
-      {descriptionText && <p className="mt-3 text-gray-600 sm:ml-13">{descriptionText}</p>}
+      {education.description && (
+        <p className="mt-3 text-gray-600 sm:ml-13">{education.description}</p>
+      )}
     </div>
   );
 }
 
 interface EducationSectionProps {
-  // Resume-extracted education (read-only source)
-  education?: Education[];
-  // Profile educations (editable, takes precedence when available)
   profileEducations?: ProfileEducation[];
-  // User ID for mutations (required for editing)
   userId?: string;
-  // Callback after successful mutation
   onMutationSuccess?: () => void;
 }
 
 export function EducationSection({
-  education = [],
   profileEducations = [],
   userId,
   onMutationSuccess,
 }: EducationSectionProps) {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedEducation, setSelectedEducation] = useState<EducationItem | null>(null);
-
-  // Merge profile educations with resume-extracted educations
-  // Profile educations have IDs and are editable
-  const profileEducationKeys = new Set(
-    profileEducations.map((edu) => `${edu.institution.toLowerCase()}|${edu.degree.toLowerCase()}`)
-  );
-
-  const profileItems: EducationItem[] = profileEducations.map((edu) => ({
-    id: edu.id,
-    institution: edu.institution,
-    degree: edu.degree,
-    field: edu.field,
-    startDate: edu.startDate,
-    endDate: edu.endDate,
-    isCurrent: edu.isCurrent,
-    description: edu.description,
-    gpa: edu.gpa,
-  }));
-
-  // Only include resume-extracted educations that don't have a matching profile education
-  const resumeItems: EducationItem[] = education
-    .filter((edu) => {
-      const key = `${edu.institution.toLowerCase()}|${(edu.degree || "").toLowerCase()}`;
-      return !profileEducationKeys.has(key);
-    })
-    .map((edu) => ({
-      institution: edu.institution,
-      degree: edu.degree,
-      field: edu.field,
-      startDate: edu.startDate,
-      endDate: edu.endDate,
-      gpa: edu.gpa,
-      achievements: edu.achievements,
-    }));
-
-  const allEducations: EducationItem[] = [...profileItems, ...resumeItems];
+  const [selectedEducation, setSelectedEducation] = useState<ProfileEducation | null>(null);
 
   const isEditable = !!userId;
 
-  const handleEdit = (edu: EducationItem) => {
+  const handleEdit = (edu: ProfileEducation) => {
     setSelectedEducation(edu);
     setFormDialogOpen(true);
   };
 
-  const handleDelete = (edu: EducationItem) => {
+  const handleDelete = (edu: ProfileEducation) => {
     setSelectedEducation(edu);
     setDeleteDialogOpen(true);
   };
@@ -221,7 +164,7 @@ export function EducationSection({
     onMutationSuccess?.();
   };
 
-  if (allEducations.length === 0 && !isEditable) {
+  if (profileEducations.length === 0 && !isEditable) {
     return null;
   }
 
@@ -241,19 +184,19 @@ export function EducationSection({
         )}
       </div>
 
-      {allEducations.length === 0 ? (
+      {profileEducations.length === 0 ? (
         <p className="text-gray-500 text-center py-8">
           No education entries yet. Click the + button to add your first entry.
         </p>
       ) : (
         <div className="space-y-6">
-          {allEducations.map((edu, index) => (
+          {profileEducations.map((edu, index) => (
             <EducationCard
-              key={edu.id ?? `${edu.institution}-${edu.degree || ""}-${index}`}
+              key={edu.id}
               education={edu}
               isFirst={index === 0}
               onEdit={isEditable ? () => handleEdit(edu) : undefined}
-              onDelete={isEditable && edu.id ? () => handleDelete(edu) : undefined}
+              onDelete={isEditable ? () => handleDelete(edu) : undefined}
             />
           ))}
         </div>
@@ -269,25 +212,22 @@ export function EducationSection({
             education={
               selectedEducation
                 ? {
-                    id: selectedEducation.id ?? "",
+                    id: selectedEducation.id,
                     institution: selectedEducation.institution,
-                    degree: selectedEducation.degree ?? "",
+                    degree: selectedEducation.degree,
                     field: selectedEducation.field,
                     startDate: selectedEducation.startDate,
                     endDate: selectedEducation.endDate,
-                    isCurrent: selectedEducation.isCurrent ?? false,
-                    description:
-                      selectedEducation.description || selectedEducation.achievements || null,
+                    isCurrent: selectedEducation.isCurrent,
+                    description: selectedEducation.description,
                     gpa: selectedEducation.gpa,
                   }
                 : undefined
             }
-            // If editing a resume-extracted education (no ID), treat as create
-            mode={selectedEducation && !selectedEducation.id ? "create" : undefined}
             onSuccess={handleSuccess}
           />
 
-          {selectedEducation?.id && (
+          {selectedEducation && (
             <DeleteEducationDialog
               open={deleteDialogOpen}
               onOpenChange={handleDeleteDialogClose}

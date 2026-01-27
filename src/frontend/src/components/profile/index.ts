@@ -4,5 +4,5 @@ export { ProfileActions } from "./ProfileActions";
 export { ProfileHeader } from "./ProfileHeader";
 export { ProfileSkeleton } from "./ProfileSkeleton";
 export { SkillsSection } from "./SkillsSection";
-export type { Education, ProfileData, WorkExperience } from "./types";
-export { EditableWorkExperienceSection, WorkExperienceSection } from "./WorkExperienceSection";
+export type { ProfileData } from "./types";
+export { WorkExperienceSection } from "./WorkExperienceSection";

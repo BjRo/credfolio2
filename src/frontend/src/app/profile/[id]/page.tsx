@@ -137,17 +137,13 @@ export default function ProfilePage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <ProfileHeader data={extractedData} />
 
-        {/* Unified work experience section - shows profile experiences if available, otherwise resume-extracted */}
         <WorkExperienceSection
-          experiences={extractedData.experience}
           profileExperiences={profile?.experiences ?? []}
           userId={userId}
           onMutationSuccess={handleMutationSuccess}
         />
 
-        {/* Unified education section - shows profile educations if available, otherwise resume-extracted */}
         <EducationSection
-          education={extractedData.education}
           profileEducations={profile?.educations ?? []}
           userId={userId}
           onMutationSuccess={handleMutationSuccess}

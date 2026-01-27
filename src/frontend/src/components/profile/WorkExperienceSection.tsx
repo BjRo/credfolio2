@@ -24,23 +24,10 @@ import {
   formatDuration,
 } from "@/lib/utils";
 import { DeleteExperienceDialog } from "./DeleteExperienceDialog";
-import type { ProfileExperience, WorkExperience } from "./types";
+import type { ProfileExperience } from "./types";
 import { WorkExperienceFormDialog } from "./WorkExperienceFormDialog";
 
 const DESCRIPTION_COLLAPSE_THRESHOLD = 150;
-
-// Unified experience type that can hold both resume-extracted and profile data
-interface ExperienceItem {
-  id?: string; // Only profile experiences have IDs
-  company: string;
-  title: string;
-  location?: string | null;
-  startDate?: string | null;
-  endDate?: string | null;
-  isCurrent: boolean;
-  description?: string | null;
-  highlights?: string[];
-}
 
 // Company group containing one or more roles
 interface CompanyGroup {
@@ -48,15 +35,15 @@ interface CompanyGroup {
   location?: string | null;
   totalTenureMonths: number | null;
   hasCurrentRole: boolean;
-  roles: ExperienceItem[];
+  roles: ProfileExperience[];
 }
 
 /**
  * Group experiences by company name (case-insensitive).
  * Roles within each group are sorted by start date (newest first).
  */
-function groupExperiencesByCompany(experiences: ExperienceItem[]): CompanyGroup[] {
-  const groupMap = new Map<string, ExperienceItem[]>();
+function groupExperiencesByCompany(experiences: ProfileExperience[]): CompanyGroup[] {
+  const groupMap = new Map<string, ProfileExperience[]>();
 
   for (const exp of experiences) {
     const key = exp.company.toLowerCase().trim();
@@ -147,7 +134,7 @@ function ActionMenu({ onEdit, onDelete }: ActionMenuProps) {
 
 // Flat experience card for single roles at a company (original style)
 interface ExperienceCardProps {
-  experience: ExperienceItem;
+  experience: ProfileExperience;
   isFirst: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -270,7 +257,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
 
 // Role card for displaying individual roles within a company group (multi-role)
 interface RoleCardProps {
-  role: ExperienceItem;
+  role: ProfileExperience;
   isFirst: boolean;
   isLast: boolean;
   onEdit?: () => void;
@@ -390,8 +377,8 @@ interface CompanyExperienceGroupProps {
   group: CompanyGroup;
   isFirst: boolean;
   isEditable: boolean;
-  onEdit: (experience: ExperienceItem) => void;
-  onDelete: (experience: ExperienceItem) => void;
+  onEdit: (experience: ProfileExperience) => void;
+  onDelete: (experience: ProfileExperience) => void;
 }
 
 function CompanyExperienceGroup({
@@ -427,12 +414,12 @@ function CompanyExperienceGroup({
       <div className="sm:ml-13">
         {group.roles.map((role, index) => (
           <RoleCard
-            key={role.id ?? `${role.company}-${role.title}-${index}`}
+            key={role.id}
             role={role}
             isFirst={index === 0}
             isLast={index === group.roles.length - 1}
             onEdit={isEditable ? () => onEdit(role) : undefined}
-            onDelete={isEditable && role.id ? () => onDelete(role) : undefined}
+            onDelete={isEditable ? () => onDelete(role) : undefined}
           />
         ))}
       </div>
@@ -441,73 +428,30 @@ function CompanyExperienceGroup({
 }
 
 interface WorkExperienceSectionProps {
-  // Resume-extracted experiences (read-only source)
-  experiences?: WorkExperience[];
-  // Profile experiences (editable, takes precedence when available)
   profileExperiences?: ProfileExperience[];
-  // User ID for mutations (required for editing)
   userId?: string;
-  // Callback after successful mutation
   onMutationSuccess?: () => void;
 }
 
 export function WorkExperienceSection({
-  experiences = [],
   profileExperiences = [],
   userId,
   onMutationSuccess,
 }: WorkExperienceSectionProps) {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedExperience, setSelectedExperience] = useState<ExperienceItem | null>(null);
+  const [selectedExperience, setSelectedExperience] = useState<ProfileExperience | null>(null);
 
-  // Merge profile experiences with resume-extracted experiences
-  // Profile experiences have IDs and are editable, resume-extracted don't have IDs
-  // We try to match by company+title to avoid showing duplicates
-  const profileExperienceKeys = new Set(
-    profileExperiences.map((exp) => `${exp.company.toLowerCase()}|${exp.title.toLowerCase()}`)
-  );
-
-  const profileItems: ExperienceItem[] = profileExperiences.map((exp) => ({
-    id: exp.id,
-    company: exp.company,
-    title: exp.title,
-    location: exp.location,
-    startDate: exp.startDate,
-    endDate: exp.endDate,
-    isCurrent: exp.isCurrent,
-    description: exp.description,
-    highlights: exp.highlights,
-  }));
-
-  // Only include resume-extracted experiences that don't have a matching profile experience
-  const resumeItems: ExperienceItem[] = experiences
-    .filter((exp) => {
-      const key = `${exp.company.toLowerCase()}|${exp.title.toLowerCase()}`;
-      return !profileExperienceKeys.has(key);
-    })
-    .map((exp) => ({
-      company: exp.company,
-      title: exp.title,
-      location: exp.location,
-      startDate: exp.startDate,
-      endDate: exp.endDate,
-      isCurrent: exp.isCurrent,
-      description: exp.description,
-    }));
-
-  // Combine all experiences and group by company
-  const allExperiences: ExperienceItem[] = [...profileItems, ...resumeItems];
-  const companyGroups = groupExperiencesByCompany(allExperiences);
+  const companyGroups = groupExperiencesByCompany(profileExperiences);
 
   const isEditable = !!userId;
 
-  const handleEdit = (experience: ExperienceItem) => {
+  const handleEdit = (experience: ProfileExperience) => {
     setSelectedExperience(experience);
     setFormDialogOpen(true);
   };
 
-  const handleDelete = (experience: ExperienceItem) => {
+  const handleDelete = (experience: ProfileExperience) => {
     setSelectedExperience(experience);
     setDeleteDialogOpen(true);
   };
@@ -575,13 +519,11 @@ export function WorkExperienceSection({
             ) : (
               // Single role: show flat card
               <ExperienceCard
-                key={group.roles[0].id ?? `${group.company}-${group.roles[0].title}-${index}`}
+                key={group.roles[0].id}
                 experience={group.roles[0]}
                 isFirst={index === 0}
                 onEdit={isEditable ? () => handleEdit(group.roles[0]) : undefined}
-                onDelete={
-                  isEditable && group.roles[0].id ? () => handleDelete(group.roles[0]) : undefined
-                }
+                onDelete={isEditable ? () => handleDelete(group.roles[0]) : undefined}
               />
             )
           )}
@@ -598,7 +540,7 @@ export function WorkExperienceSection({
             experience={
               selectedExperience
                 ? {
-                    id: selectedExperience.id ?? "",
+                    id: selectedExperience.id,
                     company: selectedExperience.company,
                     title: selectedExperience.title,
                     location: selectedExperience.location,
@@ -610,12 +552,10 @@ export function WorkExperienceSection({
                   }
                 : undefined
             }
-            // If editing a resume-extracted experience (no ID), treat as create
-            mode={selectedExperience && !selectedExperience.id ? "create" : undefined}
             onSuccess={handleSuccess}
           />
 
-          {selectedExperience?.id && (
+          {selectedExperience && (
             <DeleteExperienceDialog
               open={deleteDialogOpen}
               onOpenChange={handleDeleteDialogClose}
@@ -628,25 +568,5 @@ export function WorkExperienceSection({
         </>
       )}
     </div>
-  );
-}
-
-// Keep for backwards compatibility but mark as deprecated
-/** @deprecated Use WorkExperienceSection with profileExperiences prop instead */
-export function EditableWorkExperienceSection({
-  experiences,
-  userId,
-  onMutationSuccess,
-}: {
-  experiences: ProfileExperience[];
-  userId: string;
-  onMutationSuccess?: () => void;
-}) {
-  return (
-    <WorkExperienceSection
-      profileExperiences={experiences}
-      userId={userId}
-      onMutationSuccess={onMutationSuccess}
-    />
   );
 }
