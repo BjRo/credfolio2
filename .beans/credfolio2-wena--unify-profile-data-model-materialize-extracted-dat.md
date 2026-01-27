@@ -1,11 +1,11 @@
 ---
 # credfolio2-wena
 title: 'Unify profile data model: materialize extracted data into profile tables'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-01-27T11:58:34Z
-updated_at: 2026-01-27T12:07:07Z
+updated_at: 2026-01-27T13:03:08Z
 parent: credfolio2-v5dw
 ---
 
