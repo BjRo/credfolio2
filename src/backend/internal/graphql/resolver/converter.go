@@ -384,7 +384,7 @@ func toGraphQLProfileSkill(s *domain.ProfileSkill) *model.ProfileSkill {
 		ID:             s.ID.String(),
 		Name:           s.Name,
 		NormalizedName: s.NormalizedName,
-		Category:       domain.SkillCategory(strings.ToLower(s.Category)),
+		Category:       domain.SkillCategory(strings.ToUpper(s.Category)),
 		DisplayOrder:   s.DisplayOrder,
 		Source:         source,
 		CreatedAt:      s.CreatedAt,

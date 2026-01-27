@@ -185,6 +185,12 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 		}
 	}
 
+	// Mark as completed AFTER materialization so the frontend doesn't
+	// redirect to the profile page before profile data is ready.
+	if err := w.updateStatus(ctx, args.ResumeID, domain.ResumeStatusCompleted, nil); err != nil {
+		return fmt.Errorf("failed to update status to completed: %w", err)
+	}
+
 	w.log.Info("Resume processing completed",
 		logger.Feature("jobs"),
 		logger.String("resume_id", args.ResumeID.String()),
@@ -216,7 +222,9 @@ func (w *ResumeProcessingWorker) extractResumeData(ctx context.Context, data []b
 	return extractedData, nil
 }
 
-// saveExtractedData saves the extracted data to the resume record.
+// saveExtractedData saves the extracted data JSONB to the resume record without changing status.
+// Status is updated separately after materialization to avoid a race condition where
+// the frontend sees COMPLETED before profile data is materialized.
 func (w *ResumeProcessingWorker) saveExtractedData(ctx context.Context, resumeID uuid.UUID, data *domain.ResumeExtractedData) error {
 	resume, err := w.resumeRepo.GetByID(ctx, resumeID)
 	if err != nil {
@@ -232,7 +240,9 @@ func (w *ResumeProcessingWorker) saveExtractedData(ctx context.Context, resumeID
 		return fmt.Errorf("failed to marshal extracted data: %w", err)
 	}
 
-	resume.Status = domain.ResumeStatusCompleted
+	// Save extracted data but keep status as processing — status is set to
+	// completed only after materialization finishes so the frontend won't
+	// redirect before profile tables are populated.
 	resume.ExtractedData = jsonData
 	resume.ErrorMessage = nil
 
