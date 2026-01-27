@@ -78,24 +78,6 @@ type DeleteResult struct {
 	DeletedID string `json:"deletedId"`
 }
 
-// An education entry from a resume.
-type Education struct {
-	// Name of the institution.
-	Institution string `json:"institution"`
-	// Degree obtained (e.g., 'Bachelor of Science', 'PhD').
-	Degree *string `json:"degree,omitempty"`
-	// Field of study (e.g., 'Computer Science').
-	Field *string `json:"field,omitempty"`
-	// Start date.
-	StartDate *string `json:"startDate,omitempty"`
-	// End date or expected graduation.
-	EndDate *string `json:"endDate,omitempty"`
-	// GPA if mentioned.
-	Gpa *string `json:"gpa,omitempty"`
-	// Notable achievements or honors.
-	Achievements *string `json:"achievements,omitempty"`
-}
-
 // Result of a successful education operation.
 type EducationResult struct {
 	// The created or updated education entry.
@@ -172,7 +154,6 @@ type Profile struct {
 }
 
 // An education entry in a user's profile.
-// Extends Education with ID for editing and source tracking.
 type ProfileEducation struct {
 	// Unique identifier for the education entry.
 	ID string `json:"id"`
@@ -201,7 +182,6 @@ type ProfileEducation struct {
 }
 
 // A work experience entry in a user's profile.
-// Extends WorkExperience with ID for editing and highlights for achievements.
 type ProfileExperience struct {
 	// Unique identifier for the experience.
 	ID string `json:"id"`
@@ -266,6 +246,8 @@ type Resume struct {
 }
 
 // Structured data extracted from a resume.
+// Education and work experience are materialized into profile tables
+// and exposed via ProfileEducation/ProfileExperience types.
 type ResumeExtractedData struct {
 	// Full name of the candidate.
 	Name string `json:"name"`
@@ -277,10 +259,6 @@ type ResumeExtractedData struct {
 	Location *string `json:"location,omitempty"`
 	// Professional summary or objective.
 	Summary *string `json:"summary,omitempty"`
-	// Work experience entries.
-	Experience []*WorkExperience `json:"experience"`
-	// Education entries.
-	Education []*Education `json:"education"`
 	// Skills list.
 	Skills []string `json:"skills"`
 	// When the extraction was performed.
@@ -356,24 +334,6 @@ type User struct {
 	Name      *string   `json:"name,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-// A work experience entry from a resume.
-type WorkExperience struct {
-	// Company or organization name.
-	Company string `json:"company"`
-	// Job title or position.
-	Title string `json:"title"`
-	// Location of the job.
-	Location *string `json:"location,omitempty"`
-	// Start date (e.g., 'Jan 2020', '2020').
-	StartDate *string `json:"startDate,omitempty"`
-	// End date (e.g., 'Dec 2023', 'Present').
-	EndDate *string `json:"endDate,omitempty"`
-	// Whether this is the current job.
-	IsCurrent bool `json:"isCurrent"`
-	// Job description or responsibilities.
-	Description *string `json:"description,omitempty"`
 }
 
 // Source of a profile experience entry.

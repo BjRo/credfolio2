@@ -10,8 +10,6 @@ const mockProfileData: ProfileData = {
   phone: "+1 555-123-4567",
   location: "San Francisco, CA",
   summary: "Experienced software engineer with 10 years of experience.",
-  experience: [],
-  education: [],
   skills: [],
   extractedAt: "2024-01-01T00:00:00Z",
   confidence: 0.95,

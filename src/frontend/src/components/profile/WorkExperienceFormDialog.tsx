@@ -28,8 +28,6 @@ interface WorkExperienceFormDialogProps {
     description?: string | null;
     highlights: string[];
   };
-  // Override mode detection (useful for editing resume-extracted data which creates a new profile entry)
-  mode?: "create" | "edit";
   onSuccess?: () => void;
 }
 
@@ -38,12 +36,10 @@ export function WorkExperienceFormDialog({
   onOpenChange,
   userId,
   experience,
-  mode: modeOverride,
   onSuccess,
 }: WorkExperienceFormDialogProps) {
   const [error, setError] = useState<string | null>(null);
-  // Use override if provided, otherwise auto-detect based on experience.id
-  const mode = modeOverride ?? (experience?.id ? "edit" : "create");
+  const mode = experience?.id ? "edit" : "create";
 
   const [createResult, createExperience] = useMutation(CreateExperienceDocument);
   const [updateResult, updateExperience] = useMutation(UpdateExperienceDocument);

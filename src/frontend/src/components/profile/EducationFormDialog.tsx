@@ -28,7 +28,6 @@ interface EducationFormDialogProps {
     description?: string | null;
     gpa?: string | null;
   };
-  mode?: "create" | "edit";
   onSuccess?: () => void;
 }
 
@@ -37,11 +36,10 @@ export function EducationFormDialog({
   onOpenChange,
   userId,
   education,
-  mode: modeOverride,
   onSuccess,
 }: EducationFormDialogProps) {
   const [error, setError] = useState<string | null>(null);
-  const mode = modeOverride ?? (education?.id ? "edit" : "create");
+  const mode = education?.id ? "edit" : "create";
 
   const [createResult, createEducation] = useMutation(CreateEducationDocument);
   const [updateResult, updateEducation] = useMutation(UpdateEducationDocument);

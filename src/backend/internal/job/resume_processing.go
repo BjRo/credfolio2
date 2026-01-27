@@ -30,27 +30,36 @@ func (ResumeProcessingArgs) Kind() string {
 // ResumeProcessingWorker processes uploaded resumes to extract profile data.
 type ResumeProcessingWorker struct {
 	river.WorkerDefaults[ResumeProcessingArgs]
-	resumeRepo domain.ResumeRepository
-	fileRepo   domain.FileRepository
-	storage    domain.Storage
-	extractor  domain.DocumentExtractor
-	log        logger.Logger
+	resumeRepo     domain.ResumeRepository
+	fileRepo       domain.FileRepository
+	profileRepo    domain.ProfileRepository
+	profileExpRepo domain.ProfileExperienceRepository
+	profileEduRepo domain.ProfileEducationRepository
+	storage        domain.Storage
+	extractor      domain.DocumentExtractor
+	log            logger.Logger
 }
 
 // NewResumeProcessingWorker creates a new resume processing worker.
 func NewResumeProcessingWorker(
 	resumeRepo domain.ResumeRepository,
 	fileRepo domain.FileRepository,
+	profileRepo domain.ProfileRepository,
+	profileExpRepo domain.ProfileExperienceRepository,
+	profileEduRepo domain.ProfileEducationRepository,
 	storage domain.Storage,
 	extractor domain.DocumentExtractor,
 	log logger.Logger,
 ) *ResumeProcessingWorker {
 	return &ResumeProcessingWorker{
-		resumeRepo: resumeRepo,
-		fileRepo:   fileRepo,
-		storage:    storage,
-		extractor:  extractor,
-		log:        log,
+		resumeRepo:     resumeRepo,
+		fileRepo:       fileRepo,
+		profileRepo:    profileRepo,
+		profileExpRepo: profileExpRepo,
+		profileEduRepo: profileEduRepo,
+		storage:        storage,
+		extractor:      extractor,
+		log:            log,
 	}
 }
 
@@ -134,15 +143,41 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 	}
 
 	// Save extracted data
-	if err := w.saveExtractedData(ctx, args.ResumeID, extractedData); err != nil {
-		errMsg := fmt.Sprintf("failed to save extracted data: %v", err)
+	if saveErr := w.saveExtractedData(ctx, args.ResumeID, extractedData); saveErr != nil {
+		errMsg := fmt.Sprintf("failed to save extracted data: %v", saveErr)
 		w.log.Error("Failed to save extracted data",
+			logger.Feature("jobs"),
+			logger.String("resume_id", args.ResumeID.String()),
+			logger.Err(saveErr),
+		)
+		_ = w.updateStatusFailed(ctx, args.ResumeID, errMsg) //nolint:errcheck
+		return fmt.Errorf("failed to save extracted data: %w", saveErr)
+	}
+
+	// Materialize extracted data into profile tables
+	resume, err := w.resumeRepo.GetByID(ctx, args.ResumeID)
+	if err != nil {
+		w.log.Error("Failed to get resume for materialization",
 			logger.Feature("jobs"),
 			logger.String("resume_id", args.ResumeID.String()),
 			logger.Err(err),
 		)
-		_ = w.updateStatusFailed(ctx, args.ResumeID, errMsg) //nolint:errcheck
-		return fmt.Errorf("failed to save extracted data: %w", err)
+	} else if resume != nil {
+		if matErr := w.materializeExtractedData(ctx, args.ResumeID, resume.UserID, extractedData); matErr != nil {
+			w.log.Error("Failed to materialize extracted data into profile",
+				logger.Feature("jobs"),
+				logger.String("resume_id", args.ResumeID.String()),
+				logger.Err(matErr),
+			)
+			// Log but don't fail — extraction data is still saved in JSONB
+		} else {
+			w.log.Info("Materialized extracted data into profile tables",
+				logger.Feature("jobs"),
+				logger.String("resume_id", args.ResumeID.String()),
+				logger.Int("experience_count", len(extractedData.Experience)),
+				logger.Int("education_count", len(extractedData.Education)),
+			)
+		}
 	}
 
 	w.log.Info("Resume processing completed",
@@ -226,4 +261,94 @@ func (w *ResumeProcessingWorker) updateStatus(ctx context.Context, id uuid.UUID,
 // updateStatusFailed is a helper to update status to failed with an error message.
 func (w *ResumeProcessingWorker) updateStatusFailed(ctx context.Context, id uuid.UUID, errMsg string) error {
 	return w.updateStatus(ctx, id, domain.ResumeStatusFailed, &errMsg)
+}
+
+// materializeExtractedData creates profile education and experience rows from extracted resume data.
+// This makes profile tables the single source of truth for education/experience display.
+func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, resumeID uuid.UUID, userID uuid.UUID, data *domain.ResumeExtractedData) error {
+	// Get or create the user's profile
+	profile, err := w.profileRepo.GetOrCreateByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Delete any existing entries from this resume (idempotent re-processing)
+	if delErr := w.profileExpRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
+		return fmt.Errorf("failed to delete existing experiences for resume: %w", delErr)
+	}
+	if delErr := w.profileEduRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
+		return fmt.Errorf("failed to delete existing education for resume: %w", delErr)
+	}
+
+	// Get current max display orders
+	expDisplayOrder, err := w.profileExpRepo.GetNextDisplayOrder(ctx, profile.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get next experience display order: %w", err)
+	}
+
+	eduDisplayOrder, err := w.profileEduRepo.GetNextDisplayOrder(ctx, profile.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get next education display order: %w", err)
+	}
+
+	// Create profile experience rows from extracted data
+	for i, exp := range data.Experience {
+		originalJSON, marshalErr := json.Marshal(exp)
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal experience original data: %w", marshalErr)
+		}
+
+		profileExp := &domain.ProfileExperience{
+			ID:             uuid.New(),
+			ProfileID:      profile.ID,
+			Company:        exp.Company,
+			Title:          exp.Title,
+			Location:       exp.Location,
+			StartDate:      exp.StartDate,
+			EndDate:        exp.EndDate,
+			IsCurrent:      exp.IsCurrent,
+			Description:    exp.Description,
+			DisplayOrder:   expDisplayOrder + i,
+			Source:         domain.ExperienceSourceResumeExtracted,
+			SourceResumeID: &resumeID,
+			OriginalData:   originalJSON,
+		}
+		if createErr := w.profileExpRepo.Create(ctx, profileExp); createErr != nil {
+			return fmt.Errorf("failed to create experience for %s at %s: %w", exp.Title, exp.Company, createErr)
+		}
+	}
+
+	// Create profile education rows from extracted data
+	for i, edu := range data.Education {
+		originalJSON, marshalErr := json.Marshal(edu)
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal education original data: %w", marshalErr)
+		}
+
+		degree := "Degree"
+		if edu.Degree != nil && *edu.Degree != "" {
+			degree = *edu.Degree
+		}
+
+		profileEdu := &domain.ProfileEducation{
+			ID:             uuid.New(),
+			ProfileID:      profile.ID,
+			Institution:    edu.Institution,
+			Degree:         degree,
+			Field:          edu.Field,
+			StartDate:      edu.StartDate,
+			EndDate:        edu.EndDate,
+			Description:    edu.Achievements, // Map achievements -> description
+			GPA:            edu.GPA,
+			DisplayOrder:   eduDisplayOrder + i,
+			Source:         domain.ExperienceSourceResumeExtracted,
+			SourceResumeID: &resumeID,
+			OriginalData:   originalJSON,
+		}
+		if createErr := w.profileEduRepo.Create(ctx, profileEdu); createErr != nil {
+			return fmt.Errorf("failed to create education for %s: %w", edu.Institution, createErr)
+		}
+	}
+
+	return nil
 }

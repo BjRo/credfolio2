@@ -225,47 +225,9 @@ enum ResumeStatus {
 }
 
 """
-A work experience entry from a resume.
-"""
-type WorkExperience {
-  """Company or organization name."""
-  company: String!
-  """Job title or position."""
-  title: String!
-  """Location of the job."""
-  location: String
-  """Start date (e.g., 'Jan 2020', '2020')."""
-  startDate: String
-  """End date (e.g., 'Dec 2023', 'Present')."""
-  endDate: String
-  """Whether this is the current job."""
-  isCurrent: Boolean!
-  """Job description or responsibilities."""
-  description: String
-}
-
-"""
-An education entry from a resume.
-"""
-type Education {
-  """Name of the institution."""
-  institution: String!
-  """Degree obtained (e.g., 'Bachelor of Science', 'PhD')."""
-  degree: String
-  """Field of study (e.g., 'Computer Science')."""
-  field: String
-  """Start date."""
-  startDate: String
-  """End date or expected graduation."""
-  endDate: String
-  """GPA if mentioned."""
-  gpa: String
-  """Notable achievements or honors."""
-  achievements: String
-}
-
-"""
 Structured data extracted from a resume.
+Education and work experience are materialized into profile tables
+and exposed via ProfileEducation/ProfileExperience types.
 """
 type ResumeExtractedData {
   """Full name of the candidate."""
@@ -278,10 +240,6 @@ type ResumeExtractedData {
   location: String
   """Professional summary or objective."""
   summary: String
-  """Work experience entries."""
-  experience: [WorkExperience!]!
-  """Education entries."""
-  education: [Education!]!
   """Skills list."""
   skills: [String!]!
   """When the extraction was performed."""
@@ -323,7 +281,6 @@ enum ExperienceSource {
 
 """
 A work experience entry in a user's profile.
-Extends WorkExperience with ID for editing and highlights for achievements.
 """
 type ProfileExperience {
   """Unique identifier for the experience."""
@@ -354,7 +311,6 @@ type ProfileExperience {
 
 """
 An education entry in a user's profile.
-Extends Education with ID for editing and source tracking.
 """
 type ProfileEducation {
   """Unique identifier for the education entry."""

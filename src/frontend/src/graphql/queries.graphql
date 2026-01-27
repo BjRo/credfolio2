@@ -111,24 +111,6 @@ query GetResume($id: ID!) {
       phone
       location
       summary
-      experience {
-        company
-        title
-        location
-        startDate
-        endDate
-        isCurrent
-        description
-      }
-      education {
-        institution
-        degree
-        field
-        startDate
-        endDate
-        gpa
-        achievements
-      }
       skills
       extractedAt
       confidence

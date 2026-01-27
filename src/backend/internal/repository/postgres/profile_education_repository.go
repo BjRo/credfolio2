@@ -81,5 +81,14 @@ func (r *ProfileEducationRepository) GetNextDisplayOrder(ctx context.Context, pr
 	return maxOrder + 1, nil
 }
 
+// DeleteBySourceResumeID removes all education entries extracted from a specific resume.
+func (r *ProfileEducationRepository) DeleteBySourceResumeID(ctx context.Context, sourceResumeID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Model((*domain.ProfileEducation)(nil)).
+		Where("source_resume_id = ?", sourceResumeID).
+		Exec(ctx)
+	return err
+}
+
 // Compile-time check that ProfileEducationRepository implements domain.ProfileEducationRepository.
 var _ domain.ProfileEducationRepository = (*ProfileEducationRepository)(nil)

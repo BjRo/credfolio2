@@ -105,7 +105,7 @@ func run(log logger.Logger) error {
 
 	// Register resume processing worker only if LLM is configured
 	if extractor != nil {
-		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, fileStorage, extractor, log))
+		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, profileRepo, profileExpRepo, profileEduRepo, fileStorage, extractor, log))
 		log.Info("Resume processing worker registered", logger.Feature("jobs"))
 	} else {
 		log.Warning("Resume processing worker not registered (LLM not configured)", logger.Feature("jobs"))

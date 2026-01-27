@@ -372,6 +372,15 @@ func (r *mockProfileExperienceRepository) GetNextDisplayOrder(_ context.Context,
 	return len(r.experiences), nil
 }
 
+func (r *mockProfileExperienceRepository) DeleteBySourceResumeID(_ context.Context, sourceResumeID uuid.UUID) error {
+	for id, exp := range r.experiences {
+		if exp.SourceResumeID != nil && *exp.SourceResumeID == sourceResumeID {
+			delete(r.experiences, id)
+		}
+	}
+	return nil
+}
+
 // mockProfileEducationRepository is a mock implementation of domain.ProfileEducationRepository.
 type mockProfileEducationRepository struct {
 	educations map[uuid.UUID]*domain.ProfileEducation
@@ -419,6 +428,15 @@ func (r *mockProfileEducationRepository) Delete(_ context.Context, id uuid.UUID)
 
 func (r *mockProfileEducationRepository) GetNextDisplayOrder(_ context.Context, _ uuid.UUID) (int, error) {
 	return len(r.educations), nil
+}
+
+func (r *mockProfileEducationRepository) DeleteBySourceResumeID(_ context.Context, sourceResumeID uuid.UUID) error {
+	for id, edu := range r.educations {
+		if edu.SourceResumeID != nil && *edu.SourceResumeID == sourceResumeID {
+			delete(r.educations, id)
+		}
+	}
+	return nil
 }
 
 // testLogger returns a logger that discards all output (for tests).
