@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+// Union type for education create/update result.
+type EducationResponse interface {
+	IsEducationResponse()
+}
+
 // Union type for experience create/update result.
 type ExperienceResponse interface {
 	IsExperienceResponse()
@@ -23,6 +28,26 @@ type UploadFileResponse interface {
 // Union type for resume upload result - either success or validation error.
 type UploadResumeResponse interface {
 	IsUploadResumeResponse()
+}
+
+// Input for creating a new education entry.
+type CreateEducationInput struct {
+	// Institution name (required).
+	Institution string `json:"institution"`
+	// Degree or certification (required).
+	Degree string `json:"degree"`
+	// Field of study.
+	Field *string `json:"field,omitempty"`
+	// Start date (e.g., 'Jan 2020', '2020').
+	StartDate *string `json:"startDate,omitempty"`
+	// End date (e.g., 'Dec 2023', 'Present').
+	EndDate *string `json:"endDate,omitempty"`
+	// Whether currently studying here.
+	IsCurrent bool `json:"isCurrent"`
+	// Description or achievements.
+	Description *string `json:"description,omitempty"`
+	// GPA if applicable.
+	Gpa *string `json:"gpa,omitempty"`
 }
 
 // Input for creating a new work experience.
@@ -70,6 +95,24 @@ type Education struct {
 	// Notable achievements or honors.
 	Achievements *string `json:"achievements,omitempty"`
 }
+
+// Result of a successful education operation.
+type EducationResult struct {
+	// The created or updated education entry.
+	Education *ProfileEducation `json:"education"`
+}
+
+func (EducationResult) IsEducationResponse() {}
+
+// Error returned when education validation fails.
+type EducationValidationError struct {
+	// Error message describing the validation failure.
+	Message string `json:"message"`
+	// The field that failed validation.
+	Field *string `json:"field,omitempty"`
+}
+
+func (EducationValidationError) IsEducationResponse() {}
 
 // Result of a successful experience operation.
 type ExperienceResult struct {
@@ -122,8 +165,39 @@ type Profile struct {
 	User *User `json:"user"`
 	// Work experience entries.
 	Experiences []*ProfileExperience `json:"experiences"`
-	CreatedAt   time.Time            `json:"createdAt"`
-	UpdatedAt   time.Time            `json:"updatedAt"`
+	// Education entries.
+	Educations []*ProfileEducation `json:"educations"`
+	CreatedAt  time.Time           `json:"createdAt"`
+	UpdatedAt  time.Time           `json:"updatedAt"`
+}
+
+// An education entry in a user's profile.
+// Extends Education with ID for editing and source tracking.
+type ProfileEducation struct {
+	// Unique identifier for the education entry.
+	ID string `json:"id"`
+	// Institution name.
+	Institution string `json:"institution"`
+	// Degree or certification.
+	Degree string `json:"degree"`
+	// Field of study.
+	Field *string `json:"field,omitempty"`
+	// Start date (e.g., 'Jan 2020', '2020').
+	StartDate *string `json:"startDate,omitempty"`
+	// End date (e.g., 'Dec 2023', 'Present').
+	EndDate *string `json:"endDate,omitempty"`
+	// Whether currently studying here.
+	IsCurrent bool `json:"isCurrent"`
+	// Description or achievements.
+	Description *string `json:"description,omitempty"`
+	// GPA if applicable.
+	Gpa *string `json:"gpa,omitempty"`
+	// Display order for sorting.
+	DisplayOrder int `json:"displayOrder"`
+	// Source of this education entry.
+	Source    ExperienceSource `json:"source"`
+	CreatedAt time.Time        `json:"createdAt"`
+	UpdatedAt time.Time        `json:"updatedAt"`
 }
 
 // A work experience entry in a user's profile.
@@ -213,6 +287,26 @@ type ResumeExtractedData struct {
 	ExtractedAt time.Time `json:"extractedAt"`
 	// Overall confidence score (0.0 to 1.0).
 	Confidence float64 `json:"confidence"`
+}
+
+// Input for updating an existing education entry.
+type UpdateEducationInput struct {
+	// Institution name.
+	Institution *string `json:"institution,omitempty"`
+	// Degree or certification.
+	Degree *string `json:"degree,omitempty"`
+	// Field of study.
+	Field *string `json:"field,omitempty"`
+	// Start date (e.g., 'Jan 2020', '2020').
+	StartDate *string `json:"startDate,omitempty"`
+	// End date (e.g., 'Dec 2023', 'Present').
+	EndDate *string `json:"endDate,omitempty"`
+	// Whether currently studying here.
+	IsCurrent *bool `json:"isCurrent,omitempty"`
+	// Description or achievements.
+	Description *string `json:"description,omitempty"`
+	// GPA if applicable.
+	Gpa *string `json:"gpa,omitempty"`
 }
 
 // Input for updating an existing work experience.

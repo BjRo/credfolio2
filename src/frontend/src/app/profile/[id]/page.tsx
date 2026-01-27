@@ -145,7 +145,13 @@ export default function ProfilePage() {
           onMutationSuccess={handleMutationSuccess}
         />
 
-        <EducationSection education={extractedData.education} />
+        {/* Unified education section - shows profile educations if available, otherwise resume-extracted */}
+        <EducationSection
+          education={extractedData.education}
+          profileEducations={profile?.educations ?? []}
+          userId={userId}
+          onMutationSuccess={handleMutationSuccess}
+        />
         <SkillsSection skills={extractedData.skills} />
         <ProfileActions
           onAddReference={handleAddReference}

@@ -353,6 +353,37 @@ type ProfileExperience {
 }
 
 """
+An education entry in a user's profile.
+Extends Education with ID for editing and source tracking.
+"""
+type ProfileEducation {
+  """Unique identifier for the education entry."""
+  id: ID!
+  """Institution name."""
+  institution: String!
+  """Degree or certification."""
+  degree: String!
+  """Field of study."""
+  field: String
+  """Start date (e.g., 'Jan 2020', '2020')."""
+  startDate: String
+  """End date (e.g., 'Dec 2023', 'Present')."""
+  endDate: String
+  """Whether currently studying here."""
+  isCurrent: Boolean!
+  """Description or achievements."""
+  description: String
+  """GPA if applicable."""
+  gpa: String
+  """Display order for sorting."""
+  displayOrder: Int!
+  """Source of this education entry."""
+  source: ExperienceSource!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
 A user's profile containing manually editable data.
 """
 type Profile {
@@ -361,6 +392,8 @@ type Profile {
   user: User!
   """Work experience entries."""
   experiences: [ProfileExperience!]!
+  """Education entries."""
+  educations: [ProfileEducation!]!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -433,6 +466,73 @@ Union type for experience create/update result.
 union ExperienceResponse = ExperienceResult | ExperienceValidationError
 
 """
+Input for creating a new education entry.
+"""
+input CreateEducationInput {
+  """Institution name (required)."""
+  institution: String!
+  """Degree or certification (required)."""
+  degree: String!
+  """Field of study."""
+  field: String
+  """Start date (e.g., 'Jan 2020', '2020')."""
+  startDate: String
+  """End date (e.g., 'Dec 2023', 'Present')."""
+  endDate: String
+  """Whether currently studying here."""
+  isCurrent: Boolean!
+  """Description or achievements."""
+  description: String
+  """GPA if applicable."""
+  gpa: String
+}
+
+"""
+Input for updating an existing education entry.
+"""
+input UpdateEducationInput {
+  """Institution name."""
+  institution: String
+  """Degree or certification."""
+  degree: String
+  """Field of study."""
+  field: String
+  """Start date (e.g., 'Jan 2020', '2020')."""
+  startDate: String
+  """End date (e.g., 'Dec 2023', 'Present')."""
+  endDate: String
+  """Whether currently studying here."""
+  isCurrent: Boolean
+  """Description or achievements."""
+  description: String
+  """GPA if applicable."""
+  gpa: String
+}
+
+"""
+Result of a successful education operation.
+"""
+type EducationResult {
+  """The created or updated education entry."""
+  education: ProfileEducation!
+}
+
+"""
+Error returned when education validation fails.
+"""
+type EducationValidationError {
+  """Error message describing the validation failure."""
+  message: String!
+  """The field that failed validation."""
+  field: String
+}
+
+"""
+Union type for education create/update result.
+"""
+union EducationResponse = EducationResult | EducationValidationError
+
+"""
 Result of a delete operation.
 """
 type DeleteResult {
@@ -488,6 +588,11 @@ type Query {
   Get a single profile experience by ID.
   """
   profileExperience(id: ID!): ProfileExperience
+
+  """
+  Get a single profile education entry by ID.
+  """
+  profileEducation(id: ID!): ProfileEducation
 }
 
 # ============================================================================
@@ -590,6 +695,40 @@ type Mutation {
   """
   deleteExperience(
     """The experience ID to delete."""
+    id: ID!
+  ): DeleteResult!
+
+  # ============================================================================
+  # Profile Education Mutations
+  # ============================================================================
+
+  """
+  Create a new education entry for a user's profile.
+  Creates the profile if it doesn't exist.
+  """
+  createEducation(
+    """The user ID creating the education entry."""
+    userId: ID!
+    """The education data."""
+    input: CreateEducationInput!
+  ): EducationResponse!
+
+  """
+  Update an existing education entry.
+  Only updates fields that are provided.
+  """
+  updateEducation(
+    """The education ID to update."""
+    id: ID!
+    """The fields to update."""
+    input: UpdateEducationInput!
+  ): EducationResponse!
+
+  """
+  Delete an education entry.
+  """
+  deleteEducation(
+    """The education ID to delete."""
     id: ID!
   ): DeleteResult!
 }

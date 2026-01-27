@@ -56,3 +56,62 @@ mutation DeleteExperience($id: ID!) {
     deletedId
   }
 }
+
+mutation CreateEducation($userId: ID!, $input: CreateEducationInput!) {
+  createEducation(userId: $userId, input: $input) {
+    ... on EducationResult {
+      education {
+        id
+        institution
+        degree
+        field
+        startDate
+        endDate
+        isCurrent
+        description
+        gpa
+        displayOrder
+        source
+        createdAt
+        updatedAt
+      }
+    }
+    ... on EducationValidationError {
+      message
+      field
+    }
+  }
+}
+
+mutation UpdateEducation($id: ID!, $input: UpdateEducationInput!) {
+  updateEducation(id: $id, input: $input) {
+    ... on EducationResult {
+      education {
+        id
+        institution
+        degree
+        field
+        startDate
+        endDate
+        isCurrent
+        description
+        gpa
+        displayOrder
+        source
+        createdAt
+        updatedAt
+      }
+    }
+    ... on EducationValidationError {
+      message
+      field
+    }
+  }
+}
+
+mutation DeleteEducation($id: ID!) {
+  deleteEducation(id: $id) {
+    success
+    deletedId
+  }
+}

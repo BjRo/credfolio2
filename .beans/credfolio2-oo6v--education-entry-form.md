@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-01-26T11:43:07Z
-updated_at: 2026-01-27T11:07:19Z
+updated_at: 2026-01-27T11:29:53Z
 parent: credfolio2-v5dw
 ---
 
@@ -37,24 +37,31 @@ Form for adding/editing education entries.
 
 ### Backend
 
-- [ ] Create `profile_education` database migration (model after `profile_experiences`)
-- [ ] Add `ProfileEducation` domain type in `internal/domain/profile.go`
-- [ ] Create `profile_education_repository.go` with CRUD operations
-- [ ] Add GraphQL input types: `CreateEducationInput`, `UpdateEducationInput`
-- [ ] Add GraphQL mutations: `createEducation`, `updateEducation`, `deleteEducation`
-- [ ] Add resolver implementations for education mutations
+- [x] Create `profile_education` database migration (model after `profile_experiences`)
+- [x] Add `ProfileEducation` domain type in `internal/domain/profile.go`
+- [x] Create `profile_education_repository.go` with CRUD operations
+- [x] Add GraphQL input types: `CreateEducationInput`, `UpdateEducationInput`
+- [x] Add GraphQL mutations: `createEducation`, `updateEducation`, `deleteEducation`
+- [x] Add resolver implementations for education mutations
 
 ### Frontend
 
-- [ ] Generate GraphQL types after backend is ready
-- [ ] Create `EducationForm` component (modal, consistent with `WorkExperienceForm`)
-- [ ] Create `EducationFormDialog` wrapper component
-- [ ] Reuse `MonthYearPicker` for date fields
-- [ ] Implement add education flow
-- [ ] Implement edit education flow (pre-fill form)
-- [ ] Implement delete with `DeleteEducationDialog`
-- [ ] Add "Add Education" button trigger to education section
-- [ ] Handle validation errors inline
+- [x] Generate GraphQL types after backend is ready
+- [x] Create `EducationForm` component (modal, consistent with `WorkExperienceForm`)
+- [x] Create `EducationFormDialog` wrapper component
+- [x] Reuse `MonthYearPicker` for date fields
+- [x] Implement add education flow
+- [x] Implement edit education flow (pre-fill form)
+- [x] Implement delete with `DeleteEducationDialog`
+- [x] Add "Add Education" button trigger to education section
+- [x] Handle validation errors inline
+
+## Definition of Done
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (for UI changes)
+- [x] All other checklist items above are completed
 
 ## Reference
 

@@ -31,6 +31,7 @@ type Profile struct { //nolint:govet // Field ordering prioritizes readability o
 	// Relations
 	User        *User                `bun:"rel:belongs-to,join:user_id=id"`
 	Experiences []*ProfileExperience `bun:"rel:has-many,join:id=profile_id"`
+	Educations  []*ProfileEducation  `bun:"rel:has-many,join:id=profile_id"`
 }
 
 // ProfileExperience represents a work experience entry in a user's profile.
@@ -47,6 +48,31 @@ type ProfileExperience struct { //nolint:govet // Field ordering prioritizes rea
 	IsCurrent      bool             `bun:"is_current,notnull,default:false"`
 	Description    *string          `bun:"description"`
 	Highlights     pq.StringArray   `bun:"highlights,type:text[],array"`
+	DisplayOrder   int              `bun:"display_order,notnull,default:0"`
+	Source         ExperienceSource `bun:"source,notnull,default:'manual'"`
+	SourceResumeID *uuid.UUID       `bun:"source_resume_id,type:uuid"`
+	CreatedAt      time.Time        `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt      time.Time        `bun:"updated_at,notnull,default:current_timestamp"`
+
+	// Relations
+	Profile      *Profile `bun:"rel:belongs-to,join:profile_id=id"`
+	SourceResume *Resume  `bun:"rel:belongs-to,join:source_resume_id=id"`
+}
+
+// ProfileEducation represents an education entry in a user's profile.
+type ProfileEducation struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
+	bun.BaseModel `bun:"table:profile_education,alias:ped"`
+
+	ID             uuid.UUID        `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileID      uuid.UUID        `bun:"profile_id,notnull,type:uuid"`
+	Institution    string           `bun:"institution,notnull"`
+	Degree         string           `bun:"degree,notnull"`
+	Field          *string          `bun:"field"`
+	StartDate      *string          `bun:"start_date"`
+	EndDate        *string          `bun:"end_date"`
+	IsCurrent      bool             `bun:"is_current,notnull,default:false"`
+	Description    *string          `bun:"description"`
+	GPA            *string          `bun:"gpa"`
 	DisplayOrder   int              `bun:"display_order,notnull,default:0"`
 	Source         ExperienceSource `bun:"source,notnull,default:'manual'"`
 	SourceResumeID *uuid.UUID       `bun:"source_resume_id,type:uuid"`
@@ -94,6 +120,27 @@ type ProfileExperienceRepository interface {
 	Update(ctx context.Context, experience *ProfileExperience) error
 
 	// Delete removes a profile experience by its ID.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// GetNextDisplayOrder returns the next display order value for a profile.
+	GetNextDisplayOrder(ctx context.Context, profileID uuid.UUID) (int, error)
+}
+
+// ProfileEducationRepository defines operations for profile education persistence.
+type ProfileEducationRepository interface {
+	// Create persists a new profile education entry.
+	Create(ctx context.Context, education *ProfileEducation) error
+
+	// GetByID retrieves a profile education entry by its ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*ProfileEducation, error)
+
+	// GetByProfileID retrieves all profile education entries for a profile, ordered by display order.
+	GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*ProfileEducation, error)
+
+	// Update persists changes to an existing profile education entry.
+	Update(ctx context.Context, education *ProfileEducation) error
+
+	// Delete removes a profile education entry by its ID.
 	Delete(ctx context.Context, id uuid.UUID) error
 
 	// GetNextDisplayOrder returns the next display order value for a profile.

@@ -8,10 +8,16 @@ import (
 	"github.com/google/uuid"
 
 	"backend/internal/domain"
+	"backend/internal/graphql/model"
 	"backend/internal/graphql/resolver"
 	"backend/internal/infrastructure/storage"
 	"backend/internal/logger"
 )
+
+// stringPtr returns a pointer to a string (test helper).
+func stringPtr(s string) *string {
+	return &s
+}
 
 // mustCreateUser creates a user in the mock repository. Panics on error (should never happen with mocks).
 func mustCreateUser(repo *mockUserRepository, user *domain.User) {
@@ -366,6 +372,55 @@ func (r *mockProfileExperienceRepository) GetNextDisplayOrder(_ context.Context,
 	return len(r.experiences), nil
 }
 
+// mockProfileEducationRepository is a mock implementation of domain.ProfileEducationRepository.
+type mockProfileEducationRepository struct {
+	educations map[uuid.UUID]*domain.ProfileEducation
+}
+
+func newMockProfileEducationRepository() *mockProfileEducationRepository {
+	return &mockProfileEducationRepository{educations: make(map[uuid.UUID]*domain.ProfileEducation)}
+}
+
+func (r *mockProfileEducationRepository) Create(_ context.Context, education *domain.ProfileEducation) error {
+	if education.ID == uuid.Nil {
+		education.ID = uuid.New()
+	}
+	r.educations[education.ID] = education
+	return nil
+}
+
+func (r *mockProfileEducationRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.ProfileEducation, error) {
+	education, ok := r.educations[id]
+	if !ok {
+		return nil, nil
+	}
+	return education, nil
+}
+
+func (r *mockProfileEducationRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.ProfileEducation, error) {
+	var result []*domain.ProfileEducation
+	for _, edu := range r.educations {
+		if edu.ProfileID == profileID {
+			result = append(result, edu)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockProfileEducationRepository) Update(_ context.Context, education *domain.ProfileEducation) error {
+	r.educations[education.ID] = education
+	return nil
+}
+
+func (r *mockProfileEducationRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.educations, id)
+	return nil
+}
+
+func (r *mockProfileEducationRepository) GetNextDisplayOrder(_ context.Context, _ uuid.UUID) (int, error) {
+	return len(r.educations), nil
+}
+
 // testLogger returns a logger that discards all output (for tests).
 func testLogger() logger.Logger {
 	return logger.NewStdoutLogger(logger.WithMinLevel(logger.Severity(100))) // level 100 = discard all
@@ -388,7 +443,7 @@ func TestUserQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns user when found", func(t *testing.T) {
@@ -434,7 +489,7 @@ func TestUserQuery(t *testing.T) {
 	})
 
 	t.Run("returns error when repository fails", func(t *testing.T) {
-		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 		errorQuery := errorR.Query()
 
 		_, err := errorQuery.User(ctx, uuid.New().String())
@@ -469,7 +524,7 @@ func TestFileQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, file)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns file when found", func(t *testing.T) {
@@ -573,7 +628,7 @@ func TestFilesQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, otherFile)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns files for user", func(t *testing.T) {
@@ -669,7 +724,7 @@ func TestReferenceLetterQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, letter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letter when found", func(t *testing.T) {
@@ -817,7 +872,7 @@ func TestReferenceLettersQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, otherLetter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letters for user", func(t *testing.T) {
@@ -871,6 +926,327 @@ func TestReferenceLettersQuery(t *testing.T) {
 
 	t.Run("returns error for invalid ID", func(t *testing.T) {
 		_, err := query.ReferenceLetters(ctx, "invalid-uuid")
+		if err == nil {
+			t.Error("expected error for invalid UUID")
+		}
+	})
+}
+
+func TestCreateEducation(t *testing.T) {
+	userRepo := newMockUserRepository()
+	profileRepo := newMockProfileRepository()
+	eduRepo := newMockProfileEducationRepository()
+
+	ctx := context.Background()
+
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "edu-test@example.com",
+		PasswordHash: "hashed",
+	}
+	mustCreateUser(userRepo, user)
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	mutation := r.Mutation()
+
+	t.Run("creates education entry", func(t *testing.T) {
+		result, err := mutation.CreateEducation(ctx, user.ID.String(), model.CreateEducationInput{
+			Institution: "MIT",
+			Degree:      "Bachelor of Science",
+			Field:       stringPtr("Computer Science"),
+			IsCurrent:   false,
+		})
+		if err != nil {
+			t.Fatalf("CreateEducation failed: %v", err)
+		}
+
+		eduResult, ok := result.(*model.EducationResult)
+		if !ok {
+			t.Fatalf("expected EducationResult, got %T", result)
+		}
+
+		if eduResult.Education.Institution != "MIT" {
+			t.Errorf("Institution mismatch: got %s, want MIT", eduResult.Education.Institution)
+		}
+		if eduResult.Education.Degree != "Bachelor of Science" {
+			t.Errorf("Degree mismatch: got %s, want Bachelor of Science", eduResult.Education.Degree)
+		}
+		if eduResult.Education.Field == nil || *eduResult.Education.Field != "Computer Science" {
+			t.Errorf("Field mismatch: got %v, want Computer Science", eduResult.Education.Field)
+		}
+	})
+
+	t.Run("returns validation error for invalid user ID", func(t *testing.T) {
+		result, err := mutation.CreateEducation(ctx, "invalid-uuid", model.CreateEducationInput{
+			Institution: "MIT",
+			Degree:      "BS",
+			IsCurrent:   false,
+		})
+		if err != nil {
+			t.Fatalf("CreateEducation failed: %v", err)
+		}
+
+		validationErr, ok := result.(*model.EducationValidationError)
+		if !ok {
+			t.Fatalf("expected EducationValidationError, got %T", result)
+		}
+		if validationErr.Message != "invalid user ID format" {
+			t.Errorf("unexpected error message: %s", validationErr.Message)
+		}
+	})
+
+	t.Run("returns validation error for non-existent user", func(t *testing.T) {
+		result, err := mutation.CreateEducation(ctx, uuid.New().String(), model.CreateEducationInput{
+			Institution: "MIT",
+			Degree:      "BS",
+			IsCurrent:   false,
+		})
+		if err != nil {
+			t.Fatalf("CreateEducation failed: %v", err)
+		}
+
+		validationErr, ok := result.(*model.EducationValidationError)
+		if !ok {
+			t.Fatalf("expected EducationValidationError, got %T", result)
+		}
+		if validationErr.Message != "user not found" {
+			t.Errorf("unexpected error message: %s", validationErr.Message)
+		}
+	})
+}
+
+func TestUpdateEducation(t *testing.T) {
+	userRepo := newMockUserRepository()
+	profileRepo := newMockProfileRepository()
+	eduRepo := newMockProfileEducationRepository()
+
+	ctx := context.Background()
+
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "edu-update@example.com",
+		PasswordHash: "hashed",
+	}
+	mustCreateUser(userRepo, user)
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	mutation := r.Mutation()
+
+	// Create an education entry first
+	createResult, err := mutation.CreateEducation(ctx, user.ID.String(), model.CreateEducationInput{
+		Institution: "MIT",
+		Degree:      "Bachelor of Science",
+		IsCurrent:   false,
+	})
+	if err != nil {
+		t.Fatalf("CreateEducation failed: %v", err)
+	}
+	eduResult, ok := createResult.(*model.EducationResult)
+	if !ok {
+		t.Fatalf("expected EducationResult, got %T", createResult)
+	}
+	eduID := eduResult.Education.ID
+
+	t.Run("updates education entry", func(t *testing.T) {
+		newInstitution := "Stanford University"
+		result, err := mutation.UpdateEducation(ctx, eduID, model.UpdateEducationInput{
+			Institution: &newInstitution,
+		})
+		if err != nil {
+			t.Fatalf("UpdateEducation failed: %v", err)
+		}
+
+		updated, ok := result.(*model.EducationResult)
+		if !ok {
+			t.Fatalf("expected EducationResult, got %T", result)
+		}
+		if updated.Education.Institution != "Stanford University" {
+			t.Errorf("Institution mismatch: got %s, want Stanford University", updated.Education.Institution)
+		}
+		// Degree should remain unchanged
+		if updated.Education.Degree != "Bachelor of Science" {
+			t.Errorf("Degree should not change: got %s, want Bachelor of Science", updated.Education.Degree)
+		}
+	})
+
+	t.Run("returns validation error for non-existent education", func(t *testing.T) {
+		newInstitution := "Harvard"
+		result, err := mutation.UpdateEducation(ctx, uuid.New().String(), model.UpdateEducationInput{
+			Institution: &newInstitution,
+		})
+		if err != nil {
+			t.Fatalf("UpdateEducation failed: %v", err)
+		}
+
+		validationErr, ok := result.(*model.EducationValidationError)
+		if !ok {
+			t.Fatalf("expected EducationValidationError, got %T", result)
+		}
+		if validationErr.Message != "education not found" {
+			t.Errorf("unexpected error message: %s", validationErr.Message)
+		}
+	})
+
+	t.Run("returns validation error for invalid ID", func(t *testing.T) {
+		newInstitution := "Harvard"
+		result, err := mutation.UpdateEducation(ctx, "invalid-uuid", model.UpdateEducationInput{
+			Institution: &newInstitution,
+		})
+		if err != nil {
+			t.Fatalf("UpdateEducation failed: %v", err)
+		}
+
+		validationErr, ok := result.(*model.EducationValidationError)
+		if !ok {
+			t.Fatalf("expected EducationValidationError, got %T", result)
+		}
+		if validationErr.Message != "invalid education ID format" {
+			t.Errorf("unexpected error message: %s", validationErr.Message)
+		}
+	})
+}
+
+func TestDeleteEducation(t *testing.T) {
+	userRepo := newMockUserRepository()
+	profileRepo := newMockProfileRepository()
+	eduRepo := newMockProfileEducationRepository()
+
+	ctx := context.Background()
+
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "edu-delete@example.com",
+		PasswordHash: "hashed",
+	}
+	mustCreateUser(userRepo, user)
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	mutation := r.Mutation()
+
+	// Create an education entry first
+	createResult, err := mutation.CreateEducation(ctx, user.ID.String(), model.CreateEducationInput{
+		Institution: "MIT",
+		Degree:      "Bachelor of Science",
+		IsCurrent:   false,
+	})
+	if err != nil {
+		t.Fatalf("CreateEducation failed: %v", err)
+	}
+	eduResult, ok := createResult.(*model.EducationResult)
+	if !ok {
+		t.Fatalf("expected EducationResult, got %T", createResult)
+	}
+	eduID := eduResult.Education.ID
+
+	t.Run("deletes education entry", func(t *testing.T) {
+		result, err := mutation.DeleteEducation(ctx, eduID)
+		if err != nil {
+			t.Fatalf("DeleteEducation failed: %v", err)
+		}
+
+		if !result.Success {
+			t.Error("expected success to be true")
+		}
+		if result.DeletedID != eduID {
+			t.Errorf("DeletedID mismatch: got %s, want %s", result.DeletedID, eduID)
+		}
+	})
+
+	t.Run("returns false for non-existent education", func(t *testing.T) {
+		result, err := mutation.DeleteEducation(ctx, uuid.New().String())
+		if err != nil {
+			t.Fatalf("DeleteEducation failed: %v", err)
+		}
+
+		if result.Success {
+			t.Error("expected success to be false for non-existent education")
+		}
+	})
+
+	t.Run("returns false for invalid ID", func(t *testing.T) {
+		result, err := mutation.DeleteEducation(ctx, "invalid-uuid")
+		if err != nil {
+			t.Fatalf("DeleteEducation failed: %v", err)
+		}
+
+		if result.Success {
+			t.Error("expected success to be false for invalid ID")
+		}
+	})
+}
+
+func TestProfileEducationQuery(t *testing.T) {
+	userRepo := newMockUserRepository()
+	profileRepo := newMockProfileRepository()
+	eduRepo := newMockProfileEducationRepository()
+
+	ctx := context.Background()
+
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "edu-query@example.com",
+		PasswordHash: "hashed",
+	}
+	mustCreateUser(userRepo, user)
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	mutation := r.Mutation()
+	query := r.Query()
+
+	// Create an education entry
+	createResult, err := mutation.CreateEducation(ctx, user.ID.String(), model.CreateEducationInput{
+		Institution: "MIT",
+		Degree:      "PhD",
+		Field:       stringPtr("Physics"),
+		IsCurrent:   false,
+		Gpa:         stringPtr("4.0"),
+	})
+	if err != nil {
+		t.Fatalf("CreateEducation failed: %v", err)
+	}
+	eduResult, ok := createResult.(*model.EducationResult)
+	if !ok {
+		t.Fatalf("expected EducationResult, got %T", createResult)
+	}
+	eduID := eduResult.Education.ID
+
+	t.Run("returns education when found", func(t *testing.T) {
+		result, err := query.ProfileEducation(ctx, eduID)
+		if err != nil {
+			t.Fatalf("ProfileEducation query failed: %v", err)
+		}
+
+		if result == nil {
+			t.Fatal("expected education, got nil")
+		}
+
+		if result.Institution != "MIT" {
+			t.Errorf("Institution mismatch: got %s, want MIT", result.Institution)
+		}
+		if result.Degree != "PhD" {
+			t.Errorf("Degree mismatch: got %s, want PhD", result.Degree)
+		}
+		if result.Field == nil || *result.Field != "Physics" {
+			t.Errorf("Field mismatch: got %v, want Physics", result.Field)
+		}
+		if result.Gpa == nil || *result.Gpa != "4.0" {
+			t.Errorf("GPA mismatch: got %v, want 4.0", result.Gpa)
+		}
+	})
+
+	t.Run("returns nil when not found", func(t *testing.T) {
+		result, err := query.ProfileEducation(ctx, uuid.New().String())
+		if err != nil {
+			t.Fatalf("ProfileEducation query failed: %v", err)
+		}
+
+		if result != nil {
+			t.Error("expected nil for non-existent education")
+		}
+	})
+
+	t.Run("returns error for invalid ID", func(t *testing.T) {
+		_, err := query.ProfileEducation(ctx, "invalid-uuid")
 		if err == nil {
 			t.Error("expected error for invalid UUID")
 		}

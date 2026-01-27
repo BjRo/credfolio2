@@ -297,8 +297,8 @@ func toGraphQLEducations(educations []domain.Education) []*model.Education {
 }
 
 // toGraphQLProfile converts a domain Profile to a GraphQL Profile model.
-// The user and experiences must be provided separately.
-func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience) *model.Profile {
+// The user, experiences, and educations must be provided separately.
+func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience, educations []*model.ProfileEducation) *model.Profile {
 	if p == nil {
 		return nil
 	}
@@ -306,6 +306,7 @@ func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.
 		ID:          p.ID.String(),
 		User:        user,
 		Experiences: experiences,
+		Educations:  educations,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 	}
@@ -349,6 +350,11 @@ func toGraphQLProfileExperience(e *domain.ProfileExperience) *model.ProfileExper
 	}
 }
 
+// stringPtr returns a pointer to a string.
+func stringPtr(s string) *string {
+	return &s
+}
+
 // toGraphQLProfileExperiences converts a slice of domain ProfileExperience to GraphQL models.
 func toGraphQLProfileExperiences(experiences []*domain.ProfileExperience) []*model.ProfileExperience {
 	if len(experiences) == 0 {
@@ -357,6 +363,52 @@ func toGraphQLProfileExperiences(experiences []*domain.ProfileExperience) []*mod
 	result := make([]*model.ProfileExperience, len(experiences))
 	for i, e := range experiences {
 		result[i] = toGraphQLProfileExperience(e)
+	}
+	return result
+}
+
+// toGraphQLProfileEducation converts a domain ProfileEducation to a GraphQL ProfileEducation model.
+func toGraphQLProfileEducation(e *domain.ProfileEducation) *model.ProfileEducation {
+	if e == nil {
+		return nil
+	}
+
+	// Convert domain source to GraphQL source
+	var source model.ExperienceSource
+	switch e.Source {
+	case domain.ExperienceSourceManual:
+		source = model.ExperienceSourceManual
+	case domain.ExperienceSourceResumeExtracted:
+		source = model.ExperienceSourceResumeExtracted
+	default:
+		source = model.ExperienceSourceManual
+	}
+
+	return &model.ProfileEducation{
+		ID:           e.ID.String(),
+		Institution:  e.Institution,
+		Degree:       e.Degree,
+		Field:        e.Field,
+		StartDate:    e.StartDate,
+		EndDate:      e.EndDate,
+		IsCurrent:    e.IsCurrent,
+		Description:  e.Description,
+		Gpa:          e.GPA,
+		DisplayOrder: e.DisplayOrder,
+		Source:        source,
+		CreatedAt:    e.CreatedAt,
+		UpdatedAt:    e.UpdatedAt,
+	}
+}
+
+// toGraphQLProfileEducations converts a slice of domain ProfileEducation to GraphQL models.
+func toGraphQLProfileEducations(educations []*domain.ProfileEducation) []*model.ProfileEducation {
+	if len(educations) == 0 {
+		return []*model.ProfileEducation{}
+	}
+	result := make([]*model.ProfileEducation, len(educations))
+	for i, e := range educations {
+		result[i] = toGraphQLProfileEducation(e)
 	}
 	return result
 }

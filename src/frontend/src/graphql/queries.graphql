@@ -167,6 +167,21 @@ query GetProfile($userId: ID!) {
       createdAt
       updatedAt
     }
+    educations {
+      id
+      institution
+      degree
+      field
+      startDate
+      endDate
+      isCurrent
+      description
+      gpa
+      displayOrder
+      source
+      createdAt
+      updatedAt
+    }
     createdAt
     updatedAt
   }
