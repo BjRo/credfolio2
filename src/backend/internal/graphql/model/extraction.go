@@ -6,7 +6,7 @@ import "time"
 // ExtractedLetterData is the GraphQL model for extracted letter data.
 type ExtractedLetterData struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
 	Author          *ExtractedAuthor           `json:"author"`
-	Skills          []*ExtractedSkill          `json:"skills"`
+	Skills          []string                   `json:"skills"`
 	Qualities       []*ExtractedQuality        `json:"qualities"`
 	Accomplishments []*ExtractedAccomplishment `json:"accomplishments"`
 	Recommendation  *ExtractedRecommendation   `json:"recommendation"`
@@ -21,16 +21,6 @@ type ExtractedAuthor struct { //nolint:govet // Field ordering prioritizes reada
 	Relationship        string  `json:"relationship"`
 	RelationshipDetails *string `json:"relationshipDetails,omitempty"`
 	Confidence          float64 `json:"confidence"`
-}
-
-// ExtractedSkill is the GraphQL model for an extracted skill.
-type ExtractedSkill struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
-	Name           string   `json:"name"`
-	NormalizedName string   `json:"normalizedName"`
-	Category       string   `json:"category"`
-	Mentions       int      `json:"mentions"`
-	Context        []string `json:"context,omitempty"`
-	Confidence     float64  `json:"confidence"`
 }
 
 // ExtractedQuality is the GraphQL model for an extracted quality.

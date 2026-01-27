@@ -12,6 +12,7 @@ import (
 	"backend/internal/logger"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/google/uuid"
@@ -25,11 +26,6 @@ func (r *extractedAuthorResolver) Relationship(ctx context.Context, obj *model.E
 // Strength is the resolver for the strength field.
 func (r *extractedRecommendationResolver) Strength(ctx context.Context, obj *model.ExtractedRecommendation) (domain.RecommendationStrength, error) {
 	panic(fmt.Errorf("not implemented: Strength - strength"))
-}
-
-// Category is the resolver for the category field.
-func (r *extractedSkillResolver) Category(ctx context.Context, obj *model.ExtractedSkill) (domain.SkillCategory, error) {
-	panic(fmt.Errorf("not implemented: Category - category"))
 }
 
 // UploadFile is the resolver for the uploadFile field.
@@ -875,6 +871,239 @@ func (r *mutationResolver) DeleteEducation(ctx context.Context, id string) (*mod
 	}, nil
 }
 
+// CreateSkill is the resolver for the createSkill field.
+func (r *mutationResolver) CreateSkill(ctx context.Context, userID string, input model.CreateSkillInput) (model.SkillResponse, error) {
+	r.log.Info("Creating skill",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.SkillValidationError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Validate skill name
+	if strings.TrimSpace(input.Name) == "" {
+		return &model.SkillValidationError{
+			Message: "skill name is required",
+			Field:   stringPtr("name"),
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		r.log.Warning("User not found",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.SkillValidationError{
+			Message: "user not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Get or create profile for user
+	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get or create profile",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Get next display order
+	displayOrder, err := r.profileSkillRepo.GetNextDisplayOrder(ctx, profile.ID)
+	if err != nil {
+		r.log.Error("Failed to get next display order",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get next display order: %w", err)
+	}
+
+	// Create skill
+	skill := &domain.ProfileSkill{
+		ID:             uuid.New(),
+		ProfileID:      profile.ID,
+		Name:           input.Name,
+		NormalizedName: normalizeSkillName(input.Name),
+		Category:       strings.ToUpper(string(input.Category)),
+		DisplayOrder:   displayOrder,
+		Source:         domain.ExperienceSourceManual,
+	}
+
+	if err := r.profileSkillRepo.Create(ctx, skill); err != nil {
+		r.log.Error("Failed to create skill",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to create skill: %w", err)
+	}
+
+	r.log.Info("Skill created",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+		logger.String("skill_id", skill.ID.String()),
+	)
+
+	return &model.SkillResult{
+		Skill: toGraphQLProfileSkill(skill),
+	}, nil
+}
+
+// UpdateSkill is the resolver for the updateSkill field.
+func (r *mutationResolver) UpdateSkill(ctx context.Context, id string, input model.UpdateSkillInput) (model.SkillResponse, error) {
+	r.log.Info("Updating skill",
+		logger.Feature("profile"),
+		logger.String("skill_id", id),
+	)
+
+	// Parse and validate skill ID
+	skillID, err := uuid.Parse(id)
+	if err != nil {
+		r.log.Warning("Invalid skill ID format",
+			logger.Feature("profile"),
+			logger.String("skill_id", id),
+		)
+		return &model.SkillValidationError{
+			Message: "invalid skill ID format",
+			Field:   stringPtr("id"),
+		}, nil
+	}
+
+	// Get existing skill
+	skill, err := r.profileSkillRepo.GetByID(ctx, skillID)
+	if err != nil {
+		r.log.Error("Failed to get skill",
+			logger.Feature("profile"),
+			logger.String("skill_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get skill: %w", err)
+	}
+	if skill == nil {
+		r.log.Warning("Skill not found",
+			logger.Feature("profile"),
+			logger.String("skill_id", id),
+		)
+		return &model.SkillValidationError{
+			Message: "skill not found",
+			Field:   stringPtr("id"),
+		}, nil
+	}
+
+	// Update fields if provided
+	if input.Name != nil {
+		skill.Name = *input.Name
+		skill.NormalizedName = normalizeSkillName(*input.Name)
+	}
+	if input.Category != nil {
+		skill.Category = strings.ToUpper(string(*input.Category))
+	}
+
+	if err := r.profileSkillRepo.Update(ctx, skill); err != nil {
+		r.log.Error("Failed to update skill",
+			logger.Feature("profile"),
+			logger.String("skill_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to update skill: %w", err)
+	}
+
+	r.log.Info("Skill updated",
+		logger.Feature("profile"),
+		logger.String("skill_id", id),
+	)
+
+	return &model.SkillResult{
+		Skill: toGraphQLProfileSkill(skill),
+	}, nil
+}
+
+// DeleteSkill is the resolver for the deleteSkill field.
+func (r *mutationResolver) DeleteSkill(ctx context.Context, id string) (*model.DeleteResult, error) {
+	r.log.Info("Deleting skill",
+		logger.Feature("profile"),
+		logger.String("skill_id", id),
+	)
+
+	// Parse and validate skill ID
+	skillID, err := uuid.Parse(id)
+	if err != nil {
+		r.log.Warning("Invalid skill ID format",
+			logger.Feature("profile"),
+			logger.String("skill_id", id),
+		)
+		return &model.DeleteResult{
+			Success:   false,
+			DeletedID: id,
+		}, nil
+	}
+
+	// Check if skill exists
+	skill, err := r.profileSkillRepo.GetByID(ctx, skillID)
+	if err != nil {
+		r.log.Error("Failed to get skill",
+			logger.Feature("profile"),
+			logger.String("skill_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get skill: %w", err)
+	}
+	if skill == nil {
+		r.log.Warning("Skill not found",
+			logger.Feature("profile"),
+			logger.String("skill_id", id),
+		)
+		return &model.DeleteResult{
+			Success:   false,
+			DeletedID: id,
+		}, nil
+	}
+
+	// Delete skill
+	if err := r.profileSkillRepo.Delete(ctx, skillID); err != nil {
+		r.log.Error("Failed to delete skill",
+			logger.Feature("profile"),
+			logger.String("skill_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to delete skill: %w", err)
+	}
+
+	r.log.Info("Skill deleted",
+		logger.Feature("profile"),
+		logger.String("skill_id", id),
+	)
+
+	return &model.DeleteResult{
+		Success:   true,
+		DeletedID: id,
+	}, nil
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	uid, err := uuid.Parse(id)
@@ -1145,7 +1374,14 @@ func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Prof
 	}
 	gqlEducations := toGraphQLProfileEducations(educations)
 
-	return toGraphQLProfile(profile, gqlUser, gqlExperiences, gqlEducations), nil
+	// Fetch skills
+	skills, err := r.profileSkillRepo.GetByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get skills for profile: %w", err)
+	}
+	gqlSkills := toGraphQLProfileSkills(skills)
+
+	return toGraphQLProfile(profile, gqlUser, gqlExperiences, gqlEducations, gqlSkills), nil
 }
 
 // ProfileExperience is the resolver for the profileExperience field.
@@ -1184,6 +1420,24 @@ func (r *queryResolver) ProfileEducation(ctx context.Context, id string) (*model
 	return toGraphQLProfileEducation(education), nil
 }
 
+// ProfileSkill is the resolver for the profileSkill field.
+func (r *queryResolver) ProfileSkill(ctx context.Context, id string) (*model.ProfileSkill, error) {
+	skillID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid skill ID: %w", err)
+	}
+
+	skill, err := r.profileSkillRepo.GetByID(ctx, skillID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get skill: %w", err)
+	}
+	if skill == nil {
+		return nil, nil
+	}
+
+	return toGraphQLProfileSkill(skill), nil
+}
+
 // ExtractedAuthor returns generated.ExtractedAuthorResolver implementation.
 func (r *Resolver) ExtractedAuthor() generated.ExtractedAuthorResolver {
 	return &extractedAuthorResolver{r}
@@ -1194,11 +1448,6 @@ func (r *Resolver) ExtractedRecommendation() generated.ExtractedRecommendationRe
 	return &extractedRecommendationResolver{r}
 }
 
-// ExtractedSkill returns generated.ExtractedSkillResolver implementation.
-func (r *Resolver) ExtractedSkill() generated.ExtractedSkillResolver {
-	return &extractedSkillResolver{r}
-}
-
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -1207,6 +1456,5 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type extractedAuthorResolver struct{ *Resolver }
 type extractedRecommendationResolver struct{ *Resolver }
-type extractedSkillResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

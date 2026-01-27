@@ -1,11 +1,11 @@
 ---
 # credfolio2-h2i8
 title: Skills management UI
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-01-23T16:29:31Z
-updated_at: 2026-01-26T16:41:07Z
+updated_at: 2026-01-27T17:58:24Z
 parent: credfolio2-v5dw
 ---
 

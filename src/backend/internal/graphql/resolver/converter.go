@@ -8,6 +8,11 @@ import (
 	"backend/internal/graphql/model"
 )
 
+// normalizeSkillName produces a lowercase, trimmed version of a skill name for deduplication.
+func normalizeSkillName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
+}
+
 // toGraphQLUser converts a domain User to a GraphQL User model.
 func toGraphQLUser(u *domain.User) *model.User {
 	if u == nil {
@@ -90,9 +95,15 @@ func toGraphQLExtractedData(raw json.RawMessage) *model.ExtractedLetterData {
 		return nil
 	}
 
+	// Convert extracted skills to plain skill names
+	skillNames := make([]string, len(data.Skills))
+	for i, s := range data.Skills {
+		skillNames[i] = s.Name
+	}
+
 	return &model.ExtractedLetterData{
 		Author:          toGraphQLExtractedAuthor(&data.Author),
-		Skills:          toGraphQLExtractedSkills(data.Skills),
+		Skills:          skillNames,
 		Qualities:       toGraphQLExtractedQualities(data.Qualities),
 		Accomplishments: toGraphQLExtractedAccomplishments(data.Accomplishments),
 		Recommendation:  toGraphQLExtractedRecommendation(&data.Recommendation),
@@ -113,25 +124,6 @@ func toGraphQLExtractedAuthor(a *domain.ExtractedAuthor) *model.ExtractedAuthor 
 		RelationshipDetails: a.RelationshipDetails,
 		Confidence:          a.Confidence,
 	}
-}
-
-// toGraphQLExtractedSkills converts a slice of domain ExtractedSkill to GraphQL models.
-func toGraphQLExtractedSkills(skills []domain.ExtractedSkill) []*model.ExtractedSkill {
-	if len(skills) == 0 {
-		return []*model.ExtractedSkill{}
-	}
-	result := make([]*model.ExtractedSkill, len(skills))
-	for i, s := range skills {
-		result[i] = &model.ExtractedSkill{
-			Name:           s.Name,
-			NormalizedName: s.NormalizedName,
-			Category:       strings.ToUpper(string(s.Category)),
-			Mentions:       s.Mentions,
-			Context:        s.Context,
-			Confidence:     s.Confidence,
-		}
-	}
-	return result
 }
 
 // toGraphQLExtractedQualities converts a slice of domain ExtractedQuality to GraphQL models.
@@ -248,15 +240,14 @@ func toGraphQLResumeExtractedData(raw json.RawMessage) *model.ResumeExtractedDat
 		Phone:       data.Phone,
 		Location:    data.Location,
 		Summary:     data.Summary,
-		Skills:      data.Skills,
 		ExtractedAt: data.ExtractedAt,
 		Confidence:  data.Confidence,
 	}
 }
 
 // toGraphQLProfile converts a domain Profile to a GraphQL Profile model.
-// The user, experiences, and educations must be provided separately.
-func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience, educations []*model.ProfileEducation) *model.Profile {
+// The user, experiences, educations, and skills must be provided separately.
+func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience, educations []*model.ProfileEducation, skills []*model.ProfileSkill) *model.Profile {
 	if p == nil {
 		return nil
 	}
@@ -265,6 +256,7 @@ func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.
 		User:        user,
 		Experiences: experiences,
 		Educations:  educations,
+		Skills:      skills,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 	}
@@ -367,6 +359,47 @@ func toGraphQLProfileEducations(educations []*domain.ProfileEducation) []*model.
 	result := make([]*model.ProfileEducation, len(educations))
 	for i, e := range educations {
 		result[i] = toGraphQLProfileEducation(e)
+	}
+	return result
+}
+
+// toGraphQLProfileSkill converts a domain ProfileSkill to a GraphQL ProfileSkill model.
+func toGraphQLProfileSkill(s *domain.ProfileSkill) *model.ProfileSkill {
+	if s == nil {
+		return nil
+	}
+
+	// Convert domain source to GraphQL source
+	var source model.ExperienceSource
+	switch s.Source {
+	case domain.ExperienceSourceManual:
+		source = model.ExperienceSourceManual
+	case domain.ExperienceSourceResumeExtracted:
+		source = model.ExperienceSourceResumeExtracted
+	default:
+		source = model.ExperienceSourceManual
+	}
+
+	return &model.ProfileSkill{
+		ID:             s.ID.String(),
+		Name:           s.Name,
+		NormalizedName: s.NormalizedName,
+		Category:       domain.SkillCategory(strings.ToUpper(s.Category)),
+		DisplayOrder:   s.DisplayOrder,
+		Source:         source,
+		CreatedAt:      s.CreatedAt,
+		UpdatedAt:      s.UpdatedAt,
+	}
+}
+
+// toGraphQLProfileSkills converts a slice of domain ProfileSkill to GraphQL models.
+func toGraphQLProfileSkills(skills []*domain.ProfileSkill) []*model.ProfileSkill {
+	if len(skills) == 0 {
+		return []*model.ProfileSkill{}
+	}
+	result := make([]*model.ProfileSkill, len(skills))
+	for i, s := range skills {
+		result[i] = toGraphQLProfileSkill(s)
 	}
 	return result
 }

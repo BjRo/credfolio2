@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -180,18 +181,78 @@ func (r *mockProfileEducationRepository) DeleteBySourceResumeID(_ context.Contex
 	return nil
 }
 
+// mockProfileSkillRepository implements domain.ProfileSkillRepository for testing.
+type mockProfileSkillRepository struct {
+	skills map[uuid.UUID]*domain.ProfileSkill
+}
+
+func newMockProfileSkillRepository() *mockProfileSkillRepository {
+	return &mockProfileSkillRepository{skills: make(map[uuid.UUID]*domain.ProfileSkill)}
+}
+
+func (r *mockProfileSkillRepository) Create(_ context.Context, skill *domain.ProfileSkill) error {
+	if skill.ID == uuid.Nil {
+		skill.ID = uuid.New()
+	}
+	r.skills[skill.ID] = skill
+	return nil
+}
+
+func (r *mockProfileSkillRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.ProfileSkill, error) {
+	skill, ok := r.skills[id]
+	if !ok {
+		return nil, nil
+	}
+	return skill, nil
+}
+
+func (r *mockProfileSkillRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.ProfileSkill, error) {
+	var result []*domain.ProfileSkill
+	for _, skill := range r.skills {
+		if skill.ProfileID == profileID {
+			result = append(result, skill)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockProfileSkillRepository) Update(_ context.Context, skill *domain.ProfileSkill) error {
+	r.skills[skill.ID] = skill
+	return nil
+}
+
+func (r *mockProfileSkillRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.skills, id)
+	return nil
+}
+
+func (r *mockProfileSkillRepository) GetNextDisplayOrder(_ context.Context, _ uuid.UUID) (int, error) {
+	return len(r.skills), nil
+}
+
+func (r *mockProfileSkillRepository) DeleteBySourceResumeID(_ context.Context, sourceResumeID uuid.UUID) error {
+	for id, skill := range r.skills {
+		if skill.SourceResumeID != nil && *skill.SourceResumeID == sourceResumeID {
+			delete(r.skills, id)
+		}
+	}
+	return nil
+}
+
 func stringPtr(s string) *string { return &s }
 
-func newTestWorker() (*ResumeProcessingWorker, *mockProfileRepository, *mockProfileExperienceRepository, *mockProfileEducationRepository) {
+func newTestWorker() (*ResumeProcessingWorker, *mockProfileRepository, *mockProfileExperienceRepository, *mockProfileEducationRepository, *mockProfileSkillRepository) {
 	profileRepo := newMockProfileRepository()
 	expRepo := newMockProfileExperienceRepository()
 	eduRepo := newMockProfileEducationRepository()
+	skillRepo := newMockProfileSkillRepository()
 	worker := &ResumeProcessingWorker{
-		profileRepo:    profileRepo,
-		profileExpRepo: expRepo,
-		profileEduRepo: eduRepo,
+		profileRepo:      profileRepo,
+		profileExpRepo:   expRepo,
+		profileEduRepo:   eduRepo,
+		profileSkillRepo: skillRepo,
 	}
-	return worker, profileRepo, expRepo, eduRepo
+	return worker, profileRepo, expRepo, eduRepo, skillRepo
 }
 
 func testExtractedData() *domain.ResumeExtractedData {
@@ -217,11 +278,12 @@ func testExtractedData() *domain.ResumeExtractedData {
 				GPA:         stringPtr("3.9"),
 			},
 		},
+		Skills: []string{"Go", "PostgreSQL", "GraphQL"},
 	}
 }
 
 func TestMaterializeCreatesProfile(t *testing.T) {
-	worker, profileRepo, _, _ := newTestWorker()
+	worker, profileRepo, _, _, _ := newTestWorker()
 
 	err := worker.materializeExtractedData(context.Background(), uuid.New(), uuid.New(), testExtractedData())
 	if err != nil {
@@ -234,7 +296,7 @@ func TestMaterializeCreatesProfile(t *testing.T) {
 }
 
 func TestMaterializeCreatesExperience(t *testing.T) {
-	worker, _, expRepo, _ := newTestWorker()
+	worker, _, expRepo, _, _ := newTestWorker()
 
 	resumeID := uuid.New()
 	err := worker.materializeExtractedData(context.Background(), resumeID, uuid.New(), testExtractedData())
@@ -265,7 +327,7 @@ func TestMaterializeCreatesExperience(t *testing.T) {
 }
 
 func TestMaterializeCreatesEducation(t *testing.T) {
-	worker, _, _, eduRepo := newTestWorker()
+	worker, _, _, eduRepo, _ := newTestWorker()
 
 	resumeID := uuid.New()
 	err := worker.materializeExtractedData(context.Background(), resumeID, uuid.New(), testExtractedData())
@@ -296,7 +358,7 @@ func TestMaterializeCreatesEducation(t *testing.T) {
 }
 
 func TestMaterializeIdempotentReprocessing(t *testing.T) {
-	worker, _, expRepo, eduRepo := newTestWorker()
+	worker, _, expRepo, eduRepo, skillRepo := newTestWorker()
 
 	userID := uuid.New()
 	resumeID := uuid.New()
@@ -308,6 +370,7 @@ func TestMaterializeIdempotentReprocessing(t *testing.T) {
 		Education: []domain.Education{
 			{Institution: "Old University", Degree: stringPtr("Old Degree")},
 		},
+		Skills: []string{"Old Skill"},
 	}
 
 	// First materialization
@@ -317,6 +380,9 @@ func TestMaterializeIdempotentReprocessing(t *testing.T) {
 	}
 	if len(expRepo.experiences) != 1 {
 		t.Fatalf("expected 1 experience after first run, got %d", len(expRepo.experiences))
+	}
+	if len(skillRepo.skills) != 1 {
+		t.Fatalf("expected 1 skill after first run, got %d", len(skillRepo.skills))
 	}
 
 	// Second materialization with different data
@@ -328,6 +394,7 @@ func TestMaterializeIdempotentReprocessing(t *testing.T) {
 		Education: []domain.Education{
 			{Institution: "New University", Degree: stringPtr("New Degree")},
 		},
+		Skills: []string{"New Skill A", "New Skill B"},
 	}
 
 	err = worker.materializeExtractedData(context.Background(), resumeID, userID, data2)
@@ -353,10 +420,19 @@ func TestMaterializeIdempotentReprocessing(t *testing.T) {
 			t.Error("old education should have been deleted during re-processing")
 		}
 	}
+
+	if len(skillRepo.skills) != 2 {
+		t.Fatalf("expected 2 skills after re-processing, got %d", len(skillRepo.skills))
+	}
+	for _, skill := range skillRepo.skills {
+		if skill.Name == "Old Skill" {
+			t.Error("old skill should have been deleted during re-processing")
+		}
+	}
 }
 
 func TestMaterializeStoresOriginalData(t *testing.T) {
-	worker, _, expRepo, eduRepo := newTestWorker()
+	worker, _, expRepo, eduRepo, _ := newTestWorker()
 
 	userID := uuid.New()
 	resumeID := uuid.New()
@@ -400,7 +476,7 @@ func TestMaterializeStoresOriginalData(t *testing.T) {
 }
 
 func TestMaterializeDefaultsDegreeWhenNil(t *testing.T) {
-	worker, _, _, eduRepo := newTestWorker()
+	worker, _, _, eduRepo, _ := newTestWorker()
 
 	data := &domain.ResumeExtractedData{
 		Education: []domain.Education{
@@ -424,7 +500,7 @@ func TestMaterializeDefaultsDegreeWhenNil(t *testing.T) {
 }
 
 func TestMaterializeMapsAchievementsToDescription(t *testing.T) {
-	worker, _, _, eduRepo := newTestWorker()
+	worker, _, _, eduRepo, _ := newTestWorker()
 
 	data := &domain.ResumeExtractedData{
 		Education: []domain.Education{
@@ -444,6 +520,43 @@ func TestMaterializeMapsAchievementsToDescription(t *testing.T) {
 	for _, edu := range eduRepo.educations {
 		if edu.Description == nil || *edu.Description != "Dean's List, Summa Cum Laude" {
 			t.Errorf("expected description 'Dean's List, Summa Cum Laude', got %v", edu.Description)
+		}
+	}
+}
+
+func TestMaterializeCreatesSkills(t *testing.T) {
+	worker, _, _, _, skillRepo := newTestWorker()
+
+	resumeID := uuid.New()
+	err := worker.materializeExtractedData(context.Background(), resumeID, uuid.New(), testExtractedData())
+	if err != nil {
+		t.Fatalf("materializeExtractedData returned error: %v", err)
+	}
+
+	if len(skillRepo.skills) != 3 {
+		t.Fatalf("expected 3 skills, got %d", len(skillRepo.skills))
+	}
+
+	names := make(map[string]bool)
+	for _, skill := range skillRepo.skills {
+		names[skill.Name] = true
+		if skill.Category != "TECHNICAL" {
+			t.Errorf("expected category 'TECHNICAL', got %q", skill.Category)
+		}
+		if skill.Source != domain.ExperienceSourceResumeExtracted {
+			t.Errorf("expected source 'resume_extracted', got %q", skill.Source)
+		}
+		if skill.SourceResumeID == nil || *skill.SourceResumeID != resumeID {
+			t.Error("expected source_resume_id to match resume ID")
+		}
+		if skill.NormalizedName != strings.ToLower(skill.Name) {
+			t.Errorf("expected normalized name %q, got %q", strings.ToLower(skill.Name), skill.NormalizedName)
+		}
+	}
+
+	for _, expected := range []string{"Go", "PostgreSQL", "GraphQL"} {
+		if !names[expected] {
+			t.Errorf("expected skill %q to be created", expected)
 		}
 	}
 }

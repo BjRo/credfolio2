@@ -115,3 +115,52 @@ mutation DeleteEducation($id: ID!) {
     deletedId
   }
 }
+
+mutation CreateSkill($userId: ID!, $input: CreateSkillInput!) {
+  createSkill(userId: $userId, input: $input) {
+    ... on SkillResult {
+      skill {
+        id
+        name
+        normalizedName
+        category
+        displayOrder
+        source
+        createdAt
+        updatedAt
+      }
+    }
+    ... on SkillValidationError {
+      message
+      field
+    }
+  }
+}
+
+mutation UpdateSkill($id: ID!, $input: UpdateSkillInput!) {
+  updateSkill(id: $id, input: $input) {
+    ... on SkillResult {
+      skill {
+        id
+        name
+        normalizedName
+        category
+        displayOrder
+        source
+        createdAt
+        updatedAt
+      }
+    }
+    ... on SkillValidationError {
+      message
+      field
+    }
+  }
+}
+
+mutation DeleteSkill($id: ID!) {
+  deleteSkill(id: $id) {
+    success
+    deletedId
+  }
+}

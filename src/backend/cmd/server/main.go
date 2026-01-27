@@ -75,6 +75,7 @@ func run(log logger.Logger) error {
 	profileRepo := postgres.NewProfileRepository(db)
 	profileExpRepo := postgres.NewProfileExperienceRepository(db)
 	profileEduRepo := postgres.NewProfileEducationRepository(db)
+	profileSkillRepo := postgres.NewProfileSkillRepository(db)
 
 	// Ensure demo user exists (development convenience)
 	if seedErr := ensureDemoUser(context.Background(), userRepo, log); seedErr != nil {
@@ -105,7 +106,7 @@ func run(log logger.Logger) error {
 
 	// Register resume processing worker only if LLM is configured
 	if extractor != nil {
-		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, profileRepo, profileExpRepo, profileEduRepo, fileStorage, extractor, log))
+		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, fileStorage, extractor, log))
 		log.Info("Resume processing worker registered", logger.Feature("jobs"))
 	} else {
 		log.Warning("Resume processing worker not registered (LLM not configured)", logger.Feature("jobs"))
@@ -148,7 +149,7 @@ func run(log logger.Logger) error {
 	r.Post("/api/extract", extractHandler.ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, fileStorage, queueClient, log))
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, fileStorage, queueClient, log))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)

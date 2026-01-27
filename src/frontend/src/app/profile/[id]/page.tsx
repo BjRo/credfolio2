@@ -152,7 +152,11 @@ export default function ProfilePage() {
           userId={userId}
           onMutationSuccess={handleMutationSuccess}
         />
-        <SkillsSection skills={extractedData.skills} />
+        <SkillsSection
+          profileSkills={profile?.skills ?? []}
+          userId={userId}
+          onMutationSuccess={handleMutationSuccess}
+        />
         <ProfileActions
           onAddReference={handleAddReference}
           onExport={handleExport}
