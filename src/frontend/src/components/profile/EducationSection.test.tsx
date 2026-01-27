@@ -1,7 +1,15 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { EducationSection } from "./EducationSection";
 import type { Education } from "./types";
+
+// Mock dialog components to avoid urql provider requirement in tests
+vi.mock("./EducationFormDialog", () => ({
+  EducationFormDialog: () => null,
+}));
+vi.mock("./DeleteEducationDialog", () => ({
+  DeleteEducationDialog: () => null,
+}));
 
 const mockEducation: Education[] = [
   {
@@ -59,8 +67,48 @@ describe("EducationSection", () => {
     expect(screen.getByText("Dean's List, Research Assistant")).toBeInTheDocument();
   });
 
-  it("returns null when education array is empty", () => {
+  it("returns null when education array is empty and not editable", () => {
     const { container } = render(<EducationSection education={[]} />);
     expect(container.firstChild).toBeNull();
+  });
+
+  it("shows add button when userId is provided", () => {
+    render(<EducationSection education={[]} userId="user-123" />);
+    expect(screen.getByRole("button", { name: "Add education" })).toBeInTheDocument();
+  });
+
+  it("shows empty state with add prompt when editable and no entries", () => {
+    render(<EducationSection education={[]} userId="user-123" />);
+    expect(screen.getByText(/No education entries yet/)).toBeInTheDocument();
+  });
+
+  it("does not show add button when userId is not provided", () => {
+    render(<EducationSection education={mockEducation} />);
+    expect(screen.queryByRole("button", { name: "Add education" })).not.toBeInTheDocument();
+  });
+
+  it("shows action menu for profile educations", () => {
+    render(
+      <EducationSection
+        profileEducations={[
+          {
+            id: "edu-1",
+            institution: "MIT",
+            degree: "PhD",
+            field: "Physics",
+            isCurrent: false,
+            displayOrder: 0,
+            source: "MANUAL" as const,
+            createdAt: "2026-01-01",
+            updatedAt: "2026-01-01",
+          },
+        ]}
+        userId="user-123"
+      />
+    );
+    expect(screen.getByText("MIT")).toBeInTheDocument();
+    // Action menu button should be present (at least the desktop one)
+    const actionButtons = screen.getAllByRole("button", { name: "More actions" });
+    expect(actionButtons.length).toBeGreaterThan(0);
   });
 });

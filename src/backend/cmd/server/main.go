@@ -74,6 +74,7 @@ func run(log logger.Logger) error {
 	resumeRepo := postgres.NewResumeRepository(db)
 	profileRepo := postgres.NewProfileRepository(db)
 	profileExpRepo := postgres.NewProfileExperienceRepository(db)
+	profileEduRepo := postgres.NewProfileEducationRepository(db)
 
 	// Ensure demo user exists (development convenience)
 	if seedErr := ensureDemoUser(context.Background(), userRepo, log); seedErr != nil {
@@ -147,7 +148,7 @@ func run(log logger.Logger) error {
 	r.Post("/api/extract", extractHandler.ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, fileStorage, queueClient, log))
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, fileStorage, queueClient, log))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)

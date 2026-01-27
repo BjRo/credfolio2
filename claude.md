@@ -190,6 +190,26 @@ beans update <bean-id> --status completed
 - Commits use `--no-gpg-sign` flag
 - Co-authored by: `Claude <noreply@anthropic.com>`
 
+## Starting Dev Servers
+
+Before running `pnpm dev`, ensure no stale processes are occupying ports:
+
+```bash
+# Kill any existing processes on the dev ports
+fuser -k 8080/tcp 3000/tcp 2>/dev/null; sleep 2
+
+# Clear Turbopack cache if Next.js hangs (connects but never responds)
+rm -rf src/frontend/.next
+
+# Then start
+pnpm dev
+```
+
+**Common issues:**
+- **Port 8080 already in use**: A previous `go run` process is still alive. Use `fuser -k 8080/tcp` to kill it.
+- **Frontend connects but never responds**: Turbopack's cache (`.next/`) can become corrupted, causing the server to accept TCP connections but never send an HTTP response. Fix: `rm -rf src/frontend/.next`
+- **Backend failure kills frontend**: Turborepo tears down all tasks if one fails, but zombie processes may remain on ports. Always clear ports before retrying.
+
 ## Devcontainer Notes
 
 - Based on `node:20` image

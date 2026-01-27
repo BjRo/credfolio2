@@ -628,9 +628,251 @@ func (r *mutationResolver) DeleteExperience(ctx context.Context, id string) (*mo
 	}, nil
 }
 
-// stringPtr returns a pointer to a string.
-func stringPtr(s string) *string {
-	return &s
+// CreateEducation is the resolver for the createEducation field.
+func (r *mutationResolver) CreateEducation(ctx context.Context, userID string, input model.CreateEducationInput) (model.EducationResponse, error) {
+	r.log.Info("Creating education entry",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.EducationValidationError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		r.log.Warning("User not found",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.EducationValidationError{
+			Message: "user not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Get or create profile for user
+	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get or create profile",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Get next display order
+	displayOrder, err := r.profileEduRepo.GetNextDisplayOrder(ctx, profile.ID)
+	if err != nil {
+		r.log.Error("Failed to get next display order",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get next display order: %w", err)
+	}
+
+	// Create education entry
+	education := &domain.ProfileEducation{
+		ID:           uuid.New(),
+		ProfileID:    profile.ID,
+		Institution:  input.Institution,
+		Degree:       input.Degree,
+		Field:        input.Field,
+		StartDate:    input.StartDate,
+		EndDate:      input.EndDate,
+		IsCurrent:    input.IsCurrent,
+		Description:  input.Description,
+		GPA:          input.Gpa,
+		DisplayOrder: displayOrder,
+		Source:       domain.ExperienceSourceManual,
+	}
+
+	if err := r.profileEduRepo.Create(ctx, education); err != nil {
+		r.log.Error("Failed to create education",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to create education: %w", err)
+	}
+
+	r.log.Info("Education entry created",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+		logger.String("education_id", education.ID.String()),
+	)
+
+	return &model.EducationResult{
+		Education: toGraphQLProfileEducation(education),
+	}, nil
+}
+
+// UpdateEducation is the resolver for the updateEducation field.
+func (r *mutationResolver) UpdateEducation(ctx context.Context, id string, input model.UpdateEducationInput) (model.EducationResponse, error) {
+	r.log.Info("Updating education entry",
+		logger.Feature("profile"),
+		logger.String("education_id", id),
+	)
+
+	// Parse and validate education ID
+	eduID, err := uuid.Parse(id)
+	if err != nil {
+		r.log.Warning("Invalid education ID format",
+			logger.Feature("profile"),
+			logger.String("education_id", id),
+		)
+		return &model.EducationValidationError{
+			Message: "invalid education ID format",
+			Field:   stringPtr("id"),
+		}, nil
+	}
+
+	// Get existing education
+	education, err := r.profileEduRepo.GetByID(ctx, eduID)
+	if err != nil {
+		r.log.Error("Failed to get education",
+			logger.Feature("profile"),
+			logger.String("education_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get education: %w", err)
+	}
+	if education == nil {
+		r.log.Warning("Education not found",
+			logger.Feature("profile"),
+			logger.String("education_id", id),
+		)
+		return &model.EducationValidationError{
+			Message: "education not found",
+			Field:   stringPtr("id"),
+		}, nil
+	}
+
+	// Update fields if provided
+	if input.Institution != nil {
+		education.Institution = *input.Institution
+	}
+	if input.Degree != nil {
+		education.Degree = *input.Degree
+	}
+	if input.Field != nil {
+		education.Field = input.Field
+	}
+	if input.StartDate != nil {
+		education.StartDate = input.StartDate
+	}
+	if input.EndDate != nil {
+		education.EndDate = input.EndDate
+	}
+	if input.IsCurrent != nil {
+		education.IsCurrent = *input.IsCurrent
+	}
+	if input.Description != nil {
+		education.Description = input.Description
+	}
+	if input.Gpa != nil {
+		education.GPA = input.Gpa
+	}
+
+	if err := r.profileEduRepo.Update(ctx, education); err != nil {
+		r.log.Error("Failed to update education",
+			logger.Feature("profile"),
+			logger.String("education_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to update education: %w", err)
+	}
+
+	r.log.Info("Education entry updated",
+		logger.Feature("profile"),
+		logger.String("education_id", id),
+	)
+
+	return &model.EducationResult{
+		Education: toGraphQLProfileEducation(education),
+	}, nil
+}
+
+// DeleteEducation is the resolver for the deleteEducation field.
+func (r *mutationResolver) DeleteEducation(ctx context.Context, id string) (*model.DeleteResult, error) {
+	r.log.Info("Deleting education entry",
+		logger.Feature("profile"),
+		logger.String("education_id", id),
+	)
+
+	// Parse and validate education ID
+	eduID, err := uuid.Parse(id)
+	if err != nil {
+		r.log.Warning("Invalid education ID format",
+			logger.Feature("profile"),
+			logger.String("education_id", id),
+		)
+		return &model.DeleteResult{
+			Success:   false,
+			DeletedID: id,
+		}, nil
+	}
+
+	// Check if education exists
+	education, err := r.profileEduRepo.GetByID(ctx, eduID)
+	if err != nil {
+		r.log.Error("Failed to get education",
+			logger.Feature("profile"),
+			logger.String("education_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get education: %w", err)
+	}
+	if education == nil {
+		r.log.Warning("Education not found",
+			logger.Feature("profile"),
+			logger.String("education_id", id),
+		)
+		return &model.DeleteResult{
+			Success:   false,
+			DeletedID: id,
+		}, nil
+	}
+
+	// Delete education
+	if err := r.profileEduRepo.Delete(ctx, eduID); err != nil {
+		r.log.Error("Failed to delete education",
+			logger.Feature("profile"),
+			logger.String("education_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to delete education: %w", err)
+	}
+
+	r.log.Info("Education entry deleted",
+		logger.Feature("profile"),
+		logger.String("education_id", id),
+	)
+
+	return &model.DeleteResult{
+		Success:   true,
+		DeletedID: id,
+	}, nil
 }
 
 // User is the resolver for the user field.
@@ -896,7 +1138,14 @@ func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Prof
 	}
 	gqlExperiences := toGraphQLProfileExperiences(experiences)
 
-	return toGraphQLProfile(profile, gqlUser, gqlExperiences), nil
+	// Fetch educations
+	educations, err := r.profileEduRepo.GetByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get educations for profile: %w", err)
+	}
+	gqlEducations := toGraphQLProfileEducations(educations)
+
+	return toGraphQLProfile(profile, gqlUser, gqlExperiences, gqlEducations), nil
 }
 
 // ProfileExperience is the resolver for the profileExperience field.
@@ -915,6 +1164,24 @@ func (r *queryResolver) ProfileExperience(ctx context.Context, id string) (*mode
 	}
 
 	return toGraphQLProfileExperience(experience), nil
+}
+
+// ProfileEducation is the resolver for the profileEducation field.
+func (r *queryResolver) ProfileEducation(ctx context.Context, id string) (*model.ProfileEducation, error) {
+	eduID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid education ID: %w", err)
+	}
+
+	education, err := r.profileEduRepo.GetByID(ctx, eduID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get education: %w", err)
+	}
+	if education == nil {
+		return nil, nil
+	}
+
+	return toGraphQLProfileEducation(education), nil
 }
 
 // ExtractedAuthor returns generated.ExtractedAuthorResolver implementation.
@@ -943,3 +1210,4 @@ type extractedRecommendationResolver struct{ *Resolver }
 type extractedSkillResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
