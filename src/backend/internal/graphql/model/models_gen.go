@@ -293,8 +293,6 @@ type ResumeExtractedData struct {
 	Location *string `json:"location,omitempty"`
 	// Professional summary or objective.
 	Summary *string `json:"summary,omitempty"`
-	// Skills list.
-	Skills []string `json:"skills"`
 	// When the extraction was performed.
 	ExtractedAt time.Time `json:"extractedAt"`
 	// Overall confidence score (0.0 to 1.0).

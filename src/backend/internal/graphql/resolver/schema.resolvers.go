@@ -18,11 +18,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// normalizeSkillName produces a lowercase, trimmed version of a skill name for deduplication.
-func normalizeSkillName(name string) string {
-	return strings.ToLower(strings.TrimSpace(name))
-}
-
 // Relationship is the resolver for the relationship field.
 func (r *extractedAuthorResolver) Relationship(ctx context.Context, obj *model.ExtractedAuthor) (domain.AuthorRelationship, error) {
 	panic(fmt.Errorf("not implemented: Relationship - relationship"))
@@ -31,11 +26,6 @@ func (r *extractedAuthorResolver) Relationship(ctx context.Context, obj *model.E
 // Strength is the resolver for the strength field.
 func (r *extractedRecommendationResolver) Strength(ctx context.Context, obj *model.ExtractedRecommendation) (domain.RecommendationStrength, error) {
 	panic(fmt.Errorf("not implemented: Strength - strength"))
-}
-
-// Category is the resolver for the category field.
-func (r *extractedSkillResolver) Category(ctx context.Context, obj *model.ExtractedSkill) (domain.SkillCategory, error) {
-	panic(fmt.Errorf("not implemented: Category - category"))
 }
 
 // UploadFile is the resolver for the uploadFile field.
@@ -1458,11 +1448,6 @@ func (r *Resolver) ExtractedRecommendation() generated.ExtractedRecommendationRe
 	return &extractedRecommendationResolver{r}
 }
 
-// ExtractedSkill returns generated.ExtractedSkillResolver implementation.
-func (r *Resolver) ExtractedSkill() generated.ExtractedSkillResolver {
-	return &extractedSkillResolver{r}
-}
-
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -1471,6 +1456,5 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type extractedAuthorResolver struct{ *Resolver }
 type extractedRecommendationResolver struct{ *Resolver }
-type extractedSkillResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

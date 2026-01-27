@@ -91,24 +91,6 @@ type ExtractedAuthor {
 }
 
 """
-A skill mentioned in a reference letter.
-"""
-type ExtractedSkill {
-  """The skill name as it appears in the letter."""
-  name: String!
-  """Normalized skill name for aggregation (e.g., 'JavaScript' and 'JS' both become 'javascript')."""
-  normalizedName: String!
-  """The category of skill."""
-  category: SkillCategory!
-  """Number of times this skill was mentioned in the letter."""
-  mentions: Int!
-  """Contextual quotes where the skill was mentioned."""
-  context: [String!]
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
-}
-
-"""
 A quality or trait mentioned in a reference letter.
 """
 type ExtractedQuality {
@@ -174,8 +156,8 @@ Structured data extracted from a reference letter.
 type ExtractedLetterData {
   """Details about the letter's author."""
   author: ExtractedAuthor!
-  """Skills mentioned in the letter."""
-  skills: [ExtractedSkill!]!
+  """Skill names mentioned in the letter."""
+  skills: [String!]!
   """Qualities and traits mentioned in the letter."""
   qualities: [ExtractedQuality!]!
   """Accomplishments cited in the letter."""
@@ -240,8 +222,6 @@ type ResumeExtractedData {
   location: String
   """Professional summary or objective."""
   summary: String
-  """Skills list."""
-  skills: [String!]!
   """When the extraction was performed."""
   extractedAt: DateTime!
   """Overall confidence score (0.0 to 1.0)."""

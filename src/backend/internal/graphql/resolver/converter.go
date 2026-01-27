@@ -8,6 +8,11 @@ import (
 	"backend/internal/graphql/model"
 )
 
+// normalizeSkillName produces a lowercase, trimmed version of a skill name for deduplication.
+func normalizeSkillName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
+}
+
 // toGraphQLUser converts a domain User to a GraphQL User model.
 func toGraphQLUser(u *domain.User) *model.User {
 	if u == nil {
@@ -90,9 +95,15 @@ func toGraphQLExtractedData(raw json.RawMessage) *model.ExtractedLetterData {
 		return nil
 	}
 
+	// Convert extracted skills to plain skill names
+	skillNames := make([]string, len(data.Skills))
+	for i, s := range data.Skills {
+		skillNames[i] = s.Name
+	}
+
 	return &model.ExtractedLetterData{
 		Author:          toGraphQLExtractedAuthor(&data.Author),
-		Skills:          toGraphQLExtractedSkills(data.Skills),
+		Skills:          skillNames,
 		Qualities:       toGraphQLExtractedQualities(data.Qualities),
 		Accomplishments: toGraphQLExtractedAccomplishments(data.Accomplishments),
 		Recommendation:  toGraphQLExtractedRecommendation(&data.Recommendation),
@@ -113,25 +124,6 @@ func toGraphQLExtractedAuthor(a *domain.ExtractedAuthor) *model.ExtractedAuthor 
 		RelationshipDetails: a.RelationshipDetails,
 		Confidence:          a.Confidence,
 	}
-}
-
-// toGraphQLExtractedSkills converts a slice of domain ExtractedSkill to GraphQL models.
-func toGraphQLExtractedSkills(skills []domain.ExtractedSkill) []*model.ExtractedSkill {
-	if len(skills) == 0 {
-		return []*model.ExtractedSkill{}
-	}
-	result := make([]*model.ExtractedSkill, len(skills))
-	for i, s := range skills {
-		result[i] = &model.ExtractedSkill{
-			Name:           s.Name,
-			NormalizedName: s.NormalizedName,
-			Category:       strings.ToUpper(string(s.Category)),
-			Mentions:       s.Mentions,
-			Context:        s.Context,
-			Confidence:     s.Confidence,
-		}
-	}
-	return result
 }
 
 // toGraphQLExtractedQualities converts a slice of domain ExtractedQuality to GraphQL models.
@@ -248,7 +240,6 @@ func toGraphQLResumeExtractedData(raw json.RawMessage) *model.ResumeExtractedDat
 		Phone:       data.Phone,
 		Location:    data.Location,
 		Summary:     data.Summary,
-		Skills:      data.Skills,
 		ExtractedAt: data.ExtractedAt,
 		Confidence:  data.Confidence,
 	}

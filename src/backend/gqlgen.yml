@@ -51,9 +51,6 @@ models:
   ExtractedAuthor:
     model:
       - backend/internal/graphql/model.ExtractedAuthor
-  ExtractedSkill:
-    model:
-      - backend/internal/graphql/model.ExtractedSkill
   ExtractedQuality:
     model:
       - backend/internal/graphql/model.ExtractedQuality

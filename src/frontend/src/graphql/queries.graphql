@@ -16,14 +16,7 @@ query GetReferenceLetter($id: ID!) {
         relationshipDetails
         confidence
       }
-      skills {
-        name
-        normalizedName
-        category
-        mentions
-        context
-        confidence
-      }
+      skills
       qualities {
         trait
         evidence
@@ -111,7 +104,6 @@ query GetResume($id: ID!) {
       phone
       location
       summary
-      skills
       extractedAt
       confidence
     }
