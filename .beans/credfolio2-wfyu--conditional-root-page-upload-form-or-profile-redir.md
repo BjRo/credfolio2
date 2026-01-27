@@ -1,11 +1,11 @@
 ---
 # credfolio2-wfyu
 title: 'Conditional root page: upload form or profile redirect'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-27T13:07:27Z
-updated_at: 2026-01-27T13:07:59Z
+updated_at: 2026-01-27T13:09:50Z
 parent: credfolio2-v5dw
 ---
 
@@ -17,15 +17,15 @@ The root page (/) should conditionally render based on whether the current user 
 This eliminates the need for users to navigate to a separate upload page and streamlines the entry point into the app.
 
 ## Checklist
-- [ ] Add a backend query (or use existing) to check if the current user has a resume/profile
-- [ ] Update the root page to fetch profile existence on load
-- [ ] Render the upload form inline when no profile exists
-- [ ] Redirect to /profile/{resumeId} when a profile exists
-- [ ] Handle loading state while checking for profile
+- [x] Add a backend query (or use existing) to check if the current user has a resume/profile
+- [x] Update the root page to fetch profile existence on load
+- [x] Render the upload form inline when no profile exists
+- [x] Redirect to /profile/{resumeId} when a profile exists
+- [x] Handle loading state while checking for profile
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (for UI changes)
+- [x] All other checklist items above are completed
