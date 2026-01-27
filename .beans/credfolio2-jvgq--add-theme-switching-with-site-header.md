@@ -1,10 +1,11 @@
 ---
 # credfolio2-jvgq
 title: Add theme switching with site header
-status: in-progress
+status: completed
 type: feature
+priority: normal
 created_at: 2026-01-27T16:49:17Z
-updated_at: 2026-01-27T16:49:17Z
+updated_at: 2026-01-27T17:48:08Z
 ---
 
 Add light/dark/system theme switching to the app using next-themes, with a new site-wide header navbar.
