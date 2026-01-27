@@ -1,11 +1,11 @@
 ---
 # credfolio2-wfyu
 title: 'Conditional root page: upload form or profile redirect'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-27T13:07:27Z
-updated_at: 2026-01-27T13:09:50Z
+updated_at: 2026-01-27T16:41:25Z
 parent: credfolio2-v5dw
 ---
 
