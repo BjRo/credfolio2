@@ -11,8 +11,6 @@ vi.mock("./DeleteSkillDialog", () => ({
   DeleteSkillDialog: () => null,
 }));
 
-const mockExtractedSkills = ["JavaScript", "TypeScript", "React", "Node.js", "GraphQL"];
-
 const mockProfileSkills = [
   {
     __typename: "ProfileSkill" as const,
@@ -39,21 +37,12 @@ const mockProfileSkills = [
 ];
 
 describe("SkillsSection", () => {
-  it("renders the section heading with extracted skills", () => {
-    render(<SkillsSection extractedSkills={mockExtractedSkills} />);
+  it("renders the section heading", () => {
+    render(<SkillsSection profileSkills={mockProfileSkills} />);
     expect(screen.getByRole("heading", { level: 2, name: "Skills" })).toBeInTheDocument();
   });
 
-  it("renders extracted skills as badges", () => {
-    render(<SkillsSection extractedSkills={mockExtractedSkills} />);
-    expect(screen.getByText("JavaScript")).toBeInTheDocument();
-    expect(screen.getByText("TypeScript")).toBeInTheDocument();
-    expect(screen.getByText("React")).toBeInTheDocument();
-    expect(screen.getByText("Node.js")).toBeInTheDocument();
-    expect(screen.getByText("GraphQL")).toBeInTheDocument();
-  });
-
-  it("returns null when no skills at all and not editable", () => {
+  it("returns null when no skills and not editable", () => {
     const { container } = render(<SkillsSection />);
     expect(container.firstChild).toBeNull();
   });
@@ -66,33 +55,7 @@ describe("SkillsSection", () => {
     expect(screen.getByText("Soft Skills")).toBeInTheDocument();
   });
 
-  it("shows extracted skills when no profile skills exist", () => {
-    render(<SkillsSection extractedSkills={mockExtractedSkills} />);
-    expect(screen.getByText("JavaScript")).toBeInTheDocument();
-  });
-
-  it("shows profile skills instead of extracted when both exist", () => {
-    render(
-      <SkillsSection profileSkills={mockProfileSkills} extractedSkills={mockExtractedSkills} />
-    );
-    // Profile skills are shown
-    expect(screen.getByText("Go")).toBeInTheDocument();
-    // Extracted skills are NOT shown when profile skills exist
-    expect(screen.queryByText("JavaScript")).not.toBeInTheDocument();
-  });
-
   describe("Accessibility", () => {
-    it("renders extracted skills in an accessible list", () => {
-      render(<SkillsSection extractedSkills={mockExtractedSkills} />);
-      expect(screen.getByRole("list", { name: "Skills list" })).toBeInTheDocument();
-    });
-
-    it("renders each extracted skill as a list item", () => {
-      render(<SkillsSection extractedSkills={mockExtractedSkills} />);
-      const listItems = screen.getAllByRole("listitem");
-      expect(listItems).toHaveLength(5);
-    });
-
     it("renders profile skills in category-labeled lists", () => {
       render(<SkillsSection profileSkills={mockProfileSkills} />);
       expect(screen.getByRole("list", { name: "Technical skills" })).toBeInTheDocument();
@@ -112,7 +75,7 @@ describe("SkillsSection", () => {
     });
 
     it("does not show add button when not editable", () => {
-      render(<SkillsSection extractedSkills={mockExtractedSkills} />);
+      render(<SkillsSection profileSkills={mockProfileSkills} />);
       expect(screen.queryByRole("button", { name: "Add skill" })).not.toBeInTheDocument();
     });
   });

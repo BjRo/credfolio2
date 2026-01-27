@@ -75,28 +75,14 @@ function EditableSkillTag({ skill, onEdit, onDelete }: EditableSkillTagProps) {
   );
 }
 
-interface ReadOnlySkillTagProps {
-  skill: string;
-}
-
-function ReadOnlySkillTag({ skill }: ReadOnlySkillTagProps) {
-  return (
-    <span className="inline-flex items-center px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
-      {skill}
-    </span>
-  );
-}
-
 interface SkillsSectionProps {
   profileSkills?: ProfileSkill[];
-  extractedSkills?: string[];
   userId?: string;
   onMutationSuccess?: () => void;
 }
 
 export function SkillsSection({
   profileSkills = [],
-  extractedSkills = [],
   userId,
   onMutationSuccess,
 }: SkillsSectionProps) {
@@ -107,7 +93,6 @@ export function SkillsSection({
 
   const isEditable = !!userId;
   const hasProfileSkills = profileSkills.length > 0;
-  const hasExtractedSkills = extractedSkills.length > 0;
 
   const handleEdit = (skill: ProfileSkill) => {
     setSelectedSkill(skill);
@@ -156,7 +141,7 @@ export function SkillsSection({
   );
 
   // If there are no skills at all and not editable, don't render
-  if (!hasProfileSkills && !hasExtractedSkills && !isEditable) {
+  if (!hasProfileSkills && !isEditable) {
     return null;
   }
 
@@ -208,19 +193,8 @@ export function SkillsSection({
         </div>
       )}
 
-      {/* Extracted skills (read-only, shown when no profile skills exist) */}
-      {!hasProfileSkills && hasExtractedSkills && (
-        <ul className="flex flex-wrap gap-2 list-none" aria-label="Skills list">
-          {extractedSkills.map((skill) => (
-            <li key={skill}>
-              <ReadOnlySkillTag skill={skill} />
-            </li>
-          ))}
-        </ul>
-      )}
-
       {/* Empty state for editable with no skills */}
-      {!hasProfileSkills && !hasExtractedSkills && isEditable && (
+      {!hasProfileSkills && isEditable && (
         <p className="text-muted-foreground text-center py-8">
           No skills yet. Click the + button to add your first skill.
         </p>

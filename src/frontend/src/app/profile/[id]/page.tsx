@@ -154,7 +154,6 @@ export default function ProfilePage() {
         />
         <SkillsSection
           profileSkills={profile?.skills ?? []}
-          extractedSkills={extractedData.skills}
           userId={userId}
           onMutationSuccess={handleMutationSuccess}
         />

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,9 +34,10 @@ type ResumeProcessingWorker struct {
 	resumeRepo     domain.ResumeRepository
 	fileRepo       domain.FileRepository
 	profileRepo    domain.ProfileRepository
-	profileExpRepo domain.ProfileExperienceRepository
-	profileEduRepo domain.ProfileEducationRepository
-	storage        domain.Storage
+	profileExpRepo   domain.ProfileExperienceRepository
+	profileEduRepo   domain.ProfileEducationRepository
+	profileSkillRepo domain.ProfileSkillRepository
+	storage          domain.Storage
 	extractor      domain.DocumentExtractor
 	log            logger.Logger
 }
@@ -47,19 +49,21 @@ func NewResumeProcessingWorker(
 	profileRepo domain.ProfileRepository,
 	profileExpRepo domain.ProfileExperienceRepository,
 	profileEduRepo domain.ProfileEducationRepository,
+	profileSkillRepo domain.ProfileSkillRepository,
 	storage domain.Storage,
 	extractor domain.DocumentExtractor,
 	log logger.Logger,
 ) *ResumeProcessingWorker {
 	return &ResumeProcessingWorker{
-		resumeRepo:     resumeRepo,
-		fileRepo:       fileRepo,
-		profileRepo:    profileRepo,
-		profileExpRepo: profileExpRepo,
-		profileEduRepo: profileEduRepo,
-		storage:        storage,
-		extractor:      extractor,
-		log:            log,
+		resumeRepo:       resumeRepo,
+		fileRepo:         fileRepo,
+		profileRepo:      profileRepo,
+		profileExpRepo:   profileExpRepo,
+		profileEduRepo:   profileEduRepo,
+		profileSkillRepo: profileSkillRepo,
+		storage:          storage,
+		extractor:        extractor,
+		log:              log,
 	}
 }
 
@@ -176,6 +180,7 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 				logger.String("resume_id", args.ResumeID.String()),
 				logger.Int("experience_count", len(extractedData.Experience)),
 				logger.Int("education_count", len(extractedData.Education)),
+				logger.Int("skills_count", len(extractedData.Skills)),
 			)
 		}
 	}
@@ -263,8 +268,8 @@ func (w *ResumeProcessingWorker) updateStatusFailed(ctx context.Context, id uuid
 	return w.updateStatus(ctx, id, domain.ResumeStatusFailed, &errMsg)
 }
 
-// materializeExtractedData creates profile education and experience rows from extracted resume data.
-// This makes profile tables the single source of truth for education/experience display.
+// materializeExtractedData creates profile education, experience, and skill rows from extracted resume data.
+// This makes profile tables the single source of truth for display.
 func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, resumeID uuid.UUID, userID uuid.UUID, data *domain.ResumeExtractedData) error {
 	// Get or create the user's profile
 	profile, err := w.profileRepo.GetOrCreateByUserID(ctx, userID)
@@ -279,20 +284,30 @@ func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, r
 	if delErr := w.profileEduRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
 		return fmt.Errorf("failed to delete existing education for resume: %w", delErr)
 	}
+	if delErr := w.profileSkillRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
+		return fmt.Errorf("failed to delete existing skills for resume: %w", delErr)
+	}
 
-	// Get current max display orders
-	expDisplayOrder, err := w.profileExpRepo.GetNextDisplayOrder(ctx, profile.ID)
+	if err := w.materializeExperiences(ctx, resumeID, profile.ID, data.Experience); err != nil {
+		return err
+	}
+	if err := w.materializeEducation(ctx, resumeID, profile.ID, data.Education); err != nil {
+		return err
+	}
+	if err := w.materializeSkills(ctx, resumeID, profile.ID, data.Skills); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *ResumeProcessingWorker) materializeExperiences(ctx context.Context, resumeID, profileID uuid.UUID, experiences []domain.WorkExperience) error {
+	displayOrder, err := w.profileExpRepo.GetNextDisplayOrder(ctx, profileID)
 	if err != nil {
 		return fmt.Errorf("failed to get next experience display order: %w", err)
 	}
 
-	eduDisplayOrder, err := w.profileEduRepo.GetNextDisplayOrder(ctx, profile.ID)
-	if err != nil {
-		return fmt.Errorf("failed to get next education display order: %w", err)
-	}
-
-	// Create profile experience rows from extracted data
-	for i, exp := range data.Experience {
+	for i, exp := range experiences {
 		originalJSON, marshalErr := json.Marshal(exp)
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal experience original data: %w", marshalErr)
@@ -300,7 +315,7 @@ func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, r
 
 		profileExp := &domain.ProfileExperience{
 			ID:             uuid.New(),
-			ProfileID:      profile.ID,
+			ProfileID:      profileID,
 			Company:        exp.Company,
 			Title:          exp.Title,
 			Location:       exp.Location,
@@ -308,7 +323,7 @@ func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, r
 			EndDate:        exp.EndDate,
 			IsCurrent:      exp.IsCurrent,
 			Description:    exp.Description,
-			DisplayOrder:   expDisplayOrder + i,
+			DisplayOrder:   displayOrder + i,
 			Source:         domain.ExperienceSourceResumeExtracted,
 			SourceResumeID: &resumeID,
 			OriginalData:   originalJSON,
@@ -317,9 +332,16 @@ func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, r
 			return fmt.Errorf("failed to create experience for %s at %s: %w", exp.Title, exp.Company, createErr)
 		}
 	}
+	return nil
+}
 
-	// Create profile education rows from extracted data
-	for i, edu := range data.Education {
+func (w *ResumeProcessingWorker) materializeEducation(ctx context.Context, resumeID, profileID uuid.UUID, educations []domain.Education) error {
+	displayOrder, err := w.profileEduRepo.GetNextDisplayOrder(ctx, profileID)
+	if err != nil {
+		return fmt.Errorf("failed to get next education display order: %w", err)
+	}
+
+	for i, edu := range educations {
 		originalJSON, marshalErr := json.Marshal(edu)
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal education original data: %w", marshalErr)
@@ -332,7 +354,7 @@ func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, r
 
 		profileEdu := &domain.ProfileEducation{
 			ID:             uuid.New(),
-			ProfileID:      profile.ID,
+			ProfileID:      profileID,
 			Institution:    edu.Institution,
 			Degree:         degree,
 			Field:          edu.Field,
@@ -340,7 +362,7 @@ func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, r
 			EndDate:        edu.EndDate,
 			Description:    edu.Achievements, // Map achievements -> description
 			GPA:            edu.GPA,
-			DisplayOrder:   eduDisplayOrder + i,
+			DisplayOrder:   displayOrder + i,
 			Source:         domain.ExperienceSourceResumeExtracted,
 			SourceResumeID: &resumeID,
 			OriginalData:   originalJSON,
@@ -349,6 +371,33 @@ func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, r
 			return fmt.Errorf("failed to create education for %s: %w", edu.Institution, createErr)
 		}
 	}
+	return nil
+}
 
+func (w *ResumeProcessingWorker) materializeSkills(ctx context.Context, resumeID, profileID uuid.UUID, skills []string) error {
+	displayOrder, err := w.profileSkillRepo.GetNextDisplayOrder(ctx, profileID)
+	if err != nil {
+		return fmt.Errorf("failed to get next skill display order: %w", err)
+	}
+
+	for i, skillName := range skills {
+		trimmed := strings.TrimSpace(skillName)
+		if trimmed == "" {
+			continue
+		}
+		profileSkill := &domain.ProfileSkill{
+			ID:             uuid.New(),
+			ProfileID:      profileID,
+			Name:           trimmed,
+			NormalizedName: strings.ToLower(trimmed),
+			Category:       "TECHNICAL",
+			DisplayOrder:   displayOrder + i,
+			Source:         domain.ExperienceSourceResumeExtracted,
+			SourceResumeID: &resumeID,
+		}
+		if createErr := w.profileSkillRepo.Create(ctx, profileSkill); createErr != nil {
+			return fmt.Errorf("failed to create skill %q: %w", trimmed, createErr)
+		}
+	}
 	return nil
 }
