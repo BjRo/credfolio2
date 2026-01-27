@@ -171,6 +171,16 @@ query GetProfile($userId: ID!) {
       createdAt
       updatedAt
     }
+    skills {
+      id
+      name
+      normalizedName
+      category
+      displayOrder
+      source
+      createdAt
+      updatedAt
+    }
     createdAt
     updatedAt
   }

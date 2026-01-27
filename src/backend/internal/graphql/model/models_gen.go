@@ -3,6 +3,7 @@
 package model
 
 import (
+	"backend/internal/domain"
 	"bytes"
 	"fmt"
 	"io"
@@ -18,6 +19,11 @@ type EducationResponse interface {
 // Union type for experience create/update result.
 type ExperienceResponse interface {
 	IsExperienceResponse()
+}
+
+// Union type for skill create/update result.
+type SkillResponse interface {
+	IsSkillResponse()
 }
 
 // Union type for upload result - either success or validation error.
@@ -68,6 +74,14 @@ type CreateExperienceInput struct {
 	Description *string `json:"description,omitempty"`
 	// Key achievements or highlights (bullet points).
 	Highlights []string `json:"highlights,omitempty"`
+}
+
+// Input for creating a new skill.
+type CreateSkillInput struct {
+	// Skill name (required).
+	Name string `json:"name"`
+	// Skill category (required).
+	Category domain.SkillCategory `json:"category"`
 }
 
 // Result of a delete operation.
@@ -149,8 +163,10 @@ type Profile struct {
 	Experiences []*ProfileExperience `json:"experiences"`
 	// Education entries.
 	Educations []*ProfileEducation `json:"educations"`
-	CreatedAt  time.Time           `json:"createdAt"`
-	UpdatedAt  time.Time           `json:"updatedAt"`
+	// Skill entries.
+	Skills    []*ProfileSkill `json:"skills"`
+	CreatedAt time.Time       `json:"createdAt"`
+	UpdatedAt time.Time       `json:"updatedAt"`
 }
 
 // An education entry in a user's profile.
@@ -204,6 +220,24 @@ type ProfileExperience struct {
 	// Display order for sorting.
 	DisplayOrder int `json:"displayOrder"`
 	// Source of this experience entry.
+	Source    ExperienceSource `json:"source"`
+	CreatedAt time.Time        `json:"createdAt"`
+	UpdatedAt time.Time        `json:"updatedAt"`
+}
+
+// A skill entry in a user's profile.
+type ProfileSkill struct {
+	// Unique identifier for the skill.
+	ID string `json:"id"`
+	// Skill name as displayed.
+	Name string `json:"name"`
+	// Normalized skill name for deduplication.
+	NormalizedName string `json:"normalizedName"`
+	// Skill category.
+	Category domain.SkillCategory `json:"category"`
+	// Display order for sorting.
+	DisplayOrder int `json:"displayOrder"`
+	// Source of this skill entry.
 	Source    ExperienceSource `json:"source"`
 	CreatedAt time.Time        `json:"createdAt"`
 	UpdatedAt time.Time        `json:"updatedAt"`
@@ -267,6 +301,24 @@ type ResumeExtractedData struct {
 	Confidence float64 `json:"confidence"`
 }
 
+// Result of a successful skill operation.
+type SkillResult struct {
+	// The created or updated skill.
+	Skill *ProfileSkill `json:"skill"`
+}
+
+func (SkillResult) IsSkillResponse() {}
+
+// Error returned when skill validation fails.
+type SkillValidationError struct {
+	// Error message describing the validation failure.
+	Message string `json:"message"`
+	// The field that failed validation.
+	Field *string `json:"field,omitempty"`
+}
+
+func (SkillValidationError) IsSkillResponse() {}
+
 // Input for updating an existing education entry.
 type UpdateEducationInput struct {
 	// Institution name.
@@ -305,6 +357,14 @@ type UpdateExperienceInput struct {
 	Description *string `json:"description,omitempty"`
 	// Key achievements or highlights (bullet points).
 	Highlights []string `json:"highlights,omitempty"`
+}
+
+// Input for updating an existing skill.
+type UpdateSkillInput struct {
+	// Skill name.
+	Name *string `json:"name,omitempty"`
+	// Skill category.
+	Category *domain.SkillCategory `json:"category,omitempty"`
 }
 
 // Result of a file upload operation.

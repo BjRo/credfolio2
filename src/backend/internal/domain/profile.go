@@ -33,6 +33,7 @@ type Profile struct { //nolint:govet // Field ordering prioritizes readability o
 	User        *User                `bun:"rel:belongs-to,join:user_id=id"`
 	Experiences []*ProfileExperience `bun:"rel:has-many,join:id=profile_id"`
 	Educations  []*ProfileEducation  `bun:"rel:has-many,join:id=profile_id"`
+	Skills      []*ProfileSkill      `bun:"rel:has-many,join:id=profile_id"`
 }
 
 // ProfileExperience represents a work experience entry in a user's profile.
@@ -153,5 +154,50 @@ type ProfileEducationRepository interface {
 	GetNextDisplayOrder(ctx context.Context, profileID uuid.UUID) (int, error)
 
 	// DeleteBySourceResumeID removes all education entries extracted from a specific resume.
+	DeleteBySourceResumeID(ctx context.Context, sourceResumeID uuid.UUID) error
+}
+
+// ProfileSkill represents a skill entry in a user's profile.
+type ProfileSkill struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
+	bun.BaseModel `bun:"table:profile_skills,alias:ps"`
+
+	ID             uuid.UUID        `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileID      uuid.UUID        `bun:"profile_id,notnull,type:uuid"`
+	Name           string           `bun:"name,notnull"`
+	NormalizedName string           `bun:"normalized_name,notnull"`
+	Category       string           `bun:"category,notnull,default:'TECHNICAL'"`
+	DisplayOrder   int              `bun:"display_order,notnull,default:0"`
+	Source         ExperienceSource `bun:"source,notnull,default:'manual'"`
+	SourceResumeID *uuid.UUID       `bun:"source_resume_id,type:uuid"`
+	OriginalData   json.RawMessage  `bun:"original_data,type:jsonb"`
+	CreatedAt      time.Time        `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt      time.Time        `bun:"updated_at,notnull,default:current_timestamp"`
+
+	// Relations
+	Profile      *Profile `bun:"rel:belongs-to,join:profile_id=id"`
+	SourceResume *Resume  `bun:"rel:belongs-to,join:source_resume_id=id"`
+}
+
+// ProfileSkillRepository defines operations for profile skill persistence.
+type ProfileSkillRepository interface {
+	// Create persists a new profile skill.
+	Create(ctx context.Context, skill *ProfileSkill) error
+
+	// GetByID retrieves a profile skill by its ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*ProfileSkill, error)
+
+	// GetByProfileID retrieves all profile skills for a profile, ordered by display order.
+	GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*ProfileSkill, error)
+
+	// Update persists changes to an existing profile skill.
+	Update(ctx context.Context, skill *ProfileSkill) error
+
+	// Delete removes a profile skill by its ID.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// GetNextDisplayOrder returns the next display order value for a profile.
+	GetNextDisplayOrder(ctx context.Context, profileID uuid.UUID) (int, error)
+
+	// DeleteBySourceResumeID removes all skills extracted from a specific resume.
 	DeleteBySourceResumeID(ctx context.Context, sourceResumeID uuid.UUID) error
 }
