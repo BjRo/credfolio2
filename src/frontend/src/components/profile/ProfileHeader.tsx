@@ -75,14 +75,14 @@ function AvatarPlaceholder({ name }: { name: string }) {
 
   return (
     <div
-      className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0"
+      className="w-20 h-20 rounded-full bg-primary flex items-center justify-center flex-shrink-0"
       role="img"
       aria-label={`Avatar for ${name}`}
     >
       {initials ? (
-        <span className="text-2xl font-semibold text-white">{initials}</span>
+        <span className="text-2xl font-semibold text-primary-foreground">{initials}</span>
       ) : (
-        <User className="w-10 h-10 text-white" aria-hidden="true" />
+        <User className="w-10 h-10 text-primary-foreground" aria-hidden="true" />
       )}
     </div>
   );
