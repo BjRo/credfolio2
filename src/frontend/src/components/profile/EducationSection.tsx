@@ -26,7 +26,7 @@ function ActionMenu({ onEdit, onDelete }: ActionMenuProps) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
           aria-label="More actions"
         >
           <MoreVertical className="h-4 w-4" />
@@ -42,7 +42,7 @@ function ActionMenu({ onEdit, onDelete }: ActionMenuProps) {
         {onDelete && (
           <DropdownMenuItem
             onClick={onDelete}
-            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+            className="text-destructive focus:text-destructive focus:bg-destructive/10"
           >
             <Trash2 className="h-4 w-4" />
             Delete
@@ -71,7 +71,7 @@ function EducationCard({ education, isFirst, onEdit, onDelete }: EducationCardPr
   const isValidGpa = education.gpa && /^[\d./]+$/.test(education.gpa.trim());
 
   return (
-    <div className={`relative ${!isFirst ? "pt-6 border-t border-gray-200" : ""}`}>
+    <div className={`relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
       {/* Mobile: kebab menu positioned top-right */}
       {(onEdit || onDelete) && (
         <div className={`absolute right-0 sm:hidden ${isFirst ? "top-0" : "top-6"}`}>
@@ -81,25 +81,25 @@ function EducationCard({ education, isFirst, onEdit, onDelete }: EducationCardPr
 
       <div className="flex sm:justify-between sm:items-start gap-1 sm:gap-4 pr-8 sm:pr-0">
         <div className="flex gap-3">
-          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-gray-100 items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-5 h-5 text-gray-500" aria-hidden="true" />
+          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted items-center justify-center flex-shrink-0">
+            <GraduationCap className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
               {education.institution}
               {education.isCurrent && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                   Current
                 </span>
               )}
             </h3>
-            {degreeField && <p className="text-gray-700">{degreeField}</p>}
+            {degreeField && <p className="text-foreground">{degreeField}</p>}
             {isValidGpa && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 <span className="font-medium">GPA:</span> {education.gpa}
               </p>
             )}
-            {dateRange && <p className="text-sm text-gray-500">{dateRange}</p>}
+            {dateRange && <p className="text-sm text-muted-foreground">{dateRange}</p>}
           </div>
         </div>
         {/* Desktop: kebab on right side */}
@@ -108,7 +108,7 @@ function EducationCard({ education, isFirst, onEdit, onDelete }: EducationCardPr
         </div>
       </div>
       {education.description && (
-        <p className="mt-3 text-gray-600 sm:ml-13">{education.description}</p>
+        <p className="mt-3 text-muted-foreground sm:ml-13">{education.description}</p>
       )}
     </div>
   );
@@ -169,14 +169,14 @@ export function EducationSection({
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 sm:p-8">
+    <div className="bg-card shadow rounded-lg p-6 sm:p-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Education</h2>
+        <h2 className="text-xl font-bold text-foreground">Education</h2>
         {isEditable && (
           <button
             type="button"
             onClick={handleAddNew}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
             aria-label="Add education"
           >
             <Plus className="h-5 w-5" />
@@ -185,7 +185,7 @@ export function EducationSection({
       </div>
 
       {profileEducations.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           No education entries yet. Click the + button to add your first entry.
         </p>
       ) : (

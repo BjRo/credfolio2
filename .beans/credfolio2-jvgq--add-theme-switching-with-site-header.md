@@ -22,10 +22,17 @@ Add light/dark/system theme switching to the app using next-themes, with a new s
 - [x] Wire ThemeProvider and SiteHeader into root layout
 - [x] Write tests for ThemeToggle
 - [x] Write tests for SiteHeader
+- [x] Update profile page to use theme-aware colors
+- [x] Update ProfileHeader to use theme-aware colors
+- [x] Update WorkExperienceSection to use theme-aware colors
+- [x] Update EducationSection to use theme-aware colors
+- [x] Update SkillsSection to use theme-aware colors
+- [x] Update CertificationsSection to use theme-aware colors
+- [x] Update ProfileSkeleton to use theme-aware colors
 
 ## Definition of Done
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
-- [x] All other checklist items above are completed
+- [ ] All other checklist items above are completed

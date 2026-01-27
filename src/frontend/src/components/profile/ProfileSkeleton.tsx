@@ -1,12 +1,12 @@
 function SkeletonBox({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-gray-200 rounded ${className}`} />;
+  return <div className={`animate-pulse bg-muted rounded ${className}`} />;
 }
 
 export function ProfileSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header skeleton */}
-      <div className="bg-white shadow rounded-lg p-8">
+      <div className="bg-card shadow rounded-lg p-8">
         <div className="flex items-start justify-between">
           <div className="space-y-3">
             <SkeletonBox className="h-8 w-48" />
@@ -24,11 +24,11 @@ export function ProfileSkeleton() {
       </div>
 
       {/* Experience skeleton */}
-      <div className="bg-white shadow rounded-lg p-8">
+      <div className="bg-card shadow rounded-lg p-8">
         <SkeletonBox className="h-6 w-36 mb-6" />
         <div className="space-y-6">
           {[1, 2].map((i) => (
-            <div key={i} className={i > 1 ? "pt-6 border-t border-gray-200" : ""}>
+            <div key={i} className={i > 1 ? "pt-6 border-t border-border" : ""}>
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
                   <SkeletonBox className="h-5 w-40" />
@@ -47,7 +47,7 @@ export function ProfileSkeleton() {
       </div>
 
       {/* Education skeleton */}
-      <div className="bg-white shadow rounded-lg p-8">
+      <div className="bg-card shadow rounded-lg p-8">
         <SkeletonBox className="h-6 w-28 mb-6" />
         <div className="flex justify-between items-start">
           <div className="space-y-2">
@@ -59,7 +59,7 @@ export function ProfileSkeleton() {
       </div>
 
       {/* Skills skeleton */}
-      <div className="bg-white shadow rounded-lg p-8">
+      <div className="bg-card shadow rounded-lg p-8">
         <SkeletonBox className="h-6 w-20 mb-4" />
         <div className="flex flex-wrap gap-2">
           {[1, 2, 3, 4, 5, 6].map((i) => (

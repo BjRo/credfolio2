@@ -21,10 +21,12 @@ function ProfileSummary({ summary, collapsedLines = 3 }: ProfileSummaryProps) {
 
   return (
     <div className="mt-6">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Summary</h2>
+      <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+        Summary
+      </h2>
       <div className="relative">
         <p
-          className={`text-gray-700 ${
+          className={`text-foreground ${
             !isExpanded && isLongSummary ? `line-clamp-${collapsedLines}` : ""
           }`}
           style={
@@ -44,7 +46,7 @@ function ProfileSummary({ summary, collapsedLines = 3 }: ProfileSummaryProps) {
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            className="mt-2 text-sm text-primary hover:text-primary/80 flex items-center gap-1"
             aria-expanded={isExpanded}
           >
             {isExpanded ? (
@@ -88,18 +90,20 @@ function AvatarPlaceholder({ name }: { name: string }) {
 
 export function ProfileHeader({ data }: ProfileHeaderProps) {
   return (
-    <div className="bg-white shadow rounded-lg p-6 sm:p-8">
+    <div className="bg-card shadow rounded-lg p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
         <AvatarPlaceholder name={data.name} />
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">{data.name}</h1>
-              <div className="mt-2 space-y-1 text-gray-600">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+                {data.name}
+              </h1>
+              <div className="mt-2 space-y-1 text-muted-foreground">
                 {data.email && (
                   <p className="flex items-center gap-2 text-sm sm:text-base">
                     <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <a href={`mailto:${data.email}`} className="hover:text-blue-600 truncate">
+                    <a href={`mailto:${data.email}`} className="hover:text-primary truncate">
                       {data.email}
                     </a>
                   </p>
@@ -107,7 +111,7 @@ export function ProfileHeader({ data }: ProfileHeaderProps) {
                 {data.phone && (
                   <p className="flex items-center gap-2 text-sm sm:text-base">
                     <Phone className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <a href={`tel:${data.phone}`} className="hover:text-blue-600">
+                    <a href={`tel:${data.phone}`} className="hover:text-primary">
                       {data.phone}
                     </a>
                   </p>
@@ -120,7 +124,7 @@ export function ProfileHeader({ data }: ProfileHeaderProps) {
                 )}
               </div>
             </div>
-            <div className="text-sm text-gray-500 sm:text-right">
+            <div className="text-sm text-muted-foreground sm:text-right">
               <p>Confidence: {Math.round(data.confidence * 100)}%</p>
             </div>
           </div>
