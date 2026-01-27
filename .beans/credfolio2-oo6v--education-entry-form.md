@@ -1,11 +1,11 @@
 ---
 # credfolio2-oo6v
 title: Education entry form
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-01-26T11:43:07Z
-updated_at: 2026-01-26T16:41:06Z
+updated_at: 2026-01-27T11:07:19Z
 parent: credfolio2-v5dw
 ---
 
