@@ -1,11 +1,11 @@
 ---
 # credfolio2-ntw1
 title: Apply shadcn rose theme
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-27T17:36:17Z
-updated_at: 2026-01-27T17:37:17Z
+updated_at: 2026-01-27T17:46:52Z
 ---
 
 Apply the official shadcn/ui rose theme CSS variables to globals.css. The rose theme overlays color-specific variables (primary, secondary, chart, sidebar-primary) on top of the neutral base color.

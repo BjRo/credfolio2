@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: normal
 created_at: 2026-01-27T17:19:14Z
-updated_at: 2026-01-27T17:20:13Z
+updated_at: 2026-01-27T17:46:52Z
 ---
 
 Two issues:

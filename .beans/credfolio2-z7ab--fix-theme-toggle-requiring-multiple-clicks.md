@@ -1,11 +1,11 @@
 ---
 # credfolio2-z7ab
 title: Fix theme toggle requiring multiple clicks
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-01-27T17:40:04Z
-updated_at: 2026-01-27T17:41:05Z
+updated_at: 2026-01-27T17:46:52Z
 ---
 
 The theme toggle skip logic only handles one direction: skipping 'light' when system resolves to light. But it doesn't handle cycling from 'dark' → 'system' when the OS also prefers dark — that produces no visible change, requiring another click.
