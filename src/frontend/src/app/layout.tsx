@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { SiteHeader } from "@/components/site-header";
+import { ThemeProvider } from "@/components/theme-provider";
 import { UrqlProvider } from "@/lib/urql";
 import "./globals.css";
 
@@ -13,9 +15,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <UrqlProvider>{children}</UrqlProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <SiteHeader />
+          <UrqlProvider>{children}</UrqlProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
