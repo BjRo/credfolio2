@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [resumeResult, _reexecuteResumeQuery] = useQuery({
     query: GetResumeDocument,
     variables: { id: resumeId },
+    requestPolicy: "network-only", // Always fetch fresh data on page load
   });
 
   // Get user ID from resume to fetch their profile
@@ -31,6 +32,7 @@ export default function ProfilePage() {
     query: GetProfileDocument,
     variables: { userId: userId || "" },
     pause: !userId, // Don't run until we have userId
+    requestPolicy: "network-only", // Always fetch fresh data on page load
   });
 
   const { data, fetching, error } = resumeResult;
