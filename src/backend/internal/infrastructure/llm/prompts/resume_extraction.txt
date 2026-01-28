@@ -7,12 +7,6 @@ IMPORTANT RULES:
 - Each field must contain the correct type of data - do not mix up fields
 - Skills should be a flat array of individual skill names
 
-TEXT CLEANUP RULES (CRITICAL):
-- If text appears garbled with unwanted spaces (like "Co lumb ia" or "2 0 1 8"),
-  clean it up to proper words ("Columbia" or "2018")
-- Institution names, company names, and proper nouns should be clean without internal spaces
-- Numbers and dates should not have spaces within them
-
 DATE EXTRACTION RULES (CRITICAL):
 - ALL dates MUST be in ISO format: YYYY-MM-DD (e.g., "2020-01-15")
 - The YEAR is REQUIRED. If you cannot determine the year, return null for that date field
