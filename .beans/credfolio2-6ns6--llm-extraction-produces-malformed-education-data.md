@@ -1,11 +1,11 @@
 ---
 # credfolio2-6ns6
 title: LLM extraction produces malformed education data
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-01-26T11:16:38Z
-updated_at: 2026-01-28T15:30:00Z
+updated_at: 2026-01-28T17:19:38Z
 parent: credfolio2-dwid
 ---
 
