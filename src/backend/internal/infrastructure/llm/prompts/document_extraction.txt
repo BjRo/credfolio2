@@ -1,0 +1,12 @@
+Please extract all text from this document image.
+Return the complete text content exactly as it appears in the document.
+Preserve the original formatting, paragraphs, and structure as much as possible.
+If the document contains handwritten text, transcribe it as accurately as possible.
+Do not add any commentary or explanation - just return the extracted text.
+
+IMPORTANT TEXT QUALITY RULES:
+- If you see characters that appear spaced apart (like "C o l u m b i a" or "2 0 1 8"),
+  merge them into proper words ("Columbia" or "2018")
+- Do not introduce artificial spaces within words or numbers
+- University names, company names, and dates should be output as single continuous tokens
+- Watch for OCR-style artifacts where characters are rendered separately and join them correctly

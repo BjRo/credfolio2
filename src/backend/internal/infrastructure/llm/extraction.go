@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -10,11 +11,13 @@ import (
 	"backend/internal/domain"
 )
 
-const defaultExtractionPrompt = `Please extract all text from this document image.
-Return the complete text content exactly as it appears in the document.
-Preserve the original formatting, paragraphs, and structure as much as possible.
-If the document contains handwritten text, transcribe it as accurately as possible.
-Do not add any commentary or explanation - just return the extracted text.`
+// Embedded prompts from external files for easier maintenance and review.
+//
+//go:embed prompts/document_extraction.txt
+var defaultExtractionPrompt string
+
+//go:embed prompts/resume_extraction.txt
+var resumeExtractionPrompt string
 
 // DocumentExtractorConfig holds configuration for the document extractor.
 type DocumentExtractorConfig struct {
@@ -143,29 +146,6 @@ func contentTypeToMediaType(contentType string) (domain.ImageMediaType, error) {
 		return "", fmt.Errorf("unsupported content type: %s", contentType)
 	}
 }
-
-const resumeExtractionPrompt = `Extract structured profile data from the following resume text.
-
-IMPORTANT RULES:
-- Use null for missing optional fields (do NOT use empty strings or placeholder values)
-- For current jobs, set isCurrent to true and use null for endDate
-- GPA must be a numeric value like "3.8" or "3.8/4.0" - NEVER put a date in the GPA field
-- Each field must contain the correct type of data - do not mix up fields
-- Skills should be a flat array of individual skill names
-
-DATE EXTRACTION RULES (CRITICAL):
-- ALL dates MUST be in ISO format: YYYY-MM-DD (e.g., "2020-01-15")
-- The YEAR is REQUIRED. If you cannot determine the year, return null for that date field
-- Expanding partial dates:
-  - Month + Year (e.g., "Sep 2018") → "2018-09-01" (use 1st of month)
-  - Year only (e.g., "2020") → "2020-01-01" (use January 1st)
-  - Month only without year (e.g., "September") → null (year is required)
-- If a date cannot be parsed or is ambiguous, return null
-- NEVER return malformed dates like "-09-01" or "0000-09-01"
-- Common patterns: "Present", "Current", "Now" for endDate means isCurrent=true and endDate=null
-
-Resume text:
-`
 
 // resumeOutputSchema defines the JSON schema for structured resume extraction.
 // This schema is used with Anthropic's structured output feature to guarantee valid JSON.
@@ -347,7 +327,73 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 		data.Skills = []string{}
 	}
 
+	// Normalize extracted data to fix OCR/PDF text extraction artifacts
+	normalizeResumeData(&data)
+
 	return &data, nil
+}
+
+// normalizeResumeData cleans up extracted data to fix common extraction artifacts
+// such as spurious spaces in words from PDF text extraction.
+func normalizeResumeData(data *domain.ResumeExtractedData) {
+	// Normalize top-level fields
+	data.Name = NormalizeSpacedText(data.Name)
+	data.Email = normalizeOptionalText(data.Email)
+	data.Location = normalizeOptionalText(data.Location)
+
+	// Normalize education entries
+	for i := range data.Education {
+		normalizeEducation(&data.Education[i])
+	}
+
+	// Normalize experience entries
+	for i := range data.Experience {
+		normalizeExperience(&data.Experience[i])
+	}
+
+	// Normalize skills
+	for i := range data.Skills {
+		data.Skills[i] = NormalizeSpacedText(data.Skills[i])
+	}
+}
+
+// normalizeOptionalText normalizes an optional string pointer
+func normalizeOptionalText(s *string) *string {
+	if s == nil {
+		return nil
+	}
+	normalized := NormalizeSpacedText(*s)
+	return &normalized
+}
+
+// normalizeOptionalDate normalizes an optional date string pointer
+func normalizeOptionalDate(s *string) *string {
+	if s == nil {
+		return nil
+	}
+	normalized := NormalizeDate(*s)
+	if normalized == "" {
+		return nil
+	}
+	return &normalized
+}
+
+// normalizeEducation normalizes a single education entry
+func normalizeEducation(edu *domain.Education) {
+	edu.Institution = NormalizeSpacedText(edu.Institution)
+	edu.Degree = normalizeOptionalText(edu.Degree)
+	edu.Field = normalizeOptionalText(edu.Field)
+	edu.StartDate = normalizeOptionalDate(edu.StartDate)
+	edu.EndDate = normalizeOptionalDate(edu.EndDate)
+}
+
+// normalizeExperience normalizes a single work experience entry
+func normalizeExperience(exp *domain.WorkExperience) {
+	exp.Company = NormalizeSpacedText(exp.Company)
+	exp.Title = NormalizeSpacedText(exp.Title)
+	exp.Location = normalizeOptionalText(exp.Location)
+	exp.StartDate = normalizeOptionalDate(exp.StartDate)
+	exp.EndDate = normalizeOptionalDate(exp.EndDate)
 }
 
 // Verify DocumentExtractor implements domain.DocumentExtractor interface.

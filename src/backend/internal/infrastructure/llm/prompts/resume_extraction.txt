@@ -1,0 +1,27 @@
+Extract structured profile data from the following resume text.
+
+IMPORTANT RULES:
+- Use null for missing optional fields (do NOT use empty strings or placeholder values)
+- For current jobs, set isCurrent to true and use null for endDate
+- GPA must be a numeric value like "3.8" or "3.8/4.0" - NEVER put a date in the GPA field
+- Each field must contain the correct type of data - do not mix up fields
+- Skills should be a flat array of individual skill names
+
+TEXT CLEANUP RULES (CRITICAL):
+- If text appears garbled with unwanted spaces (like "Co lumb ia" or "2 0 1 8"),
+  clean it up to proper words ("Columbia" or "2018")
+- Institution names, company names, and proper nouns should be clean without internal spaces
+- Numbers and dates should not have spaces within them
+
+DATE EXTRACTION RULES (CRITICAL):
+- ALL dates MUST be in ISO format: YYYY-MM-DD (e.g., "2020-01-15")
+- The YEAR is REQUIRED. If you cannot determine the year, return null for that date field
+- Expanding partial dates:
+  - Month + Year (e.g., "Sep 2018") → "2018-09-01" (use 1st of month)
+  - Year only (e.g., "2020") → "2020-01-01" (use January 1st)
+  - Month only without year (e.g., "September") → null (year is required)
+- If a date cannot be parsed or is ambiguous, return null
+- NEVER return malformed dates like "-09-01" or "0000-09-01"
+- Common patterns: "Present", "Current", "Now" for endDate means isCurrent=true and endDate=null
+
+Resume text:
