@@ -41,6 +41,10 @@ The text extraction stage (ExtractText using LLM vision) appears to produce garb
    - Malformed dates are converted to nil
    - Institution/company names are cleaned up
 
+## Pull Request
+
+https://github.com/BjRo/credfolio2/pull/38
+
 ## Checklist
 
 - [x] Extract prompts into dedicated files in `src/backend/internal/infrastructure/llm/prompts/`
@@ -57,12 +61,12 @@ The text extraction stage (ExtractText using LLM vision) appears to produce garb
   - [x] Validate institution names don't have excessive spaces
   - [x] ~~Add confidence threshold for data quality~~ (Not needed - normalization handles this)
 - [x] Write tests for the new validation and normalization logic
-- [ ] Manual test with fixture resume
+- [ ] Manual test with fixture resume (requires API keys configured)
 
 ## Definition of Done
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
+- [ ] Visual verification with agent-browser (for UI changes) - N/A: backend-only changes
 - [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
