@@ -4,14 +4,18 @@
 
 **You MUST complete ALL of these steps before marking a bean as completed or telling the user you're done:**
 
-1. **Run lint**: `pnpm lint` — fix all errors
-2. **Run tests**: `pnpm test` — all tests must pass
-3. **Visual verification** (for ANY UI changes): Use `/skill agent-browser` to verify the feature works in the browser
-4. **Bean checklist**: Ensure ALL checklist items in the bean are checked off
+1. **Feature branch**: You MUST be on a feature branch, NOT main
+2. **Run lint**: `pnpm lint` — fix all errors
+3. **Run tests**: `pnpm test` — all tests must pass
+4. **Visual verification** (for ANY UI changes): Use `/skill agent-browser` to verify the feature works in the browser
+5. **Bean checklist**: Ensure ALL checklist items in the bean are checked off
+6. **Push and create PR**: Push your branch and create a PR for human review
 
 **DO NOT skip these steps.**
+**DO NOT commit directly to main.**
 **DO NOT say "you can run tests to verify" — run them yourself.**
 **DO NOT mark a bean complete if it has unchecked checklist items.**
+**DO NOT merge your own PR — wait for human review.**
 
 ---
 
@@ -210,9 +214,12 @@ This project follows a strict workflow for all feature development. See `.claude
 - [ ] `pnpm test` passes with no failures
 - [ ] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
+- [ ] Branch pushed and PR created for human review
 ```
 
 You cannot mark a bean as completed while it has unchecked items. This structurally enforces the workflow compliance.
+
+**CRITICAL**: Do NOT merge your own PR. Wait for a human to review and merge it. Only mark the bean as completed AFTER the PR is merged.
 
 ### Quick Reference
 
