@@ -193,6 +193,7 @@ done < <(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | aggregate -q)
 STATIC_DOMAINS=(
     "registry.npmjs.org"
     "api.anthropic.com"
+    "api.openai.com"
     "sentry.io"
     "statsig.anthropic.com"
     "statsig.com"

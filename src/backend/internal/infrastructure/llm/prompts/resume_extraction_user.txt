@@ -1,0 +1,3 @@
+Extract the structured profile data from this resume:
+
+{{.Text}}

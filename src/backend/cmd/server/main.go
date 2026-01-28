@@ -82,23 +82,8 @@ func run(log logger.Logger) error {
 		log.Warning("Failed to ensure demo user exists", logger.Feature("seed"), logger.Err(seedErr))
 	}
 
-	// Create LLM extractor (optional - only if API key configured)
-	var extractor *llm.DocumentExtractor
-	var extractHandler http.Handler
-	if cfg.Anthropic.APIKey != "" {
-		anthropicProvider := llm.NewAnthropicProvider(llm.AnthropicConfig{
-			APIKey: cfg.Anthropic.APIKey,
-		})
-		resilientProvider := llm.NewResilientProvider(anthropicProvider, llm.ResilientConfig{
-			RequestTimeout: 120 * time.Second, // Extraction can be slow for large docs
-		})
-		extractor = llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{})
-		extractHandler = handler.NewExtractHandler(extractor, log)
-		log.Info("LLM extraction enabled", logger.Feature("llm"))
-	} else {
-		extractHandler = handler.NewExtractUnavailableHandler()
-		log.Warning("LLM extraction disabled (ANTHROPIC_API_KEY not set)", logger.Feature("llm"))
-	}
+	// Create LLM extractor with provider registry for per-operation chains
+	extractor, extractHandler := createLLMExtractor(cfg, log)
 
 	// Create job queue workers
 	workers := river.NewWorkers()
@@ -205,6 +190,98 @@ var demoUserID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
 type userCreator interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	Create(ctx context.Context, user *domain.User) error
+}
+
+// createProviderRegistry creates all available LLM providers and returns a registry.
+// Returns the registry, the default provider (based on LLM_PROVIDER config), and list of provider names.
+func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.ProviderRegistry, domain.LLMProvider, []string) {
+	registry := llm.NewProviderRegistry()
+	var providerNames []string
+	var defaultProvider domain.LLMProvider
+
+	// Register Anthropic if API key is available
+	if cfg.Anthropic.APIKey != "" {
+		provider := llm.NewAnthropicProvider(llm.AnthropicConfig{
+			APIKey: cfg.Anthropic.APIKey,
+		})
+		registry.Register("anthropic", provider)
+		providerNames = append(providerNames, "anthropic")
+		log.Debug("Registered Anthropic provider", logger.Feature("llm"))
+	}
+
+	// Register OpenAI if API key is available
+	if cfg.OpenAI.APIKey != "" {
+		provider := llm.NewOpenAIProvider(llm.OpenAIConfig{
+			APIKey: cfg.OpenAI.APIKey,
+		})
+		registry.Register("openai", provider)
+		providerNames = append(providerNames, "openai")
+		log.Debug("Registered OpenAI provider", logger.Feature("llm"))
+	}
+
+	// Determine default provider based on config
+	selectedProvider := cfg.LLM.Provider
+	if selectedProvider == "" {
+		selectedProvider = "anthropic" // Default
+	}
+
+	if p, ok := registry.Get(selectedProvider); ok {
+		defaultProvider = p
+	} else if len(providerNames) > 0 {
+		// Fall back to first available provider
+		defaultProvider, _ = registry.Get(providerNames[0])
+		log.Warning("Configured provider not available, falling back",
+			logger.Feature("llm"),
+			logger.String("configured", selectedProvider),
+			logger.String("fallback", providerNames[0]))
+	}
+
+	return registry, defaultProvider, providerNames
+}
+
+// createLLMExtractor creates the document extractor with per-operation provider chains.
+// Returns the extractor (nil if no providers available) and the HTTP handler.
+func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExtractor, http.Handler) {
+	registry, defaultProvider, providerNames := createProviderRegistry(cfg, log)
+	if defaultProvider == nil {
+		log.Warning("LLM extraction disabled (no API key configured)", logger.Feature("llm"))
+		return nil, handler.NewExtractUnavailableHandler()
+	}
+
+	// Wrap default provider with resilience
+	resilientProvider := llm.NewResilientProvider(defaultProvider, llm.ResilientConfig{
+		RequestTimeout: 120 * time.Second, // Extraction can be slow for large docs
+	})
+
+	// Configure provider chains for each operation
+	// Document extraction uses the default provider (good for vision/PDF)
+	// Resume extraction uses a dedicated provider+model (better for structured output)
+	docProvider := cfg.LLM.Provider
+	if docProvider == "" {
+		docProvider = "anthropic"
+	}
+	docChain := llm.ProviderChain{{Provider: docProvider}}
+
+	// Resume extraction uses dedicated provider/model (defaults to openai/gpt-4o)
+	resumeProvider, resumeModel := cfg.LLM.ParseResumeExtractionModel()
+	resumeChain := llm.ProviderChain{{Provider: resumeProvider, Model: resumeModel}}
+
+	// Log which providers are being used for each operation
+	log.Info("Configured extraction providers",
+		logger.Feature("llm"),
+		logger.String("document_extraction", docProvider),
+		logger.String("resume_extraction", fmt.Sprintf("%s/%s", resumeProvider, resumeModel)),
+	)
+
+	extractor := llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{
+		ProviderRegistry:        registry,
+		DocumentExtractionChain: docChain,
+		ResumeExtractionChain:   resumeChain,
+	})
+	extractHandler := handler.NewExtractHandler(extractor, log)
+	log.Info("LLM extraction enabled", logger.Feature("llm"), logger.String("providers", fmt.Sprintf("%v", providerNames)))
+
+	return extractor, extractHandler
 }
 
 // ensureDemoUser creates the demo user if it doesn't exist.

@@ -18,7 +18,40 @@ type Config struct { //nolint:govet // Field order prioritizes readability
 	MinIO       MinIOConfig
 	Server      ServerConfig
 	Queue       QueueConfig
+	LLM         LLMConfig
 	Anthropic   AnthropicConfig
+	OpenAI      OpenAIConfig
+}
+
+// LLMConfig holds general LLM configuration.
+type LLMConfig struct {
+	// Provider specifies which LLM provider to use: "anthropic" or "openai".
+	// Defaults to "anthropic" if not specified.
+	Provider string
+
+	// ResumeExtractionModel specifies the provider and model for resume data extraction.
+	// Format: "provider/model" (e.g., "openai/gpt-4o").
+	// Defaults to "openai/gpt-4o" for best structured output support.
+	ResumeExtractionModel string
+}
+
+// ParseResumeExtractionModel parses the ResumeExtractionModel into provider and model parts.
+// Returns (provider, model). If no "/" is present, treats the whole string as provider.
+func (c *LLMConfig) ParseResumeExtractionModel() (provider, model string) {
+	value := c.ResumeExtractionModel
+	if value == "" {
+		return "openai", "gpt-4o" // Default
+	}
+
+	// Split on first "/"
+	for i, ch := range value {
+		if ch == '/' {
+			return value[:i], value[i+1:]
+		}
+	}
+
+	// No "/" found, treat as provider only
+	return value, ""
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -69,6 +102,12 @@ type QueueConfig struct {
 // AnthropicConfig holds Anthropic API settings.
 // Note: Model selection is done per-request, not globally configured.
 type AnthropicConfig struct {
+	APIKey string
+}
+
+// OpenAIConfig holds OpenAI API settings.
+// Note: Model selection is done per-request, not globally configured.
+type OpenAIConfig struct {
 	APIKey string
 }
 
@@ -131,8 +170,15 @@ func Load() (*Config, error) {
 		Queue: QueueConfig{
 			MaxWorkers: queueMaxWorkers,
 		},
+		LLM: LLMConfig{
+			Provider:                 getEnv("LLM_PROVIDER", "anthropic"),
+			ResumeExtractionModel: os.Getenv("RESUME_EXTRACTION_MODEL"), // Default: openai/gpt-4o
+		},
 		Anthropic: AnthropicConfig{
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),
+		},
+		OpenAI: OpenAIConfig{
+			APIKey: os.Getenv("OPEN_AI_API_KEY"),
 		},
 	}
 
