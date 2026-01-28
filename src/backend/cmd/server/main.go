@@ -262,7 +262,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 	}
 	docChain := llm.ProviderChain{{Provider: docProvider}}
 
-	// Resume extraction uses dedicated provider/model (defaults to openai/gpt-5-nano-2025-08-07)
+	// Resume extraction uses dedicated provider/model (defaults to openai/gpt-4o)
 	resumeProvider, resumeModel := cfg.LLM.ParseResumeExtractionModel()
 	resumeChain := llm.ProviderChain{{Provider: resumeProvider, Model: resumeModel}}
 

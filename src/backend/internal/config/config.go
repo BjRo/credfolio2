@@ -30,8 +30,8 @@ type LLMConfig struct {
 	Provider string
 
 	// ResumeExtractionModel specifies the provider and model for resume data extraction.
-	// Format: "provider/model" (e.g., "openai/gpt-5-nano-2025-08-07").
-	// Defaults to "openai/gpt-5-nano-2025-08-07" for best structured output support.
+	// Format: "provider/model" (e.g., "openai/gpt-4o").
+	// Defaults to "openai/gpt-4o" for best structured output support.
 	ResumeExtractionModel string
 }
 
@@ -40,7 +40,7 @@ type LLMConfig struct {
 func (c *LLMConfig) ParseResumeExtractionModel() (provider, model string) {
 	value := c.ResumeExtractionModel
 	if value == "" {
-		return "openai", "gpt-5-nano-2025-08-07" // Default
+		return "openai", "gpt-4o" // Default
 	}
 
 	// Split on first "/"
@@ -172,7 +172,7 @@ func Load() (*Config, error) {
 		},
 		LLM: LLMConfig{
 			Provider:                 getEnv("LLM_PROVIDER", "anthropic"),
-			ResumeExtractionModel: os.Getenv("RESUME_EXTRACTION_MODEL"), // Default: openai/gpt-5-nano-2025-08-07
+			ResumeExtractionModel: os.Getenv("RESUME_EXTRACTION_MODEL"), // Default: openai/gpt-4o
 		},
 		Anthropic: AnthropicConfig{
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),

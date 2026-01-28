@@ -1,11 +1,10 @@
 ---
 # credfolio2-kbx9
 title: Profile page shows stale data after redirect from upload
-status: completed
+status: in-progress
 type: bug
-priority: normal
 created_at: 2026-01-28T16:58:30Z
-updated_at: 2026-01-28T17:01:12Z
+updated_at: 2026-01-28T16:58:30Z
 ---
 
 ## Problem
