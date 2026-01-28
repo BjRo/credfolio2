@@ -194,18 +194,11 @@ psql -h credfolio2-postgres -U credfolio -d credfolio_dev
 
 ## Development Workflow
 
-This project follows a strict workflow for all feature development. See `.claude/skills/dev-workflow/SKILL.md` for full details.
+This project follows a strict workflow. See `/skill dev-workflow` for the full process.
 
-### Key Principles
+### Mandatory Bean Checklist
 
-1. **Feature Branches**: Never commit directly to main
-2. **TDD**: Write tests before implementation (see `/skill tdd`)
-3. **PR Review**: All changes require human review before merge
-4. **Beans Tracking**: Use beans to track all work (see `/skill issue-tracking-with-beans`)
-
-### Mandatory Bean Checklist Items
-
-**Every bean you create MUST include a "Definition of Done" checklist section.** This section should be at the end of the bean body and include these mandatory items:
+**Every bean MUST include this "Definition of Done" section:**
 
 ```markdown
 ## Definition of Done
@@ -217,29 +210,7 @@ This project follows a strict workflow for all feature development. See `.claude
 - [ ] Branch pushed and PR created for human review
 ```
 
-You cannot mark a bean as completed while it has unchecked items. This structurally enforces the workflow compliance.
-
-**CRITICAL**: Do NOT merge your own PR. Wait for a human to review and merge it. Only mark the bean as completed AFTER the PR is merged.
-
-### Quick Reference
-
-```bash
-# Start work on a bean
-git checkout main && git pull origin main
-git checkout -b feat/<bean-id>-<description>
-beans update <bean-id> --status in-progress
-
-# Work using TDD, update bean checklist, commit with bean file
-
-# When done
-git push -u origin <branch>
-gh pr create --title "..." --body "Closes beans-<id>"
-# WAIT for human review - do NOT merge yourself
-
-# After human merges
-git checkout main && git pull origin main
-beans update <bean-id> --status completed
-```
+You cannot mark a bean as completed while it has unchecked items.
 
 ## Git Details
 
