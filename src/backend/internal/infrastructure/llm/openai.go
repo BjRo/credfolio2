@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	// GPT-4o supports vision and structured outputs
-	defaultOpenAIModel   = "gpt-4o"
+	// GPT-5-nano supports vision and structured outputs
+	defaultOpenAIModel   = "gpt-5-nano-2025-08-07"
 	defaultOpenAITimeout = 60 * time.Second
 )
 
