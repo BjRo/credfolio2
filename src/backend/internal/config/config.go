@@ -18,7 +18,16 @@ type Config struct { //nolint:govet // Field order prioritizes readability
 	MinIO       MinIOConfig
 	Server      ServerConfig
 	Queue       QueueConfig
+	LLM         LLMConfig
 	Anthropic   AnthropicConfig
+	OpenAI      OpenAIConfig
+}
+
+// LLMConfig holds general LLM configuration.
+type LLMConfig struct {
+	// Provider specifies which LLM provider to use: "anthropic" or "openai".
+	// Defaults to "anthropic" if not specified.
+	Provider string
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -69,6 +78,12 @@ type QueueConfig struct {
 // AnthropicConfig holds Anthropic API settings.
 // Note: Model selection is done per-request, not globally configured.
 type AnthropicConfig struct {
+	APIKey string
+}
+
+// OpenAIConfig holds OpenAI API settings.
+// Note: Model selection is done per-request, not globally configured.
+type OpenAIConfig struct {
 	APIKey string
 }
 
@@ -131,8 +146,14 @@ func Load() (*Config, error) {
 		Queue: QueueConfig{
 			MaxWorkers: queueMaxWorkers,
 		},
+		LLM: LLMConfig{
+			Provider: getEnv("LLM_PROVIDER", "anthropic"),
+		},
 		Anthropic: AnthropicConfig{
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),
+		},
+		OpenAI: OpenAIConfig{
+			APIKey: os.Getenv("OPEN_AI_API_KEY"),
 		},
 	}
 

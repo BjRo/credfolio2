@@ -56,21 +56,32 @@ The normalization code fixes spacing artifacts when they occur, but the underlyi
 - "CERTIFICATIONS ARE NOT EDUCATION" rule
 - Still produces unreliable results
 
-## Open Issues
+## Current Approach: Add OpenAI Provider
 
-- [ ] LLM extraction is fundamentally unreliable - needs architectural change
-- [ ] Consider retry logic with validation
-- [ ] Consider different extraction approach (e.g., chain-of-thought)
-- [ ] May need to use a more capable model
-- [ ] Document text extraction (first stage) may be the root cause
+Adding OpenAI as an alternative LLM provider to test if it produces more reliable extraction results.
 
-## Potential Future Approaches
+### Checklist
+- [x] Add `openai-go` dependency to go.mod
+- [x] Create `openai.go` provider implementing `domain.LLMProvider`
+- [x] Add `OpenAIConfig` to config.go with `OPEN_AI_API_KEY` env var
+- [x] Update main.go with provider registry for all available providers
+- [x] Restructure prompts: split into system/user with template support
+- [x] Add per-use-case provider chains (ProviderChain type)
+- [x] Add LLM-based normalization rules to prompts
+- [ ] Test extraction with OpenAI model (blocked by network restrictions in devcontainer)
+- [x] Run lint and tests
+
+## Previous Open Issues (now blocked on OpenAI testing)
+
+- [ ] LLM extraction is fundamentally unreliable - trying different provider
+- [x] May need to use a more capable model - **trying OpenAI**
+
+## Potential Future Approaches (if OpenAI doesn't help)
 
 1. **Retry with validation** - If extraction looks malformed, retry with different prompt
 2. **Two-stage extraction** - First understand document structure, then extract fields
-3. **Model upgrade** - Use a more capable model for structured extraction
-4. **Improve text extraction** - The first stage (PDF→text) may be producing poor input
-5. **Add confidence thresholds** - Reject extractions below quality threshold
+3. **Improve text extraction** - The first stage (PDF→text) may be producing poor input
+4. **Add confidence thresholds** - Reject extractions below quality threshold
 
 ## Pull Request
 
@@ -78,11 +89,17 @@ https://github.com/BjRo/credfolio2/pull/38
 
 ## Files Changed
 
-- `src/backend/internal/infrastructure/llm/extraction.go` - Added normalization, embed prompts
-- `src/backend/internal/infrastructure/llm/normalize.go` - New file with normalization functions
+- `src/backend/internal/infrastructure/llm/extraction.go` - Per-use-case provider chains, system/user prompts
+- `src/backend/internal/infrastructure/llm/provider_chain.go` - **NEW** ProviderChain and ProviderRegistry types
+- `src/backend/internal/infrastructure/llm/openai.go` - **NEW** OpenAI provider implementation
+- `src/backend/internal/infrastructure/llm/normalize.go` - Text cleanup functions (kept as fallback)
 - `src/backend/internal/infrastructure/llm/normalize_test.go` - Unit tests
-- `src/backend/internal/infrastructure/llm/prompts/document_extraction.txt` - Document extraction prompt
-- `src/backend/internal/infrastructure/llm/prompts/resume_extraction.txt` - Resume extraction prompt
+- `src/backend/internal/infrastructure/llm/prompts/document_extraction_system.txt` - System prompt with normalization rules
+- `src/backend/internal/infrastructure/llm/prompts/document_extraction_user.txt` - User prompt
+- `src/backend/internal/infrastructure/llm/prompts/resume_extraction_system.txt` - System prompt with normalization rules
+- `src/backend/internal/infrastructure/llm/prompts/resume_extraction_user.txt` - User template
+- `src/backend/internal/config/config.go` - Added OpenAI and LLM config
+- `src/backend/cmd/server/main.go` - Provider registry and chain setup
 
 ## Definition of Done
 - [x] Tests written (TDD: write tests before implementation)

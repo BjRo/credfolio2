@@ -1,5 +1,0 @@
-Please extract all text from this document image.
-Return the complete text content exactly as it appears in the document.
-Preserve the original formatting, paragraphs, and structure as much as possible.
-If the document contains handwritten text, transcribe it as accurately as possible.
-Do not add any commentary or explanation - just return the extracted text.

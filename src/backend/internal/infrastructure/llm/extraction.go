@@ -1,32 +1,62 @@
 package llm
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
+	"text/template"
 
 	"backend/internal/domain"
 )
 
 // Embedded prompts from external files for easier maintenance and review.
-//
-//go:embed prompts/document_extraction.txt
-var defaultExtractionPrompt string
+// Prompts are split into system (instructions) and user (content) for better
+// token caching and clearer separation of concerns.
 
-//go:embed prompts/resume_extraction.txt
-var resumeExtractionPrompt string
+// Document extraction prompts
+//
+//go:embed prompts/document_extraction_system.txt
+var documentExtractionSystemPrompt string
+
+//go:embed prompts/document_extraction_user.txt
+var documentExtractionUserPrompt string
+
+// Resume extraction prompts
+//
+//go:embed prompts/resume_extraction_system.txt
+var resumeExtractionSystemPrompt string
+
+//go:embed prompts/resume_extraction_user.txt
+var resumeExtractionUserTemplate string
+
+// Compiled templates for user prompts with placeholder substitution
+var resumeUserTemplate = template.Must(template.New("resume_user").Parse(resumeExtractionUserTemplate))
 
 // DocumentExtractorConfig holds configuration for the document extractor.
-type DocumentExtractorConfig struct {
+type DocumentExtractorConfig struct { //nolint:govet // Field order prioritizes readability
 	// DefaultModel is the model to use for extraction if not specified per-request.
 	// If empty, the provider's default model is used.
+	// Deprecated: Use DocumentExtractionChain and ResumeExtractionChain instead.
 	DefaultModel string
 
 	// MaxTokens for extraction responses. Defaults to 8192.
 	MaxTokens int
+
+	// ProviderRegistry holds all available providers for chain-based access.
+	// If nil, falls back to the single provider passed to NewDocumentExtractor.
+	ProviderRegistry *ProviderRegistry
+
+	// DocumentExtractionChain specifies the provider chain for document text extraction.
+	// If nil or empty, uses the default provider.
+	DocumentExtractionChain ProviderChain
+
+	// ResumeExtractionChain specifies the provider chain for resume data extraction.
+	// If nil or empty, uses the default provider.
+	ResumeExtractionChain ProviderChain
 }
 
 // ExtractionRequest represents a request to extract text from a document.
@@ -58,8 +88,8 @@ type ExtractionResult struct {
 
 // DocumentExtractor extracts text from documents using LLM vision capabilities.
 type DocumentExtractor struct {
-	provider domain.LLMProvider
-	config   DocumentExtractorConfig
+	defaultProvider domain.LLMProvider
+	config          DocumentExtractorConfig
 }
 
 // NewDocumentExtractor creates a new document extractor.
@@ -68,17 +98,35 @@ func NewDocumentExtractor(provider domain.LLMProvider, config DocumentExtractorC
 		config.MaxTokens = 8192
 	}
 	return &DocumentExtractor{
-		provider: provider,
-		config:   config,
+		defaultProvider: provider,
+		config:          config,
 	}
+}
+
+// getProviderForChain returns the appropriate provider for a given chain.
+// If the chain is configured and registry is available, returns a chained provider.
+// Otherwise, falls back to the default provider.
+func (e *DocumentExtractor) getProviderForChain(chain ProviderChain) domain.LLMProvider {
+	if len(chain) > 0 && e.config.ProviderRegistry != nil {
+		chained, err := NewChainedProvider(e.config.ProviderRegistry, chain)
+		if err == nil {
+			return chained
+		}
+		// Fall back to default on error
+	}
+	return e.defaultProvider
 }
 
 // ExtractTextWithRequest extracts text from a document image or PDF using a detailed request.
 func (e *DocumentExtractor) ExtractTextWithRequest(ctx context.Context, req ExtractionRequest) (*ExtractionResult, error) {
-	// Determine prompt
-	prompt := req.CustomPrompt
-	if prompt == "" {
-		prompt = defaultExtractionPrompt
+	// Get the appropriate provider for document extraction
+	provider := e.getProviderForChain(e.config.DocumentExtractionChain)
+
+	// Determine prompts - use system/user split for better token caching
+	systemPrompt := documentExtractionSystemPrompt
+	userPrompt := req.CustomPrompt
+	if userPrompt == "" {
+		userPrompt = documentExtractionUserPrompt
 	}
 
 	// Determine model
@@ -87,17 +135,18 @@ func (e *DocumentExtractor) ExtractTextWithRequest(ctx context.Context, req Extr
 		model = e.config.DefaultModel
 	}
 
-	// Build LLM request with image
+	// Build LLM request with system prompt and image in user message
 	llmReq := domain.LLMRequest{
+		SystemPrompt: systemPrompt,
 		Messages: []domain.Message{
-			domain.NewImageMessage(domain.RoleUser, req.MediaType, req.Document, prompt),
+			domain.NewImageMessage(domain.RoleUser, req.MediaType, req.Document, userPrompt),
 		},
 		Model:     model,
 		MaxTokens: e.config.MaxTokens,
 	}
 
 	// Execute extraction
-	resp, err := e.provider.Complete(ctx, llmReq)
+	resp, err := provider.Complete(ctx, llmReq)
 	if err != nil {
 		return nil, err
 	}
@@ -289,19 +338,34 @@ func fixTrailingCommas(content string) string {
 	return trailingCommaRegex.ReplaceAllString(content, "$1")
 }
 
+// ResumeTemplateData holds the data for rendering the resume extraction user prompt.
+type ResumeTemplateData struct {
+	Text string
+}
+
 // ExtractResumeData implements domain.DocumentExtractor interface.
 // It extracts structured resume data from text using LLM with structured output.
 func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) (*domain.ResumeExtractedData, error) {
+	// Get the appropriate provider for resume extraction
+	provider := e.getProviderForChain(e.config.ResumeExtractionChain)
+
+	// Render the user prompt template with the resume text
+	var userPromptBuf bytes.Buffer
+	if err := resumeUserTemplate.Execute(&userPromptBuf, ResumeTemplateData{Text: text}); err != nil {
+		return nil, fmt.Errorf("failed to render user prompt template: %w", err)
+	}
+
 	llmReq := domain.LLMRequest{
+		SystemPrompt: resumeExtractionSystemPrompt,
 		Messages: []domain.Message{
-			domain.NewTextMessage(domain.RoleUser, resumeExtractionPrompt+text),
+			domain.NewTextMessage(domain.RoleUser, userPromptBuf.String()),
 		},
 		Model:        e.config.DefaultModel,
 		MaxTokens:    e.config.MaxTokens,
 		OutputSchema: resumeOutputSchema,
 	}
 
-	resp, err := e.provider.Complete(ctx, llmReq)
+	resp, err := provider.Complete(ctx, llmReq)
 	if err != nil {
 		return nil, fmt.Errorf("LLM extraction failed: %w", err)
 	}
