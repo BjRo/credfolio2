@@ -28,6 +28,12 @@ type LLMConfig struct {
 	// Provider specifies which LLM provider to use: "anthropic" or "openai".
 	// Defaults to "anthropic" if not specified.
 	Provider string
+
+	// ResumeExtractionProvider specifies which provider to use for resume data extraction.
+	// This allows using a different provider (e.g., OpenAI) for structured output extraction
+	// while using another provider (e.g., Anthropic) for document text extraction.
+	// If not specified, falls back to Provider.
+	ResumeExtractionProvider string
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -147,7 +153,8 @@ func Load() (*Config, error) {
 			MaxWorkers: queueMaxWorkers,
 		},
 		LLM: LLMConfig{
-			Provider: getEnv("LLM_PROVIDER", "anthropic"),
+			Provider:                 getEnv("LLM_PROVIDER", "anthropic"),
+			ResumeExtractionProvider: os.Getenv("RESUME_EXTRACTION_PROVIDER"), // Empty = use Provider
 		},
 		Anthropic: AnthropicConfig{
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),

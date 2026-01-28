@@ -83,38 +83,7 @@ func run(log logger.Logger) error {
 	}
 
 	// Create LLM extractor with provider registry for per-operation chains
-	var extractor *llm.DocumentExtractor
-	var extractHandler http.Handler
-	registry, defaultProvider, providerNames := createProviderRegistry(cfg, log)
-	if defaultProvider != nil {
-		// Wrap default provider with resilience
-		resilientProvider := llm.NewResilientProvider(defaultProvider, llm.ResilientConfig{
-			RequestTimeout: 120 * time.Second, // Extraction can be slow for large docs
-		})
-
-		// Configure provider chains for each operation
-		// Currently using the configured provider for all operations
-		// Can be extended to use different chains per operation
-		docChain := llm.ProviderChain{{Provider: cfg.LLM.Provider}}
-		resumeChain := llm.ProviderChain{{Provider: cfg.LLM.Provider}}
-
-		// If no specific provider configured, use anthropic as default
-		if cfg.LLM.Provider == "" {
-			docChain = llm.ProviderChain{{Provider: "anthropic"}}
-			resumeChain = llm.ProviderChain{{Provider: "anthropic"}}
-		}
-
-		extractor = llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{
-			ProviderRegistry:        registry,
-			DocumentExtractionChain: docChain,
-			ResumeExtractionChain:   resumeChain,
-		})
-		extractHandler = handler.NewExtractHandler(extractor, log)
-		log.Info("LLM extraction enabled", logger.Feature("llm"), logger.String("providers", fmt.Sprintf("%v", providerNames)))
-	} else {
-		extractHandler = handler.NewExtractUnavailableHandler()
-		log.Warning("LLM extraction disabled (no API key configured)", logger.Feature("llm"))
-	}
+	extractor, extractHandler := createLLMExtractor(cfg, log)
 
 	// Create job queue workers
 	workers := river.NewWorkers()
@@ -268,6 +237,54 @@ func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.Provide
 	}
 
 	return registry, defaultProvider, providerNames
+}
+
+// createLLMExtractor creates the document extractor with per-operation provider chains.
+// Returns the extractor (nil if no providers available) and the HTTP handler.
+func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExtractor, http.Handler) {
+	registry, defaultProvider, providerNames := createProviderRegistry(cfg, log)
+	if defaultProvider == nil {
+		log.Warning("LLM extraction disabled (no API key configured)", logger.Feature("llm"))
+		return nil, handler.NewExtractUnavailableHandler()
+	}
+
+	// Wrap default provider with resilience
+	resilientProvider := llm.NewResilientProvider(defaultProvider, llm.ResilientConfig{
+		RequestTimeout: 120 * time.Second, // Extraction can be slow for large docs
+	})
+
+	// Configure provider chains for each operation
+	// Document extraction uses the default provider (good for vision/PDF)
+	// Resume extraction can use a different provider (better for structured output)
+	docProvider := cfg.LLM.Provider
+	if docProvider == "" {
+		docProvider = "anthropic"
+	}
+	docChain := llm.ProviderChain{{Provider: docProvider}}
+
+	// Resume extraction uses dedicated provider if configured, otherwise falls back to default
+	resumeProvider := cfg.LLM.ResumeExtractionProvider
+	if resumeProvider == "" {
+		resumeProvider = docProvider
+	}
+	resumeChain := llm.ProviderChain{{Provider: resumeProvider}}
+
+	// Log which providers are being used for each operation
+	log.Info("Configured extraction providers",
+		logger.Feature("llm"),
+		logger.String("document_extraction", docProvider),
+		logger.String("resume_extraction", resumeProvider),
+	)
+
+	extractor := llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{
+		ProviderRegistry:        registry,
+		DocumentExtractionChain: docChain,
+		ResumeExtractionChain:   resumeChain,
+	})
+	extractHandler := handler.NewExtractHandler(extractor, log)
+	log.Info("LLM extraction enabled", logger.Feature("llm"), logger.String("providers", fmt.Sprintf("%v", providerNames)))
+
+	return extractor, extractHandler
 }
 
 // ensureDemoUser creates the demo user if it doesn't exist.
