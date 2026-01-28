@@ -197,9 +197,11 @@ func contentTypeToMediaType(contentType string) (domain.ImageMediaType, error) {
 }
 
 // resumeOutputSchema defines the JSON schema for structured resume extraction.
-// This schema is used with Anthropic's structured output feature to guarantee valid JSON.
+// This schema is used with OpenAI/Anthropic structured output features to guarantee valid JSON.
+// Note: OpenAI requires "additionalProperties": false at every object level.
 var resumeOutputSchema = map[string]any{
-	"type": "object",
+	"type":                 "object",
+	"additionalProperties": false,
 	"properties": map[string]any{
 		"name": map[string]any{
 			"type":        "string",
@@ -225,7 +227,8 @@ var resumeOutputSchema = map[string]any{
 			"type":        "array",
 			"description": "Work experience entries",
 			"items": map[string]any{
-				"type": "object",
+				"type":                 "object",
+				"additionalProperties": false,
 				"properties": map[string]any{
 					"company": map[string]any{
 						"type":        "string",
@@ -263,7 +266,8 @@ var resumeOutputSchema = map[string]any{
 			"type":        "array",
 			"description": "Education entries",
 			"items": map[string]any{
-				"type": "object",
+				"type":                 "object",
+				"additionalProperties": false,
 				"properties": map[string]any{
 					"institution": map[string]any{
 						"type":        "string",
