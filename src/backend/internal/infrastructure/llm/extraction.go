@@ -259,7 +259,7 @@ var resumeOutputSchema = map[string]any{
 						"description": "Job description or responsibilities",
 					},
 				},
-				"required": []string{"company", "title"},
+				"required": []string{"company", "title", "location", "startDate", "endDate", "isCurrent", "description"},
 			},
 		},
 		"education": map[string]any{
@@ -298,7 +298,7 @@ var resumeOutputSchema = map[string]any{
 						"description": "Notable achievements or honors",
 					},
 				},
-				"required": []string{"institution"},
+				"required": []string{"institution", "degree", "field", "startDate", "endDate", "gpa", "achievements"},
 			},
 		},
 		"skills": map[string]any{
