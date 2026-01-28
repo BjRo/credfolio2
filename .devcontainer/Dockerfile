@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   nano \
   vim \
   wget \
+  postgresql-client \
   # Playwright/Chromium dependencies for agent-browser
   libnss3 \
   libnspr4 \
