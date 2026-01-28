@@ -280,6 +280,8 @@ func (w *ResumeProcessingWorker) updateStatusFailed(ctx context.Context, id uuid
 
 // materializeExtractedData creates profile education, experience, and skill rows from extracted resume data.
 // This makes profile tables the single source of truth for display.
+// Each category (experiences, education, skills) is processed independently so that failures in one
+// category don't prevent the others from being saved.
 func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, resumeID uuid.UUID, userID uuid.UUID, data *domain.ResumeExtractedData) error {
 	// Get or create the user's profile
 	profile, err := w.profileRepo.GetOrCreateByUserID(ctx, userID)
@@ -298,14 +300,22 @@ func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, r
 		return fmt.Errorf("failed to delete existing skills for resume: %w", delErr)
 	}
 
-	if err := w.materializeExperiences(ctx, resumeID, profile.ID, data.Experience); err != nil {
-		return err
+	// Process each category independently to ensure partial success
+	var errors []error
+
+	if expErr := w.materializeExperiences(ctx, resumeID, profile.ID, data.Experience); expErr != nil {
+		errors = append(errors, fmt.Errorf("experiences: %w", expErr))
 	}
-	if err := w.materializeEducation(ctx, resumeID, profile.ID, data.Education); err != nil {
-		return err
+	if eduErr := w.materializeEducation(ctx, resumeID, profile.ID, data.Education); eduErr != nil {
+		errors = append(errors, fmt.Errorf("education: %w", eduErr))
 	}
-	if err := w.materializeSkills(ctx, resumeID, profile.ID, data.Skills); err != nil {
-		return err
+	if skillErr := w.materializeSkills(ctx, resumeID, profile.ID, data.Skills); skillErr != nil {
+		errors = append(errors, fmt.Errorf("skills: %w", skillErr))
+	}
+
+	// Return aggregated error if any category failed
+	if len(errors) > 0 {
+		return fmt.Errorf("materialization errors: %v", errors)
 	}
 
 	return nil
@@ -390,24 +400,45 @@ func (w *ResumeProcessingWorker) materializeSkills(ctx context.Context, resumeID
 		return fmt.Errorf("failed to get next skill display order: %w", err)
 	}
 
-	for i, skillName := range skills {
-		trimmed := strings.TrimSpace(skillName)
-		if trimmed == "" {
-			continue
-		}
+	// Deduplicate skills before inserting to avoid unique constraint violations
+	dedupedSkills := deduplicateSkills(skills)
+
+	for i, skillName := range dedupedSkills {
 		profileSkill := &domain.ProfileSkill{
 			ID:             uuid.New(),
 			ProfileID:      profileID,
-			Name:           trimmed,
-			NormalizedName: strings.ToLower(trimmed),
+			Name:           skillName,
+			NormalizedName: strings.ToLower(skillName),
 			Category:       "TECHNICAL",
 			DisplayOrder:   displayOrder + i,
 			Source:         domain.ExperienceSourceResumeExtracted,
 			SourceResumeID: &resumeID,
 		}
-		if createErr := w.profileSkillRepo.Create(ctx, profileSkill); createErr != nil {
-			return fmt.Errorf("failed to create skill %q: %w", trimmed, createErr)
+		// Use CreateIgnoreDuplicate to silently skip skills that already exist
+		// (e.g., from manual entry or previous extraction from another resume)
+		if createErr := w.profileSkillRepo.CreateIgnoreDuplicate(ctx, profileSkill); createErr != nil {
+			return fmt.Errorf("failed to create skill %q: %w", skillName, createErr)
 		}
 	}
 	return nil
+}
+
+// deduplicateSkills removes duplicate skills by normalized name, preserving the first occurrence.
+// It also trims whitespace and filters out empty strings.
+func deduplicateSkills(skills []string) []string {
+	seen := make(map[string]bool)
+	result := make([]string, 0, len(skills))
+
+	for _, skill := range skills {
+		trimmed := strings.TrimSpace(skill)
+		if trimmed == "" {
+			continue
+		}
+		normalized := strings.ToLower(trimmed)
+		if !seen[normalized] {
+			seen[normalized] = true
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }

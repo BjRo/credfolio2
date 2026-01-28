@@ -183,6 +183,10 @@ type ProfileSkillRepository interface {
 	// Create persists a new profile skill.
 	Create(ctx context.Context, skill *ProfileSkill) error
 
+	// CreateIgnoreDuplicate persists a new profile skill, silently ignoring duplicates.
+	// This uses ON CONFLICT DO NOTHING to handle unique constraint violations on (profile_id, normalized_name).
+	CreateIgnoreDuplicate(ctx context.Context, skill *ProfileSkill) error
+
 	// GetByID retrieves a profile skill by its ID.
 	GetByID(ctx context.Context, id uuid.UUID) (*ProfileSkill, error)
 
