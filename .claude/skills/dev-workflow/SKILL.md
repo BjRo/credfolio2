@@ -229,6 +229,7 @@ gh pr create --title "..." --body "..."
 - [ ] `pnpm test` passes with no failures
 - [ ] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
+- [ ] Branch pushed and PR created for human review
 ```
 
 **You CANNOT mark a bean as completed while it has unchecked items.** This structurally enforces compliance.
