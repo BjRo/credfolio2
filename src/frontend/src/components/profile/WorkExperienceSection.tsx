@@ -157,7 +157,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
   const duration = durationMonths !== null ? formatDuration(durationMonths) : null;
 
   return (
-    <div className={`relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
+    <div className={`group/card relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
       {/* Green current indicator - vertically centered with title row */}
       {experience.isCurrent && (
         <span
@@ -167,9 +167,11 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
         />
       )}
 
-      {/* Mobile: kebab menu positioned top-right */}
+      {/* Mobile: kebab menu positioned top-right - hidden until hover/focus */}
       {(onEdit || onDelete) && (
-        <div className={`absolute right-0 sm:hidden ${isFirst ? "top-0" : "top-6"}`}>
+        <div
+          className={`absolute right-0 sm:hidden ${isFirst ? "top-0" : "top-6"} opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity`}
+        >
           <ActionMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       )}
@@ -208,8 +210,8 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
             )}
           </div>
         </div>
-        {/* Desktop: kebab on right side */}
-        <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+        {/* Desktop: kebab on right side - hidden until hover/focus */}
+        <div className="hidden sm:flex items-center gap-1 flex-shrink-0 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity">
           <ActionMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       </div>
@@ -279,7 +281,7 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
   const duration = durationMonths !== null ? formatDuration(durationMonths) : null;
 
   return (
-    <div className={`relative ${!isFirst ? "mt-4" : ""}`}>
+    <div className={`group/card relative ${!isFirst ? "mt-4" : ""}`}>
       {/* Timeline connector - always shown for multi-role groups */}
       {/* Dot */}
       <span
@@ -297,9 +299,9 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
       )}
 
       <div className="pl-5">
-        {/* Mobile: kebab menu positioned top-right */}
+        {/* Mobile: kebab menu positioned top-right - hidden until hover/focus */}
         {(onEdit || onDelete) && (
-          <div className="absolute right-0 top-0 sm:hidden">
+          <div className="absolute right-0 top-0 sm:hidden opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity">
             <ActionMenu onEdit={onEdit} onDelete={onDelete} />
           </div>
         )}
@@ -326,8 +328,8 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
               <p className="text-sm text-muted-foreground sm:hidden">{duration}</p>
             )}
           </div>
-          {/* Desktop: kebab on right side */}
-          <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+          {/* Desktop: kebab on right side - hidden until hover/focus */}
+          <div className="hidden sm:flex items-center gap-1 flex-shrink-0 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity">
             <ActionMenu onEdit={onEdit} onDelete={onDelete} />
           </div>
         </div>

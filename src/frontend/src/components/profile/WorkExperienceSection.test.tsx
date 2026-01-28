@@ -230,4 +230,36 @@ describe("WorkExperienceSection", () => {
       expect(screen.getByText("Junior Engineer")).toBeInTheDocument();
     });
   });
+
+  describe("Hover-only kebab menu", () => {
+    it("hides action menu by default until hover/focus", () => {
+      render(
+        <WorkExperienceSection profileExperiences={mockProfileExperiences} userId="user-123" />
+      );
+
+      // Action buttons should exist in the DOM for accessibility
+      const actionButtons = screen.getAllByRole("button", { name: "More actions" });
+      expect(actionButtons.length).toBeGreaterThan(0);
+
+      // Check the action menu container has hidden-until-hover classes
+      const actionButton = actionButtons[0];
+      const menuContainer = actionButton.parentElement;
+      expect(menuContainer).toHaveClass("opacity-0");
+      expect(menuContainer).toHaveClass("group-hover/card:opacity-100");
+      expect(menuContainer).toHaveClass("group-focus-within/card:opacity-100");
+    });
+
+    it("makes menu visible on focus for keyboard accessibility", () => {
+      render(
+        <WorkExperienceSection profileExperiences={mockProfileExperiences} userId="user-123" />
+      );
+
+      const actionButtons = screen.getAllByRole("button", { name: "More actions" });
+      const actionButton = actionButtons[0];
+      const menuContainer = actionButton.parentElement;
+
+      // Container should have focus-within classes for keyboard accessibility
+      expect(menuContainer).toHaveClass("focus-within:opacity-100");
+    });
+  });
 });

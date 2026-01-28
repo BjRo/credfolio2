@@ -71,10 +71,12 @@ function EducationCard({ education, isFirst, onEdit, onDelete }: EducationCardPr
   const isValidGpa = education.gpa && /^[\d./]+$/.test(education.gpa.trim());
 
   return (
-    <div className={`relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
-      {/* Mobile: kebab menu positioned top-right */}
+    <div className={`group/card relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
+      {/* Mobile: kebab menu positioned top-right - hidden until hover/focus */}
       {(onEdit || onDelete) && (
-        <div className={`absolute right-0 sm:hidden ${isFirst ? "top-0" : "top-6"}`}>
+        <div
+          className={`absolute right-0 sm:hidden ${isFirst ? "top-0" : "top-6"} opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity`}
+        >
           <ActionMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       )}
@@ -102,8 +104,8 @@ function EducationCard({ education, isFirst, onEdit, onDelete }: EducationCardPr
             {dateRange && <p className="text-sm text-muted-foreground">{dateRange}</p>}
           </div>
         </div>
-        {/* Desktop: kebab on right side */}
-        <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+        {/* Desktop: kebab on right side - hidden until hover/focus */}
+        <div className="hidden sm:flex items-center gap-1 flex-shrink-0 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity">
           <ActionMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       </div>

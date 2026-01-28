@@ -78,5 +78,31 @@ describe("SkillsSection", () => {
       render(<SkillsSection profileSkills={mockProfileSkills} />);
       expect(screen.queryByRole("button", { name: "Add skill" })).not.toBeInTheDocument();
     });
+
+    describe("Hover-only kebab menu", () => {
+      it("hides skill action menu by default until hover/focus", () => {
+        render(<SkillsSection profileSkills={mockProfileSkills} userId="user-1" />);
+
+        // Action buttons should exist for accessibility
+        const actionButtons = screen.getAllByRole("button", { name: /Actions for/ });
+        expect(actionButtons.length).toBeGreaterThan(0);
+
+        // The button should have hidden-until-hover classes
+        const actionButton = actionButtons[0];
+        expect(actionButton).toHaveClass("opacity-0");
+        expect(actionButton).toHaveClass("group-hover/pill:opacity-100");
+        expect(actionButton).toHaveClass("focus:opacity-100");
+      });
+
+      it("makes menu visible on focus for keyboard accessibility", () => {
+        render(<SkillsSection profileSkills={mockProfileSkills} userId="user-1" />);
+
+        const actionButtons = screen.getAllByRole("button", { name: /Actions for/ });
+        const actionButton = actionButtons[0];
+
+        // Button should have focus classes for keyboard accessibility
+        expect(actionButton).toHaveClass("focus:opacity-100");
+      });
+    });
   });
 });

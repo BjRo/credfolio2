@@ -41,13 +41,13 @@ function EditableSkillTag({ skill, onEdit, onDelete }: EditableSkillTagProps) {
   }
 
   return (
-    <span className="inline-flex items-center gap-1 pl-3 pr-1 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
+    <span className="group/pill inline-flex items-center gap-1 pl-3 pr-1 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
       {skill.name}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="p-0.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-full transition-colors"
+            className="p-0.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-full transition-colors opacity-0 group-hover/pill:opacity-100 focus:opacity-100 transition-opacity"
             aria-label={`Actions for ${skill.name}`}
           >
             <MoreVertical className="h-3.5 w-3.5" />
