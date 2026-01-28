@@ -5,68 +5,88 @@ status: in-progress
 type: bug
 priority: normal
 created_at: 2026-01-26T11:16:38Z
-updated_at: 2026-01-28T14:54:24Z
+updated_at: 2026-01-28T15:30:00Z
 parent: credfolio2-dwid
 ---
 
-The resume extraction LLM sometimes produces corrupted data with unwanted spaces in text fields. Examples from the uploaded PDF "CV_TEMPLATE_0004.pdf":
+The resume extraction LLM produces unreliable data. The extraction is inconsistent - sometimes returning correct data, sometimes returning corrupted or empty data.
 
-**Source data (PDF):**
-- Institution: "Columbia University"
-- Degree: "Bachelor of Science: Computer Information Systems"
-- Year: 2018
+## Original Problem
 
-**Extracted data (corrupted):**
-- Institution: "Co lumb ia University" (spaces breaking up words)
-- Date: "201 4-01-0 1 - Present" (spaces in date)
-- Field: "Comput er Information Systems" (space in word)
+Extracted data had spacing artifacts from PDF text extraction:
+- "Co lumb ia University" instead of "Columbia University"
+- "201 4-01-0 1" instead of "2014-01-01"
 
-## Root Cause Analysis
+## Current Status: PARTIALLY FIXED, STILL UNRELIABLE
 
-The text extraction stage (ExtractText using LLM vision) appears to produce garbled text from the PDF due to how the PDF renders characters with individual positioning.
+The normalization code fixes spacing artifacts when they occur, but the underlying LLM extraction is fundamentally unreliable:
 
-## Solution Implemented
+### Observed Issues (from database analysis):
 
-1. **Extracted prompts to dedicated files** using Go's `//go:embed` directive:
-   - `src/backend/internal/infrastructure/llm/prompts/document_extraction.txt`
-   - `src/backend/internal/infrastructure/llm/prompts/resume_extraction.txt`
+1. **Inconsistent results** - Same resume uploaded multiple times produces different results
+2. **Empty extractions** - Some uploads return no education/experience at all
+3. **Split entries** - Single education entry split across multiple JSON objects
+4. **Field contamination** - Certifications text appearing in GPA/achievements fields
+5. **Missing dates** - endDate often missing even when clearly present in source
 
-2. **Added text normalization** in `normalize.go`:
-   - `NormalizeSpacedText()` - removes spurious spaces from OCR artifacts
-   - `NormalizeDate()` - validates and cleans ISO date format
-   - `HasExcessiveSpacing()` - detects text with spacing artifacts
+### Example extraction results from same PDF:
 
-3. **Post-extraction normalization** in `extraction.go`:
-   - All text fields are normalized after LLM extraction
-   - Malformed dates are converted to nil
-   - Institution/company names are cleaned up
+| Upload | Name | Education Count | Experience Count |
+|--------|------|-----------------|------------------|
+| 50d27ec3 | George Evans | 1 | 1 |
+| 381fa367 | George Evans | 2 | 2 |
+| cd69d163 | (empty) | 0 | 0 |
+| 9dbb0324 | (empty) | 0 | 0 |
+
+## What Was Implemented
+
+### 1. Prompt externalization (DONE)
+- Prompts moved to `src/backend/internal/infrastructure/llm/prompts/`
+- Uses Go's `//go:embed` for compile-time embedding
+- Easier to iterate on prompts without code changes
+
+### 2. Post-extraction normalization (DONE)
+- `normalize.go` with text cleanup functions
+- Fixes spacing artifacts in institution names, dates, etc.
+- Unit tests for normalization logic
+
+### 3. Improved extraction prompt (TRIED, DID NOT FIX)
+- Added explicit rules for field placement
+- "ONE ENTRY PER ITEM" rule
+- "CERTIFICATIONS ARE NOT EDUCATION" rule
+- Still produces unreliable results
+
+## Open Issues
+
+- [ ] LLM extraction is fundamentally unreliable - needs architectural change
+- [ ] Consider retry logic with validation
+- [ ] Consider different extraction approach (e.g., chain-of-thought)
+- [ ] May need to use a more capable model
+- [ ] Document text extraction (first stage) may be the root cause
+
+## Potential Future Approaches
+
+1. **Retry with validation** - If extraction looks malformed, retry with different prompt
+2. **Two-stage extraction** - First understand document structure, then extract fields
+3. **Model upgrade** - Use a more capable model for structured extraction
+4. **Improve text extraction** - The first stage (PDF→text) may be producing poor input
+5. **Add confidence thresholds** - Reject extractions below quality threshold
 
 ## Pull Request
 
 https://github.com/BjRo/credfolio2/pull/38
 
-## Checklist
+## Files Changed
 
-- [x] Extract prompts into dedicated files in `src/backend/internal/infrastructure/llm/prompts/`
-  - [x] Create `prompts/` directory
-  - [x] Create `prompts/document_extraction.txt` for the default document extraction prompt
-  - [x] Create `prompts/resume_extraction.txt` for the resume structured extraction prompt
-  - [x] Update extraction.go to load prompts from files (using go:embed)
-- [x] Add text normalization to clean up extracted text before structured extraction
-  - [x] Add function to normalize whitespace in extracted text
-  - [x] Remove spurious spaces within words (OCR artifacts)
-  - [x] Normalize date formats
-- [x] Add post-extraction validation to reject malformed data
-  - [x] Validate date format (YYYY-MM-DD)
-  - [x] Validate institution names don't have excessive spaces
-  - [x] ~~Add confidence threshold for data quality~~ (Not needed - normalization handles this)
-- [x] Write tests for the new validation and normalization logic
-- [ ] Manual test with fixture resume (requires API keys configured)
+- `src/backend/internal/infrastructure/llm/extraction.go` - Added normalization, embed prompts
+- `src/backend/internal/infrastructure/llm/normalize.go` - New file with normalization functions
+- `src/backend/internal/infrastructure/llm/normalize_test.go` - Unit tests
+- `src/backend/internal/infrastructure/llm/prompts/document_extraction.txt` - Document extraction prompt
+- `src/backend/internal/infrastructure/llm/prompts/resume_extraction.txt` - Resume extraction prompt
 
 ## Definition of Done
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes) - N/A: backend-only changes
-- [ ] All other checklist items above are completed
+- [ ] LLM extraction works reliably - **BLOCKED: Requires architectural changes**
 - [x] Branch pushed and PR created for human review
