@@ -255,25 +255,22 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 
 	// Configure provider chains for each operation
 	// Document extraction uses the default provider (good for vision/PDF)
-	// Resume extraction can use a different provider (better for structured output)
+	// Resume extraction uses a dedicated provider+model (better for structured output)
 	docProvider := cfg.LLM.Provider
 	if docProvider == "" {
 		docProvider = "anthropic"
 	}
 	docChain := llm.ProviderChain{{Provider: docProvider}}
 
-	// Resume extraction uses dedicated provider if configured, otherwise falls back to default
-	resumeProvider := cfg.LLM.ResumeExtractionProvider
-	if resumeProvider == "" {
-		resumeProvider = docProvider
-	}
-	resumeChain := llm.ProviderChain{{Provider: resumeProvider}}
+	// Resume extraction uses dedicated provider/model (defaults to openai/gpt-4o)
+	resumeProvider, resumeModel := cfg.LLM.ParseResumeExtractionModel()
+	resumeChain := llm.ProviderChain{{Provider: resumeProvider, Model: resumeModel}}
 
 	// Log which providers are being used for each operation
 	log.Info("Configured extraction providers",
 		logger.Feature("llm"),
 		logger.String("document_extraction", docProvider),
-		logger.String("resume_extraction", resumeProvider),
+		logger.String("resume_extraction", fmt.Sprintf("%s/%s", resumeProvider, resumeModel)),
 	)
 
 	extractor := llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{

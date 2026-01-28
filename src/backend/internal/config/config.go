@@ -29,11 +29,29 @@ type LLMConfig struct {
 	// Defaults to "anthropic" if not specified.
 	Provider string
 
-	// ResumeExtractionProvider specifies which provider to use for resume data extraction.
-	// This allows using a different provider (e.g., OpenAI) for structured output extraction
-	// while using another provider (e.g., Anthropic) for document text extraction.
-	// If not specified, falls back to Provider.
-	ResumeExtractionProvider string
+	// ResumeExtractionModel specifies the provider and model for resume data extraction.
+	// Format: "provider/model" (e.g., "openai/gpt-4o").
+	// Defaults to "openai/gpt-4o" for best structured output support.
+	ResumeExtractionModel string
+}
+
+// ParseResumeExtractionModel parses the ResumeExtractionModel into provider and model parts.
+// Returns (provider, model). If no "/" is present, treats the whole string as provider.
+func (c *LLMConfig) ParseResumeExtractionModel() (provider, model string) {
+	value := c.ResumeExtractionModel
+	if value == "" {
+		return "openai", "gpt-4o" // Default
+	}
+
+	// Split on first "/"
+	for i, ch := range value {
+		if ch == '/' {
+			return value[:i], value[i+1:]
+		}
+	}
+
+	// No "/" found, treat as provider only
+	return value, ""
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -154,7 +172,7 @@ func Load() (*Config, error) {
 		},
 		LLM: LLMConfig{
 			Provider:                 getEnv("LLM_PROVIDER", "anthropic"),
-			ResumeExtractionProvider: os.Getenv("RESUME_EXTRACTION_PROVIDER"), // Empty = use Provider
+			ResumeExtractionModel: os.Getenv("RESUME_EXTRACTION_MODEL"), // Default: openai/gpt-4o
 		},
 		Anthropic: AnthropicConfig{
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),
