@@ -1,10 +1,11 @@
 ---
 # credfolio2-f2h6
 title: Use OpenAI for resume extraction only
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-01-28T16:32:05Z
-updated_at: 2026-01-28T16:32:05Z
+updated_at: 2026-01-28T17:17:26Z
 ---
 
 Configure the provider chains so that:
