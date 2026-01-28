@@ -1,11 +1,11 @@
 ---
 # credfolio2-v5dw
 title: Manual Profile Editing
-status: in-progress
+status: completed
 type: epic
 priority: normal
 created_at: 2026-01-23T16:27:00Z
-updated_at: 2026-01-26T11:46:44Z
+updated_at: 2026-01-28T14:51:13Z
 parent: credfolio2-dwid
 ---
 

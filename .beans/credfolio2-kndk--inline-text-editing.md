@@ -3,9 +3,10 @@
 title: Inline text editing
 status: draft
 type: feature
+priority: normal
 created_at: 2026-01-23T16:29:27Z
-updated_at: 2026-01-23T16:29:27Z
-parent: credfolio2-v5dw
+updated_at: 2026-01-28T14:50:56Z
+parent: credfolio2-dwid
 ---
 
 Click on text fields to edit them in place.

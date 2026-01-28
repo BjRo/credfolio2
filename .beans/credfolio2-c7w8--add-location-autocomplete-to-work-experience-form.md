@@ -5,8 +5,8 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-01-26T16:33:20Z
-updated_at: 2026-01-26T16:38:34Z
-parent: credfolio2-v5dw
+updated_at: 2026-01-28T14:50:32Z
+parent: credfolio2-dwid
 ---
 
 Add autocomplete suggestions for the location field in the work experience form. Consider using a cities/places API or a static list of common locations to help users enter consistent, well-formatted location data.
