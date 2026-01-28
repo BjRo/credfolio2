@@ -28,6 +28,16 @@ func (r *ProfileSkillRepository) Create(ctx context.Context, skill *domain.Profi
 	return err
 }
 
+// CreateIgnoreDuplicate persists a new profile skill, silently ignoring duplicates.
+// This uses ON CONFLICT DO NOTHING to handle unique constraint violations on (profile_id, normalized_name).
+func (r *ProfileSkillRepository) CreateIgnoreDuplicate(ctx context.Context, skill *domain.ProfileSkill) error {
+	_, err := r.db.NewInsert().
+		Model(skill).
+		On("CONFLICT (profile_id, normalized_name) DO NOTHING").
+		Exec(ctx)
+	return err
+}
+
 // GetByID retrieves a profile skill by its ID.
 func (r *ProfileSkillRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.ProfileSkill, error) {
 	skill := new(domain.ProfileSkill)

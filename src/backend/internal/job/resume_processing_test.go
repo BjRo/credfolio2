@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -183,17 +184,46 @@ func (r *mockProfileEducationRepository) DeleteBySourceResumeID(_ context.Contex
 
 // mockProfileSkillRepository implements domain.ProfileSkillRepository for testing.
 type mockProfileSkillRepository struct {
-	skills map[uuid.UUID]*domain.ProfileSkill
+	skills           map[uuid.UUID]*domain.ProfileSkill
+	normalizedByProfile map[uuid.UUID]map[string]bool // tracks (profile_id, normalized_name) for duplicate detection
 }
 
 func newMockProfileSkillRepository() *mockProfileSkillRepository {
-	return &mockProfileSkillRepository{skills: make(map[uuid.UUID]*domain.ProfileSkill)}
+	return &mockProfileSkillRepository{
+		skills:              make(map[uuid.UUID]*domain.ProfileSkill),
+		normalizedByProfile: make(map[uuid.UUID]map[string]bool),
+	}
 }
 
 func (r *mockProfileSkillRepository) Create(_ context.Context, skill *domain.ProfileSkill) error {
 	if skill.ID == uuid.Nil {
 		skill.ID = uuid.New()
 	}
+	// Simulate unique constraint on (profile_id, normalized_name)
+	if r.normalizedByProfile[skill.ProfileID] == nil {
+		r.normalizedByProfile[skill.ProfileID] = make(map[string]bool)
+	}
+	if r.normalizedByProfile[skill.ProfileID][skill.NormalizedName] {
+		return fmt.Errorf("duplicate key value violates unique constraint \"idx_profile_skills_unique_name\"")
+	}
+	r.normalizedByProfile[skill.ProfileID][skill.NormalizedName] = true
+	r.skills[skill.ID] = skill
+	return nil
+}
+
+func (r *mockProfileSkillRepository) CreateIgnoreDuplicate(_ context.Context, skill *domain.ProfileSkill) error {
+	if skill.ID == uuid.Nil {
+		skill.ID = uuid.New()
+	}
+	// Simulate ON CONFLICT DO NOTHING - silently ignore duplicates
+	if r.normalizedByProfile[skill.ProfileID] == nil {
+		r.normalizedByProfile[skill.ProfileID] = make(map[string]bool)
+	}
+	if r.normalizedByProfile[skill.ProfileID][skill.NormalizedName] {
+		// Silently ignore duplicate - this is the ON CONFLICT DO NOTHING behavior
+		return nil
+	}
+	r.normalizedByProfile[skill.ProfileID][skill.NormalizedName] = true
 	r.skills[skill.ID] = skill
 	return nil
 }
@@ -233,6 +263,10 @@ func (r *mockProfileSkillRepository) GetNextDisplayOrder(_ context.Context, _ uu
 func (r *mockProfileSkillRepository) DeleteBySourceResumeID(_ context.Context, sourceResumeID uuid.UUID) error {
 	for id, skill := range r.skills {
 		if skill.SourceResumeID != nil && *skill.SourceResumeID == sourceResumeID {
+			// Also remove from normalized tracking
+			if r.normalizedByProfile[skill.ProfileID] != nil {
+				delete(r.normalizedByProfile[skill.ProfileID], skill.NormalizedName)
+			}
 			delete(r.skills, id)
 		}
 	}
@@ -558,5 +592,263 @@ func TestMaterializeCreatesSkills(t *testing.T) {
 		if !names[expected] {
 			t.Errorf("expected skill %q to be created", expected)
 		}
+	}
+}
+
+// TestDeduplicateSkills tests the skill deduplication helper function.
+func TestDeduplicateSkills(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "mixed case duplicates",
+			input:    []string{"Python", "PYTHON", "python"},
+			expected: []string{"Python"},
+		},
+		{
+			name:     "no duplicates",
+			input:    []string{"Go", "Rust", "Python"},
+			expected: []string{"Go", "Rust", "Python"},
+		},
+		{
+			name:     "empty input",
+			input:    []string{},
+			expected: []string{},
+		},
+		{
+			name:     "whitespace handling",
+			input:    []string{"  Go  ", "go", "GO"},
+			expected: []string{"Go"},
+		},
+		{
+			name:     "empty strings filtered",
+			input:    []string{"Go", "", "  ", "Rust"},
+			expected: []string{"Go", "Rust"},
+		},
+		{
+			name:     "preserves first occurrence case",
+			input:    []string{"JavaScript", "javascript", "JAVASCRIPT", "TypeScript"},
+			expected: []string{"JavaScript", "TypeScript"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := deduplicateSkills(tc.input)
+			if len(result) != len(tc.expected) {
+				t.Fatalf("expected %d skills, got %d: %v", len(tc.expected), len(result), result)
+			}
+			for i, expected := range tc.expected {
+				if result[i] != expected {
+					t.Errorf("at index %d: expected %q, got %q", i, expected, result[i])
+				}
+			}
+		})
+	}
+}
+
+// TestMaterializeSkillsWithDuplicatesInExtraction tests that duplicate skills from LLM extraction are deduplicated.
+func TestMaterializeSkillsWithDuplicatesInExtraction(t *testing.T) {
+	worker, _, _, _, skillRepo := newTestWorker()
+
+	resumeID := uuid.New()
+	data := &domain.ResumeExtractedData{
+		Skills: []string{"Python", "PYTHON", "python", "Go", "GO", "JavaScript"},
+	}
+
+	err := worker.materializeExtractedData(context.Background(), resumeID, uuid.New(), data)
+	if err != nil {
+		t.Fatalf("materializeExtractedData returned error: %v", err)
+	}
+
+	// Should only have 3 unique skills (Python, Go, JavaScript)
+	if len(skillRepo.skills) != 3 {
+		t.Fatalf("expected 3 unique skills, got %d", len(skillRepo.skills))
+	}
+
+	normalizedNames := make(map[string]bool)
+	for _, skill := range skillRepo.skills {
+		normalizedNames[skill.NormalizedName] = true
+	}
+
+	for _, expected := range []string{"python", "go", "javascript"} {
+		if !normalizedNames[expected] {
+			t.Errorf("expected normalized skill %q to be created", expected)
+		}
+	}
+}
+
+// TestMaterializeSkillsWithExistingManualSkill tests that skills already existing from manual entry
+// don't cause the extraction to fail.
+func TestMaterializeSkillsWithExistingManualSkill(t *testing.T) {
+	worker, profileRepo, expRepo, eduRepo, skillRepo := newTestWorker()
+
+	userID := uuid.New()
+	resumeID := uuid.New()
+
+	// Create a profile first
+	profile := &domain.Profile{ID: uuid.New(), UserID: userID}
+	profileRepo.profiles[profile.ID] = profile
+
+	// Add an existing manual skill (simulating user added "Python" manually)
+	manualSkill := &domain.ProfileSkill{
+		ID:             uuid.New(),
+		ProfileID:      profile.ID,
+		Name:           "Python",
+		NormalizedName: "python",
+		Category:       "TECHNICAL",
+		Source:         domain.ExperienceSourceManual,
+		SourceResumeID: nil, // manual skills have no source resume
+	}
+	// Use Create (not CreateIgnoreDuplicate) to register it in the normalized map
+	if err := skillRepo.Create(context.Background(), manualSkill); err != nil {
+		t.Fatalf("failed to create manual skill: %v", err)
+	}
+
+	// Now try to materialize extracted data that includes "Python" (which already exists)
+	data := &domain.ResumeExtractedData{
+		Experience: []domain.WorkExperience{
+			{Company: "Acme Corp", Title: "Engineer"},
+		},
+		Education: []domain.Education{
+			{Institution: "MIT", Degree: stringPtr("BS")},
+		},
+		Skills: []string{"Python", "Go", "Rust"}, // Python already exists from manual entry
+	}
+
+	// This should NOT fail even though Python already exists
+	err := worker.materializeExtractedData(context.Background(), resumeID, userID, data)
+	if err != nil {
+		t.Fatalf("materializeExtractedData returned error: %v", err)
+	}
+
+	// Experience should be created
+	if len(expRepo.experiences) != 1 {
+		t.Errorf("expected 1 experience, got %d", len(expRepo.experiences))
+	}
+
+	// Education should be created
+	if len(eduRepo.educations) != 1 {
+		t.Errorf("expected 1 education, got %d", len(eduRepo.educations))
+	}
+
+	// Skills: manual Python (1) + Go and Rust from extraction (2) = 3 total
+	// Python from extraction is silently skipped due to ON CONFLICT DO NOTHING
+	if len(skillRepo.skills) != 3 {
+		t.Errorf("expected 3 skills (1 manual + 2 new), got %d", len(skillRepo.skills))
+	}
+
+	// Verify the manual Python skill is preserved (not overwritten)
+	var manualPythonFound bool
+	for _, skill := range skillRepo.skills {
+		if skill.NormalizedName == "python" && skill.Source == domain.ExperienceSourceManual {
+			manualPythonFound = true
+			break
+		}
+	}
+	if !manualPythonFound {
+		t.Error("expected manual Python skill to be preserved")
+	}
+}
+
+// mockFailingProfileExperienceRepository always fails on Create for testing partial success.
+type mockFailingProfileExperienceRepository struct {
+	*mockProfileExperienceRepository
+}
+
+func (r *mockFailingProfileExperienceRepository) Create(_ context.Context, _ *domain.ProfileExperience) error {
+	return fmt.Errorf("simulated experience create failure")
+}
+
+// TestMaterializePartialSuccess_ExperiencesFail tests that education and skills are still saved
+// when experiences fail to materialize.
+func TestMaterializePartialSuccess_ExperiencesFail(t *testing.T) {
+	profileRepo := newMockProfileRepository()
+	expRepo := &mockFailingProfileExperienceRepository{newMockProfileExperienceRepository()}
+	eduRepo := newMockProfileEducationRepository()
+	skillRepo := newMockProfileSkillRepository()
+	worker := &ResumeProcessingWorker{
+		profileRepo:      profileRepo,
+		profileExpRepo:   expRepo,
+		profileEduRepo:   eduRepo,
+		profileSkillRepo: skillRepo,
+	}
+
+	data := &domain.ResumeExtractedData{
+		Experience: []domain.WorkExperience{
+			{Company: "Acme Corp", Title: "Engineer"},
+		},
+		Education: []domain.Education{
+			{Institution: "MIT", Degree: stringPtr("BS")},
+		},
+		Skills: []string{"Go", "Rust"},
+	}
+
+	// Should return an error but education and skills should still be saved
+	err := worker.materializeExtractedData(context.Background(), uuid.New(), uuid.New(), data)
+	if err == nil {
+		t.Fatal("expected error when experiences fail")
+	}
+
+	// Education should be created despite experience failure
+	if len(eduRepo.educations) != 1 {
+		t.Errorf("expected 1 education despite experience failure, got %d", len(eduRepo.educations))
+	}
+
+	// Skills should be created despite experience failure
+	if len(skillRepo.skills) != 2 {
+		t.Errorf("expected 2 skills despite experience failure, got %d", len(skillRepo.skills))
+	}
+}
+
+// mockFailingProfileSkillRepository always fails on CreateIgnoreDuplicate for testing partial success.
+type mockFailingProfileSkillRepository struct {
+	*mockProfileSkillRepository
+}
+
+func (r *mockFailingProfileSkillRepository) CreateIgnoreDuplicate(_ context.Context, _ *domain.ProfileSkill) error {
+	return fmt.Errorf("simulated skill create failure")
+}
+
+// TestMaterializePartialSuccess_SkillsFail tests that experiences and education are still saved
+// when skills fail to materialize.
+func TestMaterializePartialSuccess_SkillsFail(t *testing.T) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	eduRepo := newMockProfileEducationRepository()
+	skillRepo := &mockFailingProfileSkillRepository{newMockProfileSkillRepository()}
+	worker := &ResumeProcessingWorker{
+		profileRepo:      profileRepo,
+		profileExpRepo:   expRepo,
+		profileEduRepo:   eduRepo,
+		profileSkillRepo: skillRepo,
+	}
+
+	data := &domain.ResumeExtractedData{
+		Experience: []domain.WorkExperience{
+			{Company: "Acme Corp", Title: "Engineer"},
+		},
+		Education: []domain.Education{
+			{Institution: "MIT", Degree: stringPtr("BS")},
+		},
+		Skills: []string{"Go", "Rust"},
+	}
+
+	// Should return an error but experiences and education should still be saved
+	err := worker.materializeExtractedData(context.Background(), uuid.New(), uuid.New(), data)
+	if err == nil {
+		t.Fatal("expected error when skills fail")
+	}
+
+	// Experiences should be created despite skill failure
+	if len(expRepo.experiences) != 1 {
+		t.Errorf("expected 1 experience despite skill failure, got %d", len(expRepo.experiences))
+	}
+
+	// Education should be created despite skill failure
+	if len(eduRepo.educations) != 1 {
+		t.Errorf("expected 1 education despite skill failure, got %d", len(eduRepo.educations))
 	}
 }

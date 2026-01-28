@@ -458,6 +458,15 @@ func (r *mockProfileSkillRepository) Create(_ context.Context, skill *domain.Pro
 	return nil
 }
 
+func (r *mockProfileSkillRepository) CreateIgnoreDuplicate(_ context.Context, skill *domain.ProfileSkill) error {
+	// Same as Create for test purposes - just silently succeeds
+	if skill.ID == uuid.Nil {
+		skill.ID = uuid.New()
+	}
+	r.skills[skill.ID] = skill
+	return nil
+}
+
 func (r *mockProfileSkillRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.ProfileSkill, error) {
 	skill, ok := r.skills[id]
 	if !ok {
