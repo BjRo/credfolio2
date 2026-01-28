@@ -391,73 +391,7 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 		data.Skills = []string{}
 	}
 
-	// Normalize extracted data to fix OCR/PDF text extraction artifacts
-	normalizeResumeData(&data)
-
 	return &data, nil
-}
-
-// normalizeResumeData cleans up extracted data to fix common extraction artifacts
-// such as spurious spaces in words from PDF text extraction.
-func normalizeResumeData(data *domain.ResumeExtractedData) {
-	// Normalize top-level fields
-	data.Name = NormalizeSpacedText(data.Name)
-	data.Email = normalizeOptionalText(data.Email)
-	data.Location = normalizeOptionalText(data.Location)
-
-	// Normalize education entries
-	for i := range data.Education {
-		normalizeEducation(&data.Education[i])
-	}
-
-	// Normalize experience entries
-	for i := range data.Experience {
-		normalizeExperience(&data.Experience[i])
-	}
-
-	// Normalize skills
-	for i := range data.Skills {
-		data.Skills[i] = NormalizeSpacedText(data.Skills[i])
-	}
-}
-
-// normalizeOptionalText normalizes an optional string pointer
-func normalizeOptionalText(s *string) *string {
-	if s == nil {
-		return nil
-	}
-	normalized := NormalizeSpacedText(*s)
-	return &normalized
-}
-
-// normalizeOptionalDate normalizes an optional date string pointer
-func normalizeOptionalDate(s *string) *string {
-	if s == nil {
-		return nil
-	}
-	normalized := NormalizeDate(*s)
-	if normalized == "" {
-		return nil
-	}
-	return &normalized
-}
-
-// normalizeEducation normalizes a single education entry
-func normalizeEducation(edu *domain.Education) {
-	edu.Institution = NormalizeSpacedText(edu.Institution)
-	edu.Degree = normalizeOptionalText(edu.Degree)
-	edu.Field = normalizeOptionalText(edu.Field)
-	edu.StartDate = normalizeOptionalDate(edu.StartDate)
-	edu.EndDate = normalizeOptionalDate(edu.EndDate)
-}
-
-// normalizeExperience normalizes a single work experience entry
-func normalizeExperience(exp *domain.WorkExperience) {
-	exp.Company = NormalizeSpacedText(exp.Company)
-	exp.Title = NormalizeSpacedText(exp.Title)
-	exp.Location = normalizeOptionalText(exp.Location)
-	exp.StartDate = normalizeOptionalDate(exp.StartDate)
-	exp.EndDate = normalizeOptionalDate(exp.EndDate)
 }
 
 // Verify DocumentExtractor implements domain.DocumentExtractor interface.
