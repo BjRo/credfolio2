@@ -313,7 +313,7 @@ var resumeOutputSchema = map[string]any{
 			"description": "Confidence in extraction accuracy (0.0 to 1.0)",
 		},
 	},
-	"required": []string{"name", "experience", "education", "skills", "confidence"},
+	"required": []string{"name", "email", "phone", "location", "summary", "experience", "education", "skills", "confidence"},
 }
 
 // stripMarkdownCodeBlock removes markdown code block delimiters from LLM responses.
