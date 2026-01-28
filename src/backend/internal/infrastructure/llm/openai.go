@@ -86,9 +86,9 @@ func (p *OpenAIProvider) Complete(ctx context.Context, req domain.LLMRequest) (*
 	messages := p.convertMessages(req)
 
 	params := openai.ChatCompletionNewParams{
-		Model:     openai.ChatModel(model),
-		MaxTokens: openai.Int(int64(maxTokens)),
-		Messages:  messages,
+		Model:               openai.ChatModel(model),
+		MaxCompletionTokens: openai.Int(int64(maxTokens)),
+		Messages:            messages,
 	}
 
 	// Add temperature if provided
