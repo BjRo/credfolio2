@@ -4,14 +4,18 @@
 
 **You MUST complete ALL of these steps before marking a bean as completed or telling the user you're done:**
 
-1. **Run lint**: `pnpm lint` — fix all errors
-2. **Run tests**: `pnpm test` — all tests must pass
-3. **Visual verification** (for ANY UI changes): Use `/skill agent-browser` to verify the feature works in the browser
-4. **Bean checklist**: Ensure ALL checklist items in the bean are checked off
+1. **Feature branch**: You MUST be on a feature branch, NOT main
+2. **Run lint**: `pnpm lint` — fix all errors
+3. **Run tests**: `pnpm test` — all tests must pass
+4. **Visual verification** (for ANY UI changes): Use `/skill agent-browser` to verify the feature works in the browser
+5. **Bean checklist**: Ensure ALL checklist items in the bean are checked off
+6. **Push and create PR**: Push your branch and create a PR for human review
 
 **DO NOT skip these steps.**
+**DO NOT commit directly to main.**
 **DO NOT say "you can run tests to verify" — run them yourself.**
 **DO NOT mark a bean complete if it has unchecked checklist items.**
+**DO NOT merge your own PR — wait for human review.**
 
 ---
 
@@ -190,18 +194,11 @@ psql -h credfolio2-postgres -U credfolio -d credfolio_dev
 
 ## Development Workflow
 
-This project follows a strict workflow for all feature development. See `.claude/skills/dev-workflow/SKILL.md` for full details.
+This project follows a strict workflow. See `/skill dev-workflow` for the full process.
 
-### Key Principles
+### Mandatory Bean Checklist
 
-1. **Feature Branches**: Never commit directly to main
-2. **TDD**: Write tests before implementation (see `/skill tdd`)
-3. **PR Review**: All changes require human review before merge
-4. **Beans Tracking**: Use beans to track all work (see `/skill issue-tracking-with-beans`)
-
-### Mandatory Bean Checklist Items
-
-**Every bean you create MUST include a "Definition of Done" checklist section.** This section should be at the end of the bean body and include these mandatory items:
+**Every bean MUST include this "Definition of Done" section:**
 
 ```markdown
 ## Definition of Done
@@ -210,29 +207,10 @@ This project follows a strict workflow for all feature development. See `.claude
 - [ ] `pnpm test` passes with no failures
 - [ ] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
+- [ ] Branch pushed and PR created for human review
 ```
 
-You cannot mark a bean as completed while it has unchecked items. This structurally enforces the workflow compliance.
-
-### Quick Reference
-
-```bash
-# Start work on a bean
-git checkout main && git pull origin main
-git checkout -b feat/<bean-id>-<description>
-beans update <bean-id> --status in-progress
-
-# Work using TDD, update bean checklist, commit with bean file
-
-# When done
-git push -u origin <branch>
-gh pr create --title "..." --body "Closes beans-<id>"
-# WAIT for human review - do NOT merge yourself
-
-# After human merges
-git checkout main && git pull origin main
-beans update <bean-id> --status completed
-```
+You cannot mark a bean as completed while it has unchecked items.
 
 ## Git Details
 
