@@ -1,10 +1,11 @@
 ---
 # credfolio2-oco6
 title: Align upload UI with red/rose theme
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-01-29T11:26:21Z
-updated_at: 2026-01-29T11:26:21Z
+updated_at: 2026-01-29T11:47:04Z
 ---
 
 The upload dialog and page currently use blue/green colors while the rest of the app uses a red/rose suite. Need to update the upload components to match the consistent theme.
