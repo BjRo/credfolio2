@@ -274,12 +274,12 @@ export function ResumeUpload({
   return (
     <div className="w-full max-w-xl mx-auto">
       {status === "processing" && uploadedResume ? (
-        <div className="p-6 border-2 border-primary bg-primary/10 rounded-lg">
+        <div className="p-6 border-2 border-warning bg-warning/10 rounded-lg">
           <div className="flex items-center gap-3 mb-4">
             <svg
               role="img"
               aria-label="Processing"
-              className="w-8 h-8 text-primary animate-spin"
+              className="w-8 h-8 text-warning animate-spin"
               fill="none"
               viewBox="0 0 24 24"
             >
@@ -297,22 +297,22 @@ export function ResumeUpload({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <h3 className="text-lg font-medium text-primary">Processing Resume</h3>
+            <h3 className="text-lg font-medium text-warning-foreground">Processing Resume</h3>
           </div>
-          <p className="text-sm text-primary/80 mb-2">
+          <p className="text-sm text-warning-foreground/80 mb-2">
             File &quot;{uploadedResume.file.filename}&quot; uploaded successfully.
           </p>
-          <p className="text-sm text-primary/80">
+          <p className="text-sm text-warning-foreground/80">
             Extracting profile information... You&apos;ll be redirected automatically when complete.
           </p>
         </div>
       ) : status === "success" ? (
-        <div className="p-6 border-2 border-primary bg-primary/10 rounded-lg">
+        <div className="p-6 border-2 border-success bg-success/10 rounded-lg">
           <div className="flex items-center gap-3 mb-4">
             <svg
               role="img"
               aria-label="Success"
-              className="w-8 h-8 text-primary"
+              className="w-8 h-8 text-success"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -324,9 +324,9 @@ export function ResumeUpload({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <h3 className="text-lg font-medium text-primary">Processing Complete</h3>
+            <h3 className="text-lg font-medium text-success">Processing Complete</h3>
           </div>
-          <p className="text-sm text-primary/80 mb-4">Redirecting to your profile...</p>
+          <p className="text-sm text-success/80 mb-4">Redirecting to your profile...</p>
         </div>
       ) : (
         <label
@@ -358,7 +358,7 @@ export function ResumeUpload({
                 <svg
                   role="img"
                   aria-label="Uploading"
-                  className="w-12 h-12 mx-auto text-primary animate-spin"
+                  className="w-12 h-12 mx-auto text-warning animate-spin"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
@@ -379,7 +379,7 @@ export function ResumeUpload({
                 <p className="mt-4 text-sm font-medium text-foreground">Uploading... {progress}%</p>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    className="bg-warning h-2 rounded-full transition-all duration-300"
                     style={{ width: `${progress}%` }}
                   />
                 </div>

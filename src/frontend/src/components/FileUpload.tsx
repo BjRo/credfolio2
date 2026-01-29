@@ -218,12 +218,12 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
   return (
     <div className="w-full max-w-xl mx-auto">
       {status === "success" && uploadedFile ? (
-        <div className="p-6 border-2 border-primary bg-primary/10 rounded-lg">
+        <div className="p-6 border-2 border-success bg-success/10 rounded-lg">
           <div className="flex items-center gap-3 mb-4">
             <svg
               role="img"
               aria-label="Success"
-              className="w-8 h-8 text-primary"
+              className="w-8 h-8 text-success"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -235,15 +235,15 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <h3 className="text-lg font-medium text-primary">Upload Complete</h3>
+            <h3 className="text-lg font-medium text-success">Upload Complete</h3>
           </div>
-          <p className="text-sm text-primary/80 mb-4">
+          <p className="text-sm text-success/80 mb-4">
             File "{uploadedFile.file.filename}" uploaded successfully and is now being processed.
           </p>
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 text-sm font-medium text-primary bg-card border border-primary rounded-md hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            className="px-4 py-2 text-sm font-medium text-success bg-card border border-success rounded-md hover:bg-success/10 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2"
           >
             Upload Another File
           </button>
@@ -278,7 +278,7 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                 <svg
                   role="img"
                   aria-label="Uploading"
-                  className="w-12 h-12 mx-auto text-primary animate-spin"
+                  className="w-12 h-12 mx-auto text-warning animate-spin"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
@@ -299,7 +299,7 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                 <p className="mt-4 text-sm font-medium text-foreground">Uploading... {progress}%</p>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    className="bg-warning h-2 rounded-full transition-all duration-300"
                     style={{ width: `${progress}%` }}
                   />
                 </div>

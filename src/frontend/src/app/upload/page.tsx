@@ -53,9 +53,9 @@ export default function UploadPage() {
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
                       upload.status === "COMPLETED"
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-success/10 text-success"
                         : upload.status === "PROCESSING"
-                          ? "bg-primary/20 text-primary"
+                          ? "bg-warning/10 text-warning"
                           : upload.status === "FAILED"
                             ? "bg-destructive/10 text-destructive"
                             : "bg-muted text-muted-foreground"
