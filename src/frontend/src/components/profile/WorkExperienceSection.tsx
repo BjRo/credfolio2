@@ -178,7 +178,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
 
       <div className="flex sm:justify-between sm:items-start gap-1 sm:gap-4 pr-8 sm:pr-0">
         <div className="flex gap-3">
-          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted items-center justify-center flex-shrink-0">
+          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted dark:border dark:border-border items-center justify-center flex-shrink-0">
             <Briefcase className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -401,7 +401,7 @@ function CompanyExperienceGroup({
     <div className={`relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
       {/* Company header */}
       <div className="flex gap-3 mb-4">
-        <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted items-center justify-center flex-shrink-0">
+        <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted dark:border dark:border-border items-center justify-center flex-shrink-0">
           <Briefcase className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
