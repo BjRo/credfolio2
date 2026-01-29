@@ -218,12 +218,12 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
   return (
     <div className="w-full max-w-xl mx-auto">
       {status === "success" && uploadedFile ? (
-        <div className="p-6 border-2 border-green-500 bg-green-50 rounded-lg">
+        <div className="p-6 border-2 border-success bg-success/10 rounded-lg">
           <div className="flex items-center gap-3 mb-4">
             <svg
               role="img"
               aria-label="Success"
-              className="w-8 h-8 text-green-500"
+              className="w-8 h-8 text-success"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -235,15 +235,15 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <h3 className="text-lg font-medium text-green-700">Upload Complete</h3>
+            <h3 className="text-lg font-medium text-success">Upload Complete</h3>
           </div>
-          <p className="text-sm text-green-600 mb-4">
+          <p className="text-sm text-success/80 mb-4">
             File "{uploadedFile.file.filename}" uploaded successfully and is now being processed.
           </p>
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 text-sm font-medium text-green-700 bg-white border border-green-500 rounded-md hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            className="px-4 py-2 text-sm font-medium text-success bg-card border border-success rounded-md hover:bg-success/10 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2"
           >
             Upload Another File
           </button>
@@ -257,10 +257,10 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
             relative p-8 border-2 border-dashed rounded-lg transition-colors cursor-pointer
             ${
               isDragOver
-                ? "border-blue-500 bg-blue-50"
+                ? "border-primary bg-primary/10"
                 : status === "error"
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-300 hover:border-gray-400 bg-white"
+                  ? "border-destructive/50 bg-destructive/10"
+                  : "border-border hover:border-primary/50 bg-card"
             }
           `}
         >
@@ -278,7 +278,7 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                 <svg
                   role="img"
                   aria-label="Uploading"
-                  className="w-12 h-12 mx-auto text-blue-500 animate-spin"
+                  className="w-12 h-12 mx-auto text-warning animate-spin"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
@@ -296,10 +296,10 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                <p className="mt-4 text-sm font-medium text-gray-700">Uploading... {progress}%</p>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <p className="mt-4 text-sm font-medium text-foreground">Uploading... {progress}%</p>
+                <div className="w-full bg-muted rounded-full h-2 mt-2">
                   <div
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-warning h-2 rounded-full transition-all duration-300"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -309,7 +309,7 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                 <svg
                   role="img"
                   aria-label="Upload"
-                  className="w-12 h-12 mx-auto text-gray-400"
+                  className="w-12 h-12 mx-auto text-muted-foreground"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -321,10 +321,10 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                   />
                 </svg>
-                <p className="mt-4 text-sm font-medium text-gray-700">
+                <p className="mt-4 text-sm font-medium text-foreground">
                   {isDragOver ? "Drop file here" : "Drag and drop a file here, or click to browse"}
                 </p>
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-2 text-xs text-muted-foreground">
                   Supported formats: PDF, DOCX, TXT (max 10MB)
                 </p>
               </>
@@ -332,12 +332,12 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
           </div>
 
           {status === "error" && error && (
-            <div className="mt-4 p-3 bg-red-100 border border-red-200 rounded-md">
+            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
               <div className="flex items-start gap-2">
                 <svg
                   role="img"
                   aria-label="Error"
-                  className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+                  className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -350,14 +350,14 @@ export function FileUpload({ userId, onUploadComplete, onError }: FileUploadProp
                   />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-red-700">Upload failed</p>
-                  <p className="text-sm text-red-600">{error}</p>
+                  <p className="text-sm font-medium text-destructive">Upload failed</p>
+                  <p className="text-sm text-destructive/80">{error}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleReset}
-                className="mt-2 text-sm text-red-600 hover:text-red-700 underline"
+                className="mt-2 text-sm text-destructive hover:text-destructive/80 underline"
               >
                 Try again
               </button>

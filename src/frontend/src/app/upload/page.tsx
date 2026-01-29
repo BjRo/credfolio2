@@ -12,16 +12,16 @@ export default function UploadPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Upload Reference Letter</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Upload Reference Letter</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Upload your reference letter document for AI-powered analysis
           </p>
         </div>
 
-        <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <div className="bg-card shadow rounded-lg p-6 mb-8">
           <FileUpload
             userId={DEMO_USER_ID}
             onUploadComplete={(result) => {
@@ -41,24 +41,24 @@ export default function UploadPage() {
         </div>
 
         {uploads.length > 0 && (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Uploads</h2>
-            <ul className="divide-y divide-gray-200">
+          <div className="bg-card shadow rounded-lg p-6">
+            <h2 className="text-lg font-medium text-foreground mb-4">Recent Uploads</h2>
+            <ul className="divide-y divide-border">
               {uploads.map((upload) => (
                 <li key={upload.id} className="py-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{upload.filename}</p>
-                    <p className="text-xs text-gray-500">ID: {upload.id}</p>
+                    <p className="text-sm font-medium text-foreground">{upload.filename}</p>
+                    <p className="text-xs text-muted-foreground">ID: {upload.id}</p>
                   </div>
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
                       upload.status === "COMPLETED"
-                        ? "bg-green-100 text-green-800"
+                        ? "bg-success/10 text-success"
                         : upload.status === "PROCESSING"
-                          ? "bg-blue-100 text-blue-800"
+                          ? "bg-warning/10 text-warning"
                           : upload.status === "FAILED"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {upload.status}

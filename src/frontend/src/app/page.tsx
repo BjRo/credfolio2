@@ -27,31 +27,31 @@ export default function Home() {
 
   if (fetching) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <output className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full block" />
+      <div className="flex min-h-screen items-center justify-center bg-muted/50">
+        <output className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full block" />
       </div>
     );
   }
 
   if (completedResume) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Redirecting to your profile...</p>
+      <div className="flex min-h-screen items-center justify-center bg-muted/50">
+        <p className="text-muted-foreground">Redirecting to your profile...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Upload Your Resume</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Upload Your Resume</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Upload your resume to extract your professional profile automatically
           </p>
         </div>
 
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-card shadow rounded-lg p-6">
           <ResumeUpload
             userId={DEMO_USER_ID}
             onUploadComplete={(result) => {
@@ -67,7 +67,7 @@ export default function Home() {
         </div>
 
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Your resume will be processed by AI to extract your work experience, education, and
             skills.
           </p>
