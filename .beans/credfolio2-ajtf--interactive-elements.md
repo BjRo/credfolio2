@@ -3,9 +3,9 @@
 title: Interactive Elements
 status: draft
 type: epic
+priority: normal
 created_at: 2026-01-20T11:25:01Z
 updated_at: 2026-01-20T11:25:01Z
-parent: credfolio2-1fwu
 ---
 
 Add animations, micro-interactions, and delightful UI polish.
