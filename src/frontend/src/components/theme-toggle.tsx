@@ -25,7 +25,7 @@ export function ThemeToggle({ invertColors = false }: ThemeToggleProps) {
     setMounted(true);
   }, []);
 
-  function cycleTheme() {
+  function getNextThemeIndex() {
     const currentIndex = themeOrder.indexOf(theme as (typeof themeOrder)[number]);
     let nextIndex = (currentIndex === -1 ? 0 : currentIndex + 1) % themeOrder.length;
     // Compute what the next theme would actually look like
@@ -35,10 +35,16 @@ export function ThemeToggle({ invertColors = false }: ThemeToggleProps) {
     if (nextResolved === resolvedTheme) {
       nextIndex = (nextIndex + 1) % themeOrder.length;
     }
-    setTheme(themeOrder[nextIndex]);
+    return nextIndex;
   }
 
-  const Icon = themeIcons[(theme as keyof typeof themeIcons) ?? "system"] ?? Monitor;
+  function cycleTheme() {
+    setTheme(themeOrder[getNextThemeIndex()]);
+  }
+
+  // Show the icon for the NEXT theme (what clicking will do), not the current theme
+  const nextTheme = themeOrder[getNextThemeIndex()];
+  const Icon = themeIcons[nextTheme] ?? Monitor;
 
   return (
     <Button
