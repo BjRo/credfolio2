@@ -13,7 +13,11 @@ const themeIcons = {
   dark: Moon,
 } as const;
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  invertColors?: boolean;
+}
+
+export function ThemeToggle({ invertColors = false }: ThemeToggleProps) {
   const { theme, resolvedTheme, systemTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -21,7 +25,7 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
-  function cycleTheme() {
+  function getNextThemeIndex() {
     const currentIndex = themeOrder.indexOf(theme as (typeof themeOrder)[number]);
     let nextIndex = (currentIndex === -1 ? 0 : currentIndex + 1) % themeOrder.length;
     // Compute what the next theme would actually look like
@@ -31,13 +35,27 @@ export function ThemeToggle() {
     if (nextResolved === resolvedTheme) {
       nextIndex = (nextIndex + 1) % themeOrder.length;
     }
-    setTheme(themeOrder[nextIndex]);
+    return nextIndex;
   }
 
-  const Icon = themeIcons[(theme as keyof typeof themeIcons) ?? "system"] ?? Monitor;
+  function cycleTheme() {
+    setTheme(themeOrder[getNextThemeIndex()]);
+  }
+
+  // Show the icon for the NEXT theme (what clicking will do), not the current theme
+  const nextTheme = themeOrder[getNextThemeIndex()];
+  const Icon = themeIcons[nextTheme] ?? Monitor;
 
   return (
-    <Button variant="ghost" size="icon" onClick={cycleTheme} aria-label="Toggle theme">
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={cycleTheme}
+      aria-label="Toggle theme"
+      className={
+        invertColors ? "text-background hover:bg-background/10 hover:text-background" : undefined
+      }
+    >
       {mounted ? <Icon className="size-4" /> : <span className="size-4" />}
     </Button>
   );

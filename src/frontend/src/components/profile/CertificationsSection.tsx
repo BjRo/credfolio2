@@ -59,7 +59,7 @@ export function CertificationsSection({ certifications }: CertificationsSectionP
   }
 
   return (
-    <div className="bg-card shadow rounded-lg p-6 sm:p-8">
+    <div className="bg-card border rounded-lg p-6 sm:p-8">
       <h2 className="text-xl font-bold text-foreground mb-4">Certifications</h2>
       <div className="divide-y divide-border">
         {certifications.map((cert, index) => (

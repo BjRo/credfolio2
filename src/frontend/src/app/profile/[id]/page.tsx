@@ -45,7 +45,7 @@ export default function ProfilePage() {
 
   if (fetching) {
     return (
-      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <ProfileSkeleton />
         </div>
@@ -55,7 +55,7 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-destructive mb-4">Error Loading Profile</h1>
           <p className="text-muted-foreground mb-6">{error.message}</p>
@@ -69,7 +69,7 @@ export default function ProfilePage() {
 
   if (!resume) {
     return (
-      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Profile Not Found</h1>
           <p className="text-muted-foreground mb-6">
@@ -83,7 +83,7 @@ export default function ProfilePage() {
 
   if (resume.status === ResumeStatus.Pending || resume.status === ResumeStatus.Processing) {
     return (
-      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Profile Processing</h1>
           <p className="text-muted-foreground mb-6">
@@ -97,7 +97,7 @@ export default function ProfilePage() {
 
   if (resume.status === ResumeStatus.Failed) {
     return (
-      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-destructive mb-4">Processing Failed</h1>
           <p className="text-muted-foreground mb-6">
@@ -113,7 +113,7 @@ export default function ProfilePage() {
 
   if (!extractedData) {
     return (
-      <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">No Profile Data</h1>
           <p className="text-muted-foreground mb-6">
@@ -139,7 +139,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <ProfileHeader data={extractedData} />
 

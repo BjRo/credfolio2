@@ -21,7 +21,7 @@ function ProfileSummary({ summary, collapsedLines = 3 }: ProfileSummaryProps) {
 
   return (
     <div className="mt-6">
-      <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+      <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-2">
         Summary
       </h2>
       <div className="relative">
@@ -90,7 +90,7 @@ function AvatarPlaceholder({ name }: { name: string }) {
 
 export function ProfileHeader({ data }: ProfileHeaderProps) {
   return (
-    <div className="bg-card shadow rounded-lg p-6 sm:p-8">
+    <div className="bg-card border rounded-lg p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
         <AvatarPlaceholder name={data.name} />
         <div className="flex-1 min-w-0">
