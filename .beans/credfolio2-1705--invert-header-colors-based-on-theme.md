@@ -1,10 +1,11 @@
 ---
 # credfolio2-1705
 title: Invert header colors based on theme
-status: in-progress
+status: completed
 type: feature
+priority: normal
 created_at: 2026-01-29T11:50:02Z
-updated_at: 2026-01-29T11:50:02Z
+updated_at: 2026-01-29T12:34:41Z
 ---
 
 Change header styling so that:
