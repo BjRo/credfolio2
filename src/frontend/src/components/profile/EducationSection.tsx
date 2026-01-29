@@ -83,7 +83,7 @@ function EducationCard({ education, isFirst, onEdit, onDelete }: EducationCardPr
 
       <div className="flex sm:justify-between sm:items-start gap-1 sm:gap-4 pr-8 sm:pr-0">
         <div className="flex gap-3">
-          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted items-center justify-center flex-shrink-0">
+          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-muted dark:border dark:border-border items-center justify-center flex-shrink-0">
             <GraduationCap className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           </div>
           <div className="min-w-0">

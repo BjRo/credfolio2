@@ -1,17 +1,28 @@
 ---
 # credfolio2-fy68
 title: Clean up development scaffolding
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-01-22T10:24:24Z
-updated_at: 2026-01-22T10:24:24Z
+updated_at: 2026-01-29T12:47:11Z
 ---
 
 Remove temporary development artifacts created during the file upload pipeline implementation.
 
 ## Checklist
 
-- [ ] Remove demo user seed migration (20260122021922_seed_demo_user)
-- [ ] Remove /upload demo page (src/frontend/src/app/upload/page.tsx)
-- [ ] Remove hardcoded DEMO_USER_ID from upload page
-- [ ] Review CORS allowed origins for production (currently localhost only)
+- [x] Remove /extract-test route and related code:
+  - [x] src/frontend/src/app/extract-test/page.tsx
+  - [x] src/frontend/src/app/api/extract/route.ts
+- [x] Remove /graphql-test route:
+  - [x] src/frontend/src/app/graphql-test/page.tsx
+- [x] Remove /upload route and related code:
+  - [x] src/frontend/src/app/upload/page.tsx
+  - [x] src/frontend/src/components/FileUpload.tsx
+  - [x] Remove FileUpload export from components/index.ts
+
+## Definition of Done
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Branch pushed and PR created for human review: https://github.com/BjRo/credfolio2/pull/41
