@@ -1,43 +1,84 @@
 ---
 # credfolio2-1kt0
-title: Reference Letter Enhancement Flow
+title: Reference Letter Credibility System
 status: draft
 type: epic
 created_at: 2026-01-23T16:26:58Z
-updated_at: 2026-01-23T16:26:58Z
+updated_at: 2026-01-29T00:00:00Z
 parent: credfolio2-dwid
 ---
 
-Add reference letters to enhance the profile with testimonials, additional skills, and accomplishments.
+Add reference letters to build credibility through corroboration and testimonials.
+
+## Core Concept
+
+Reference letters **validate** existing profile data. The goal is **overlap**:
+- Skills mentioned in both resume AND reference letters = high credibility
+- Experiences confirmed by references = verified claims
+- Multiple references confirming the same skill = stronger signal
 
 ## User Experience
 
+### Upload Flow
 1. From profile view, click "Add Reference Letter"
-2. Upload reference letter (PDF, image, DOCX)
+2. Upload letter (PDF, image, DOCX)
 3. See processing indicator
-4. View "Enhancement Preview" showing what will be added
-5. See visual diff of changes (green = new, highlighted = enhanced)
-6. Accept all, reject all, or selectively accept changes
-7. Return to updated profile view
+4. View "Validation Preview" showing:
+   - **Corroborations**: Existing skills/experiences that will be validated (with quotes)
+   - **New Testimonials**: Full quotes to add to profile
+   - **Discovered Skills**: Skills your reference mentioned that aren't in your profile yet
+5. Select which validations to apply (granular checkboxes)
+6. Click "Apply Selected" to save
+7. Return to profile with updated credibility indicators
 
-## What Gets Enhanced
+### Profile View (Default)
+- Subtle credibility indicators (dots) on skills and experiences
+- Visual mark on experiences that have validations
+- Credibility score bar: "72% backed by references"
+- Testimonials section with full quotes and attribution
 
-- **New testimonials/quotes** - Praise and recommendations
-- **Skill validation** - Reference confirms existing skills
-- **New skills** - Skills mentioned that weren't in resume
-- **Accomplishments** - Specific achievements cited
-- **Relationship context** - Who wrote it, their relationship
+### Profile View (Hover/Focus)
+- Hover any validated item -> popover showing:
+  - Which sources mention this item
+  - Quote snippets from each reference
+  - Author name and relationship
 
-## Visual Indicators
+### Credibility Score Breakdown (Click)
+- Expandable panel showing:
+  - % of skills validated by references
+  - % of experiences validated
+  - List of sources with contribution counts
+  - CTA: "Add more reference letters to increase credibility"
 
-After accepting changes, profile should show:
-- Badge/icon indicating data came from reference letter
-- Ability to see which letter contributed what
-- Clear distinction between resume data and letter data
+## What Gets Extracted
 
-## Repeatable Flow
+1. **Author info**: Name, title, company, relationship to candidate
+2. **Testimonials**: Full quotes suitable for display
+3. **Skill mentions**: Skills referenced + surrounding quote context
+4. **Experience mentions**: References to roles/companies + quotes
+5. **Discovered skills**: Skills mentioned that aren't in the profile
 
-User can upload multiple reference letters, each time:
-- Seeing what new information would be added
-- Choosing what to accept
-- Building up a richer profile
+## Data Model
+
+### Tables
+- `reference_letters` - Uploaded documents with extracted_data JSONB
+- `testimonials` - Full quotes with attribution
+- `skill_validations` - Links profile_skill to reference_letter with quote_snippet
+- `experience_validations` - Links profile_experience to reference_letter with quote_snippet
+
+### Credibility Calculation
+- Per-skill: COUNT of validations
+- Per-experience: COUNT of validations
+- Overall: (validated_skills + validated_experiences) / (total_skills + total_experiences)
+
+## Visual Design
+
+### Credibility Indicators
+- **Skills**: Single dot = 1 source, double dot = 2 sources, triple dot = 3+ sources
+- **Experiences**: Subtle badge/icon when has validations
+- **Hover**: Popover with source list, quotes, "View full" link
+
+### Credibility Score Bar
+- Progress bar with percentage
+- Click to expand breakdown
+- Shows path to 100% (encourages more uploads)

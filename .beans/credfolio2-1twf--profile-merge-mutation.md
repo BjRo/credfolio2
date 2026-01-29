@@ -1,58 +1,112 @@
 ---
 # credfolio2-1twf
-title: Profile merge mutation
+title: Apply reference letter validations mutation
 status: draft
 type: task
 priority: normal
 created_at: 2026-01-23T16:28:40Z
-updated_at: 2026-01-23T16:29:49Z
+updated_at: 2026-01-29T00:00:00Z
 parent: credfolio2-1kt0
 blocking:
     - credfolio2-ksna
 ---
 
-GraphQL mutation to merge reference letter extractions into profile.
+GraphQL mutation to apply selected validations from a reference letter to the profile.
 
-## Mutation
+## GraphQL Schema
+
+### Input Types
 
 ```graphql
-mutation MergeReferenceLetterIntoProfile(
-  profileId: ID!
-  referenceLetterExtractionId: ID!
-  options: MergeOptions
-) {
-  profile: Profile!
-  changes: [ProfileChange!]!
+input ApplyValidationsInput {
+  referenceLetterID: ID!
+  skillValidations: [SkillValidationInput!]!
+  experienceValidations: [ExperienceValidationInput!]!
+  testimonials: [TestimonialInput!]!
+  newSkills: [NewSkillInput!]!
 }
 
-input MergeOptions {
-  includeSkills: Boolean = true
-  includeTestimonials: Boolean = true
-  includeAccomplishments: Boolean = true
+input SkillValidationInput {
+  profileSkillID: ID!
+  quoteSnippet: String!
 }
 
-type ProfileChange {
-  type: ChangeType!
-  field: String!
-  oldValue: String
-  newValue: String!
-  source: String!
+input ExperienceValidationInput {
+  profileExperienceID: ID!
+  quoteSnippet: String!
+}
+
+input TestimonialInput {
+  quote: String!
+  skillsMentioned: [String!]!
+}
+
+input NewSkillInput {
+  name: String!
+  category: SkillCategory!
+  quoteContext: String
 }
 ```
 
-## Behavior
+### Mutation
 
-1. Create profile version snapshot (for undo)
-2. Apply changes based on options
-3. Record change details for history
-4. Return updated profile and change list
+```graphql
+mutation applyReferenceLetterValidations($input: ApplyValidationsInput!) {
+  applyReferenceLetterValidations(input: $input) {
+    referenceLetter {
+      id
+      status
+    }
+    profile {
+      id
+      credibilityScore
+    }
+    appliedCount {
+      skillValidations: Int!
+      experienceValidations: Int!
+      testimonials: Int!
+      newSkills: Int!
+    }
+  }
+}
+```
+
+## Resolver Behavior
+
+1. Validate reference letter exists and belongs to user
+2. Validate all referenced skills/experiences exist
+3. Create skill_validations records (upsert to handle duplicates)
+4. Create experience_validations records
+5. Create testimonials records with author info from extraction
+6. Create new skills if selected (with source=reference_letter)
+7. Update reference_letter status to "applied"
+8. Calculate and return updated credibility score
+
+## Edge Cases
+
+- Duplicate validation (same skill + same letter): upsert/ignore
+- Skill deleted between preview and apply: skip gracefully
+- Reference letter already applied: return current state
 
 ## Checklist
 
-- [ ] Define GraphQL types
-- [ ] Implement merge resolver
-- [ ] Create version snapshot before merge
-- [ ] Apply skill additions
-- [ ] Apply testimonial additions
-- [ ] Record changes for history
-- [ ] Write resolver tests
+- [ ] Define GraphQL input types in schema
+- [ ] Define mutation return type
+- [ ] Implement resolver with transaction
+- [ ] Create skill_validations records
+- [ ] Create experience_validations records
+- [ ] Create testimonials records (with author from extractedData)
+- [ ] Create new skills if selected
+- [ ] Update reference_letter status
+- [ ] Calculate credibility score
+- [ ] Handle edge cases (duplicates, missing entities)
+- [ ] Write resolver unit tests
+- [ ] Write integration tests
+
+## Definition of Done
+
+- [ ] Tests written (TDD: write tests before implementation)
+- [ ] `pnpm lint` passes with no errors
+- [ ] `pnpm test` passes with no failures
+- [ ] All checklist items above are completed
+- [ ] Branch pushed and PR created for human review
