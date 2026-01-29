@@ -3,12 +3,12 @@ import { ThemeToggle } from "./theme-toggle";
 
 export function SiteHeader() {
   return (
-    <header className="border-b border-border">
+    <header className="bg-foreground text-background">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/" className="text-lg font-semibold">
           Credfolio
         </Link>
-        <ThemeToggle />
+        <ThemeToggle invertColors />
       </div>
     </header>
   );

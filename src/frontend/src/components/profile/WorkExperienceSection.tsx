@@ -219,7 +219,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
       {experience.description && (
         <div className="mt-3 sm:ml-13">
           <p
-            className={`text-muted-foreground whitespace-pre-line ${
+            className={`text-foreground whitespace-pre-line ${
               !isExpanded && hasLongDescription ? "line-clamp-3" : ""
             }`}
             style={
@@ -337,7 +337,7 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
         {role.description && (
           <div className="mt-2">
             <p
-              className={`text-muted-foreground text-sm whitespace-pre-line ${
+              className={`text-foreground text-sm whitespace-pre-line ${
                 !isExpanded && hasLongDescription ? "line-clamp-3" : ""
               }`}
               style={
@@ -490,7 +490,7 @@ export function WorkExperienceSection({
   }
 
   return (
-    <div className="bg-card shadow rounded-lg p-6 sm:p-8">
+    <div className="bg-card border rounded-lg p-6 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">Work Experience</h2>
         {isEditable && (

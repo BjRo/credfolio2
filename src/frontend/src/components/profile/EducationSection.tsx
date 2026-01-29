@@ -171,7 +171,7 @@ export function EducationSection({
   }
 
   return (
-    <div className="bg-card shadow rounded-lg p-6 sm:p-8">
+    <div className="bg-card border rounded-lg p-6 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">Education</h2>
         {isEditable && (

@@ -13,7 +13,11 @@ const themeIcons = {
   dark: Moon,
 } as const;
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  invertColors?: boolean;
+}
+
+export function ThemeToggle({ invertColors = false }: ThemeToggleProps) {
   const { theme, resolvedTheme, systemTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -37,7 +41,15 @@ export function ThemeToggle() {
   const Icon = themeIcons[(theme as keyof typeof themeIcons) ?? "system"] ?? Monitor;
 
   return (
-    <Button variant="ghost" size="icon" onClick={cycleTheme} aria-label="Toggle theme">
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={cycleTheme}
+      aria-label="Toggle theme"
+      className={
+        invertColors ? "text-background hover:bg-background/10 hover:text-background" : undefined
+      }
+    >
       {mounted ? <Icon className="size-4" /> : <span className="size-4" />}
     </Button>
   );
