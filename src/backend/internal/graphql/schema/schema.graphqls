@@ -326,6 +326,18 @@ type Profile {
   id: ID!
   """The user who owns this profile."""
   user: User!
+  """User-edited name (overrides resume extraction if set)."""
+  name: String
+  """User-edited email (overrides resume extraction if set)."""
+  email: String
+  """User-edited phone (overrides resume extraction if set)."""
+  phone: String
+  """User-edited location (overrides resume extraction if set)."""
+  location: String
+  """User-edited professional summary (overrides resume extraction if set)."""
+  summary: String
+  """URL to the user's profile photo (presigned URL for direct access)."""
+  profilePhotoUrl: String
   """Work experience entries."""
   experiences: [ProfileExperience!]!
   """Education entries."""
@@ -512,6 +524,71 @@ type SkillValidationError {
 Union type for skill create/update result.
 """
 union SkillResponse = SkillResult | SkillValidationError
+
+"""
+Input for updating profile header fields.
+"""
+input UpdateProfileHeaderInput {
+  """Name to display."""
+  name: String
+  """Email address."""
+  email: String
+  """Phone number."""
+  phone: String
+  """Location (city, state, country)."""
+  location: String
+  """Professional summary."""
+  summary: String
+}
+
+"""
+Result of a successful profile header update.
+"""
+type ProfileHeaderResult {
+  """The updated profile."""
+  profile: Profile!
+}
+
+"""
+Error returned when profile header validation fails.
+"""
+type ProfileHeaderValidationError {
+  """Error message describing the validation failure."""
+  message: String!
+  """The field that failed validation."""
+  field: String
+}
+
+"""
+Union type for profile header update result.
+"""
+union ProfileHeaderResponse = ProfileHeaderResult | ProfileHeaderValidationError
+
+"""
+Result of a successful profile photo upload.
+"""
+type UploadProfilePhotoResult {
+  """The updated profile with photo URL."""
+  profile: Profile!
+}
+
+"""
+Union type for profile photo upload result.
+"""
+union UploadProfilePhotoResponse = UploadProfilePhotoResult | FileValidationError
+
+"""
+Result of deleting a profile photo.
+"""
+type DeleteProfilePhotoResult {
+  """Whether the deletion was successful."""
+  success: Boolean!
+}
+
+"""
+Union type for profile photo deletion result.
+"""
+union DeleteProfilePhotoResponse = DeleteProfilePhotoResult | ProfileHeaderValidationError
 
 """
 Result of a delete operation.
@@ -842,6 +919,43 @@ type Mutation {
     """The resume file to upload (PDF, DOCX, or TXT only)."""
     file: Upload!
   ): UploadResumeResponse!
+
+  # ============================================================================
+  # Profile Header Mutations
+  # ============================================================================
+
+  """
+  Update the profile header fields (name, email, phone, location, summary).
+  Creates the profile if it doesn't exist.
+  Only updates fields that are provided.
+  """
+  updateProfileHeader(
+    """The user ID whose profile to update."""
+    userId: ID!
+    """The header fields to update."""
+    input: UpdateProfileHeaderInput!
+  ): ProfileHeaderResponse!
+
+  """
+  Upload a profile photo.
+  Accepts JPEG, PNG, GIF, or WebP images (max 5MB).
+  Creates the profile if it doesn't exist.
+  Returns the updated profile with the photo URL.
+  """
+  uploadProfilePhoto(
+    """The user ID uploading the photo."""
+    userId: ID!
+    """The image file to upload (JPEG, PNG, GIF, or WebP only)."""
+    file: Upload!
+  ): UploadProfilePhotoResponse!
+
+  """
+  Delete the profile photo.
+  """
+  deleteProfilePhoto(
+    """The user ID whose photo to delete."""
+    userId: ID!
+  ): DeleteProfilePhotoResponse!
 
   # ============================================================================
   # Profile Experience Mutations

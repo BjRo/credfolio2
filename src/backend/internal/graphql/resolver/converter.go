@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"encoding/json"
+	"regexp"
 	"strings"
 
 	"backend/internal/domain"
@@ -10,6 +11,33 @@ import (
 
 // jsonNull is the string representation of a JSON null value.
 const jsonNull = "null"
+
+// emailRegex is a basic regex for email validation.
+// It's intentionally permissive to allow most valid emails.
+var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+
+// phoneRegex validates phone numbers with various formats.
+// Allows digits, spaces, dashes, parentheses, dots, and leading +.
+var phoneRegex = regexp.MustCompile(`^[\d\s\-().+]+$`)
+
+// isValidEmail checks if the given string is a valid email format.
+func isValidEmail(email string) bool {
+	email = strings.TrimSpace(email)
+	if len(email) == 0 || len(email) > 254 {
+		return false
+	}
+	return emailRegex.MatchString(email)
+}
+
+// isValidPhone checks if the given string is a valid phone number format.
+// This is a permissive check that allows common phone number formats.
+func isValidPhone(phone string) bool {
+	phone = strings.TrimSpace(phone)
+	if len(phone) < 5 || len(phone) > 30 {
+		return false
+	}
+	return phoneRegex.MatchString(phone)
+}
 
 // normalizeSkillName produces a lowercase, trimmed version of a skill name for deduplication.
 func normalizeSkillName(name string) string {
@@ -240,19 +268,49 @@ func toGraphQLResumeExtractedData(raw json.RawMessage) *model.ResumeExtractedDat
 }
 
 // toGraphQLProfile converts a domain Profile to a GraphQL Profile model.
-// The user, experiences, educations, and skills must be provided separately.
-func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience, educations []*model.ProfileEducation, skills []*model.ProfileSkill) *model.Profile {
+// The user, experiences, educations, skills, and photoURL must be provided separately.
+func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience, educations []*model.ProfileEducation, skills []*model.ProfileSkill, photoURL *string) *model.Profile {
 	if p == nil {
 		return nil
 	}
 	return &model.Profile{
-		ID:          p.ID.String(),
-		User:        user,
-		Experiences: experiences,
-		Educations:  educations,
-		Skills:      skills,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+		ID:              p.ID.String(),
+		User:            user,
+		Name:            p.Name,
+		Email:           p.Email,
+		Phone:           p.Phone,
+		Location:        p.Location,
+		Summary:         p.Summary,
+		ProfilePhotoURL: photoURL,
+		Experiences:     experiences,
+		Educations:      educations,
+		Skills:          skills,
+		CreatedAt:       p.CreatedAt,
+		UpdatedAt:       p.UpdatedAt,
+	}
+}
+
+// domainProfileToGQL converts a domain Profile to a GraphQL Profile model
+// without requiring relations (experiences, educations, skills).
+// Use this when you only need the basic profile data without nested objects.
+// The optional photoURL can be provided to populate the profile photo URL.
+func domainProfileToGQL(p *domain.Profile, photoURL *string) *model.Profile {
+	if p == nil {
+		return nil
+	}
+	return &model.Profile{
+		ID:              p.ID.String(),
+		Name:            p.Name,
+		Email:           p.Email,
+		Phone:           p.Phone,
+		Location:        p.Location,
+		Summary:         p.Summary,
+		ProfilePhotoURL: photoURL,
+		Experiences:     []*model.ProfileExperience{},
+		Educations:      []*model.ProfileEducation{},
+		Skills:          []*model.ProfileSkill{},
+		CreatedAt:       p.CreatedAt,
+		UpdatedAt:       p.UpdatedAt,
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/google/uuid"
@@ -428,6 +429,418 @@ func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file
 	return &model.UploadResumeResult{
 		File:   gqlFile,
 		Resume: gqlResume,
+	}, nil
+}
+
+// UpdateProfileHeader is the resolver for the updateProfileHeader field.
+func (r *mutationResolver) UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error) {
+	r.log.Info("Updating profile header",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.ProfileHeaderValidationError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		r.log.Warning("User not found",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.ProfileHeaderValidationError{
+			Message: "user not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Validate email format if provided
+	if input.Email != nil && *input.Email != "" {
+		if !isValidEmail(*input.Email) {
+			return &model.ProfileHeaderValidationError{
+				Message: "invalid email format",
+				Field:   stringPtr("email"),
+			}, nil
+		}
+	}
+
+	// Validate phone format if provided (basic validation)
+	if input.Phone != nil && *input.Phone != "" {
+		if !isValidPhone(*input.Phone) {
+			return &model.ProfileHeaderValidationError{
+				Message: "invalid phone format",
+				Field:   stringPtr("phone"),
+			}, nil
+		}
+	}
+
+	// Get or create profile for user
+	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get or create profile",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Update only fields that are provided
+	if input.Name != nil {
+		profile.Name = input.Name
+	}
+	if input.Email != nil {
+		profile.Email = input.Email
+	}
+	if input.Phone != nil {
+		profile.Phone = input.Phone
+	}
+	if input.Location != nil {
+		profile.Location = input.Location
+	}
+	if input.Summary != nil {
+		profile.Summary = input.Summary
+	}
+
+	// Persist the changes
+	if err := r.profileRepo.Update(ctx, profile); err != nil {
+		r.log.Error("Failed to update profile",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to update profile: %w", err)
+	}
+
+	r.log.Info("Profile header updated successfully",
+		logger.Feature("profile"),
+		logger.String("profile_id", profile.ID.String()),
+	)
+
+	// Get photo URL if present
+	var photoURL *string
+	if profile.ProfilePhotoFileID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
+		if err == nil && file != nil {
+			url, err := r.storage.GetPublicURL(ctx, file.StorageKey, 24*time.Hour)
+			if err == nil {
+				photoURL = &url
+			}
+		}
+	}
+
+	// Convert to GraphQL model
+	gqlProfile := domainProfileToGQL(profile, photoURL)
+
+	return &model.ProfileHeaderResult{
+		Profile: gqlProfile,
+	}, nil
+}
+
+// UploadProfilePhoto is the resolver for the uploadProfilePhoto field.
+func (r *mutationResolver) UploadProfilePhoto(ctx context.Context, userID string, file graphql.Upload) (model.UploadProfilePhotoResponse, error) {
+	r.log.Info("Profile photo upload started",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+		logger.String("filename", file.Filename),
+		logger.String("content_type", file.ContentType),
+		logger.Int64("size_bytes", file.Size),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.FileValidationError{
+			Message: "invalid user ID format",
+			Field:   "userId",
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		r.log.Warning("User not found",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.FileValidationError{
+			Message: "user not found",
+			Field:   "userId",
+		}, nil
+	}
+
+	// Validate file type (images only)
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
+
+	if !allowedTypes[file.ContentType] {
+		r.log.Warning("File type not allowed for profile photo",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.String("content_type", file.ContentType),
+		)
+		return &model.FileValidationError{
+			Message: "file type not allowed: must be JPEG, PNG, GIF, or WebP",
+			Field:   "contentType",
+		}, nil
+	}
+
+	// Validate file size (max 5MB for photos)
+	const maxSize = 5 * 1024 * 1024
+	if file.Size > maxSize {
+		r.log.Warning("File too large for profile photo",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Int64("size_bytes", file.Size),
+			logger.Int("max_bytes", maxSize),
+		)
+		return &model.FileValidationError{
+			Message: "file too large: maximum size is 5MB",
+			Field:   "size",
+		}, nil
+	}
+
+	// Get or create profile for user
+	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get or create profile",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Delete old photo file if exists
+	if profile.ProfilePhotoFileID != nil {
+		oldFile, err := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
+		if err == nil && oldFile != nil {
+			// Delete from storage (best effort)
+			_ = r.storage.Delete(ctx, oldFile.StorageKey)
+			// Delete file record (best effort)
+			_ = r.fileRepo.Delete(ctx, *profile.ProfilePhotoFileID)
+		}
+	}
+
+	// Generate storage key
+	fileID := uuid.New()
+	storageKey := fmt.Sprintf("profile-photos/%s/%s/%s", uid.String(), fileID.String(), file.Filename)
+
+	// Upload to storage
+	_, err = r.storage.Upload(ctx, storageKey, file.File, file.Size, file.ContentType)
+	if err != nil {
+		r.log.Error("Failed to upload profile photo to storage",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.String("storage_key", storageKey),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to upload profile photo to storage: %w", err)
+	}
+
+	// Create file record
+	domainFile := &domain.File{
+		ID:          fileID,
+		UserID:      uid,
+		Filename:    file.Filename,
+		ContentType: file.ContentType,
+		SizeBytes:   file.Size,
+		StorageKey:  storageKey,
+	}
+
+	if err := r.fileRepo.Create(ctx, domainFile); err != nil {
+		r.log.Error("Failed to create file record",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
+		// Attempt to clean up uploaded file
+		_ = r.storage.Delete(ctx, storageKey)
+		return nil, fmt.Errorf("failed to create file record: %w", err)
+	}
+
+	// Update profile with new photo file ID
+	profile.ProfilePhotoFileID = &fileID
+	if err := r.profileRepo.Update(ctx, profile); err != nil {
+		r.log.Error("Failed to update profile with photo",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to update profile: %w", err)
+	}
+
+	r.log.Info("Profile photo uploaded successfully",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+		logger.String("file_id", fileID.String()),
+		logger.String("storage_key", storageKey),
+	)
+
+	// Generate public URL for the photo
+	photoURL, err := r.storage.GetPublicURL(ctx, storageKey, 24*time.Hour)
+	if err != nil {
+		r.log.Warning("Failed to generate public URL",
+			logger.Feature("profile"),
+			logger.String("storage_key", storageKey),
+			logger.Err(err),
+		)
+		// Continue without the URL
+		photoURL = ""
+	}
+
+	var photoURLPtr *string
+	if photoURL != "" {
+		photoURLPtr = &photoURL
+	}
+
+	// Convert to GraphQL model
+	gqlProfile := domainProfileToGQL(profile, photoURLPtr)
+
+	return &model.UploadProfilePhotoResult{
+		Profile: gqlProfile,
+	}, nil
+}
+
+// DeleteProfilePhoto is the resolver for the deleteProfilePhoto field.
+func (r *mutationResolver) DeleteProfilePhoto(ctx context.Context, userID string) (model.DeleteProfilePhotoResponse, error) {
+	r.log.Info("Profile photo deletion started",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.ProfileHeaderValidationError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Get profile
+	profile, err := r.profileRepo.GetByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get profile",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get profile: %w", err)
+	}
+	if profile == nil {
+		r.log.Warning("Profile not found",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.ProfileHeaderValidationError{
+			Message: "profile not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Check if there's a photo to delete
+	if profile.ProfilePhotoFileID == nil {
+		r.log.Info("No profile photo to delete",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.DeleteProfilePhotoResult{
+			Success: true,
+		}, nil
+	}
+
+	// Get the file record
+	file, err := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
+	if err != nil {
+		r.log.Error("Failed to get file record",
+			logger.Feature("profile"),
+			logger.String("file_id", profile.ProfilePhotoFileID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get file record: %w", err)
+	}
+
+	// Delete from storage
+	if file != nil {
+		if err := r.storage.Delete(ctx, file.StorageKey); err != nil {
+			r.log.Warning("Failed to delete photo from storage",
+				logger.Feature("profile"),
+				logger.String("storage_key", file.StorageKey),
+				logger.Err(err),
+			)
+			// Continue anyway - the file record will be deleted
+		}
+	}
+
+	// Delete file record
+	if err := r.fileRepo.Delete(ctx, *profile.ProfilePhotoFileID); err != nil {
+		r.log.Error("Failed to delete file record",
+			logger.Feature("profile"),
+			logger.String("file_id", profile.ProfilePhotoFileID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to delete file record: %w", err)
+	}
+
+	// Update profile to remove photo reference
+	profile.ProfilePhotoFileID = nil
+	if err := r.profileRepo.Update(ctx, profile); err != nil {
+		r.log.Error("Failed to update profile",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to update profile: %w", err)
+	}
+
+	r.log.Info("Profile photo deleted successfully",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+	)
+
+	return &model.DeleteProfilePhotoResult{
+		Success: true,
 	}, nil
 }
 
@@ -1514,9 +1927,21 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 	educations, _ := r.profileEduRepo.GetByProfileID(ctx, profile.ID)
 	skills, _ := r.profileSkillRepo.GetByProfileID(ctx, profile.ID)
 
+	// Get photo URL if present
+	var photoURL *string
+	if profile.ProfilePhotoFileID != nil {
+		photoFile, fileErr := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
+		if fileErr == nil && photoFile != nil {
+			url, urlErr := r.storage.GetPublicURL(ctx, photoFile.StorageKey, 24*time.Hour)
+			if urlErr == nil {
+				photoURL = &url
+			}
+		}
+	}
+
 	return &model.ApplyValidationsResult{
 		ReferenceLetter: toGraphQLReferenceLetter(refLetter, toGraphQLUser(user), file),
-		Profile:         toGraphQLProfile(profile, toGraphQLUser(user), toGraphQLProfileExperiences(experiences), toGraphQLProfileEducations(educations), toGraphQLProfileSkills(skills)),
+		Profile:         toGraphQLProfile(profile, toGraphQLUser(user), toGraphQLProfileExperiences(experiences), toGraphQLProfileEducations(educations), toGraphQLProfileSkills(skills), photoURL),
 		AppliedCount:    appliedCount,
 	}, nil
 }
@@ -1828,7 +2253,19 @@ func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Prof
 	}
 	gqlSkills := toGraphQLProfileSkills(skills)
 
-	return toGraphQLProfile(profile, gqlUser, gqlExperiences, gqlEducations, gqlSkills), nil
+	// Get photo URL if present
+	var photoURL *string
+	if profile.ProfilePhotoFileID != nil {
+		photoFile, fileErr := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
+		if fileErr == nil && photoFile != nil {
+			url, urlErr := r.storage.GetPublicURL(ctx, photoFile.StorageKey, 24*time.Hour)
+			if urlErr == nil {
+				photoURL = &url
+			}
+		}
+	}
+
+	return toGraphQLProfile(profile, gqlUser, gqlExperiences, gqlEducations, gqlSkills, photoURL), nil
 }
 
 // ProfileExperience is the resolver for the profileExperience field.

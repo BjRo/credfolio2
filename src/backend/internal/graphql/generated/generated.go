@@ -70,6 +70,10 @@ type ComplexityRoot struct {
 		ReferenceLetter func(childComplexity int) int
 	}
 
+	DeleteProfilePhotoResult struct {
+		Success func(childComplexity int) int
+	}
+
 	DeleteResult struct {
 		DeletedID func(childComplexity int) int
 		Success   func(childComplexity int) int
@@ -162,22 +166,31 @@ type ComplexityRoot struct {
 		CreateSkill                     func(childComplexity int, userID string, input model.CreateSkillInput) int
 		DeleteEducation                 func(childComplexity int, id string) int
 		DeleteExperience                func(childComplexity int, id string) int
+		DeleteProfilePhoto              func(childComplexity int, userID string) int
 		DeleteSkill                     func(childComplexity int, id string) int
 		UpdateEducation                 func(childComplexity int, id string, input model.UpdateEducationInput) int
 		UpdateExperience                func(childComplexity int, id string, input model.UpdateExperienceInput) int
+		UpdateProfileHeader             func(childComplexity int, userID string, input model.UpdateProfileHeaderInput) int
 		UpdateSkill                     func(childComplexity int, id string, input model.UpdateSkillInput) int
 		UploadFile                      func(childComplexity int, userID string, file graphql.Upload) int
+		UploadProfilePhoto              func(childComplexity int, userID string, file graphql.Upload) int
 		UploadResume                    func(childComplexity int, userID string, file graphql.Upload) int
 	}
 
 	Profile struct {
-		CreatedAt   func(childComplexity int) int
-		Educations  func(childComplexity int) int
-		Experiences func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Skills      func(childComplexity int) int
-		UpdatedAt   func(childComplexity int) int
-		User        func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		Educations      func(childComplexity int) int
+		Email           func(childComplexity int) int
+		Experiences     func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Location        func(childComplexity int) int
+		Name            func(childComplexity int) int
+		Phone           func(childComplexity int) int
+		ProfilePhotoURL func(childComplexity int) int
+		Skills          func(childComplexity int) int
+		Summary         func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+		User            func(childComplexity int) int
 	}
 
 	ProfileEducation struct {
@@ -211,6 +224,15 @@ type ComplexityRoot struct {
 		Title           func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
 		ValidationCount func(childComplexity int) int
+	}
+
+	ProfileHeaderResult struct {
+		Profile func(childComplexity int) int
+	}
+
+	ProfileHeaderValidationError struct {
+		Field   func(childComplexity int) int
+		Message func(childComplexity int) int
 	}
 
 	ProfileSkill struct {
@@ -313,6 +335,10 @@ type ComplexityRoot struct {
 		ReferenceLetter func(childComplexity int) int
 	}
 
+	UploadProfilePhotoResult struct {
+		Profile func(childComplexity int) int
+	}
+
 	UploadResumeResult struct {
 		File   func(childComplexity int) int
 		Resume func(childComplexity int) int
@@ -334,6 +360,9 @@ type ExperienceValidationResolver interface {
 type MutationResolver interface {
 	UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error)
 	UploadResume(ctx context.Context, userID string, file graphql.Upload) (model.UploadResumeResponse, error)
+	UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error)
+	UploadProfilePhoto(ctx context.Context, userID string, file graphql.Upload) (model.UploadProfilePhotoResponse, error)
+	DeleteProfilePhoto(ctx context.Context, userID string) (model.DeleteProfilePhotoResponse, error)
 	CreateExperience(ctx context.Context, userID string, input model.CreateExperienceInput) (model.ExperienceResponse, error)
 	UpdateExperience(ctx context.Context, id string, input model.UpdateExperienceInput) (model.ExperienceResponse, error)
 	DeleteExperience(ctx context.Context, id string) (*model.DeleteResult, error)
@@ -447,6 +476,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ApplyValidationsResult.ReferenceLetter(childComplexity), true
+
+	case "DeleteProfilePhotoResult.success":
+		if e.complexity.DeleteProfilePhotoResult.Success == nil {
+			break
+		}
+
+		return e.complexity.DeleteProfilePhotoResult.Success(childComplexity), true
 
 	case "DeleteResult.deletedId":
 		if e.complexity.DeleteResult.DeletedID == nil {
@@ -786,6 +822,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeleteExperience(childComplexity, args["id"].(string)), true
+	case "Mutation.deleteProfilePhoto":
+		if e.complexity.Mutation.DeleteProfilePhoto == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteProfilePhoto_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteProfilePhoto(childComplexity, args["userId"].(string)), true
 	case "Mutation.deleteSkill":
 		if e.complexity.Mutation.DeleteSkill == nil {
 			break
@@ -819,6 +866,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateExperience(childComplexity, args["id"].(string), args["input"].(model.UpdateExperienceInput)), true
+	case "Mutation.updateProfileHeader":
+		if e.complexity.Mutation.UpdateProfileHeader == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateProfileHeader_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateProfileHeader(childComplexity, args["userId"].(string), args["input"].(model.UpdateProfileHeaderInput)), true
 	case "Mutation.updateSkill":
 		if e.complexity.Mutation.UpdateSkill == nil {
 			break
@@ -841,6 +899,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UploadFile(childComplexity, args["userId"].(string), args["file"].(graphql.Upload)), true
+	case "Mutation.uploadProfilePhoto":
+		if e.complexity.Mutation.UploadProfilePhoto == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_uploadProfilePhoto_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UploadProfilePhoto(childComplexity, args["userId"].(string), args["file"].(graphql.Upload)), true
 	case "Mutation.uploadResume":
 		if e.complexity.Mutation.UploadResume == nil {
 			break
@@ -865,6 +934,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Profile.Educations(childComplexity), true
+	case "Profile.email":
+		if e.complexity.Profile.Email == nil {
+			break
+		}
+
+		return e.complexity.Profile.Email(childComplexity), true
 	case "Profile.experiences":
 		if e.complexity.Profile.Experiences == nil {
 			break
@@ -877,12 +952,42 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Profile.ID(childComplexity), true
+	case "Profile.location":
+		if e.complexity.Profile.Location == nil {
+			break
+		}
+
+		return e.complexity.Profile.Location(childComplexity), true
+	case "Profile.name":
+		if e.complexity.Profile.Name == nil {
+			break
+		}
+
+		return e.complexity.Profile.Name(childComplexity), true
+	case "Profile.phone":
+		if e.complexity.Profile.Phone == nil {
+			break
+		}
+
+		return e.complexity.Profile.Phone(childComplexity), true
+	case "Profile.profilePhotoUrl":
+		if e.complexity.Profile.ProfilePhotoURL == nil {
+			break
+		}
+
+		return e.complexity.Profile.ProfilePhotoURL(childComplexity), true
 	case "Profile.skills":
 		if e.complexity.Profile.Skills == nil {
 			break
 		}
 
 		return e.complexity.Profile.Skills(childComplexity), true
+	case "Profile.summary":
+		if e.complexity.Profile.Summary == nil {
+			break
+		}
+
+		return e.complexity.Profile.Summary(childComplexity), true
 	case "Profile.updatedAt":
 		if e.complexity.Profile.UpdatedAt == nil {
 			break
@@ -1059,6 +1164,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ProfileExperience.ValidationCount(childComplexity), true
+
+	case "ProfileHeaderResult.profile":
+		if e.complexity.ProfileHeaderResult.Profile == nil {
+			break
+		}
+
+		return e.complexity.ProfileHeaderResult.Profile(childComplexity), true
+
+	case "ProfileHeaderValidationError.field":
+		if e.complexity.ProfileHeaderValidationError.Field == nil {
+			break
+		}
+
+		return e.complexity.ProfileHeaderValidationError.Field(childComplexity), true
+	case "ProfileHeaderValidationError.message":
+		if e.complexity.ProfileHeaderValidationError.Message == nil {
+			break
+		}
+
+		return e.complexity.ProfileHeaderValidationError.Message(childComplexity), true
 
 	case "ProfileSkill.category":
 		if e.complexity.ProfileSkill.Category == nil {
@@ -1560,6 +1685,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UploadFileResult.ReferenceLetter(childComplexity), true
 
+	case "UploadProfilePhotoResult.profile":
+		if e.complexity.UploadProfilePhotoResult.Profile == nil {
+			break
+		}
+
+		return e.complexity.UploadProfilePhotoResult.Profile(childComplexity), true
+
 	case "UploadResumeResult.file":
 		if e.complexity.UploadResumeResult.File == nil {
 			break
@@ -1622,6 +1754,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputTestimonialInput,
 		ec.unmarshalInputUpdateEducationInput,
 		ec.unmarshalInputUpdateExperienceInput,
+		ec.unmarshalInputUpdateProfileHeaderInput,
 		ec.unmarshalInputUpdateSkillInput,
 	)
 	first := true
@@ -2048,6 +2181,18 @@ type Profile {
   id: ID!
   """The user who owns this profile."""
   user: User!
+  """User-edited name (overrides resume extraction if set)."""
+  name: String
+  """User-edited email (overrides resume extraction if set)."""
+  email: String
+  """User-edited phone (overrides resume extraction if set)."""
+  phone: String
+  """User-edited location (overrides resume extraction if set)."""
+  location: String
+  """User-edited professional summary (overrides resume extraction if set)."""
+  summary: String
+  """URL to the user's profile photo (presigned URL for direct access)."""
+  profilePhotoUrl: String
   """Work experience entries."""
   experiences: [ProfileExperience!]!
   """Education entries."""
@@ -2234,6 +2379,71 @@ type SkillValidationError {
 Union type for skill create/update result.
 """
 union SkillResponse = SkillResult | SkillValidationError
+
+"""
+Input for updating profile header fields.
+"""
+input UpdateProfileHeaderInput {
+  """Name to display."""
+  name: String
+  """Email address."""
+  email: String
+  """Phone number."""
+  phone: String
+  """Location (city, state, country)."""
+  location: String
+  """Professional summary."""
+  summary: String
+}
+
+"""
+Result of a successful profile header update.
+"""
+type ProfileHeaderResult {
+  """The updated profile."""
+  profile: Profile!
+}
+
+"""
+Error returned when profile header validation fails.
+"""
+type ProfileHeaderValidationError {
+  """Error message describing the validation failure."""
+  message: String!
+  """The field that failed validation."""
+  field: String
+}
+
+"""
+Union type for profile header update result.
+"""
+union ProfileHeaderResponse = ProfileHeaderResult | ProfileHeaderValidationError
+
+"""
+Result of a successful profile photo upload.
+"""
+type UploadProfilePhotoResult {
+  """The updated profile with photo URL."""
+  profile: Profile!
+}
+
+"""
+Union type for profile photo upload result.
+"""
+union UploadProfilePhotoResponse = UploadProfilePhotoResult | FileValidationError
+
+"""
+Result of deleting a profile photo.
+"""
+type DeleteProfilePhotoResult {
+  """Whether the deletion was successful."""
+  success: Boolean!
+}
+
+"""
+Union type for profile photo deletion result.
+"""
+union DeleteProfilePhotoResponse = DeleteProfilePhotoResult | ProfileHeaderValidationError
 
 """
 Result of a delete operation.
@@ -2566,6 +2776,43 @@ type Mutation {
   ): UploadResumeResponse!
 
   # ============================================================================
+  # Profile Header Mutations
+  # ============================================================================
+
+  """
+  Update the profile header fields (name, email, phone, location, summary).
+  Creates the profile if it doesn't exist.
+  Only updates fields that are provided.
+  """
+  updateProfileHeader(
+    """The user ID whose profile to update."""
+    userId: ID!
+    """The header fields to update."""
+    input: UpdateProfileHeaderInput!
+  ): ProfileHeaderResponse!
+
+  """
+  Upload a profile photo.
+  Accepts JPEG, PNG, GIF, or WebP images (max 5MB).
+  Creates the profile if it doesn't exist.
+  Returns the updated profile with the photo URL.
+  """
+  uploadProfilePhoto(
+    """The user ID uploading the photo."""
+    userId: ID!
+    """The image file to upload (JPEG, PNG, GIF, or WebP only)."""
+    file: Upload!
+  ): UploadProfilePhotoResponse!
+
+  """
+  Delete the profile photo.
+  """
+  deleteProfilePhoto(
+    """The user ID whose photo to delete."""
+    userId: ID!
+  ): DeleteProfilePhotoResponse!
+
+  # ============================================================================
   # Profile Experience Mutations
   # ============================================================================
 
@@ -2777,6 +3024,17 @@ func (ec *executionContext) field_Mutation_deleteExperience_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteProfilePhoto_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteSkill_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2820,6 +3078,22 @@ func (ec *executionContext) field_Mutation_updateExperience_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateProfileHeader_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateProfileHeaderInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileHeaderInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateSkill_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2837,6 +3111,22 @@ func (ec *executionContext) field_Mutation_updateSkill_args(ctx context.Context,
 }
 
 func (ec *executionContext) field_Mutation_uploadFile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "file", ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload)
+	if err != nil {
+		return nil, err
+	}
+	args["file"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_uploadProfilePhoto_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
@@ -3344,6 +3634,18 @@ func (ec *executionContext) fieldContext_ApplyValidationsResult_profile(_ contex
 				return ec.fieldContext_Profile_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
+			case "profilePhotoUrl":
+				return ec.fieldContext_Profile_profilePhotoUrl(ctx, field)
 			case "experiences":
 				return ec.fieldContext_Profile_experiences(ctx, field)
 			case "educations":
@@ -3395,6 +3697,35 @@ func (ec *executionContext) fieldContext_ApplyValidationsResult_appliedCount(_ c
 				return ec.fieldContext_AppliedCount_newSkills(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AppliedCount", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteProfilePhotoResult_success(ctx context.Context, field graphql.CollectedField, obj *model.DeleteProfilePhotoResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteProfilePhotoResult_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteProfilePhotoResult_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteProfilePhotoResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4897,6 +5228,129 @@ func (ec *executionContext) fieldContext_Mutation_uploadResume(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateProfileHeader(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateProfileHeader,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateProfileHeader(ctx, fc.Args["userId"].(string), fc.Args["input"].(model.UpdateProfileHeaderInput))
+		},
+		nil,
+		ec.marshalNProfileHeaderResponse2backendᚋinternalᚋgraphqlᚋmodelᚐProfileHeaderResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateProfileHeader(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ProfileHeaderResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateProfileHeader_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_uploadProfilePhoto(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_uploadProfilePhoto,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UploadProfilePhoto(ctx, fc.Args["userId"].(string), fc.Args["file"].(graphql.Upload))
+		},
+		nil,
+		ec.marshalNUploadProfilePhotoResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadProfilePhotoResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_uploadProfilePhoto(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UploadProfilePhotoResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_uploadProfilePhoto_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteProfilePhoto(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteProfilePhoto,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DeleteProfilePhoto(ctx, fc.Args["userId"].(string))
+		},
+		nil,
+		ec.marshalNDeleteProfilePhotoResponse2backendᚋinternalᚋgraphqlᚋmodelᚐDeleteProfilePhotoResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteProfilePhoto(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteProfilePhotoResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteProfilePhoto_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createExperience(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5390,6 +5844,180 @@ func (ec *executionContext) fieldContext_Profile_user(_ context.Context, field g
 				return ec.fieldContext_User_updatedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_name(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_email(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_email,
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_phone(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_phone,
+		func(ctx context.Context) (any, error) {
+			return obj.Phone, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_phone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_location(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_location,
+		func(ctx context.Context) (any, error) {
+			return obj.Location, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_summary(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_summary,
+		func(ctx context.Context) (any, error) {
+			return obj.Summary, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_summary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_profilePhotoUrl(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_profilePhotoUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.ProfilePhotoURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_profilePhotoUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6401,6 +7029,121 @@ func (ec *executionContext) fieldContext_ProfileExperience_updatedAt(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _ProfileHeaderResult_profile(ctx context.Context, field graphql.CollectedField, obj *model.ProfileHeaderResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProfileHeaderResult_profile,
+		func(ctx context.Context) (any, error) {
+			return obj.Profile, nil
+		},
+		nil,
+		ec.marshalNProfile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐProfile,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProfileHeaderResult_profile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProfileHeaderResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Profile_id(ctx, field)
+			case "user":
+				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
+			case "profilePhotoUrl":
+				return ec.fieldContext_Profile_profilePhotoUrl(ctx, field)
+			case "experiences":
+				return ec.fieldContext_Profile_experiences(ctx, field)
+			case "educations":
+				return ec.fieldContext_Profile_educations(ctx, field)
+			case "skills":
+				return ec.fieldContext_Profile_skills(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Profile_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Profile_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Profile", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProfileHeaderValidationError_message(ctx context.Context, field graphql.CollectedField, obj *model.ProfileHeaderValidationError) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProfileHeaderValidationError_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProfileHeaderValidationError_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProfileHeaderValidationError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProfileHeaderValidationError_field(ctx context.Context, field graphql.CollectedField, obj *model.ProfileHeaderValidationError) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProfileHeaderValidationError_field,
+		func(ctx context.Context) (any, error) {
+			return obj.Field, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProfileHeaderValidationError_field(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProfileHeaderValidationError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProfileSkill_id(ctx context.Context, field graphql.CollectedField, obj *model.ProfileSkill) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7114,6 +7857,18 @@ func (ec *executionContext) fieldContext_Query_profile(ctx context.Context, fiel
 				return ec.fieldContext_Profile_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
+			case "profilePhotoUrl":
+				return ec.fieldContext_Profile_profilePhotoUrl(ctx, field)
 			case "experiences":
 				return ec.fieldContext_Profile_experiences(ctx, field)
 			case "educations":
@@ -9222,6 +9977,63 @@ func (ec *executionContext) fieldContext_UploadFileResult_referenceLetter(_ cont
 				return ec.fieldContext_ReferenceLetter_file(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ReferenceLetter", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadProfilePhotoResult_profile(ctx context.Context, field graphql.CollectedField, obj *model.UploadProfilePhotoResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UploadProfilePhotoResult_profile,
+		func(ctx context.Context) (any, error) {
+			return obj.Profile, nil
+		},
+		nil,
+		ec.marshalNProfile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐProfile,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UploadProfilePhotoResult_profile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadProfilePhotoResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Profile_id(ctx, field)
+			case "user":
+				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
+			case "profilePhotoUrl":
+				return ec.fieldContext_Profile_profilePhotoUrl(ctx, field)
+			case "experiences":
+				return ec.fieldContext_Profile_experiences(ctx, field)
+			case "educations":
+				return ec.fieldContext_Profile_educations(ctx, field)
+			case "skills":
+				return ec.fieldContext_Profile_skills(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Profile_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Profile_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Profile", field.Name)
 		},
 	}
 	return fc, nil
@@ -11446,6 +12258,61 @@ func (ec *executionContext) unmarshalInputUpdateExperienceInput(ctx context.Cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateProfileHeaderInput(ctx context.Context, obj any) (model.UpdateProfileHeaderInput, error) {
+	var it model.UpdateProfileHeaderInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "email", "phone", "location", "summary"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "phone":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Phone = data
+		case "location":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Location = data
+		case "summary":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("summary"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Summary = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateSkillInput(ctx context.Context, obj any) (model.UpdateSkillInput, error) {
 	var it model.UpdateSkillInput
 	asMap := map[string]any{}
@@ -11511,6 +12378,33 @@ func (ec *executionContext) _ApplyValidationsResponse(ctx context.Context, sel a
 	}
 }
 
+func (ec *executionContext) _DeleteProfilePhotoResponse(ctx context.Context, sel ast.SelectionSet, obj model.DeleteProfilePhotoResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ProfileHeaderValidationError:
+		return ec._ProfileHeaderValidationError(ctx, sel, &obj)
+	case *model.ProfileHeaderValidationError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProfileHeaderValidationError(ctx, sel, obj)
+	case model.DeleteProfilePhotoResult:
+		return ec._DeleteProfilePhotoResult(ctx, sel, &obj)
+	case *model.DeleteProfilePhotoResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteProfilePhotoResult(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of DeleteProfilePhotoResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
 func (ec *executionContext) _EducationResponse(ctx context.Context, sel ast.SelectionSet, obj model.EducationResponse) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -11565,6 +12459,33 @@ func (ec *executionContext) _ExperienceResponse(ctx context.Context, sel ast.Sel
 	}
 }
 
+func (ec *executionContext) _ProfileHeaderResponse(ctx context.Context, sel ast.SelectionSet, obj model.ProfileHeaderResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ProfileHeaderValidationError:
+		return ec._ProfileHeaderValidationError(ctx, sel, &obj)
+	case *model.ProfileHeaderValidationError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProfileHeaderValidationError(ctx, sel, obj)
+	case model.ProfileHeaderResult:
+		return ec._ProfileHeaderResult(ctx, sel, &obj)
+	case *model.ProfileHeaderResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProfileHeaderResult(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of ProfileHeaderResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
 func (ec *executionContext) _SkillResponse(ctx context.Context, sel ast.SelectionSet, obj model.SkillResponse) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -11615,6 +12536,33 @@ func (ec *executionContext) _UploadFileResponse(ctx context.Context, sel ast.Sel
 			return typedObj
 		} else {
 			panic(fmt.Errorf("unexpected type %T; non-generated variants of UploadFileResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
+func (ec *executionContext) _UploadProfilePhotoResponse(ctx context.Context, sel ast.SelectionSet, obj model.UploadProfilePhotoResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UploadProfilePhotoResult:
+		return ec._UploadProfilePhotoResult(ctx, sel, &obj)
+	case *model.UploadProfilePhotoResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UploadProfilePhotoResult(ctx, sel, obj)
+	case model.FileValidationError:
+		return ec._FileValidationError(ctx, sel, &obj)
+	case *model.FileValidationError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._FileValidationError(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of UploadProfilePhotoResponse must implement graphql.Marshaler", obj))
 		}
 	}
 }
@@ -11768,6 +12716,45 @@ func (ec *executionContext) _ApplyValidationsResult(ctx context.Context, sel ast
 			}
 		case "appliedCount":
 			out.Values[i] = ec._ApplyValidationsResult_appliedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var deleteProfilePhotoResultImplementors = []string{"DeleteProfilePhotoResult", "DeleteProfilePhotoResponse"}
+
+func (ec *executionContext) _DeleteProfilePhotoResult(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteProfilePhotoResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteProfilePhotoResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteProfilePhotoResult")
+		case "success":
+			out.Values[i] = ec._DeleteProfilePhotoResult_success(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -12479,7 +13466,7 @@ func (ec *executionContext) _File(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
-var fileValidationErrorImplementors = []string{"FileValidationError", "UploadFileResponse", "UploadResumeResponse"}
+var fileValidationErrorImplementors = []string{"FileValidationError", "UploadProfilePhotoResponse", "UploadFileResponse", "UploadResumeResponse"}
 
 func (ec *executionContext) _FileValidationError(ctx context.Context, sel ast.SelectionSet, obj *model.FileValidationError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, fileValidationErrorImplementors)
@@ -12552,6 +13539,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "uploadResume":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_uploadResume(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateProfileHeader":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateProfileHeader(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadProfilePhoto":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_uploadProfilePhoto(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteProfilePhoto":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteProfilePhoto(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -12670,6 +13678,18 @@ func (ec *executionContext) _Profile(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "name":
+			out.Values[i] = ec._Profile_name(ctx, field, obj)
+		case "email":
+			out.Values[i] = ec._Profile_email(ctx, field, obj)
+		case "phone":
+			out.Values[i] = ec._Profile_phone(ctx, field, obj)
+		case "location":
+			out.Values[i] = ec._Profile_location(ctx, field, obj)
+		case "summary":
+			out.Values[i] = ec._Profile_summary(ctx, field, obj)
+		case "profilePhotoUrl":
+			out.Values[i] = ec._Profile_profilePhotoUrl(ctx, field, obj)
 		case "experiences":
 			out.Values[i] = ec._Profile_experiences(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12902,6 +13922,86 @@ func (ec *executionContext) _ProfileExperience(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var profileHeaderResultImplementors = []string{"ProfileHeaderResult", "ProfileHeaderResponse"}
+
+func (ec *executionContext) _ProfileHeaderResult(ctx context.Context, sel ast.SelectionSet, obj *model.ProfileHeaderResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, profileHeaderResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProfileHeaderResult")
+		case "profile":
+			out.Values[i] = ec._ProfileHeaderResult_profile(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var profileHeaderValidationErrorImplementors = []string{"ProfileHeaderValidationError", "ProfileHeaderResponse", "DeleteProfilePhotoResponse"}
+
+func (ec *executionContext) _ProfileHeaderValidationError(ctx context.Context, sel ast.SelectionSet, obj *model.ProfileHeaderValidationError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, profileHeaderValidationErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProfileHeaderValidationError")
+		case "message":
+			out.Values[i] = ec._ProfileHeaderValidationError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "field":
+			out.Values[i] = ec._ProfileHeaderValidationError_field(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13881,6 +14981,45 @@ func (ec *executionContext) _UploadFileResult(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var uploadProfilePhotoResultImplementors = []string{"UploadProfilePhotoResult", "UploadProfilePhotoResponse"}
+
+func (ec *executionContext) _UploadProfilePhotoResult(ctx context.Context, sel ast.SelectionSet, obj *model.UploadProfilePhotoResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, uploadProfilePhotoResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UploadProfilePhotoResult")
+		case "profile":
+			out.Values[i] = ec._UploadProfilePhotoResult_profile(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var uploadResumeResultImplementors = []string{"UploadResumeResult", "UploadResumeResponse"}
 
 func (ec *executionContext) _UploadResumeResult(ctx context.Context, sel ast.SelectionSet, obj *model.UploadResumeResult) graphql.Marshaler {
@@ -14403,6 +15542,16 @@ func (ec *executionContext) marshalNDateTime2timeᚐTime(ctx context.Context, se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNDeleteProfilePhotoResponse2backendᚋinternalᚋgraphqlᚋmodelᚐDeleteProfilePhotoResponse(ctx context.Context, sel ast.SelectionSet, v model.DeleteProfilePhotoResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteProfilePhotoResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNDeleteResult2backendᚋinternalᚋgraphqlᚋmodelᚐDeleteResult(ctx context.Context, sel ast.SelectionSet, v model.DeleteResult) graphql.Marshaler {
@@ -14949,6 +16098,16 @@ func (ec *executionContext) marshalNProfileExperience2ᚖbackendᚋinternalᚋgr
 	return ec._ProfileExperience(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNProfileHeaderResponse2backendᚋinternalᚋgraphqlᚋmodelᚐProfileHeaderResponse(ctx context.Context, sel ast.SelectionSet, v model.ProfileHeaderResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProfileHeaderResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNProfileSkill2backendᚋinternalᚋgraphqlᚋmodelᚐProfileSkill(ctx context.Context, sel ast.SelectionSet, v model.ProfileSkill) graphql.Marshaler {
 	return ec._ProfileSkill(ctx, sel, &v)
 }
@@ -15380,6 +16539,11 @@ func (ec *executionContext) unmarshalNUpdateExperienceInput2backendᚋinternal�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNUpdateProfileHeaderInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileHeaderInput(ctx context.Context, v any) (model.UpdateProfileHeaderInput, error) {
+	res, err := ec.unmarshalInputUpdateProfileHeaderInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNUpdateSkillInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateSkillInput(ctx context.Context, v any) (model.UpdateSkillInput, error) {
 	res, err := ec.unmarshalInputUpdateSkillInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -15409,6 +16573,16 @@ func (ec *executionContext) marshalNUploadFileResponse2backendᚋinternalᚋgrap
 		return graphql.Null
 	}
 	return ec._UploadFileResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUploadProfilePhotoResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadProfilePhotoResponse(ctx context.Context, sel ast.SelectionSet, v model.UploadProfilePhotoResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UploadProfilePhotoResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNUploadResumeResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadResumeResponse(ctx context.Context, sel ast.SelectionSet, v model.UploadResumeResponse) graphql.Marshaler {

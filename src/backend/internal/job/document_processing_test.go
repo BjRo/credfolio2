@@ -85,6 +85,10 @@ func (s *mockStorage) GetPresignedURL(_ context.Context, _ string, _ time.Durati
 	return "", nil
 }
 
+func (s *mockStorage) GetPublicURL(_ context.Context, _ string, _ time.Duration) (string, error) {
+	return "", nil
+}
+
 func (s *mockStorage) Exists(_ context.Context, key string) (bool, error) {
 	return s.existingKeys[key], nil
 }
@@ -109,6 +113,10 @@ func (s *errorStorage) Delete(_ context.Context, _ string) error {
 }
 
 func (s *errorStorage) GetPresignedURL(_ context.Context, _ string, _ time.Duration) (string, error) {
+	return "", errors.New("storage error")
+}
+
+func (s *errorStorage) GetPublicURL(_ context.Context, _ string, _ time.Duration) (string, error) {
 	return "", errors.New("storage error")
 }
 

@@ -29,7 +29,18 @@ type Profile struct { //nolint:govet // Field ordering prioritizes readability o
 	CreatedAt time.Time `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt time.Time `bun:"updated_at,notnull,default:current_timestamp"`
 
+	// Header fields (user-editable, override resume extraction if set)
+	Name     *string `bun:"name"`
+	Email    *string `bun:"email"`
+	Phone    *string `bun:"phone"`
+	Location *string `bun:"location"`
+	Summary  *string `bun:"summary"`
+
+	// Profile photo
+	ProfilePhotoFileID *uuid.UUID `bun:"profile_photo_file_id,type:uuid"`
+
 	// Relations
+	ProfilePhotoFile *File `bun:"rel:belongs-to,join:profile_photo_file_id=id"`
 	User        *User                `bun:"rel:belongs-to,join:user_id=id"`
 	Experiences []*ProfileExperience `bun:"rel:has-many,join:id=profile_id"`
 	Educations  []*ProfileEducation  `bun:"rel:has-many,join:id=profile_id"`

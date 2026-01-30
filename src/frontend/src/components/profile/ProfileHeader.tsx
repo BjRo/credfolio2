@@ -1,11 +1,40 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Mail, MapPin, Phone, User } from "lucide-react";
-import { useState } from "react";
+import {
+  Camera,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+  User,
+  X,
+} from "lucide-react";
+import Image from "next/image";
+import { useCallback, useRef, useState } from "react";
+import { useMutation } from "urql";
+import { Button } from "@/components/ui/button";
+import { DeleteProfilePhotoDocument } from "@/graphql/generated/graphql";
+import { GRAPHQL_UPLOAD_ENDPOINT } from "@/lib/urql/client";
+import { ProfileHeaderFormDialog } from "./ProfileHeaderFormDialog";
 import type { ProfileData } from "./types";
+
+interface ProfileHeaderOverrides {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  summary?: string | null;
+  profilePhotoUrl?: string | null;
+}
 
 interface ProfileHeaderProps {
   data: ProfileData;
+  profileOverrides?: ProfileHeaderOverrides;
+  userId?: string;
+  onMutationSuccess?: () => void;
 }
 
 interface ProfileSummaryProps {
@@ -65,7 +94,22 @@ function ProfileSummary({ summary, collapsedLines = 3 }: ProfileSummaryProps) {
   );
 }
 
-function AvatarPlaceholder({ name }: { name: string }) {
+interface ProfileAvatarProps {
+  name: string;
+  photoUrl?: string | null;
+  userId?: string;
+  onUploadSuccess?: () => void;
+}
+
+function ProfileAvatar({ name, photoUrl, userId, onUploadSuccess }: ProfileAvatarProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [deleteResult, deletePhoto] = useMutation(DeleteProfilePhotoDocument);
+
+  const isLoading = isUploading || deleteResult.fetching;
+  const canEdit = !!userId;
+
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -73,62 +117,292 @@ function AvatarPlaceholder({ name }: { name: string }) {
     .toUpperCase()
     .slice(0, 2);
 
+  // Use XHR for file upload following GraphQL multipart request spec
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (!userId) return;
+
+      setIsUploading(true);
+
+      const operations = JSON.stringify({
+        query: `
+          mutation UploadProfilePhoto($userId: ID!, $file: Upload!) {
+            uploadProfilePhoto(userId: $userId, file: $file) {
+              ... on UploadProfilePhotoResult {
+                __typename
+                profile {
+                  profilePhotoUrl
+                }
+              }
+              ... on FileValidationError {
+                __typename
+                message
+                field
+              }
+            }
+          }
+        `,
+        variables: {
+          userId,
+          file: null,
+        },
+      });
+
+      const map = JSON.stringify({
+        "0": ["variables.file"],
+      });
+
+      const formData = new FormData();
+      formData.append("operations", operations);
+      formData.append("map", map);
+      formData.append("0", file);
+
+      try {
+        const response = await new Promise<{ success: boolean; error?: string }>(
+          (resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+
+            xhr.addEventListener("load", () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const result = JSON.parse(xhr.responseText);
+                  if (result.errors?.length) {
+                    reject(new Error(result.errors[0].message));
+                    return;
+                  }
+                  const data = result.data?.uploadProfilePhoto;
+                  if (data?.__typename === "FileValidationError") {
+                    reject(new Error(data.message));
+                    return;
+                  }
+                  resolve({ success: true });
+                } catch {
+                  reject(new Error("Failed to parse response"));
+                }
+              } else {
+                reject(new Error(`Upload failed with status ${xhr.status}`));
+              }
+            });
+
+            xhr.addEventListener("error", () => {
+              reject(new Error("Network error during upload"));
+            });
+
+            xhr.open("POST", GRAPHQL_UPLOAD_ENDPOINT);
+            xhr.send(formData);
+          }
+        );
+
+        if (response.success) {
+          onUploadSuccess?.();
+        }
+      } catch (err) {
+        console.error("Profile photo upload failed:", err);
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [userId, onUploadSuccess]
+  );
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+
+    // Reset input so the same file can be selected again
+    e.target.value = "";
+
+    await uploadFile(file);
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!userId) return;
+
+    const result = await deletePhoto({ userId });
+
+    if (result.data?.deleteProfilePhoto?.__typename === "DeleteProfilePhotoResult") {
+      onUploadSuccess?.();
+    }
+  };
+
+  const handleClick = () => {
+    if (canEdit && !isLoading) {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key === "Enter" || e.key === " ") && canEdit && !isLoading) {
+      e.preventDefault();
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
-    <div
-      className="w-20 h-20 rounded-full bg-primary flex items-center justify-center flex-shrink-0"
-      role="img"
-      aria-label={`Avatar for ${name}`}
-    >
-      {initials ? (
-        <span className="text-2xl font-semibold text-primary-foreground">{initials}</span>
-      ) : (
-        <User className="w-10 h-10 text-primary-foreground" aria-hidden="true" />
+    <div className="relative w-20 h-20 flex-shrink-0">
+      {/* Avatar Display - using button for keyboard accessibility */}
+      <button
+        type="button"
+        className={`w-20 h-20 rounded-full overflow-hidden flex items-center justify-center border-0 ${
+          photoUrl ? "bg-muted" : "bg-primary"
+        } ${canEdit ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" : ""}`}
+        aria-label={canEdit ? `Change profile photo for ${name}` : `Avatar for ${name}`}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onFocus={() => setIsHovered(true)}
+        onBlur={() => setIsHovered(false)}
+        disabled={!canEdit || isLoading}
+      >
+        {isLoading ? (
+          <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" aria-hidden="true" />
+        ) : photoUrl ? (
+          <Image
+            src={photoUrl}
+            alt={`Profile photo of ${name}`}
+            width={80}
+            height={80}
+            className="w-full h-full object-cover"
+            unoptimized
+          />
+        ) : initials ? (
+          <span className="text-2xl font-semibold text-primary-foreground">{initials}</span>
+        ) : (
+          <User className="w-10 h-10 text-primary-foreground" aria-hidden="true" />
+        )}
+      </button>
+
+      {/* Hover Overlay */}
+      {canEdit && isHovered && !isLoading && (
+        <div
+          className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center pointer-events-none"
+          aria-hidden="true"
+        >
+          <Camera className="w-6 h-6 text-white" />
+        </div>
       )}
+
+      {/* Delete Button */}
+      {canEdit && photoUrl && isHovered && !isLoading && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDeletePhoto();
+          }}
+          className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
+          aria-label="Remove photo"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
+
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        className="hidden"
+        onChange={handleFileChange}
+        aria-label="Upload profile photo"
+      />
     </div>
   );
 }
 
-export function ProfileHeader({ data }: ProfileHeaderProps) {
+export function ProfileHeader({
+  data,
+  profileOverrides,
+  userId,
+  onMutationSuccess,
+}: ProfileHeaderProps) {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Merge profile overrides with extracted data (profile overrides take precedence if set)
+  const displayName = profileOverrides?.name || data.name;
+  const displayEmail = profileOverrides?.email ?? data.email;
+  const displayPhone = profileOverrides?.phone ?? data.phone;
+  const displayLocation = profileOverrides?.location ?? data.location;
+  const displaySummary = profileOverrides?.summary ?? data.summary;
+  const displayPhotoUrl = profileOverrides?.profilePhotoUrl;
+
+  const handleEditSuccess = () => {
+    onMutationSuccess?.();
+  };
+
   return (
-    <div className="bg-card border rounded-lg p-6 sm:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-        <AvatarPlaceholder name={data.name} />
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">
-                {data.name}
-              </h1>
-              <div className="mt-2 space-y-1 text-muted-foreground">
-                {data.email && (
-                  <p className="flex items-center gap-2 text-sm sm:text-base">
-                    <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <a href={`mailto:${data.email}`} className="hover:text-primary truncate">
-                      {data.email}
-                    </a>
-                  </p>
-                )}
-                {data.phone && (
-                  <p className="flex items-center gap-2 text-sm sm:text-base">
-                    <Phone className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <a href={`tel:${data.phone}`} className="hover:text-primary">
-                      {data.phone}
-                    </a>
-                  </p>
-                )}
-                {data.location && (
-                  <p className="flex items-center gap-2 text-sm sm:text-base">
-                    <MapPin className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <span>{data.location}</span>
-                  </p>
-                )}
-              </div>
+    <>
+      <div className="bg-card border rounded-lg p-6 sm:p-8 relative">
+        {/* Edit button - positioned absolutely in top-right */}
+        {userId && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsEditDialogOpen(true)}
+            aria-label="Edit profile"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+        )}
+
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+          <ProfileAvatar
+            name={displayName}
+            photoUrl={displayPhotoUrl}
+            userId={userId}
+            onUploadSuccess={onMutationSuccess}
+          />
+          <div className="flex-1 min-w-0 pr-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+              {displayName}
+            </h1>
+            <div className="mt-2 space-y-1 text-muted-foreground">
+              {displayEmail && (
+                <p className="flex items-center gap-2 text-sm sm:text-base">
+                  <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <a href={`mailto:${displayEmail}`} className="hover:text-primary truncate">
+                    {displayEmail}
+                  </a>
+                </p>
+              )}
+              {displayPhone && (
+                <p className="flex items-center gap-2 text-sm sm:text-base">
+                  <Phone className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <a href={`tel:${displayPhone}`} className="hover:text-primary">
+                    {displayPhone}
+                  </a>
+                </p>
+              )}
+              {displayLocation && (
+                <p className="flex items-center gap-2 text-sm sm:text-base">
+                  <MapPin className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span>{displayLocation}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>
+
+        {displaySummary && <ProfileSummary summary={displaySummary} />}
       </div>
 
-      {data.summary && <ProfileSummary summary={data.summary} />}
-    </div>
+      {userId && (
+        <ProfileHeaderFormDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          userId={userId}
+          headerData={{
+            name: displayName,
+            email: displayEmail,
+            phone: displayPhone,
+            location: displayLocation,
+            summary: displaySummary,
+          }}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+    </>
   );
 }

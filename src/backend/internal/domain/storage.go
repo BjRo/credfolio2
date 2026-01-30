@@ -28,6 +28,10 @@ type Storage interface {
 	// GetPresignedURL generates a time-limited URL for direct access.
 	GetPresignedURL(ctx context.Context, key string, expiry time.Duration) (string, error)
 
+	// GetPublicURL returns a publicly accessible URL for the object.
+	// If a storage proxy is configured, returns a proxy URL. Otherwise, returns a presigned URL.
+	GetPublicURL(ctx context.Context, key string, expiry time.Duration) (string, error)
+
 	// Exists checks if an object exists.
 	Exists(ctx context.Context, key string) (bool, error)
 }
