@@ -456,6 +456,7 @@ func toGraphQLTestimonial(t *domain.Testimonial, referenceLetter *model.Referenc
 
 // toGraphQLTestimonials converts a slice of domain Testimonial to GraphQL models.
 // validatedSkillsByRefLetter maps reference letter IDs to their validated skills.
+// Only skills that are mentioned in the testimonial's SkillsMentioned field are included.
 func toGraphQLTestimonials(testimonials []*domain.Testimonial, validatedSkillsByRefLetter map[string][]*model.ProfileSkill) []*model.Testimonial {
 	if len(testimonials) == 0 {
 		return []*model.Testimonial{}
@@ -464,9 +465,38 @@ func toGraphQLTestimonials(testimonials []*domain.Testimonial, validatedSkillsBy
 	for i, t := range testimonials {
 		var validatedSkills []*model.ProfileSkill
 		if validatedSkillsByRefLetter != nil {
-			validatedSkills = validatedSkillsByRefLetter[t.ReferenceLetterID.String()]
+			allSkills := validatedSkillsByRefLetter[t.ReferenceLetterID.String()]
+			// Filter to only include skills that are mentioned in this testimonial
+			validatedSkills = filterSkillsByMentioned(allSkills, t.SkillsMentioned)
 		}
 		result[i] = toGraphQLTestimonial(t, nil, validatedSkills)
 	}
 	return result
+}
+
+// filterSkillsByMentioned filters a list of skills to only include those whose name
+// (case-insensitive) appears in the skillsMentioned list.
+func filterSkillsByMentioned(skills []*model.ProfileSkill, skillsMentioned []string) []*model.ProfileSkill {
+	if len(skillsMentioned) == 0 {
+		return []*model.ProfileSkill{}
+	}
+
+	// Build a set of mentioned skill names (lowercase for case-insensitive matching)
+	mentionedSet := make(map[string]struct{}, len(skillsMentioned))
+	for _, name := range skillsMentioned {
+		mentionedSet[strings.ToLower(name)] = struct{}{}
+	}
+
+	// Filter skills to only include those mentioned
+	var filtered []*model.ProfileSkill
+	for _, skill := range skills {
+		if _, ok := mentionedSet[strings.ToLower(skill.Name)]; ok {
+			filtered = append(filtered, skill)
+		}
+	}
+
+	if filtered == nil {
+		return []*model.ProfileSkill{}
+	}
+	return filtered
 }
