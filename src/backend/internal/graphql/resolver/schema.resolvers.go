@@ -541,7 +541,7 @@ func (r *mutationResolver) UpdateProfileHeader(ctx context.Context, userID strin
 	if profile.ProfilePhotoFileID != nil {
 		file, err := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
 		if err == nil && file != nil {
-			url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, 24*time.Hour)
+			url, err := r.storage.GetPublicURL(ctx, file.StorageKey, 24*time.Hour)
 			if err == nil {
 				photoURL = &url
 			}
@@ -713,10 +713,10 @@ func (r *mutationResolver) UploadProfilePhoto(ctx context.Context, userID string
 		logger.String("storage_key", storageKey),
 	)
 
-	// Generate presigned URL for the photo
-	photoURL, err := r.storage.GetPresignedURL(ctx, storageKey, 24*time.Hour)
+	// Generate public URL for the photo
+	photoURL, err := r.storage.GetPublicURL(ctx, storageKey, 24*time.Hour)
 	if err != nil {
-		r.log.Warning("Failed to generate presigned URL",
+		r.log.Warning("Failed to generate public URL",
 			logger.Feature("profile"),
 			logger.String("storage_key", storageKey),
 			logger.Err(err),
@@ -1932,7 +1932,7 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 	if profile.ProfilePhotoFileID != nil {
 		photoFile, fileErr := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
 		if fileErr == nil && photoFile != nil {
-			url, urlErr := r.storage.GetPresignedURL(ctx, photoFile.StorageKey, 24*time.Hour)
+			url, urlErr := r.storage.GetPublicURL(ctx, photoFile.StorageKey, 24*time.Hour)
 			if urlErr == nil {
 				photoURL = &url
 			}
@@ -2258,7 +2258,7 @@ func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Prof
 	if profile.ProfilePhotoFileID != nil {
 		photoFile, fileErr := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
 		if fileErr == nil && photoFile != nil {
-			url, urlErr := r.storage.GetPresignedURL(ctx, photoFile.StorageKey, 24*time.Hour)
+			url, urlErr := r.storage.GetPublicURL(ctx, photoFile.StorageKey, 24*time.Hour)
 			if urlErr == nil {
 				photoURL = &url
 			}

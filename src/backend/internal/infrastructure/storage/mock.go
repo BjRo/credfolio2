@@ -86,6 +86,12 @@ func (s *MockStorage) GetPresignedURL(_ context.Context, key string, expiry time
 	return fmt.Sprintf("http://mock-storage/%s?expiry=%s", key, expiry), nil
 }
 
+// GetPublicURL generates a mock public URL for testing.
+func (s *MockStorage) GetPublicURL(ctx context.Context, key string, expiry time.Duration) (string, error) {
+	// In tests, use the same behavior as GetPresignedURL
+	return s.GetPresignedURL(ctx, key, expiry)
+}
+
 // Exists checks if an object exists.
 func (s *MockStorage) Exists(_ context.Context, key string) (bool, error) {
 	s.mu.RLock()

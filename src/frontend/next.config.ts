@@ -28,6 +28,11 @@ const nextConfig: NextConfig = {
         source: "/api/graphql",
         destination: "http://localhost:8080/graphql",
       },
+      // Proxy MinIO storage requests - needed because browser can't reach MinIO directly in devcontainer
+      {
+        source: "/storage/:path*",
+        destination: `${process.env.MINIO_INTERNAL_URL || "http://credfolio2-minio:9000"}/credfolio/:path*`,
+      },
     ];
   },
 };
