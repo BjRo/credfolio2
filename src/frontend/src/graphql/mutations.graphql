@@ -236,8 +236,41 @@ mutation UpdateProfileHeader($userId: ID!, $input: UpdateProfileHeaderInput!) {
         phone
         location
         summary
+        profilePhotoUrl
         updatedAt
       }
+    }
+    ... on ProfileHeaderValidationError {
+      __typename
+      message
+      field
+    }
+  }
+}
+
+mutation UploadProfilePhoto($userId: ID!, $file: Upload!) {
+  uploadProfilePhoto(userId: $userId, file: $file) {
+    ... on UploadProfilePhotoResult {
+      __typename
+      profile {
+        id
+        profilePhotoUrl
+        updatedAt
+      }
+    }
+    ... on FileValidationError {
+      __typename
+      message
+      field
+    }
+  }
+}
+
+mutation DeleteProfilePhoto($userId: ID!) {
+  deleteProfilePhoto(userId: $userId) {
+    ... on DeleteProfilePhotoResult {
+      __typename
+      success
     }
     ... on ProfileHeaderValidationError {
       __typename

@@ -4,6 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 import { ProfileHeader } from "./ProfileHeader";
 import type { ProfileData } from "./types";
 
+// Mock urql to avoid provider requirement in tests
+vi.mock("urql", () => ({
+  useMutation: () => [{ fetching: false }, vi.fn()],
+}));
+
 // Mock the dialog component to avoid complex setup
 vi.mock("./ProfileHeaderFormDialog", () => ({
   ProfileHeaderFormDialog: vi.fn(() => null),
@@ -83,8 +88,9 @@ describe("ProfileHeader", () => {
     });
 
     it("has accessible label for avatar", () => {
+      // When userId is not provided, the button is disabled and has "Avatar for" label
       render(<ProfileHeader data={mockProfileData} />);
-      expect(screen.getByLabelText("Avatar for John Doe")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /avatar for john doe/i })).toBeInTheDocument();
     });
   });
 

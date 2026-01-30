@@ -136,6 +136,7 @@ query GetProfile($userId: ID!) {
     phone
     location
     summary
+    profilePhotoUrl
     experiences {
       id
       company

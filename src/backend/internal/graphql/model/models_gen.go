@@ -16,6 +16,11 @@ type ApplyValidationsResponse interface {
 	IsApplyValidationsResponse()
 }
 
+// Union type for profile photo deletion result.
+type DeleteProfilePhotoResponse interface {
+	IsDeleteProfilePhotoResponse()
+}
+
 // Union type for education create/update result.
 type EducationResponse interface {
 	IsEducationResponse()
@@ -39,6 +44,11 @@ type SkillResponse interface {
 // Union type for upload result - either success or validation error.
 type UploadFileResponse interface {
 	IsUploadFileResponse()
+}
+
+// Union type for profile photo upload result.
+type UploadProfilePhotoResponse interface {
+	IsUploadProfilePhotoResponse()
 }
 
 // Union type for resume upload result - either success or validation error.
@@ -142,6 +152,14 @@ type CreateSkillInput struct {
 	Category domain.SkillCategory `json:"category"`
 }
 
+// Result of deleting a profile photo.
+type DeleteProfilePhotoResult struct {
+	// Whether the deletion was successful.
+	Success bool `json:"success"`
+}
+
+func (DeleteProfilePhotoResult) IsDeleteProfilePhotoResponse() {}
+
 // Result of a delete operation.
 type DeleteResult struct {
 	// Whether the deletion was successful.
@@ -227,6 +245,8 @@ type FileValidationError struct {
 	Field string `json:"field"`
 }
 
+func (FileValidationError) IsUploadProfilePhotoResponse() {}
+
 func (FileValidationError) IsUploadFileResponse() {}
 
 func (FileValidationError) IsUploadResumeResponse() {}
@@ -259,6 +279,8 @@ type Profile struct {
 	Location *string `json:"location,omitempty"`
 	// User-edited professional summary (overrides resume extraction if set).
 	Summary *string `json:"summary,omitempty"`
+	// URL to the user's profile photo (presigned URL for direct access).
+	ProfilePhotoURL *string `json:"profilePhotoUrl,omitempty"`
 	// Work experience entries.
 	Experiences []*ProfileExperience `json:"experiences"`
 	// Education entries.
@@ -344,6 +366,8 @@ type ProfileHeaderValidationError struct {
 }
 
 func (ProfileHeaderValidationError) IsProfileHeaderResponse() {}
+
+func (ProfileHeaderValidationError) IsDeleteProfilePhotoResponse() {}
 
 // A skill entry in a user's profile.
 type ProfileSkill struct {
@@ -562,6 +586,14 @@ type UploadFileResult struct {
 }
 
 func (UploadFileResult) IsUploadFileResponse() {}
+
+// Result of a successful profile photo upload.
+type UploadProfilePhotoResult struct {
+	// The updated profile with photo URL.
+	Profile *Profile `json:"profile"`
+}
+
+func (UploadProfilePhotoResult) IsUploadProfilePhotoResponse() {}
 
 // Result of a resume upload operation.
 type UploadResumeResult struct {

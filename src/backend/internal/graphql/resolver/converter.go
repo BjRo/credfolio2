@@ -268,46 +268,49 @@ func toGraphQLResumeExtractedData(raw json.RawMessage) *model.ResumeExtractedDat
 }
 
 // toGraphQLProfile converts a domain Profile to a GraphQL Profile model.
-// The user, experiences, educations, and skills must be provided separately.
-func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience, educations []*model.ProfileEducation, skills []*model.ProfileSkill) *model.Profile {
+// The user, experiences, educations, skills, and photoURL must be provided separately.
+func toGraphQLProfile(p *domain.Profile, user *model.User, experiences []*model.ProfileExperience, educations []*model.ProfileEducation, skills []*model.ProfileSkill, photoURL *string) *model.Profile {
 	if p == nil {
 		return nil
 	}
 	return &model.Profile{
-		ID:          p.ID.String(),
-		User:        user,
-		Name:        p.Name,
-		Email:       p.Email,
-		Phone:       p.Phone,
-		Location:    p.Location,
-		Summary:     p.Summary,
-		Experiences: experiences,
-		Educations:  educations,
-		Skills:      skills,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+		ID:              p.ID.String(),
+		User:            user,
+		Name:            p.Name,
+		Email:           p.Email,
+		Phone:           p.Phone,
+		Location:        p.Location,
+		Summary:         p.Summary,
+		ProfilePhotoURL: photoURL,
+		Experiences:     experiences,
+		Educations:      educations,
+		Skills:          skills,
+		CreatedAt:       p.CreatedAt,
+		UpdatedAt:       p.UpdatedAt,
 	}
 }
 
 // domainProfileToGQL converts a domain Profile to a GraphQL Profile model
 // without requiring relations (experiences, educations, skills).
 // Use this when you only need the basic profile data without nested objects.
-func domainProfileToGQL(p *domain.Profile) *model.Profile {
+// The optional photoURL can be provided to populate the profile photo URL.
+func domainProfileToGQL(p *domain.Profile, photoURL *string) *model.Profile {
 	if p == nil {
 		return nil
 	}
 	return &model.Profile{
-		ID:          p.ID.String(),
-		Name:        p.Name,
-		Email:       p.Email,
-		Phone:       p.Phone,
-		Location:    p.Location,
-		Summary:     p.Summary,
-		Experiences: []*model.ProfileExperience{},
-		Educations:  []*model.ProfileEducation{},
-		Skills:      []*model.ProfileSkill{},
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+		ID:              p.ID.String(),
+		Name:            p.Name,
+		Email:           p.Email,
+		Phone:           p.Phone,
+		Location:        p.Location,
+		Summary:         p.Summary,
+		ProfilePhotoURL: photoURL,
+		Experiences:     []*model.ProfileExperience{},
+		Educations:      []*model.ProfileEducation{},
+		Skills:          []*model.ProfileSkill{},
+		CreatedAt:       p.CreatedAt,
+		UpdatedAt:       p.UpdatedAt,
 	}
 }
 

@@ -336,6 +336,8 @@ type Profile {
   location: String
   """User-edited professional summary (overrides resume extraction if set)."""
   summary: String
+  """URL to the user's profile photo (presigned URL for direct access)."""
+  profilePhotoUrl: String
   """Work experience entries."""
   experiences: [ProfileExperience!]!
   """Education entries."""
@@ -561,6 +563,32 @@ type ProfileHeaderValidationError {
 Union type for profile header update result.
 """
 union ProfileHeaderResponse = ProfileHeaderResult | ProfileHeaderValidationError
+
+"""
+Result of a successful profile photo upload.
+"""
+type UploadProfilePhotoResult {
+  """The updated profile with photo URL."""
+  profile: Profile!
+}
+
+"""
+Union type for profile photo upload result.
+"""
+union UploadProfilePhotoResponse = UploadProfilePhotoResult | FileValidationError
+
+"""
+Result of deleting a profile photo.
+"""
+type DeleteProfilePhotoResult {
+  """Whether the deletion was successful."""
+  success: Boolean!
+}
+
+"""
+Union type for profile photo deletion result.
+"""
+union DeleteProfilePhotoResponse = DeleteProfilePhotoResult | ProfileHeaderValidationError
 
 """
 Result of a delete operation.
@@ -907,6 +935,27 @@ type Mutation {
     """The header fields to update."""
     input: UpdateProfileHeaderInput!
   ): ProfileHeaderResponse!
+
+  """
+  Upload a profile photo.
+  Accepts JPEG, PNG, GIF, or WebP images (max 5MB).
+  Creates the profile if it doesn't exist.
+  Returns the updated profile with the photo URL.
+  """
+  uploadProfilePhoto(
+    """The user ID uploading the photo."""
+    userId: ID!
+    """The image file to upload (JPEG, PNG, GIF, or WebP only)."""
+    file: Upload!
+  ): UploadProfilePhotoResponse!
+
+  """
+  Delete the profile photo.
+  """
+  deleteProfilePhoto(
+    """The user ID whose photo to delete."""
+    userId: ID!
+  ): DeleteProfilePhotoResponse!
 
   # ============================================================================
   # Profile Experience Mutations
