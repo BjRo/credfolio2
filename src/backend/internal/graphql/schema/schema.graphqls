@@ -36,6 +36,7 @@ enum ReferenceLetterStatus {
   PROCESSING
   COMPLETED
   FAILED
+  APPLIED
 }
 
 # ============================================================================
@@ -518,6 +519,109 @@ type DeleteResult {
   deletedId: ID!
 }
 
+# ============================================================================
+# Apply Reference Letter Validations
+# ============================================================================
+
+"""
+Input for applying a skill validation from a reference letter.
+"""
+input SkillValidationInput {
+  """The profile skill ID to validate."""
+  profileSkillID: ID!
+  """Quote snippet from the reference letter supporting this skill."""
+  quoteSnippet: String!
+}
+
+"""
+Input for applying an experience validation from a reference letter.
+"""
+input ExperienceValidationInput {
+  """The profile experience ID to validate."""
+  profileExperienceID: ID!
+  """Quote snippet from the reference letter supporting this experience."""
+  quoteSnippet: String!
+}
+
+"""
+Input for creating a testimonial from a reference letter.
+"""
+input TestimonialInput {
+  """The full quote text for the testimonial."""
+  quote: String!
+  """Skills mentioned in this testimonial."""
+  skillsMentioned: [String!]!
+}
+
+"""
+Input for adding a new skill discovered in the reference letter.
+"""
+input NewSkillInput {
+  """The skill name."""
+  name: String!
+  """The skill category."""
+  category: SkillCategory!
+  """Quote context from the reference letter mentioning this skill."""
+  quoteContext: String
+}
+
+"""
+Input for applying selected validations from a reference letter.
+"""
+input ApplyValidationsInput {
+  """The reference letter ID to apply validations from."""
+  referenceLetterID: ID!
+  """Skill validations to apply."""
+  skillValidations: [SkillValidationInput!]!
+  """Experience validations to apply."""
+  experienceValidations: [ExperienceValidationInput!]!
+  """Testimonials to add to the profile."""
+  testimonials: [TestimonialInput!]!
+  """New skills discovered in the reference letter to add to the profile."""
+  newSkills: [NewSkillInput!]!
+}
+
+"""
+Counts of items applied from a reference letter.
+"""
+type AppliedCount {
+  """Number of skill validations applied."""
+  skillValidations: Int!
+  """Number of experience validations applied."""
+  experienceValidations: Int!
+  """Number of testimonials added."""
+  testimonials: Int!
+  """Number of new skills added."""
+  newSkills: Int!
+}
+
+"""
+Result of applying reference letter validations.
+"""
+type ApplyValidationsResult {
+  """The updated reference letter."""
+  referenceLetter: ReferenceLetter!
+  """The updated profile."""
+  profile: Profile!
+  """Counts of items that were applied."""
+  appliedCount: AppliedCount!
+}
+
+"""
+Error returned when applying validations fails.
+"""
+type ApplyValidationsError {
+  """Error message describing the failure."""
+  message: String!
+  """The field that caused the error, if applicable."""
+  field: String
+}
+
+"""
+Union type for apply validations result.
+"""
+union ApplyValidationsResponse = ApplyValidationsResult | ApplyValidationsError
+
 type Query {
   """
   Get a user by ID.
@@ -746,4 +850,20 @@ type Mutation {
     """The skill ID to delete."""
     id: ID!
   ): DeleteResult!
+
+  # ============================================================================
+  # Reference Letter Validations
+  # ============================================================================
+
+  """
+  Apply selected validations from a reference letter to the profile.
+  Creates skill validations, experience validations, testimonials, and new skills.
+  Updates the reference letter status to indicate validations have been applied.
+  """
+  applyReferenceLetterValidations(
+    """The user ID applying the validations."""
+    userId: ID!
+    """The validations to apply."""
+    input: ApplyValidationsInput!
+  ): ApplyValidationsResponse!
 }

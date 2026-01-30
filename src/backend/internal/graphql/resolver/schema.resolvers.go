@@ -11,6 +11,7 @@ import (
 	"backend/internal/graphql/model"
 	"backend/internal/logger"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -1094,6 +1095,362 @@ func (r *mutationResolver) DeleteSkill(ctx context.Context, id string) (*model.D
 	}, nil
 }
 
+// ApplyReferenceLetterValidations is the resolver for the applyReferenceLetterValidations field.
+func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, userID string, input model.ApplyValidationsInput) (model.ApplyValidationsResponse, error) {
+	r.log.Info("Applying reference letter validations",
+		logger.Feature("credibility"),
+		logger.String("user_id", userID),
+		logger.String("reference_letter_id", input.ReferenceLetterID),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("credibility"),
+			logger.String("user_id", userID),
+		)
+		return &model.ApplyValidationsError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Parse and validate reference letter ID
+	refLetterID, err := uuid.Parse(input.ReferenceLetterID)
+	if err != nil {
+		r.log.Warning("Invalid reference letter ID format",
+			logger.Feature("credibility"),
+			logger.String("reference_letter_id", input.ReferenceLetterID),
+		)
+		return &model.ApplyValidationsError{
+			Message: "invalid reference letter ID format",
+			Field:   stringPtr("referenceLetterID"),
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("credibility"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		r.log.Warning("User not found",
+			logger.Feature("credibility"),
+			logger.String("user_id", userID),
+		)
+		return &model.ApplyValidationsError{
+			Message: "user not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Get reference letter and verify it belongs to user
+	refLetter, err := r.refLetterRepo.GetByID(ctx, refLetterID)
+	if err != nil {
+		r.log.Error("Failed to get reference letter",
+			logger.Feature("credibility"),
+			logger.String("reference_letter_id", input.ReferenceLetterID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get reference letter: %w", err)
+	}
+	if refLetter == nil {
+		r.log.Warning("Reference letter not found",
+			logger.Feature("credibility"),
+			logger.String("reference_letter_id", input.ReferenceLetterID),
+		)
+		return &model.ApplyValidationsError{
+			Message: "reference letter not found",
+			Field:   stringPtr("referenceLetterID"),
+		}, nil
+	}
+	if refLetter.UserID != uid {
+		r.log.Warning("Reference letter does not belong to user",
+			logger.Feature("credibility"),
+			logger.String("user_id", userID),
+			logger.String("reference_letter_id", input.ReferenceLetterID),
+		)
+		return &model.ApplyValidationsError{
+			Message: "reference letter does not belong to user",
+			Field:   stringPtr("referenceLetterID"),
+		}, nil
+	}
+
+	// Reference letter must be completed or applied for validations to be applied
+	// (allowing re-application of validations with different selections)
+	if refLetter.Status != domain.ReferenceLetterStatusCompleted && refLetter.Status != domain.ReferenceLetterStatusApplied {
+		r.log.Warning("Reference letter not completed",
+			logger.Feature("credibility"),
+			logger.String("reference_letter_id", input.ReferenceLetterID),
+			logger.String("status", string(refLetter.Status)),
+		)
+		return &model.ApplyValidationsError{
+			Message: "reference letter extraction not completed",
+			Field:   stringPtr("referenceLetterID"),
+		}, nil
+	}
+
+	// Parse extracted data to get author info for testimonials
+	var extractedData domain.ExtractedLetterData
+	if len(refLetter.ExtractedData) > 0 && string(refLetter.ExtractedData) != jsonNull {
+		if jsonErr := json.Unmarshal(refLetter.ExtractedData, &extractedData); jsonErr != nil {
+			r.log.Error("Failed to parse extracted data",
+				logger.Feature("credibility"),
+				logger.String("reference_letter_id", input.ReferenceLetterID),
+				logger.Err(jsonErr),
+			)
+			return &model.ApplyValidationsError{
+				Message: "failed to parse reference letter extracted data",
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+	}
+
+	// Get or create profile for user
+	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get or create profile",
+			logger.Feature("credibility"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Track applied counts
+	appliedCount := &model.AppliedCount{}
+
+	// Apply skill validations
+	for _, sv := range input.SkillValidations {
+		skillID, parseErr := uuid.Parse(sv.ProfileSkillID)
+		if parseErr != nil {
+			r.log.Warning("Invalid profile skill ID, skipping",
+				logger.Feature("credibility"),
+				logger.String("profile_skill_id", sv.ProfileSkillID),
+			)
+			continue
+		}
+
+		// Verify skill exists
+		skill, skillErr := r.profileSkillRepo.GetByID(ctx, skillID)
+		if skillErr != nil {
+			r.log.Error("Failed to verify skill",
+				logger.Feature("credibility"),
+				logger.String("profile_skill_id", sv.ProfileSkillID),
+				logger.Err(skillErr),
+			)
+			continue
+		}
+		if skill == nil {
+			r.log.Warning("Skill not found, skipping",
+				logger.Feature("credibility"),
+				logger.String("profile_skill_id", sv.ProfileSkillID),
+			)
+			continue
+		}
+
+		// Create skill validation
+		validation := &domain.SkillValidation{
+			ID:                uuid.New(),
+			ProfileSkillID:    skillID,
+			ReferenceLetterID: refLetterID,
+			QuoteSnippet:      &sv.QuoteSnippet,
+		}
+
+		if createErr := r.skillValidationRepo.Create(ctx, validation); createErr != nil {
+			// Ignore duplicate constraint errors (upsert behavior)
+			if !strings.Contains(createErr.Error(), "duplicate") && !strings.Contains(createErr.Error(), "unique constraint") {
+				r.log.Error("Failed to create skill validation",
+					logger.Feature("credibility"),
+					logger.String("profile_skill_id", sv.ProfileSkillID),
+					logger.Err(createErr),
+				)
+			}
+			continue
+		}
+		appliedCount.SkillValidations++
+	}
+
+	// Apply experience validations
+	for _, ev := range input.ExperienceValidations {
+		expID, parseErr := uuid.Parse(ev.ProfileExperienceID)
+		if parseErr != nil {
+			r.log.Warning("Invalid profile experience ID, skipping",
+				logger.Feature("credibility"),
+				logger.String("profile_experience_id", ev.ProfileExperienceID),
+			)
+			continue
+		}
+
+		// Verify experience exists
+		exp, expErr := r.profileExpRepo.GetByID(ctx, expID)
+		if expErr != nil {
+			r.log.Error("Failed to verify experience",
+				logger.Feature("credibility"),
+				logger.String("profile_experience_id", ev.ProfileExperienceID),
+				logger.Err(expErr),
+			)
+			continue
+		}
+		if exp == nil {
+			r.log.Warning("Experience not found, skipping",
+				logger.Feature("credibility"),
+				logger.String("profile_experience_id", ev.ProfileExperienceID),
+			)
+			continue
+		}
+
+		// Create experience validation
+		validation := &domain.ExperienceValidation{
+			ID:                  uuid.New(),
+			ProfileExperienceID: expID,
+			ReferenceLetterID:   refLetterID,
+			QuoteSnippet:        &ev.QuoteSnippet,
+		}
+
+		if createErr := r.expValidationRepo.Create(ctx, validation); createErr != nil {
+			// Ignore duplicate constraint errors (upsert behavior)
+			if !strings.Contains(createErr.Error(), "duplicate") && !strings.Contains(createErr.Error(), "unique constraint") {
+				r.log.Error("Failed to create experience validation",
+					logger.Feature("credibility"),
+					logger.String("profile_experience_id", ev.ProfileExperienceID),
+					logger.Err(createErr),
+				)
+			}
+			continue
+		}
+		appliedCount.ExperienceValidations++
+	}
+
+	// Create testimonials
+	for _, ti := range input.Testimonials {
+		// Map author relationship from extracted data to testimonial relationship
+		relationship := mapAuthorToTestimonialRelationship(extractedData.Author.Relationship)
+
+		testimonial := &domain.Testimonial{
+			ID:                uuid.New(),
+			ProfileID:         profile.ID,
+			ReferenceLetterID: refLetterID,
+			Quote:             ti.Quote,
+			AuthorName:        extractedData.Author.Name,
+			AuthorTitle:       extractedData.Author.Title,
+			AuthorCompany:     extractedData.Author.Company,
+			Relationship:      relationship,
+		}
+
+		if createErr := r.testimonialRepo.Create(ctx, testimonial); createErr != nil {
+			r.log.Error("Failed to create testimonial",
+				logger.Feature("credibility"),
+				logger.String("profile_id", profile.ID.String()),
+				logger.Err(createErr),
+			)
+			continue
+		}
+		appliedCount.Testimonials++
+	}
+
+	// Create new skills discovered in the reference letter
+	for _, ns := range input.NewSkills {
+		// Get next display order
+		displayOrder, orderErr := r.profileSkillRepo.GetNextDisplayOrder(ctx, profile.ID)
+		if orderErr != nil {
+			r.log.Error("Failed to get next display order for skill",
+				logger.Feature("credibility"),
+				logger.String("profile_id", profile.ID.String()),
+				logger.Err(orderErr),
+			)
+			continue
+		}
+
+		skill := &domain.ProfileSkill{
+			ID:             uuid.New(),
+			ProfileID:      profile.ID,
+			Name:           ns.Name,
+			NormalizedName: normalizeSkillName(ns.Name),
+			Category:       strings.ToUpper(string(ns.Category)),
+			DisplayOrder:   displayOrder,
+			Source:         domain.ExperienceSourceManual,
+		}
+
+		if createErr := r.profileSkillRepo.Create(ctx, skill); createErr != nil {
+			// Ignore duplicate skills (same normalized name)
+			if !strings.Contains(createErr.Error(), "duplicate") && !strings.Contains(createErr.Error(), "unique constraint") {
+				r.log.Error("Failed to create new skill",
+					logger.Feature("credibility"),
+					logger.String("skill_name", ns.Name),
+					logger.Err(createErr),
+				)
+			}
+			continue
+		}
+
+		// If quoteContext provided, also create a skill validation for it
+		if ns.QuoteContext != nil && *ns.QuoteContext != "" {
+			validation := &domain.SkillValidation{
+				ID:                uuid.New(),
+				ProfileSkillID:    skill.ID,
+				ReferenceLetterID: refLetterID,
+				QuoteSnippet:      ns.QuoteContext,
+			}
+			if valErr := r.skillValidationRepo.Create(ctx, validation); valErr != nil {
+				r.log.Warning("Failed to create validation for new skill",
+					logger.Feature("credibility"),
+					logger.String("skill_id", skill.ID.String()),
+					logger.Err(valErr),
+				)
+			}
+		}
+		appliedCount.NewSkills++
+	}
+
+	// Update reference letter status to applied
+	refLetter.Status = domain.ReferenceLetterStatusApplied
+	if updateErr := r.refLetterRepo.Update(ctx, refLetter); updateErr != nil {
+		r.log.Error("Failed to update reference letter status",
+			logger.Feature("credibility"),
+			logger.String("reference_letter_id", input.ReferenceLetterID),
+			logger.Err(updateErr),
+		)
+		// Continue anyway - validations were applied successfully
+	}
+
+	r.log.Info("Applied reference letter validations",
+		logger.Feature("credibility"),
+		logger.String("user_id", userID),
+		logger.String("reference_letter_id", input.ReferenceLetterID),
+		logger.Int("skill_validations", appliedCount.SkillValidations),
+		logger.Int("experience_validations", appliedCount.ExperienceValidations),
+		logger.Int("testimonials", appliedCount.Testimonials),
+		logger.Int("new_skills", appliedCount.NewSkills),
+	)
+
+	// Fetch file for reference letter (may be nil)
+	var file *model.File
+	if refLetter.FileID != nil {
+		fileEntity, fileErr := r.fileRepo.GetByID(ctx, *refLetter.FileID)
+		if fileErr == nil && fileEntity != nil {
+			file = toGraphQLFile(fileEntity, toGraphQLUser(user))
+		}
+	}
+
+	// Fetch profile relations for response
+	experiences, _ := r.profileExpRepo.GetByProfileID(ctx, profile.ID)
+	educations, _ := r.profileEduRepo.GetByProfileID(ctx, profile.ID)
+	skills, _ := r.profileSkillRepo.GetByProfileID(ctx, profile.ID)
+
+	return &model.ApplyValidationsResult{
+		ReferenceLetter: toGraphQLReferenceLetter(refLetter, toGraphQLUser(user), file),
+		Profile:         toGraphQLProfile(profile, toGraphQLUser(user), toGraphQLProfileExperiences(experiences), toGraphQLProfileEducations(educations), toGraphQLProfileSkills(skills)),
+		AppliedCount:    appliedCount,
+	}, nil
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	uid, err := uuid.Parse(id)
@@ -1436,38 +1793,3 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *extractedAuthorResolver) Company(ctx context.Context, obj *model.ExtractedAuthor) (*string, error) {
-	panic(fmt.Errorf("not implemented: Company - company"))
-}
-func (r *extractedAuthorResolver) Relationship(ctx context.Context, obj *model.ExtractedAuthor) (domain.AuthorRelationship, error) {
-	panic(fmt.Errorf("not implemented: Relationship - relationship"))
-}
-func (r *extractedLetterDataResolver) Testimonials(ctx context.Context, obj *model.ExtractedLetterData) ([]*model.ExtractedTestimonial, error) {
-	panic(fmt.Errorf("not implemented: Testimonials - testimonials"))
-}
-func (r *extractedLetterDataResolver) SkillMentions(ctx context.Context, obj *model.ExtractedLetterData) ([]*model.ExtractedSkillMention, error) {
-	panic(fmt.Errorf("not implemented: SkillMentions - skillMentions"))
-}
-func (r *extractedLetterDataResolver) ExperienceMentions(ctx context.Context, obj *model.ExtractedLetterData) ([]*model.ExtractedExperienceMention, error) {
-	panic(fmt.Errorf("not implemented: ExperienceMentions - experienceMentions"))
-}
-func (r *extractedLetterDataResolver) DiscoveredSkills(ctx context.Context, obj *model.ExtractedLetterData) ([]string, error) {
-	panic(fmt.Errorf("not implemented: DiscoveredSkills - discoveredSkills"))
-}
-func (r *Resolver) ExtractedAuthor() generated.ExtractedAuthorResolver {
-	return &extractedAuthorResolver{r}
-}
-func (r *Resolver) ExtractedLetterData() generated.ExtractedLetterDataResolver {
-	return &extractedLetterDataResolver{r}
-}
-type extractedAuthorResolver struct{ *Resolver }
-type extractedLetterDataResolver struct{ *Resolver }
-*/
