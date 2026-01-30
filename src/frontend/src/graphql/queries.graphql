@@ -11,37 +11,28 @@ query GetReferenceLetter($id: ID!) {
       author {
         name
         title
-        organization
+        company
         relationship
-        relationshipDetails
-        confidence
       }
-      skills
-      qualities {
-        trait
-        evidence
-        confidence
+      testimonials {
+        quote
+        skillsMentioned
       }
-      accomplishments {
-        description
-        impact
-        timeframe
-        confidence
+      skillMentions {
+        skill
+        quote
+        context
       }
-      recommendation {
-        strength
-        sentiment
-        keyQuotes
-        summary
-        confidence
+      experienceMentions {
+        company
+        role
+        quote
       }
+      discoveredSkills
       metadata {
         extractedAt
         modelVersion
-        overallConfidence
         processingTimeMs
-        warningsCount
-        warnings
       }
     }
     status
@@ -70,6 +61,13 @@ query GetReferenceLetters($userId: ID!) {
     organization
     status
     createdAt
+  }
+}
+
+query GetReferenceLetterStatus($id: ID!) {
+  referenceLetter(id: $id) {
+    id
+    status
   }
 }
 

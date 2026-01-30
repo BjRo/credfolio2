@@ -164,3 +164,26 @@ mutation DeleteSkill($id: ID!) {
     deletedId
   }
 }
+
+mutation UploadReferenceLetter($userId: ID!, $file: Upload!) {
+  uploadFile(userId: $userId, file: $file) {
+    ... on UploadFileResult {
+      __typename
+      file {
+        id
+        filename
+        contentType
+        sizeBytes
+      }
+      referenceLetter {
+        id
+        status
+      }
+    }
+    ... on FileValidationError {
+      __typename
+      message
+      field
+    }
+  }
+}
