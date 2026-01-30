@@ -1,7 +1,7 @@
 ---
 # credfolio2-3e5x
 title: Filter validated skills by testimonial's skillsMentioned
-status: in-progress
+status: completed
 type: bug
 created_at: 2026-01-30T12:08:35Z
 updated_at: 2026-01-30T12:08:35Z
@@ -35,4 +35,4 @@ The current implementation links skill_validations to reference_letters, but dis
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (skipped - backend-only change with comprehensive test coverage)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review (https://github.com/BjRo/credfolio2/pull/49)
