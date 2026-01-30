@@ -1343,6 +1343,7 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 			AuthorTitle:       extractedData.Author.Title,
 			AuthorCompany:     extractedData.Author.Company,
 			Relationship:      relationship,
+			SkillsMentioned:   ti.SkillsMentioned,
 		}
 
 		if createErr := r.testimonialRepo.Create(ctx, testimonial); createErr != nil {

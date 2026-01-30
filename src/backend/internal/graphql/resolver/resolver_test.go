@@ -2089,7 +2089,7 @@ func TestTestimonialsWithValidatedSkills(t *testing.T) {
 		t.Fatalf("setup: failed to create skill validation: %v", err)
 	}
 
-	// Create a testimonial
+	// Create a testimonial with skills mentioned
 	testimonial := &domain.Testimonial{
 		ID:                uuid.New(),
 		ProfileID:         profile.ID,
@@ -2099,6 +2099,7 @@ func TestTestimonialsWithValidatedSkills(t *testing.T) {
 		AuthorTitle:       stringPtr("Engineering Director"),
 		AuthorCompany:     stringPtr("Tech Corp"),
 		Relationship:      domain.TestimonialRelationshipManager,
+		SkillsMentioned:   []string{"Leadership", "Go Programming"},
 	}
 	if err := testimonialRepo.Create(ctx, testimonial); err != nil {
 		t.Fatalf("setup: failed to create testimonial: %v", err)
@@ -2160,7 +2161,7 @@ func TestTestimonialsWithValidatedSkills(t *testing.T) {
 			t.Fatalf("setup: failed to create skill validation: %v", err)
 		}
 
-		// Create testimonial from second reference letter
+		// Create testimonial from second reference letter with skills mentioned
 		testimonial2 := &domain.Testimonial{
 			ID:                uuid.New(),
 			ProfileID:         profile.ID,
@@ -2170,6 +2171,7 @@ func TestTestimonialsWithValidatedSkills(t *testing.T) {
 			AuthorTitle:       stringPtr("Staff Engineer"),
 			AuthorCompany:     stringPtr("Tech Corp"),
 			Relationship:      domain.TestimonialRelationshipPeer,
+			SkillsMentioned:   []string{"Leadership"},
 		}
 		if err := testimonialRepo.Create(ctx, testimonial2); err != nil {
 			t.Fatalf("setup: failed to create testimonial: %v", err)
@@ -2204,6 +2206,142 @@ func TestTestimonialsWithValidatedSkills(t *testing.T) {
 
 		if testimonialFromRefLetter2.ValidatedSkills[0].Name != "Leadership" {
 			t.Errorf("expected Leadership skill, got %s", testimonialFromRefLetter2.ValidatedSkills[0].Name)
+		}
+	})
+
+	t.Run("filters validatedSkills to only skills mentioned in testimonial", func(t *testing.T) {
+		// Create another reference letter that validates both skills
+		refLetter3 := &domain.ReferenceLetter{
+			ID:     uuid.New(),
+			UserID: user.ID,
+			Status: domain.ReferenceLetterStatusCompleted,
+		}
+		mustCreateReferenceLetter(refLetterRepo, refLetter3)
+
+		// Create skill validations for both skills
+		sv4 := &domain.SkillValidation{
+			ID:                uuid.New(),
+			ProfileSkillID:    skill1.ID,
+			ReferenceLetterID: refLetter3.ID,
+			QuoteSnippet:      stringPtr("Great leadership"),
+		}
+		if err := skillValidationRepo.Create(ctx, sv4); err != nil {
+			t.Fatalf("setup: failed to create skill validation: %v", err)
+		}
+
+		sv5 := &domain.SkillValidation{
+			ID:                uuid.New(),
+			ProfileSkillID:    skill2.ID,
+			ReferenceLetterID: refLetter3.ID,
+			QuoteSnippet:      stringPtr("Expert in Go"),
+		}
+		if err := skillValidationRepo.Create(ctx, sv5); err != nil {
+			t.Fatalf("setup: failed to create skill validation: %v", err)
+		}
+
+		// Create a testimonial that only mentions one skill (Leadership)
+		// Even though the reference letter validates both skills
+		testimonial3 := &domain.Testimonial{
+			ID:                uuid.New(),
+			ProfileID:         profile.ID,
+			ReferenceLetterID: refLetter3.ID,
+			Quote:             "Exceptional leadership abilities.",
+			AuthorName:        "Alice Director",
+			AuthorTitle:       stringPtr("VP Engineering"),
+			AuthorCompany:     stringPtr("Tech Corp"),
+			Relationship:      domain.TestimonialRelationshipManager,
+			SkillsMentioned:   []string{"Leadership"}, // Only Leadership mentioned, not Go Programming
+		}
+		if err := testimonialRepo.Create(ctx, testimonial3); err != nil {
+			t.Fatalf("setup: failed to create testimonial: %v", err)
+		}
+
+		results, err := query.Testimonials(ctx, profile.ID.String())
+		if err != nil {
+			t.Fatalf("Testimonials query failed: %v", err)
+		}
+
+		// Find the testimonial we just created
+		var filteredTestimonial *model.Testimonial
+		for _, t := range results {
+			if t.Quote == "Exceptional leadership abilities." {
+				filteredTestimonial = t
+				break
+			}
+		}
+
+		if filteredTestimonial == nil {
+			t.Fatal("could not find newly created testimonial")
+		}
+
+		// Should only have 1 validated skill (Leadership), not Go Programming
+		// even though the reference letter validates both
+		if len(filteredTestimonial.ValidatedSkills) != 1 {
+			t.Fatalf("expected 1 validated skill (filtered by skillsMentioned), got %d", len(filteredTestimonial.ValidatedSkills))
+		}
+
+		if filteredTestimonial.ValidatedSkills[0].Name != "Leadership" {
+			t.Errorf("expected Leadership skill, got %s", filteredTestimonial.ValidatedSkills[0].Name)
+		}
+	})
+
+	t.Run("returns empty validatedSkills when skillsMentioned is empty", func(t *testing.T) {
+		// Create a reference letter
+		refLetter4 := &domain.ReferenceLetter{
+			ID:     uuid.New(),
+			UserID: user.ID,
+			Status: domain.ReferenceLetterStatusCompleted,
+		}
+		mustCreateReferenceLetter(refLetterRepo, refLetter4)
+
+		// Create a skill validation
+		sv6 := &domain.SkillValidation{
+			ID:                uuid.New(),
+			ProfileSkillID:    skill1.ID,
+			ReferenceLetterID: refLetter4.ID,
+			QuoteSnippet:      stringPtr("Demonstrates leadership"),
+		}
+		if err := skillValidationRepo.Create(ctx, sv6); err != nil {
+			t.Fatalf("setup: failed to create skill validation: %v", err)
+		}
+
+		// Create a testimonial WITHOUT skillsMentioned (empty/nil)
+		testimonial4 := &domain.Testimonial{
+			ID:                uuid.New(),
+			ProfileID:         profile.ID,
+			ReferenceLetterID: refLetter4.ID,
+			Quote:             "A dependable team member.",
+			AuthorName:        "Charlie CEO",
+			AuthorTitle:       stringPtr("CEO"),
+			AuthorCompany:     stringPtr("Tech Corp"),
+			Relationship:      domain.TestimonialRelationshipOther,
+			SkillsMentioned:   nil, // No skills mentioned
+		}
+		if err := testimonialRepo.Create(ctx, testimonial4); err != nil {
+			t.Fatalf("setup: failed to create testimonial: %v", err)
+		}
+
+		results, err := query.Testimonials(ctx, profile.ID.String())
+		if err != nil {
+			t.Fatalf("Testimonials query failed: %v", err)
+		}
+
+		// Find the testimonial with no skills mentioned
+		var emptySkillsTestimonial *model.Testimonial
+		for _, t := range results {
+			if t.Quote == "A dependable team member." {
+				emptySkillsTestimonial = t
+				break
+			}
+		}
+
+		if emptySkillsTestimonial == nil {
+			t.Fatal("could not find testimonial with no skills mentioned")
+		}
+
+		// Should have 0 validated skills because skillsMentioned is empty
+		if len(emptySkillsTestimonial.ValidatedSkills) != 0 {
+			t.Fatalf("expected 0 validated skills when skillsMentioned is empty, got %d", len(emptySkillsTestimonial.ValidatedSkills))
 		}
 	})
 }
