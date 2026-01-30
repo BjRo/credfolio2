@@ -1,11 +1,11 @@
 ---
 # credfolio2-ksna
 title: Credibility indicators and hover popovers
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-23T16:28:41Z
-updated_at: 2026-01-30T12:57:55Z
+updated_at: 2026-01-30T13:25:02Z
 parent: credfolio2-1kt0
 ---
 
@@ -120,4 +120,4 @@ query experienceValidations($experienceId: ID!) {
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (UI changes)
 - [x] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
