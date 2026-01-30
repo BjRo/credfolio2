@@ -7,6 +7,11 @@ export const GRAPHQL_ENDPOINT =
   process.env.NEXT_PUBLIC_GRAPHQL_URL ||
   (isServer ? "http://localhost:8080/graphql" : "/api/graphql");
 
+// Direct backend URL for file uploads - Next.js rewrite proxy doesn't handle multipart form data
+// In production, this should point to the actual backend URL
+export const GRAPHQL_UPLOAD_ENDPOINT =
+  process.env.NEXT_PUBLIC_GRAPHQL_URL || "http://localhost:8080/graphql";
+
 export function createUrqlClient(url: string = GRAPHQL_ENDPOINT): Client {
   return new Client({
     url,

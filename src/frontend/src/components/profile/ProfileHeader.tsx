@@ -17,7 +17,7 @@ import { useCallback, useRef, useState } from "react";
 import { useMutation } from "urql";
 import { Button } from "@/components/ui/button";
 import { DeleteProfilePhotoDocument } from "@/graphql/generated/graphql";
-import { GRAPHQL_ENDPOINT } from "@/lib/urql/client";
+import { GRAPHQL_UPLOAD_ENDPOINT } from "@/lib/urql/client";
 import { ProfileHeaderFormDialog } from "./ProfileHeaderFormDialog";
 import type { ProfileData } from "./types";
 
@@ -186,7 +186,7 @@ function ProfileAvatar({ name, photoUrl, userId, onUploadSuccess }: ProfileAvata
               reject(new Error("Network error during upload"));
             });
 
-            xhr.open("POST", GRAPHQL_ENDPOINT);
+            xhr.open("POST", GRAPHQL_UPLOAD_ENDPOINT);
             xhr.send(formData);
           }
         );
