@@ -1786,6 +1786,21 @@ func (r *queryResolver) ProfileSkill(ctx context.Context, id string) (*model.Pro
 	return toGraphQLProfileSkill(skill), nil
 }
 
+// Testimonials is the resolver for the testimonials field.
+func (r *queryResolver) Testimonials(ctx context.Context, profileID string) ([]*model.Testimonial, error) {
+	pid, err := uuid.Parse(profileID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid profile ID: %w", err)
+	}
+
+	testimonials, err := r.testimonialRepo.GetByProfileID(ctx, pid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get testimonials: %w", err)
+	}
+
+	return toGraphQLTestimonials(testimonials), nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 

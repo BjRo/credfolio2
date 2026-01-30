@@ -622,6 +622,43 @@ Union type for apply validations result.
 """
 union ApplyValidationsResponse = ApplyValidationsResult | ApplyValidationsError
 
+# ============================================================================
+# Testimonial Type
+# ============================================================================
+
+"""
+Relationship type between testimonial author and the profile owner.
+"""
+enum TestimonialRelationship {
+  MANAGER
+  PEER
+  DIRECT_REPORT
+  CLIENT
+  OTHER
+}
+
+"""
+A testimonial quote from a reference letter displayed on the profile.
+"""
+type Testimonial {
+  """Unique identifier for the testimonial."""
+  id: ID!
+  """The full quote text."""
+  quote: String!
+  """Name of the person who provided the testimonial."""
+  authorName: String!
+  """Title/position of the author."""
+  authorTitle: String
+  """Company/organization of the author."""
+  authorCompany: String
+  """Relationship between the author and the profile owner."""
+  relationship: TestimonialRelationship!
+  """The reference letter this testimonial was extracted from."""
+  referenceLetter: ReferenceLetter
+  """When the testimonial was created."""
+  createdAt: DateTime!
+}
+
 type Query {
   """
   Get a user by ID.
@@ -678,6 +715,11 @@ type Query {
   Get a single profile skill by ID.
   """
   profileSkill(id: ID!): ProfileSkill
+
+  """
+  Get all testimonials for a profile.
+  """
+  testimonials(profileId: ID!): [Testimonial!]!
 }
 
 # ============================================================================

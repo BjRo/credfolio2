@@ -222,6 +222,7 @@ type ComplexityRoot struct {
 		ReferenceLetters  func(childComplexity int, userID string) int
 		Resume            func(childComplexity int, id string) int
 		Resumes           func(childComplexity int, userID string) int
+		Testimonials      func(childComplexity int, profileID string) int
 		User              func(childComplexity int, id string) int
 	}
 
@@ -271,6 +272,17 @@ type ComplexityRoot struct {
 		Message func(childComplexity int) int
 	}
 
+	Testimonial struct {
+		AuthorCompany   func(childComplexity int) int
+		AuthorName      func(childComplexity int) int
+		AuthorTitle     func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Quote           func(childComplexity int) int
+		ReferenceLetter func(childComplexity int) int
+		Relationship    func(childComplexity int) int
+	}
+
 	UploadFileResult struct {
 		File            func(childComplexity int) int
 		ReferenceLetter func(childComplexity int) int
@@ -316,6 +328,7 @@ type QueryResolver interface {
 	ProfileExperience(ctx context.Context, id string) (*model.ProfileExperience, error)
 	ProfileEducation(ctx context.Context, id string) (*model.ProfileEducation, error)
 	ProfileSkill(ctx context.Context, id string) (*model.ProfileSkill, error)
+	Testimonials(ctx context.Context, profileID string) ([]*model.Testimonial, error)
 }
 
 type executableSchema struct {
@@ -1128,6 +1141,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Resumes(childComplexity, args["userId"].(string)), true
+	case "Query.testimonials":
+		if e.complexity.Query.Testimonials == nil {
+			break
+		}
+
+		args, err := ec.field_Query_testimonials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Testimonials(childComplexity, args["profileId"].(string)), true
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -1330,6 +1354,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SkillValidationError.Message(childComplexity), true
+
+	case "Testimonial.authorCompany":
+		if e.complexity.Testimonial.AuthorCompany == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.AuthorCompany(childComplexity), true
+	case "Testimonial.authorName":
+		if e.complexity.Testimonial.AuthorName == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.AuthorName(childComplexity), true
+	case "Testimonial.authorTitle":
+		if e.complexity.Testimonial.AuthorTitle == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.AuthorTitle(childComplexity), true
+	case "Testimonial.createdAt":
+		if e.complexity.Testimonial.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.CreatedAt(childComplexity), true
+	case "Testimonial.id":
+		if e.complexity.Testimonial.ID == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.ID(childComplexity), true
+	case "Testimonial.quote":
+		if e.complexity.Testimonial.Quote == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.Quote(childComplexity), true
+	case "Testimonial.referenceLetter":
+		if e.complexity.Testimonial.ReferenceLetter == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.ReferenceLetter(childComplexity), true
+	case "Testimonial.relationship":
+		if e.complexity.Testimonial.Relationship == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.Relationship(childComplexity), true
 
 	case "UploadFileResult.file":
 		if e.complexity.UploadFileResult.File == nil {
@@ -2128,6 +2201,43 @@ Union type for apply validations result.
 """
 union ApplyValidationsResponse = ApplyValidationsResult | ApplyValidationsError
 
+# ============================================================================
+# Testimonial Type
+# ============================================================================
+
+"""
+Relationship type between testimonial author and the profile owner.
+"""
+enum TestimonialRelationship {
+  MANAGER
+  PEER
+  DIRECT_REPORT
+  CLIENT
+  OTHER
+}
+
+"""
+A testimonial quote from a reference letter displayed on the profile.
+"""
+type Testimonial {
+  """Unique identifier for the testimonial."""
+  id: ID!
+  """The full quote text."""
+  quote: String!
+  """Name of the person who provided the testimonial."""
+  authorName: String!
+  """Title/position of the author."""
+  authorTitle: String
+  """Company/organization of the author."""
+  authorCompany: String
+  """Relationship between the author and the profile owner."""
+  relationship: TestimonialRelationship!
+  """The reference letter this testimonial was extracted from."""
+  referenceLetter: ReferenceLetter
+  """When the testimonial was created."""
+  createdAt: DateTime!
+}
+
 type Query {
   """
   Get a user by ID.
@@ -2184,6 +2294,11 @@ type Query {
   Get a single profile skill by ID.
   """
   profileSkill(id: ID!): ProfileSkill
+
+  """
+  Get all testimonials for a profile.
+  """
+  testimonials(profileId: ID!): [Testimonial!]!
 }
 
 # ============================================================================
@@ -2676,6 +2791,17 @@ func (ec *executionContext) field_Query_resumes_args(ctx context.Context, rawArg
 		return nil, err
 	}
 	args["userId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_testimonials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "profileId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["profileId"] = arg0
 	return args, nil
 }
 
@@ -6729,6 +6855,65 @@ func (ec *executionContext) fieldContext_Query_profileSkill(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_testimonials(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_testimonials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Testimonials(ctx, fc.Args["profileId"].(string))
+		},
+		nil,
+		ec.marshalNTestimonial2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonialᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_testimonials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Testimonial_id(ctx, field)
+			case "quote":
+				return ec.fieldContext_Testimonial_quote(ctx, field)
+			case "authorName":
+				return ec.fieldContext_Testimonial_authorName(ctx, field)
+			case "authorTitle":
+				return ec.fieldContext_Testimonial_authorTitle(ctx, field)
+			case "authorCompany":
+				return ec.fieldContext_Testimonial_authorCompany(ctx, field)
+			case "relationship":
+				return ec.fieldContext_Testimonial_relationship(ctx, field)
+			case "referenceLetter":
+				return ec.fieldContext_Testimonial_referenceLetter(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Testimonial_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Testimonial", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_testimonials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7835,6 +8020,266 @@ func (ec *executionContext) fieldContext_SkillValidationError_field(_ context.Co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_id(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_quote(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_quote,
+		func(ctx context.Context) (any, error) {
+			return obj.Quote, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_quote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_authorName(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_authorName,
+		func(ctx context.Context) (any, error) {
+			return obj.AuthorName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_authorName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_authorTitle(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_authorTitle,
+		func(ctx context.Context) (any, error) {
+			return obj.AuthorTitle, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_authorTitle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_authorCompany(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_authorCompany,
+		func(ctx context.Context) (any, error) {
+			return obj.AuthorCompany, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_authorCompany(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_relationship(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_relationship,
+		func(ctx context.Context) (any, error) {
+			return obj.Relationship, nil
+		},
+		nil,
+		ec.marshalNTestimonialRelationship2backendᚋinternalᚋgraphqlᚋmodelᚐTestimonialRelationship,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_relationship(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TestimonialRelationship does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_referenceLetter(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_referenceLetter,
+		func(ctx context.Context) (any, error) {
+			return obj.ReferenceLetter, nil
+		},
+		nil,
+		ec.marshalOReferenceLetter2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐReferenceLetter,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_referenceLetter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ReferenceLetter_id(ctx, field)
+			case "title":
+				return ec.fieldContext_ReferenceLetter_title(ctx, field)
+			case "authorName":
+				return ec.fieldContext_ReferenceLetter_authorName(ctx, field)
+			case "authorTitle":
+				return ec.fieldContext_ReferenceLetter_authorTitle(ctx, field)
+			case "organization":
+				return ec.fieldContext_ReferenceLetter_organization(ctx, field)
+			case "dateWritten":
+				return ec.fieldContext_ReferenceLetter_dateWritten(ctx, field)
+			case "rawText":
+				return ec.fieldContext_ReferenceLetter_rawText(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_ReferenceLetter_extractedData(ctx, field)
+			case "status":
+				return ec.fieldContext_ReferenceLetter_status(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ReferenceLetter_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_ReferenceLetter_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_ReferenceLetter_user(ctx, field)
+			case "file":
+				return ec.fieldContext_ReferenceLetter_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReferenceLetter", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11797,6 +12242,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "testimonials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_testimonials(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -12085,6 +12552,71 @@ func (ec *executionContext) _SkillValidationError(ctx context.Context, sel ast.S
 			}
 		case "field":
 			out.Values[i] = ec._SkillValidationError_field(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var testimonialImplementors = []string{"Testimonial"}
+
+func (ec *executionContext) _Testimonial(ctx context.Context, sel ast.SelectionSet, obj *model.Testimonial) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, testimonialImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Testimonial")
+		case "id":
+			out.Values[i] = ec._Testimonial_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "quote":
+			out.Values[i] = ec._Testimonial_quote(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "authorName":
+			out.Values[i] = ec._Testimonial_authorName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "authorTitle":
+			out.Values[i] = ec._Testimonial_authorTitle(ctx, field, obj)
+		case "authorCompany":
+			out.Values[i] = ec._Testimonial_authorCompany(ctx, field, obj)
+		case "relationship":
+			out.Values[i] = ec._Testimonial_relationship(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "referenceLetter":
+			out.Values[i] = ec._Testimonial_referenceLetter(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._Testimonial_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13437,6 +13969,60 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
+func (ec *executionContext) marshalNTestimonial2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonialᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Testimonial) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTestimonial2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonial(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTestimonial2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonial(ctx context.Context, sel ast.SelectionSet, v *model.Testimonial) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Testimonial(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNTestimonialInput2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonialInputᚄ(ctx context.Context, v any) ([]*model.TestimonialInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
@@ -13455,6 +14041,16 @@ func (ec *executionContext) unmarshalNTestimonialInput2ᚕᚖbackendᚋinternal�
 func (ec *executionContext) unmarshalNTestimonialInput2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonialInput(ctx context.Context, v any) (*model.TestimonialInput, error) {
 	res, err := ec.unmarshalInputTestimonialInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNTestimonialRelationship2backendᚋinternalᚋgraphqlᚋmodelᚐTestimonialRelationship(ctx context.Context, v any) (model.TestimonialRelationship, error) {
+	var res model.TestimonialRelationship
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTestimonialRelationship2backendᚋinternalᚋgraphqlᚋmodelᚐTestimonialRelationship(ctx context.Context, sel ast.SelectionSet, v model.TestimonialRelationship) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNUpdateEducationInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateEducationInput(ctx context.Context, v any) (model.UpdateEducationInput, error) {

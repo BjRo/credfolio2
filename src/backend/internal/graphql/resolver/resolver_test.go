@@ -1868,6 +1868,130 @@ func TestProfileSkillQuery(t *testing.T) {
 	})
 }
 
+func TestTestimonialsQuery(t *testing.T) {
+	userRepo := newMockUserRepository()
+	profileRepo := newMockProfileRepository()
+	testimonialRepo := newMockTestimonialRepository()
+	refLetterRepo := newMockReferenceLetterRepository()
+
+	ctx := context.Background()
+
+	// Create a test user
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "testimonials-test@example.com",
+		PasswordHash: "hashed",
+	}
+	mustCreateUser(userRepo, user)
+
+	// Create a profile for the user
+	profile := &domain.Profile{
+		ID:     uuid.New(),
+		UserID: user.ID,
+	}
+	if err := profileRepo.Create(ctx, profile); err != nil {
+		t.Fatalf("setup: failed to create profile: %v", err)
+	}
+
+	// Create a reference letter
+	refLetter := &domain.ReferenceLetter{
+		ID:     uuid.New(),
+		UserID: user.ID,
+		Status: domain.ReferenceLetterStatusCompleted,
+	}
+	mustCreateReferenceLetter(refLetterRepo, refLetter)
+
+	// Create testimonials
+	testimonial1 := &domain.Testimonial{
+		ID:                uuid.New(),
+		ProfileID:         profile.ID,
+		ReferenceLetterID: refLetter.ID,
+		Quote:             "Great team player with excellent leadership skills.",
+		AuthorName:        "John Manager",
+		AuthorTitle:       stringPtr("Engineering Manager"),
+		AuthorCompany:     stringPtr("Acme Corp"),
+		Relationship:      domain.TestimonialRelationshipManager,
+	}
+	if err := testimonialRepo.Create(ctx, testimonial1); err != nil {
+		t.Fatalf("setup: failed to create testimonial: %v", err)
+	}
+
+	testimonial2 := &domain.Testimonial{
+		ID:                uuid.New(),
+		ProfileID:         profile.ID,
+		ReferenceLetterID: refLetter.ID,
+		Quote:             "A brilliant collaborator who consistently delivers high-quality work.",
+		AuthorName:        "Sarah Peer",
+		AuthorTitle:       stringPtr("Senior Engineer"),
+		AuthorCompany:     stringPtr("Acme Corp"),
+		Relationship:      domain.TestimonialRelationshipPeer,
+	}
+	if err := testimonialRepo.Create(ctx, testimonial2); err != nil {
+		t.Fatalf("setup: failed to create testimonial: %v", err)
+	}
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), refLetterRepo, newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), testimonialRepo, newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	query := r.Query()
+
+	t.Run("returns testimonials for profile", func(t *testing.T) {
+		results, err := query.Testimonials(ctx, profile.ID.String())
+		if err != nil {
+			t.Fatalf("Testimonials query failed: %v", err)
+		}
+
+		if len(results) != 2 {
+			t.Fatalf("expected 2 testimonials, got %d", len(results))
+		}
+
+		// Verify the testimonials have expected data
+		quotes := make(map[string]bool)
+		for _, testimonial := range results {
+			quotes[testimonial.Quote] = true
+			if testimonial.AuthorName == "" {
+				t.Error("expected author name to be set")
+			}
+		}
+
+		if !quotes["Great team player with excellent leadership skills."] {
+			t.Error("expected first testimonial quote")
+		}
+		if !quotes["A brilliant collaborator who consistently delivers high-quality work."] {
+			t.Error("expected second testimonial quote")
+		}
+	})
+
+	t.Run("returns empty slice for profile with no testimonials", func(t *testing.T) {
+		// Create a new profile without testimonials
+		emptyProfile := &domain.Profile{
+			ID:     uuid.New(),
+			UserID: user.ID,
+		}
+		if err := profileRepo.Create(ctx, emptyProfile); err != nil {
+			t.Fatalf("setup: failed to create empty profile: %v", err)
+		}
+
+		results, err := query.Testimonials(ctx, emptyProfile.ID.String())
+		if err != nil {
+			t.Fatalf("Testimonials query failed: %v", err)
+		}
+
+		if results == nil {
+			t.Error("expected empty slice, got nil")
+		}
+
+		if len(results) != 0 {
+			t.Errorf("expected 0 testimonials, got %d", len(results))
+		}
+	})
+
+	t.Run("returns error for invalid profile ID", func(t *testing.T) {
+		_, err := query.Testimonials(ctx, "invalid-uuid")
+		if err == nil {
+			t.Error("expected error for invalid UUID")
+		}
+	})
+}
+
 func TestApplyReferenceLetterValidations(t *testing.T) {
 	userRepo := newMockUserRepository()
 	fileRepo := newMockFileRepository()
