@@ -55,14 +55,23 @@ export function CorroborationsSection({
             />
           </div>
 
-          <div className="space-y-3">
+          {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
+          <div className="space-y-3" role="group" aria-label="Skills corroborations">
             {skillCorroborations.map((corr) => (
-              <button
+              // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
+              <div
                 key={corr.profileSkillId}
-                type="button"
-                onClick={() => onSkillToggle(corr.profileSkillId)}
-                disabled={disabled}
-                className={`flex items-start gap-3 p-4 rounded-lg border transition-colors w-full text-left ${
+                role="checkbox"
+                aria-checked={selectedSkillCorroborations.has(corr.profileSkillId)}
+                tabIndex={disabled ? -1 : 0}
+                onClick={() => !disabled && onSkillToggle(corr.profileSkillId)}
+                onKeyDown={(e) => {
+                  if (!disabled && (e.key === " " || e.key === "Enter")) {
+                    e.preventDefault();
+                    onSkillToggle(corr.profileSkillId);
+                  }
+                }}
+                className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
                   disabled
                     ? "bg-muted cursor-not-allowed"
                     : selectedSkillCorroborations.has(corr.profileSkillId)
@@ -73,9 +82,11 @@ export function CorroborationsSection({
                 <Checkbox
                   checked={selectedSkillCorroborations.has(corr.profileSkillId)}
                   onCheckedChange={() => onSkillToggle(corr.profileSkillId)}
+                  onClick={(e) => e.stopPropagation()}
                   disabled={disabled}
                   className="mt-1"
                   tabIndex={-1}
+                  aria-hidden="true"
                 />
                 <div className="flex-1">
                   <p className="font-medium text-foreground">{corr.skillName}</p>
@@ -83,7 +94,7 @@ export function CorroborationsSection({
                     &ldquo;{corr.quote}&rdquo;
                   </blockquote>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -103,14 +114,23 @@ export function CorroborationsSection({
             />
           </div>
 
-          <div className="space-y-3">
+          {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
+          <div className="space-y-3" role="group" aria-label="Experience corroborations">
             {experienceCorroborations.map((corr) => (
-              <button
+              // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
+              <div
                 key={corr.profileExperienceId}
-                type="button"
-                onClick={() => onExperienceToggle(corr.profileExperienceId)}
-                disabled={disabled}
-                className={`flex items-start gap-3 p-4 rounded-lg border transition-colors w-full text-left ${
+                role="checkbox"
+                aria-checked={selectedExperienceCorroborations.has(corr.profileExperienceId)}
+                tabIndex={disabled ? -1 : 0}
+                onClick={() => !disabled && onExperienceToggle(corr.profileExperienceId)}
+                onKeyDown={(e) => {
+                  if (!disabled && (e.key === " " || e.key === "Enter")) {
+                    e.preventDefault();
+                    onExperienceToggle(corr.profileExperienceId);
+                  }
+                }}
+                className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
                   disabled
                     ? "bg-muted cursor-not-allowed"
                     : selectedExperienceCorroborations.has(corr.profileExperienceId)
@@ -121,9 +141,11 @@ export function CorroborationsSection({
                 <Checkbox
                   checked={selectedExperienceCorroborations.has(corr.profileExperienceId)}
                   onCheckedChange={() => onExperienceToggle(corr.profileExperienceId)}
+                  onClick={(e) => e.stopPropagation()}
                   disabled={disabled}
                   className="mt-1"
                   tabIndex={-1}
+                  aria-hidden="true"
                 />
                 <div className="flex-1">
                   <p className="font-medium text-foreground">
@@ -133,7 +155,7 @@ export function CorroborationsSection({
                     &ldquo;{corr.quote}&rdquo;
                   </blockquote>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>

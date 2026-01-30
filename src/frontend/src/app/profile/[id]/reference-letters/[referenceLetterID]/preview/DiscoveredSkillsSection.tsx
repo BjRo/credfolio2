@@ -43,13 +43,22 @@ export function DiscoveredSkillsSection({
         Select any you want to add.
       </p>
 
-      <div className="space-y-3">
+      {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
+      <div className="space-y-3" role="group" aria-label="Discovered skills">
         {discoveredSkills.map((skill) => (
-          <button
+          // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
+          <div
             key={skill.name}
-            type="button"
-            onClick={() => onToggle(skill.name)}
-            disabled={disabled}
+            role="checkbox"
+            aria-checked={selectedSkills.has(skill.name)}
+            tabIndex={disabled ? -1 : 0}
+            onClick={() => !disabled && onToggle(skill.name)}
+            onKeyDown={(e) => {
+              if (!disabled && (e.key === " " || e.key === "Enter")) {
+                e.preventDefault();
+                onToggle(skill.name);
+              }
+            }}
             className={`flex items-start gap-3 p-4 rounded-lg border-2 border-dashed transition-colors w-full text-left ${
               disabled
                 ? "bg-muted cursor-not-allowed border-border"
@@ -61,9 +70,11 @@ export function DiscoveredSkillsSection({
             <Checkbox
               checked={selectedSkills.has(skill.name)}
               onCheckedChange={() => onToggle(skill.name)}
+              onClick={(e) => e.stopPropagation()}
               disabled={disabled}
               className="mt-1"
               tabIndex={-1}
+              aria-hidden="true"
             />
             <div className="flex-1">
               <p className="font-medium text-foreground">{skill.name}</p>
@@ -73,7 +84,7 @@ export function DiscoveredSkillsSection({
                 </blockquote>
               )}
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </section>

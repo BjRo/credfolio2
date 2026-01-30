@@ -43,13 +43,22 @@ export function TestimonialsSection({
         />
       </div>
 
-      <div className="space-y-4">
+      {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
+      <div className="space-y-4" role="group" aria-label="Testimonials">
         {testimonials.map((testimonial, index) => (
-          <button
+          // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
+          <div
             key={`testimonial-${testimonial.quote.slice(0, 50)}-${index}`}
-            type="button"
-            onClick={() => onToggle(index)}
-            disabled={disabled}
+            role="checkbox"
+            aria-checked={selectedTestimonials.has(index)}
+            tabIndex={disabled ? -1 : 0}
+            onClick={() => !disabled && onToggle(index)}
+            onKeyDown={(e) => {
+              if (!disabled && (e.key === " " || e.key === "Enter")) {
+                e.preventDefault();
+                onToggle(index);
+              }
+            }}
             className={`flex items-start gap-3 p-4 rounded-lg border transition-colors w-full text-left ${
               disabled
                 ? "bg-muted cursor-not-allowed"
@@ -61,9 +70,11 @@ export function TestimonialsSection({
             <Checkbox
               checked={selectedTestimonials.has(index)}
               onCheckedChange={() => onToggle(index)}
+              onClick={(e) => e.stopPropagation()}
               disabled={disabled}
               className="mt-1"
               tabIndex={-1}
+              aria-hidden="true"
             />
             <div className="flex-1 space-y-3">
               <blockquote className="text-foreground">&ldquo;{testimonial.quote}&rdquo;</blockquote>
@@ -84,7 +95,7 @@ export function TestimonialsSection({
                 )}
               </div>
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </section>
