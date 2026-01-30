@@ -63,10 +63,70 @@ type ReferenceLetter struct { //nolint:govet // Field ordering prioritizes reada
 	RawText       *string               `bun:"raw_text"`
 	ExtractedData json.RawMessage       `bun:"extracted_data,type:jsonb"`
 	Status        ReferenceLetterStatus `bun:"status,notnull,default:'pending'"`
+	ErrorMessage  *string               `bun:"error_message"`
 	CreatedAt     time.Time             `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt     time.Time             `bun:"updated_at,notnull,default:current_timestamp"`
 
 	// Relations
 	User *User `bun:"rel:belongs-to,join:user_id=id"`
 	File *File `bun:"rel:belongs-to,join:file_id=id"`
+}
+
+// TestimonialRelationship represents the relationship between the author and the candidate.
+type TestimonialRelationship string
+
+// Testimonial relationship constants.
+const (
+	TestimonialRelationshipManager      TestimonialRelationship = "manager"
+	TestimonialRelationshipPeer         TestimonialRelationship = "peer"
+	TestimonialRelationshipDirectReport TestimonialRelationship = "direct_report"
+	TestimonialRelationshipClient       TestimonialRelationship = "client"
+	TestimonialRelationshipOther        TestimonialRelationship = "other"
+)
+
+// Testimonial represents a quote from a reference letter displayed on the profile.
+type Testimonial struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
+	bun.BaseModel `bun:"table:testimonials,alias:t"`
+
+	ID                uuid.UUID               `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileID         uuid.UUID               `bun:"profile_id,notnull,type:uuid"`
+	ReferenceLetterID uuid.UUID               `bun:"reference_letter_id,notnull,type:uuid"`
+	Quote             string                  `bun:"quote,notnull"`
+	AuthorName        string                  `bun:"author_name,notnull"`
+	AuthorTitle       *string                 `bun:"author_title"`
+	AuthorCompany     *string                 `bun:"author_company"`
+	Relationship      TestimonialRelationship `bun:"relationship,notnull,default:'other'"`
+	CreatedAt         time.Time               `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt         time.Time               `bun:"updated_at,notnull,default:current_timestamp"`
+
+	// Relations
+	ReferenceLetter *ReferenceLetter `bun:"rel:belongs-to,join:reference_letter_id=id"`
+}
+
+// SkillValidation links a profile skill to a reference letter that validates it.
+type SkillValidation struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
+	bun.BaseModel `bun:"table:skill_validations,alias:sv"`
+
+	ID                uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileSkillID    uuid.UUID `bun:"profile_skill_id,notnull,type:uuid"`
+	ReferenceLetterID uuid.UUID `bun:"reference_letter_id,notnull,type:uuid"`
+	QuoteSnippet      *string   `bun:"quote_snippet"`
+	CreatedAt         time.Time `bun:"created_at,notnull,default:current_timestamp"`
+
+	// Relations
+	ReferenceLetter *ReferenceLetter `bun:"rel:belongs-to,join:reference_letter_id=id"`
+}
+
+// ExperienceValidation links a profile experience to a reference letter that validates it.
+type ExperienceValidation struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
+	bun.BaseModel `bun:"table:experience_validations,alias:ev"`
+
+	ID                  uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileExperienceID uuid.UUID `bun:"profile_experience_id,notnull,type:uuid"`
+	ReferenceLetterID   uuid.UUID `bun:"reference_letter_id,notnull,type:uuid"`
+	QuoteSnippet        *string   `bun:"quote_snippet"`
+	CreatedAt           time.Time `bun:"created_at,notnull,default:current_timestamp"`
+
+	// Relations
+	ReferenceLetter *ReferenceLetter `bun:"rel:belongs-to,join:reference_letter_id=id"`
 }

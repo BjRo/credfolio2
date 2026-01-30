@@ -1,11 +1,11 @@
 ---
 # credfolio2-ue4q
 title: Reference letter data model and extraction
-status: draft
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-23T16:28:38Z
-updated_at: 2026-01-29T00:00:00Z
+updated_at: 2026-01-30T08:58:36Z
 parent: credfolio2-1kt0
 blocking:
     - credfolio2-6dty
@@ -98,25 +98,25 @@ Foundation for the reference letter credibility system: database schema, domain 
 
 ## Checklist
 
-- [ ] Create `reference_letters` migration
-- [ ] Create `testimonials` migration
-- [ ] Create `skill_validations` migration
-- [ ] Create `experience_validations` migration
-- [ ] Add Go domain types for all entities
-- [ ] Add repository methods for CRUD operations
-- [ ] Add GraphQL types to schema
-- [ ] Create extraction prompt for reference letters
-- [ ] Create ReferenceLetterProcessingJob (River job)
-- [ ] Implement text extraction (reuse from resume)
-- [ ] Implement structured extraction with JSON schema
-- [ ] Store extracted_data in reference_letters table
-- [ ] Write unit tests for extraction
-- [ ] Write integration tests for job processing
+- [x] Create `reference_letters` migration (added error_message column)
+- [x] Create `testimonials` migration
+- [x] Create `skill_validations` migration
+- [x] Create `experience_validations` migration
+- [x] Add Go domain types for all entities
+- [x] Add repository methods for CRUD operations
+- [x] Add GraphQL types to schema
+- [x] Create extraction prompt for reference letters
+- [x] Create ReferenceLetterProcessingJob (River job)
+- [x] Implement text extraction (reuse from resume)
+- [x] Implement structured extraction with JSON schema
+- [x] Store extracted_data in reference_letters table
+- [x] Write unit tests for extraction
+- [x] Write integration tests for job processing
 
 ## Definition of Done
 
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] All checklist items above are completed
+- [x] Branch pushed and PR created for human review (PR #43)

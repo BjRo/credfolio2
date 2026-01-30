@@ -15,6 +15,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/minio/minio-go/v7 v7.0.98
+	github.com/openai/openai-go v1.12.0
 	github.com/riverqueue/river v0.30.1
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.30.1
 	github.com/riverqueue/river/rivertype v0.30.1
@@ -43,7 +44,6 @@ require (
 	github.com/klauspost/crc32 v1.3.0 // indirect
 	github.com/minio/crc64nvme v1.1.1 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/openai/openai-go v1.12.0 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect

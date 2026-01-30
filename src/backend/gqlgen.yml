@@ -40,9 +40,6 @@ models:
   SkillCategory:
     model:
       - backend/internal/domain.SkillCategory
-  RecommendationStrength:
-    model:
-      - backend/internal/domain.RecommendationStrength
 
   # Extraction types - map to GraphQL model types
   ExtractedLetterData:
@@ -51,15 +48,15 @@ models:
   ExtractedAuthor:
     model:
       - backend/internal/graphql/model.ExtractedAuthor
-  ExtractedQuality:
+  ExtractedTestimonial:
     model:
-      - backend/internal/graphql/model.ExtractedQuality
-  ExtractedAccomplishment:
+      - backend/internal/graphql/model.ExtractedTestimonial
+  ExtractedSkillMention:
     model:
-      - backend/internal/graphql/model.ExtractedAccomplishment
-  ExtractedRecommendation:
+      - backend/internal/graphql/model.ExtractedSkillMention
+  ExtractedExperienceMention:
     model:
-      - backend/internal/graphql/model.ExtractedRecommendation
+      - backend/internal/graphql/model.ExtractedExperienceMention
   ExtractionMetadata:
     model:
       - backend/internal/graphql/model.ExtractionMetadata

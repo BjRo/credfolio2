@@ -174,3 +174,288 @@ func (p *capturingProvider) Complete(ctx context.Context, req domain.LLMRequest)
 func (p *capturingProvider) Name() string {
 	return "capturing"
 }
+
+//nolint:gocyclo // Test function with many assertions is intentionally thorough
+func TestDocumentExtractor_ExtractLetterData(t *testing.T) {
+	// Mock provider that returns structured letter extraction JSON
+	jsonResponse := `{
+		"author": {
+			"name": "John Smith",
+			"title": "Engineering Manager",
+			"company": "Acme Corp",
+			"relationship": "manager"
+		},
+		"testimonials": [
+			{
+				"quote": "Jane's leadership during our cloud migration was exceptional.",
+				"skillsMentioned": ["leadership", "cloud architecture"]
+			},
+			{
+				"quote": "She consistently delivered high-quality solutions under tight deadlines.",
+				"skillsMentioned": ["problem solving", "time management"]
+			}
+		],
+		"skillMentions": [
+			{
+				"skill": "Go",
+				"quote": "Her expertise in Go helped us build a highly performant backend.",
+				"context": "technical skills"
+			},
+			{
+				"skill": "Kubernetes",
+				"quote": "She led the migration to Kubernetes, reducing our deployment time by 80%.",
+				"context": "infrastructure"
+			}
+		],
+		"experienceMentions": [
+			{
+				"company": "Acme Corp",
+				"role": "Senior Engineer",
+				"quote": "During her time as Senior Engineer at Acme Corp, Jane..."
+			}
+		],
+		"discoveredSkills": ["mentoring", "system design", "cross-team collaboration"]
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content:      jsonResponse,
+			Model:        "claude-sonnet-4-20250514",
+			InputTokens:  2000,
+			OutputTokens: 500,
+			StopReason:   "end_turn",
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractLetterData(context.Background(), "Reference letter text here...")
+
+	if err != nil {
+		t.Fatalf("ExtractLetterData() error = %v", err)
+	}
+
+	// Verify author
+	if result.Author.Name != "John Smith" {
+		t.Errorf("Author.Name = %q, want %q", result.Author.Name, "John Smith")
+	}
+	if result.Author.Title == nil || *result.Author.Title != "Engineering Manager" {
+		t.Errorf("Author.Title = %v, want %q", result.Author.Title, "Engineering Manager")
+	}
+	if result.Author.Company == nil || *result.Author.Company != "Acme Corp" {
+		t.Errorf("Author.Company = %v, want %q", result.Author.Company, "Acme Corp")
+	}
+	if result.Author.Relationship != domain.AuthorRelationshipManager {
+		t.Errorf("Author.Relationship = %q, want %q", result.Author.Relationship, domain.AuthorRelationshipManager)
+	}
+
+	// Verify testimonials
+	if len(result.Testimonials) != 2 {
+		t.Errorf("len(Testimonials) = %d, want 2", len(result.Testimonials))
+	}
+	if result.Testimonials[0].Quote != "Jane's leadership during our cloud migration was exceptional." {
+		t.Errorf("Testimonials[0].Quote unexpected: %q", result.Testimonials[0].Quote)
+	}
+	if len(result.Testimonials[0].SkillsMentioned) != 2 {
+		t.Errorf("len(Testimonials[0].SkillsMentioned) = %d, want 2", len(result.Testimonials[0].SkillsMentioned))
+	}
+
+	// Verify skill mentions
+	if len(result.SkillMentions) != 2 {
+		t.Errorf("len(SkillMentions) = %d, want 2", len(result.SkillMentions))
+	}
+	if result.SkillMentions[0].Skill != "Go" {
+		t.Errorf("SkillMentions[0].Skill = %q, want %q", result.SkillMentions[0].Skill, "Go")
+	}
+	if result.SkillMentions[0].Context == nil || *result.SkillMentions[0].Context != "technical skills" {
+		t.Errorf("SkillMentions[0].Context = %v, want %q", result.SkillMentions[0].Context, "technical skills")
+	}
+
+	// Verify experience mentions
+	if len(result.ExperienceMentions) != 1 {
+		t.Errorf("len(ExperienceMentions) = %d, want 1", len(result.ExperienceMentions))
+	}
+	if result.ExperienceMentions[0].Company != "Acme Corp" {
+		t.Errorf("ExperienceMentions[0].Company = %q, want %q", result.ExperienceMentions[0].Company, "Acme Corp")
+	}
+	if result.ExperienceMentions[0].Role != "Senior Engineer" {
+		t.Errorf("ExperienceMentions[0].Role = %q, want %q", result.ExperienceMentions[0].Role, "Senior Engineer")
+	}
+
+	// Verify discovered skills
+	if len(result.DiscoveredSkills) != 3 {
+		t.Errorf("len(DiscoveredSkills) = %d, want 3", len(result.DiscoveredSkills))
+	}
+	if result.DiscoveredSkills[0] != "mentoring" {
+		t.Errorf("DiscoveredSkills[0] = %q, want %q", result.DiscoveredSkills[0], "mentoring")
+	}
+}
+
+func TestDocumentExtractor_ExtractLetterData_MarkdownCodeBlock(t *testing.T) {
+	// Test that markdown code blocks are stripped
+	jsonResponse := "```json\n" + `{
+		"author": {
+			"name": "Jane Doe",
+			"title": "",
+			"company": "",
+			"relationship": "peer"
+		},
+		"testimonials": [],
+		"skillMentions": [],
+		"experienceMentions": [],
+		"discoveredSkills": []
+	}` + "\n```"
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content: jsonResponse,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+
+	if err != nil {
+		t.Fatalf("ExtractLetterData() error = %v", err)
+	}
+
+	if result.Author.Name != "Jane Doe" {
+		t.Errorf("Author.Name = %q, want %q", result.Author.Name, "Jane Doe")
+	}
+	if result.Author.Relationship != domain.AuthorRelationshipPeer {
+		t.Errorf("Author.Relationship = %q, want %q", result.Author.Relationship, domain.AuthorRelationshipPeer)
+	}
+	// Empty strings should result in nil pointers
+	if result.Author.Title != nil {
+		t.Errorf("Author.Title = %v, want nil", result.Author.Title)
+	}
+	if result.Author.Company != nil {
+		t.Errorf("Author.Company = %v, want nil", result.Author.Company)
+	}
+}
+
+func TestDocumentExtractor_ExtractLetterData_EmptyArrays(t *testing.T) {
+	// Test that empty arrays are properly initialized (not nil)
+	jsonResponse := `{
+		"author": {
+			"name": "Bob",
+			"title": "",
+			"company": "",
+			"relationship": "colleague"
+		},
+		"testimonials": [],
+		"skillMentions": [],
+		"experienceMentions": [],
+		"discoveredSkills": []
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content: jsonResponse,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+
+	if err != nil {
+		t.Fatalf("ExtractLetterData() error = %v", err)
+	}
+
+	// Arrays should be initialized, not nil
+	if result.Testimonials == nil {
+		t.Error("Testimonials should not be nil")
+	}
+	if result.SkillMentions == nil {
+		t.Error("SkillMentions should not be nil")
+	}
+	if result.ExperienceMentions == nil {
+		t.Error("ExperienceMentions should not be nil")
+	}
+	if result.DiscoveredSkills == nil {
+		t.Error("DiscoveredSkills should not be nil")
+	}
+}
+
+func TestDocumentExtractor_ExtractLetterData_AllRelationshipTypes(t *testing.T) {
+	relationships := []domain.AuthorRelationship{
+		domain.AuthorRelationshipManager,
+		domain.AuthorRelationshipPeer,
+		domain.AuthorRelationshipDirectReport,
+		domain.AuthorRelationshipClient,
+		domain.AuthorRelationshipMentor,
+		domain.AuthorRelationshipProfessor,
+		domain.AuthorRelationshipColleague,
+		domain.AuthorRelationshipOther,
+	}
+
+	for _, rel := range relationships {
+		t.Run(string(rel), func(t *testing.T) {
+			jsonResponse := `{
+				"author": {
+					"name": "Test Author",
+					"title": "",
+					"company": "",
+					"relationship": "` + string(rel) + `"
+				},
+				"testimonials": [],
+				"skillMentions": [],
+				"experienceMentions": [],
+				"discoveredSkills": []
+			}`
+
+			inner := &mockProvider{
+				response: &domain.LLMResponse{
+					Content: jsonResponse,
+				},
+			}
+
+			extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+			result, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+
+			if err != nil {
+				t.Fatalf("ExtractLetterData() error = %v", err)
+			}
+
+			if result.Author.Relationship != rel {
+				t.Errorf("Author.Relationship = %q, want %q", result.Author.Relationship, rel)
+			}
+		})
+	}
+}
+
+func TestDocumentExtractor_ExtractLetterData_Error(t *testing.T) {
+	inner := &mockProvider{
+		err: &domain.LLMError{
+			Provider: "mock",
+			Message:  "API error",
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	_, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestDocumentExtractor_ExtractLetterData_InvalidJSON(t *testing.T) {
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content: "not valid json",
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	_, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
+	}
+}

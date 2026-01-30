@@ -39,7 +39,7 @@ enum ReferenceLetterStatus {
 }
 
 # ============================================================================
-# Reference Letter Extraction Schema
+# Reference Letter Extraction Schema (Credibility-Focused)
 # ============================================================================
 
 """
@@ -47,10 +47,12 @@ Relationship type between letter author and candidate.
 """
 enum AuthorRelationship {
   MANAGER
-  COLLEAGUE
-  PROFESSOR
+  PEER
+  DIRECT_REPORT
   CLIENT
   MENTOR
+  PROFESSOR
+  COLLEAGUE
   OTHER
 }
 
@@ -64,15 +66,6 @@ enum SkillCategory {
 }
 
 """
-Recommendation strength level.
-"""
-enum RecommendationStrength {
-  STRONG
-  MODERATE
-  RESERVED
-}
-
-"""
 Author details extracted from a reference letter.
 """
 type ExtractedAuthor {
@@ -80,56 +73,44 @@ type ExtractedAuthor {
   name: String!
   """The author's job title or position."""
   title: String
-  """The organization where the author works."""
-  organization: String
+  """The company where the author works."""
+  company: String
   """The relationship type between author and candidate."""
   relationship: AuthorRelationship!
-  """Additional details about the relationship (e.g., 'Direct supervisor for 3 years')."""
-  relationshipDetails: String
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
 }
 
 """
-A quality or trait mentioned in a reference letter.
+A testimonial quote suitable for display on the profile.
 """
-type ExtractedQuality {
-  """The quality or trait name."""
-  trait: String!
-  """Supporting evidence or quotes from the letter."""
-  evidence: [String!]
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
+type ExtractedTestimonial {
+  """The full quote text."""
+  quote: String!
+  """Skills mentioned in this testimonial."""
+  skillsMentioned: [String!]
 }
 
 """
-An accomplishment cited in a reference letter.
+A specific skill mentioned in the reference letter with context.
 """
-type ExtractedAccomplishment {
-  """Description of the accomplishment."""
-  description: String!
-  """The impact or result of the accomplishment."""
-  impact: String
-  """When the accomplishment occurred (e.g., '2024', 'Q3 2023')."""
-  timeframe: String
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
+type ExtractedSkillMention {
+  """The skill name."""
+  skill: String!
+  """Quote from the letter mentioning this skill."""
+  quote: String!
+  """Context for the skill mention (e.g., 'technical skills', 'leadership')."""
+  context: String
 }
 
 """
-Overall recommendation assessment from a reference letter.
+A reference to a role/company mentioned in the letter.
 """
-type ExtractedRecommendation {
-  """The overall strength of the recommendation."""
-  strength: RecommendationStrength!
-  """Sentiment score from -1.0 (negative) to 1.0 (positive)."""
-  sentiment: Float!
-  """Key quotes that demonstrate the recommendation strength."""
-  keyQuotes: [String!]
-  """Brief summary of the recommendation."""
-  summary: String
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
+type ExtractedExperienceMention {
+  """Company name mentioned."""
+  company: String!
+  """Role/title mentioned."""
+  role: String!
+  """Quote from the letter about this experience."""
+  quote: String!
 }
 
 """
@@ -140,30 +121,24 @@ type ExtractionMetadata {
   extractedAt: DateTime!
   """The LLM model version used for extraction."""
   modelVersion: String!
-  """Overall confidence score for the entire extraction (0.0 to 1.0)."""
-  overallConfidence: Float!
   """Time taken to process the extraction in milliseconds."""
   processingTimeMs: Int
-  """Number of warnings generated during extraction."""
-  warningsCount: Int!
-  """Warning messages from the extraction process."""
-  warnings: [String!]
 }
 
 """
-Structured data extracted from a reference letter.
+Structured data extracted from a reference letter for credibility validation.
 """
 type ExtractedLetterData {
   """Details about the letter's author."""
   author: ExtractedAuthor!
-  """Skill names mentioned in the letter."""
-  skills: [String!]!
-  """Qualities and traits mentioned in the letter."""
-  qualities: [ExtractedQuality!]!
-  """Accomplishments cited in the letter."""
-  accomplishments: [ExtractedAccomplishment!]!
-  """Overall recommendation assessment."""
-  recommendation: ExtractedRecommendation!
+  """Full testimonial quotes for display."""
+  testimonials: [ExtractedTestimonial!]!
+  """Specific skill mentions with quotes."""
+  skillMentions: [ExtractedSkillMention!]!
+  """Experience/role mentions with quotes."""
+  experienceMentions: [ExtractedExperienceMention!]!
+  """Skills discovered that aren't in the profile yet."""
+  discoveredSkills: [String!]!
   """Metadata about the extraction process."""
   metadata: ExtractionMetadata!
 }

@@ -33,8 +33,17 @@ var resumeExtractionSystemPrompt string
 //go:embed prompts/resume_extraction_user.txt
 var resumeExtractionUserTemplate string
 
+// Reference letter extraction prompts
+//
+//go:embed prompts/reference_letter_extraction_system.txt
+var letterExtractionSystemPrompt string
+
+//go:embed prompts/reference_letter_extraction_user.txt
+var letterExtractionUserTemplate string
+
 // Compiled templates for user prompts with placeholder substitution
 var resumeUserTemplate = template.Must(template.New("resume_user").Parse(resumeExtractionUserTemplate))
+var letterUserTemplate = template.Must(template.New("letter_user").Parse(letterExtractionUserTemplate))
 
 // DocumentExtractorConfig holds configuration for the document extractor.
 type DocumentExtractorConfig struct { //nolint:govet // Field order prioritizes readability
@@ -396,6 +405,247 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 	}
 
 	return &data, nil
+}
+
+// letterOutputSchema defines the JSON schema for structured reference letter extraction.
+// This schema is used with OpenAI/Anthropic structured output features to guarantee valid JSON.
+var letterOutputSchema = map[string]any{
+	"type":                 "object",
+	"additionalProperties": false,
+	"properties": map[string]any{
+		"author": map[string]any{
+			"type":                 "object",
+			"additionalProperties": false,
+			"description":          "Information about the letter author",
+			"properties": map[string]any{
+				"name": map[string]any{
+					"type":        "string",
+					"description": "Full name of the letter author",
+				},
+				"title": map[string]any{
+					"type":        "string",
+					"description": "Job title/position of the author if mentioned",
+				},
+				"company": map[string]any{
+					"type":        "string",
+					"description": "Organization where the author works if mentioned",
+				},
+				"relationship": map[string]any{
+					"type":        "string",
+					"description": "Relationship to candidate: manager, peer, direct_report, client, mentor, professor, colleague, or other",
+					"enum":        []string{"manager", "peer", "direct_report", "client", "mentor", "professor", "colleague", "other"},
+				},
+			},
+			"required": []string{"name", "title", "company", "relationship"},
+		},
+		"testimonials": map[string]any{
+			"type":        "array",
+			"description": "2-4 meaningful quotes suitable for display on profile",
+			"items": map[string]any{
+				"type":                 "object",
+				"additionalProperties": false,
+				"properties": map[string]any{
+					"quote": map[string]any{
+						"type":        "string",
+						"description": "Complete, impactful statement about the candidate",
+					},
+					"skillsMentioned": map[string]any{
+						"type":        "array",
+						"description": "Skills referenced in this quote",
+						"items": map[string]any{
+							"type": "string",
+						},
+					},
+				},
+				"required": []string{"quote", "skillsMentioned"},
+			},
+		},
+		"skillMentions": map[string]any{
+			"type":        "array",
+			"description": "Specific mentions of technical or professional skills",
+			"items": map[string]any{
+				"type":                 "object",
+				"additionalProperties": false,
+				"properties": map[string]any{
+					"skill": map[string]any{
+						"type":        "string",
+						"description": "Skill name (normalized, e.g., 'Golang' → 'Go')",
+					},
+					"quote": map[string]any{
+						"type":        "string",
+						"description": "Exact sentence(s) mentioning this skill",
+					},
+					"context": map[string]any{
+						"type":        "string",
+						"description": "Brief category like 'technical skills', 'leadership', 'communication'",
+					},
+				},
+				"required": []string{"skill", "quote", "context"},
+			},
+		},
+		"experienceMentions": map[string]any{
+			"type":        "array",
+			"description": "References to specific roles or companies the candidate held",
+			"items": map[string]any{
+				"type":                 "object",
+				"additionalProperties": false,
+				"properties": map[string]any{
+					"company": map[string]any{
+						"type":        "string",
+						"description": "Company/organization name mentioned",
+					},
+					"role": map[string]any{
+						"type":        "string",
+						"description": "Job title or role mentioned",
+					},
+					"quote": map[string]any{
+						"type":        "string",
+						"description": "Sentence(s) discussing this role/company",
+					},
+				},
+				"required": []string{"company", "role", "quote"},
+			},
+		},
+		"discoveredSkills": map[string]any{
+			"type":        "array",
+			"description": "Skills mentioned that might not be in the candidate's profile",
+			"items": map[string]any{
+				"type": "string",
+			},
+		},
+	},
+	"required": []string{"author", "testimonials", "skillMentions", "experienceMentions", "discoveredSkills"},
+}
+
+// LetterTemplateData holds the data for rendering the letter extraction user prompt.
+type LetterTemplateData struct {
+	Text string
+}
+
+// ExtractLetterData implements domain.DocumentExtractor interface.
+// It extracts structured credibility data from reference letter text using LLM with structured output.
+func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string) (*domain.ExtractedLetterData, error) {
+	// Get the appropriate provider for resume extraction (reusing same chain for letters)
+	provider := e.getProviderForChain(e.config.ResumeExtractionChain)
+
+	// Render the user prompt template with the letter text
+	var userPromptBuf bytes.Buffer
+	if err := letterUserTemplate.Execute(&userPromptBuf, LetterTemplateData{Text: text}); err != nil {
+		return nil, fmt.Errorf("failed to render user prompt template: %w", err)
+	}
+
+	llmReq := domain.LLMRequest{
+		SystemPrompt: letterExtractionSystemPrompt,
+		Messages: []domain.Message{
+			domain.NewTextMessage(domain.RoleUser, userPromptBuf.String()),
+		},
+		Model:        e.config.DefaultModel,
+		MaxTokens:    e.config.MaxTokens,
+		OutputSchema: letterOutputSchema,
+	}
+
+	resp, err := provider.Complete(ctx, llmReq)
+	if err != nil {
+		return nil, fmt.Errorf("LLM extraction failed: %w", err)
+	}
+
+	// Clean up the JSON response
+	jsonContent := stripMarkdownCodeBlock(resp.Content)
+	jsonContent = fixTrailingCommas(jsonContent)
+
+	// Parse JSON response into raw structure first
+	var rawData struct {
+		Author struct {
+			Name         string `json:"name"`
+			Title        string `json:"title"`
+			Company      string `json:"company"`
+			Relationship string `json:"relationship"`
+		} `json:"author"`
+		Testimonials []struct {
+			Quote           string   `json:"quote"`
+			SkillsMentioned []string `json:"skillsMentioned"`
+		} `json:"testimonials"`
+		SkillMentions []struct {
+			Skill   string `json:"skill"`
+			Quote   string `json:"quote"`
+			Context string `json:"context"`
+		} `json:"skillMentions"`
+		ExperienceMentions []struct {
+			Company string `json:"company"`
+			Role    string `json:"role"`
+			Quote   string `json:"quote"`
+		} `json:"experienceMentions"`
+		DiscoveredSkills []string `json:"discoveredSkills"`
+	}
+
+	if err := json.Unmarshal([]byte(jsonContent), &rawData); err != nil {
+		return nil, fmt.Errorf("failed to parse extraction response: %w", err)
+	}
+
+	// Convert to domain types with proper pointer handling
+	data := &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         rawData.Author.Name,
+			Relationship: domain.AuthorRelationship(rawData.Author.Relationship),
+		},
+		Testimonials:       make([]domain.ExtractedTestimonial, 0, len(rawData.Testimonials)),
+		SkillMentions:      make([]domain.ExtractedSkillMention, 0, len(rawData.SkillMentions)),
+		ExperienceMentions: make([]domain.ExtractedExperienceMention, 0, len(rawData.ExperienceMentions)),
+		DiscoveredSkills:   rawData.DiscoveredSkills,
+	}
+
+	// Handle optional author fields
+	if rawData.Author.Title != "" {
+		data.Author.Title = &rawData.Author.Title
+	}
+	if rawData.Author.Company != "" {
+		data.Author.Company = &rawData.Author.Company
+	}
+
+	// Convert testimonials
+	for _, t := range rawData.Testimonials {
+		data.Testimonials = append(data.Testimonials, domain.ExtractedTestimonial{
+			Quote:           t.Quote,
+			SkillsMentioned: t.SkillsMentioned,
+		})
+	}
+
+	// Convert skill mentions
+	for _, s := range rawData.SkillMentions {
+		mention := domain.ExtractedSkillMention{
+			Skill: s.Skill,
+			Quote: s.Quote,
+		}
+		if s.Context != "" {
+			mention.Context = &s.Context
+		}
+		data.SkillMentions = append(data.SkillMentions, mention)
+	}
+
+	// Convert experience mentions
+	for _, e := range rawData.ExperienceMentions {
+		data.ExperienceMentions = append(data.ExperienceMentions, domain.ExtractedExperienceMention{
+			Company: e.Company,
+			Role:    e.Role,
+			Quote:   e.Quote,
+		})
+	}
+
+	// Ensure slices are initialized (not nil)
+	if data.Testimonials == nil {
+		data.Testimonials = []domain.ExtractedTestimonial{}
+	}
+	if data.SkillMentions == nil {
+		data.SkillMentions = []domain.ExtractedSkillMention{}
+	}
+	if data.ExperienceMentions == nil {
+		data.ExperienceMentions = []domain.ExtractedExperienceMention{}
+	}
+	if data.DiscoveredSkills == nil {
+		data.DiscoveredSkills = []string{}
+	}
+
+	return data, nil
 }
 
 // Verify DocumentExtractor implements domain.DocumentExtractor interface.

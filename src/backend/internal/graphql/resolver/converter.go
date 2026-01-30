@@ -95,19 +95,13 @@ func toGraphQLExtractedData(raw json.RawMessage) *model.ExtractedLetterData {
 		return nil
 	}
 
-	// Convert extracted skills to plain skill names
-	skillNames := make([]string, len(data.Skills))
-	for i, s := range data.Skills {
-		skillNames[i] = s.Name
-	}
-
 	return &model.ExtractedLetterData{
-		Author:          toGraphQLExtractedAuthor(&data.Author),
-		Skills:          skillNames,
-		Qualities:       toGraphQLExtractedQualities(data.Qualities),
-		Accomplishments: toGraphQLExtractedAccomplishments(data.Accomplishments),
-		Recommendation:  toGraphQLExtractedRecommendation(&data.Recommendation),
-		Metadata:        toGraphQLExtractionMetadata(&data.Metadata),
+		Author:             toGraphQLExtractedAuthor(&data.Author),
+		Testimonials:       toGraphQLExtractedTestimonials(data.Testimonials),
+		SkillMentions:      toGraphQLExtractedSkillMentions(data.SkillMentions),
+		ExperienceMentions: toGraphQLExtractedExperienceMentions(data.ExperienceMentions),
+		DiscoveredSkills:   data.DiscoveredSkills,
+		Metadata:           toGraphQLExtractionMetadata(&data.Metadata),
 	}
 }
 
@@ -117,60 +111,58 @@ func toGraphQLExtractedAuthor(a *domain.ExtractedAuthor) *model.ExtractedAuthor 
 		return nil
 	}
 	return &model.ExtractedAuthor{
-		Name:                a.Name,
-		Title:               a.Title,
-		Organization:        a.Organization,
-		Relationship:        strings.ToUpper(string(a.Relationship)),
-		RelationshipDetails: a.RelationshipDetails,
-		Confidence:          a.Confidence,
+		Name:         a.Name,
+		Title:        a.Title,
+		Company:      a.Company,
+		Relationship: a.Relationship,
 	}
 }
 
-// toGraphQLExtractedQualities converts a slice of domain ExtractedQuality to GraphQL models.
-func toGraphQLExtractedQualities(qualities []domain.ExtractedQuality) []*model.ExtractedQuality {
-	if len(qualities) == 0 {
-		return []*model.ExtractedQuality{}
+// toGraphQLExtractedTestimonials converts a slice of domain ExtractedTestimonial to GraphQL models.
+func toGraphQLExtractedTestimonials(testimonials []domain.ExtractedTestimonial) []*model.ExtractedTestimonial {
+	if len(testimonials) == 0 {
+		return []*model.ExtractedTestimonial{}
 	}
-	result := make([]*model.ExtractedQuality, len(qualities))
-	for i, q := range qualities {
-		result[i] = &model.ExtractedQuality{
-			Trait:      q.Trait,
-			Evidence:   q.Evidence,
-			Confidence: q.Confidence,
+	result := make([]*model.ExtractedTestimonial, len(testimonials))
+	for i, t := range testimonials {
+		result[i] = &model.ExtractedTestimonial{
+			Quote:           t.Quote,
+			SkillsMentioned: t.SkillsMentioned,
 		}
 	}
 	return result
 }
 
-// toGraphQLExtractedAccomplishments converts a slice of domain ExtractedAccomplishment to GraphQL models.
-func toGraphQLExtractedAccomplishments(accomplishments []domain.ExtractedAccomplishment) []*model.ExtractedAccomplishment {
-	if len(accomplishments) == 0 {
-		return []*model.ExtractedAccomplishment{}
+// toGraphQLExtractedSkillMentions converts a slice of domain ExtractedSkillMention to GraphQL models.
+func toGraphQLExtractedSkillMentions(mentions []domain.ExtractedSkillMention) []*model.ExtractedSkillMention {
+	if len(mentions) == 0 {
+		return []*model.ExtractedSkillMention{}
 	}
-	result := make([]*model.ExtractedAccomplishment, len(accomplishments))
-	for i, a := range accomplishments {
-		result[i] = &model.ExtractedAccomplishment{
-			Description: a.Description,
-			Impact:      a.Impact,
-			Timeframe:   a.Timeframe,
-			Confidence:  a.Confidence,
+	result := make([]*model.ExtractedSkillMention, len(mentions))
+	for i, m := range mentions {
+		result[i] = &model.ExtractedSkillMention{
+			Skill:   m.Skill,
+			Quote:   m.Quote,
+			Context: m.Context,
 		}
 	}
 	return result
 }
 
-// toGraphQLExtractedRecommendation converts domain ExtractedRecommendation to GraphQL model.
-func toGraphQLExtractedRecommendation(r *domain.ExtractedRecommendation) *model.ExtractedRecommendation {
-	if r == nil {
-		return nil
+// toGraphQLExtractedExperienceMentions converts a slice of domain ExtractedExperienceMention to GraphQL models.
+func toGraphQLExtractedExperienceMentions(mentions []domain.ExtractedExperienceMention) []*model.ExtractedExperienceMention {
+	if len(mentions) == 0 {
+		return []*model.ExtractedExperienceMention{}
 	}
-	return &model.ExtractedRecommendation{
-		Strength:   strings.ToUpper(string(r.Strength)),
-		Sentiment:  r.Sentiment,
-		KeyQuotes:  r.KeyQuotes,
-		Summary:    r.Summary,
-		Confidence: r.Confidence,
+	result := make([]*model.ExtractedExperienceMention, len(mentions))
+	for i, m := range mentions {
+		result[i] = &model.ExtractedExperienceMention{
+			Company: m.Company,
+			Role:    m.Role,
+			Quote:   m.Quote,
+		}
 	}
+	return result
 }
 
 // toGraphQLExtractionMetadata converts domain ExtractionMetadata to GraphQL model.
@@ -179,12 +171,9 @@ func toGraphQLExtractionMetadata(m *domain.ExtractionMetadata) *model.Extraction
 		return nil
 	}
 	return &model.ExtractionMetadata{
-		ExtractedAt:       m.ExtractedAt,
-		ModelVersion:      m.ModelVersion,
-		OverallConfidence: m.OverallConfidence,
-		ProcessingTimeMs:  m.ProcessingTimeMs,
-		WarningsCount:     m.WarningsCount,
-		Warnings:          m.Warnings,
+		ExtractedAt:      m.ExtractedAt,
+		ModelVersion:     m.ModelVersion,
+		ProcessingTimeMs: m.ProcessingTimeMs,
 	}
 }
 

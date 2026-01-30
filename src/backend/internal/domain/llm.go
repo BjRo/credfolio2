@@ -170,4 +170,7 @@ type DocumentExtractor interface {
 
 	// ExtractResumeData extracts structured resume data from text using LLM.
 	ExtractResumeData(ctx context.Context, text string) (*ResumeExtractedData, error)
+
+	// ExtractLetterData extracts structured reference letter data from text using LLM.
+	ExtractLetterData(ctx context.Context, text string) (*ExtractedLetterData, error)
 }

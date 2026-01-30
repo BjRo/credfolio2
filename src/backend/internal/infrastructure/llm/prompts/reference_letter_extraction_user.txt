@@ -1,0 +1,3 @@
+Extract the structured credibility data from this reference letter:
+
+{{.Text}}
