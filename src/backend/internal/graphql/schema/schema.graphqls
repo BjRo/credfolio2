@@ -657,6 +657,8 @@ type Testimonial {
   referenceLetter: ReferenceLetter
   """When the testimonial was created."""
   createdAt: DateTime!
+  """Skills validated by this testimonial's reference letter."""
+  validatedSkills: [ProfileSkill!]!
 }
 
 type Query {

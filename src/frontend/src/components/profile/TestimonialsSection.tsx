@@ -1,6 +1,7 @@
 "use client";
 
-import { MessageSquareQuote, Plus, User } from "lucide-react";
+import { CheckCircle2, MessageSquareQuote, Plus, User } from "lucide-react";
+import { useCallback } from "react";
 import { type GetTestimonialsQuery, TestimonialRelationship } from "@/graphql/generated/graphql";
 
 const RELATIONSHIP_LABELS: Record<TestimonialRelationship, string> = {
@@ -15,9 +16,30 @@ type Testimonial = GetTestimonialsQuery["testimonials"][number];
 
 interface TestimonialCardProps {
   testimonial: Testimonial;
+  onSkillClick?: (skillId: string) => void;
 }
 
-function TestimonialCard({ testimonial }: TestimonialCardProps) {
+function TestimonialCard({ testimonial, onSkillClick }: TestimonialCardProps) {
+  const handleSkillClick = useCallback(
+    (skillId: string) => {
+      if (onSkillClick) {
+        onSkillClick(skillId);
+      } else {
+        // Default behavior: scroll to the skill element
+        const element = document.getElementById(`skill-${skillId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          // Briefly highlight the element
+          element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+          setTimeout(() => {
+            element.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+          }, 2000);
+        }
+      }
+    },
+    [onSkillClick]
+  );
+
   return (
     <div className="bg-muted/30 rounded-lg p-6 border border-border/50">
       {/* Quote */}
@@ -49,6 +71,32 @@ function TestimonialCard({ testimonial }: TestimonialCardProps) {
             </span>
           </div>
         </div>
+
+        {/* Validated Skills */}
+        {testimonial.validatedSkills && testimonial.validatedSkills.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-border/30">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Validates:
+              </span>
+              {testimonial.validatedSkills.map((skill, index) => (
+                <span key={skill.id} className="inline-flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => handleSkillClick(skill.id)}
+                    className="text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
+                  >
+                    {skill.name}
+                  </button>
+                  {index < testimonial.validatedSkills.length - 1 && (
+                    <span className="text-muted-foreground mx-1">·</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -58,12 +106,14 @@ interface TestimonialsSectionProps {
   testimonials: Testimonial[];
   isLoading?: boolean;
   onAddReference?: () => void;
+  onSkillClick?: (skillId: string) => void;
 }
 
 export function TestimonialsSection({
   testimonials,
   isLoading = false,
   onAddReference,
+  onSkillClick,
 }: TestimonialsSectionProps) {
   // Don't render if no testimonials and no way to add one
   if (testimonials.length === 0 && !onAddReference) {
@@ -112,7 +162,11 @@ export function TestimonialsSection({
       ) : testimonials.length > 0 ? (
         <div className="space-y-4">
           {testimonials.map((testimonial) => (
-            <TestimonialCard key={testimonial.id} testimonial={testimonial} />
+            <TestimonialCard
+              key={testimonial.id}
+              testimonial={testimonial}
+              onSkillClick={onSkillClick}
+            />
           ))}
         </div>
       ) : (

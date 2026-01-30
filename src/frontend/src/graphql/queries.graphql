@@ -185,5 +185,9 @@ query GetTestimonials($profileId: ID!) {
     authorCompany
     relationship
     createdAt
+    validatedSkills {
+      id
+      name
+    }
   }
 }

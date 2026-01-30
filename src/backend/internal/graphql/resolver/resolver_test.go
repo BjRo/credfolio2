@@ -1990,6 +1990,222 @@ func TestTestimonialsQuery(t *testing.T) {
 			t.Error("expected error for invalid UUID")
 		}
 	})
+
+	t.Run("returns empty validatedSkills when no skill validations exist", func(t *testing.T) {
+		results, err := query.Testimonials(ctx, profile.ID.String())
+		if err != nil {
+			t.Fatalf("Testimonials query failed: %v", err)
+		}
+
+		for _, testimonial := range results {
+			if testimonial.ValidatedSkills == nil {
+				t.Error("expected ValidatedSkills to be non-nil empty slice")
+			}
+			if len(testimonial.ValidatedSkills) != 0 {
+				t.Errorf("expected 0 validated skills, got %d", len(testimonial.ValidatedSkills))
+			}
+		}
+	})
+}
+
+func TestTestimonialsWithValidatedSkills(t *testing.T) {
+	userRepo := newMockUserRepository()
+	profileRepo := newMockProfileRepository()
+	testimonialRepo := newMockTestimonialRepository()
+	refLetterRepo := newMockReferenceLetterRepository()
+	profileSkillRepo := newMockProfileSkillRepository()
+	skillValidationRepo := newMockSkillValidationRepository()
+
+	ctx := context.Background()
+
+	// Create a test user
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "testimonials-skills-test@example.com",
+		PasswordHash: "hashed",
+	}
+	mustCreateUser(userRepo, user)
+
+	// Create a profile for the user
+	profile := &domain.Profile{
+		ID:     uuid.New(),
+		UserID: user.ID,
+	}
+	if err := profileRepo.Create(ctx, profile); err != nil {
+		t.Fatalf("setup: failed to create profile: %v", err)
+	}
+
+	// Create profile skills
+	skill1 := &domain.ProfileSkill{
+		ID:             uuid.New(),
+		ProfileID:      profile.ID,
+		Name:           "Leadership",
+		NormalizedName: "leadership",
+		Category:       "soft",
+		Source:         domain.ExperienceSourceManual,
+	}
+	if err := profileSkillRepo.Create(ctx, skill1); err != nil {
+		t.Fatalf("setup: failed to create skill: %v", err)
+	}
+
+	skill2 := &domain.ProfileSkill{
+		ID:             uuid.New(),
+		ProfileID:      profile.ID,
+		Name:           "Go Programming",
+		NormalizedName: "go programming",
+		Category:       "technical",
+		Source:         domain.ExperienceSourceManual,
+	}
+	if err := profileSkillRepo.Create(ctx, skill2); err != nil {
+		t.Fatalf("setup: failed to create skill: %v", err)
+	}
+
+	// Create a reference letter
+	refLetter := &domain.ReferenceLetter{
+		ID:     uuid.New(),
+		UserID: user.ID,
+		Status: domain.ReferenceLetterStatusCompleted,
+	}
+	mustCreateReferenceLetter(refLetterRepo, refLetter)
+
+	// Create skill validations for this reference letter
+	sv1 := &domain.SkillValidation{
+		ID:                uuid.New(),
+		ProfileSkillID:    skill1.ID,
+		ReferenceLetterID: refLetter.ID,
+		QuoteSnippet:      stringPtr("Excellent leadership skills"),
+	}
+	if err := skillValidationRepo.Create(ctx, sv1); err != nil {
+		t.Fatalf("setup: failed to create skill validation: %v", err)
+	}
+
+	sv2 := &domain.SkillValidation{
+		ID:                uuid.New(),
+		ProfileSkillID:    skill2.ID,
+		ReferenceLetterID: refLetter.ID,
+		QuoteSnippet:      stringPtr("Expert Go programmer"),
+	}
+	if err := skillValidationRepo.Create(ctx, sv2); err != nil {
+		t.Fatalf("setup: failed to create skill validation: %v", err)
+	}
+
+	// Create a testimonial
+	testimonial := &domain.Testimonial{
+		ID:                uuid.New(),
+		ProfileID:         profile.ID,
+		ReferenceLetterID: refLetter.ID,
+		Quote:             "A great leader and skilled Go developer.",
+		AuthorName:        "Jane Manager",
+		AuthorTitle:       stringPtr("Engineering Director"),
+		AuthorCompany:     stringPtr("Tech Corp"),
+		Relationship:      domain.TestimonialRelationshipManager,
+	}
+	if err := testimonialRepo.Create(ctx, testimonial); err != nil {
+		t.Fatalf("setup: failed to create testimonial: %v", err)
+	}
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), refLetterRepo, newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), profileSkillRepo, testimonialRepo, skillValidationRepo, newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	query := r.Query()
+
+	t.Run("returns validatedSkills for testimonial", func(t *testing.T) {
+		results, err := query.Testimonials(ctx, profile.ID.String())
+		if err != nil {
+			t.Fatalf("Testimonials query failed: %v", err)
+		}
+
+		if len(results) != 1 {
+			t.Fatalf("expected 1 testimonial, got %d", len(results))
+		}
+
+		testimonialResult := results[0]
+		if testimonialResult.ValidatedSkills == nil {
+			t.Fatal("expected ValidatedSkills to be non-nil")
+		}
+
+		if len(testimonialResult.ValidatedSkills) != 2 {
+			t.Fatalf("expected 2 validated skills, got %d", len(testimonialResult.ValidatedSkills))
+		}
+
+		// Verify the skills are correct
+		skillNames := make(map[string]bool)
+		for _, skill := range testimonialResult.ValidatedSkills {
+			skillNames[skill.Name] = true
+		}
+
+		if !skillNames["Leadership"] {
+			t.Error("expected Leadership skill in validated skills")
+		}
+		if !skillNames["Go Programming"] {
+			t.Error("expected Go Programming skill in validated skills")
+		}
+	})
+
+	t.Run("different testimonials from different reference letters have different validated skills", func(t *testing.T) {
+		// Create another reference letter with a different skill validation
+		refLetter2 := &domain.ReferenceLetter{
+			ID:     uuid.New(),
+			UserID: user.ID,
+			Status: domain.ReferenceLetterStatusCompleted,
+		}
+		mustCreateReferenceLetter(refLetterRepo, refLetter2)
+
+		// Only validate skill1 for this reference letter
+		sv3 := &domain.SkillValidation{
+			ID:                uuid.New(),
+			ProfileSkillID:    skill1.ID,
+			ReferenceLetterID: refLetter2.ID,
+			QuoteSnippet:      stringPtr("Strong leadership"),
+		}
+		if err := skillValidationRepo.Create(ctx, sv3); err != nil {
+			t.Fatalf("setup: failed to create skill validation: %v", err)
+		}
+
+		// Create testimonial from second reference letter
+		testimonial2 := &domain.Testimonial{
+			ID:                uuid.New(),
+			ProfileID:         profile.ID,
+			ReferenceLetterID: refLetter2.ID,
+			Quote:             "A natural leader.",
+			AuthorName:        "Bob Peer",
+			AuthorTitle:       stringPtr("Staff Engineer"),
+			AuthorCompany:     stringPtr("Tech Corp"),
+			Relationship:      domain.TestimonialRelationshipPeer,
+		}
+		if err := testimonialRepo.Create(ctx, testimonial2); err != nil {
+			t.Fatalf("setup: failed to create testimonial: %v", err)
+		}
+
+		results, err := query.Testimonials(ctx, profile.ID.String())
+		if err != nil {
+			t.Fatalf("Testimonials query failed: %v", err)
+		}
+
+		if len(results) != 2 {
+			t.Fatalf("expected 2 testimonials, got %d", len(results))
+		}
+
+		// Find the testimonial from the second reference letter
+		var testimonialFromRefLetter2 *model.Testimonial
+		for _, t := range results {
+			if t.Quote == "A natural leader." {
+				testimonialFromRefLetter2 = t
+				break
+			}
+		}
+
+		if testimonialFromRefLetter2 == nil {
+			t.Fatal("could not find testimonial from second reference letter")
+		}
+
+		// Should only have 1 validated skill (Leadership)
+		if len(testimonialFromRefLetter2.ValidatedSkills) != 1 {
+			t.Fatalf("expected 1 validated skill for second testimonial, got %d", len(testimonialFromRefLetter2.ValidatedSkills))
+		}
+
+		if testimonialFromRefLetter2.ValidatedSkills[0].Name != "Leadership" {
+			t.Errorf("expected Leadership skill, got %s", testimonialFromRefLetter2.ValidatedSkills[0].Name)
+		}
+	})
 }
 
 func TestApplyReferenceLetterValidations(t *testing.T) {

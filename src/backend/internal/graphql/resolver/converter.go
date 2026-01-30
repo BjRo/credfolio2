@@ -415,8 +415,8 @@ func mapAuthorToTestimonialRelationship(ar domain.AuthorRelationship) domain.Tes
 }
 
 // toGraphQLTestimonial converts a domain Testimonial to a GraphQL Testimonial model.
-// The referenceLetter relation can be provided separately if needed.
-func toGraphQLTestimonial(t *domain.Testimonial, referenceLetter *model.ReferenceLetter) *model.Testimonial {
+// The referenceLetter relation and validatedSkills can be provided separately if needed.
+func toGraphQLTestimonial(t *domain.Testimonial, referenceLetter *model.ReferenceLetter, validatedSkills []*model.ProfileSkill) *model.Testimonial {
 	if t == nil {
 		return nil
 	}
@@ -436,6 +436,11 @@ func toGraphQLTestimonial(t *domain.Testimonial, referenceLetter *model.Referenc
 		relationship = model.TestimonialRelationshipOther
 	}
 
+	// Ensure validatedSkills is not nil (GraphQL requires non-null list)
+	if validatedSkills == nil {
+		validatedSkills = []*model.ProfileSkill{}
+	}
+
 	return &model.Testimonial{
 		ID:              t.ID.String(),
 		Quote:           t.Quote,
@@ -445,17 +450,23 @@ func toGraphQLTestimonial(t *domain.Testimonial, referenceLetter *model.Referenc
 		Relationship:    relationship,
 		ReferenceLetter: referenceLetter,
 		CreatedAt:       t.CreatedAt,
+		ValidatedSkills: validatedSkills,
 	}
 }
 
 // toGraphQLTestimonials converts a slice of domain Testimonial to GraphQL models.
-func toGraphQLTestimonials(testimonials []*domain.Testimonial) []*model.Testimonial {
+// validatedSkillsByRefLetter maps reference letter IDs to their validated skills.
+func toGraphQLTestimonials(testimonials []*domain.Testimonial, validatedSkillsByRefLetter map[string][]*model.ProfileSkill) []*model.Testimonial {
 	if len(testimonials) == 0 {
 		return []*model.Testimonial{}
 	}
 	result := make([]*model.Testimonial, len(testimonials))
 	for i, t := range testimonials {
-		result[i] = toGraphQLTestimonial(t, nil)
+		var validatedSkills []*model.ProfileSkill
+		if validatedSkillsByRefLetter != nil {
+			validatedSkills = validatedSkillsByRefLetter[t.ReferenceLetterID.String()]
+		}
+		result[i] = toGraphQLTestimonial(t, nil, validatedSkills)
 	}
 	return result
 }
