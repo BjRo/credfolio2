@@ -1,11 +1,11 @@
 ---
 # credfolio2-616c
 title: Testimonials display on profile
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-29T13:33:00Z
-updated_at: 2026-01-30T11:03:49Z
+updated_at: 2026-01-30T11:20:31Z
 parent: credfolio2-1kt0
 ---
 
@@ -120,4 +120,4 @@ When no testimonials:
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (UI changes)
 - [x] All checklist items above are completed (except deferred items)
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review (https://github.com/BjRo/credfolio2/pull/47)
