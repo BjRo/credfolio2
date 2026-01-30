@@ -60,3 +60,27 @@ models:
   ExtractionMetadata:
     model:
       - backend/internal/graphql/model.ExtractionMetadata
+
+  # Field resolvers for validation counts
+  ProfileSkill:
+    fields:
+      validationCount:
+        resolver: true
+  ProfileExperience:
+    fields:
+      validationCount:
+        resolver: true
+
+  # Field resolvers for validation types
+  SkillValidation:
+    fields:
+      skill:
+        resolver: true
+      referenceLetter:
+        resolver: true
+  ExperienceValidation:
+    fields:
+      experience:
+        resolver: true
+      referenceLetter:
+        resolver: true

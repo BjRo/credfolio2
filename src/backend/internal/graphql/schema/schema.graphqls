@@ -261,6 +261,8 @@ type ProfileExperience {
   displayOrder: Int!
   """Source of this experience entry."""
   source: ExperienceSource!
+  """Number of reference letters validating this experience."""
+  validationCount: Int!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -311,6 +313,8 @@ type ProfileSkill {
   displayOrder: Int!
   """Source of this skill entry."""
   source: ExperienceSource!
+  """Number of reference letters validating this skill."""
+  validationCount: Int!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -661,6 +665,42 @@ type Testimonial {
   validatedSkills: [ProfileSkill!]!
 }
 
+# ============================================================================
+# Validation Types for Credibility Indicators
+# ============================================================================
+
+"""
+A validation record linking a skill to a reference letter.
+"""
+type SkillValidation {
+  """Unique identifier for the validation."""
+  id: ID!
+  """The skill being validated."""
+  skill: ProfileSkill!
+  """The reference letter providing the validation."""
+  referenceLetter: ReferenceLetter!
+  """Quote snippet from the reference letter supporting this skill."""
+  quoteSnippet: String
+  """When the validation was created."""
+  createdAt: DateTime!
+}
+
+"""
+A validation record linking an experience to a reference letter.
+"""
+type ExperienceValidation {
+  """Unique identifier for the validation."""
+  id: ID!
+  """The experience being validated."""
+  experience: ProfileExperience!
+  """The reference letter providing the validation."""
+  referenceLetter: ReferenceLetter!
+  """Quote snippet from the reference letter supporting this experience."""
+  quoteSnippet: String
+  """When the validation was created."""
+  createdAt: DateTime!
+}
+
 type Query {
   """
   Get a user by ID.
@@ -722,6 +762,16 @@ type Query {
   Get all testimonials for a profile.
   """
   testimonials(profileId: ID!): [Testimonial!]!
+
+  """
+  Get all validations for a specific skill.
+  """
+  skillValidations(skillId: ID!): [SkillValidation!]!
+
+  """
+  Get all validations for a specific experience.
+  """
+  experienceValidations(experienceId: ID!): [ExperienceValidation!]!
 }
 
 # ============================================================================

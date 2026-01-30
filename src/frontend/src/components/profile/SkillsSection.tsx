@@ -9,9 +9,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SkillCategory } from "@/graphql/generated/graphql";
+import { CredibilityDots } from "./CredibilityDots";
 import { DeleteSkillDialog } from "./DeleteSkillDialog";
 import { SkillFormDialog } from "./SkillFormDialog";
 import type { ProfileSkill } from "./types";
+import { ValidationPopover } from "./ValidationPopover";
 
 const CATEGORY_LABELS: Record<SkillCategory, string> = {
   [SkillCategory.Technical]: "Technical",
@@ -32,46 +34,58 @@ interface EditableSkillTagProps {
 }
 
 function EditableSkillTag({ skill, onEdit, onDelete }: EditableSkillTagProps) {
-  if (!onEdit && !onDelete) {
-    return (
+  const validationCount = skill.validationCount ?? 0;
+
+  const skillTag =
+    !onEdit && !onDelete ? (
       <span className="inline-flex items-center px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
         {skill.name}
+        <CredibilityDots count={validationCount} />
+      </span>
+    ) : (
+      <span className="group/pill inline-flex items-center gap-1 pl-3 pr-1 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
+        {skill.name}
+        <CredibilityDots count={validationCount} />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="p-0.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-full transition-colors opacity-0 group-hover/pill:opacity-100 focus:opacity-100 transition-opacity"
+              aria-label={`Actions for ${skill.name}`}
+            >
+              <MoreVertical className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onEdit && (
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </span>
     );
-  }
 
   return (
-    <span className="group/pill inline-flex items-center gap-1 pl-3 pr-1 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
-      {skill.name}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="p-0.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-full transition-colors opacity-0 group-hover/pill:opacity-100 focus:opacity-100 transition-opacity"
-            aria-label={`Actions for ${skill.name}`}
-          >
-            <MoreVertical className="h-3.5 w-3.5" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {onEdit && (
-            <DropdownMenuItem onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-          )}
-          {onDelete && (
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-destructive focus:text-destructive focus:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </span>
+    <ValidationPopover
+      itemId={skill.id}
+      type="skill"
+      itemName={skill.name}
+      validationCount={validationCount}
+    >
+      {skillTag}
+    </ValidationPopover>
   );
 }
 
