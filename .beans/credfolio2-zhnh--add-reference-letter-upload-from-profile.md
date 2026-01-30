@@ -1,11 +1,11 @@
 ---
 # credfolio2-zhnh
 title: Reference letter upload from profile
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-23T16:28:36Z
-updated_at: 2026-01-29T00:00:00Z
+updated_at: 2026-01-30T09:05:03Z
 parent: credfolio2-1kt0
 blocking:
     - credfolio2-6dty
@@ -55,20 +55,20 @@ mutation uploadReferenceLetter($userId: ID!, $file: Upload!) {
 
 ## Checklist
 
-- [ ] Add "Add Reference Letter" button to profile page
-- [ ] Create ReferenceLetterUploadModal component
-- [ ] Adapt FileUpload component for reference letters
-- [ ] Wire up uploadReferenceLetter mutation
-- [ ] Implement polling for processing status
-- [ ] Show processing state in modal
-- [ ] Handle error states with retry
-- [ ] Navigate to validation preview on completion
+- [x] Add "Add Reference Letter" button to profile page
+- [x] Create ReferenceLetterUploadModal component
+- [x] Adapt FileUpload component for reference letters
+- [x] Wire up uploadReferenceLetter mutation (using `uploadFile` mutation)
+- [x] Implement polling for processing status
+- [x] Show processing state in modal
+- [x] Handle error states with retry
+- [ ] Navigate to validation preview on completion (blocked by credfolio2-6dty - currently closes modal and refetches profile)
 
 ## Definition of Done
 
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (UI changes)
-- [ ] All checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (UI changes)
+- [ ] All checklist items above are completed (validation preview navigation blocked)
 - [ ] Branch pushed and PR created for human review

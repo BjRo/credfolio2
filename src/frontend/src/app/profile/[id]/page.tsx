@@ -1,13 +1,14 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useQuery } from "urql";
 import {
   EducationSection,
   ProfileActions,
   ProfileHeader,
   ProfileSkeleton,
+  ReferenceLetterUploadModal,
   SkillsSection,
   WorkExperienceSection,
 } from "@/components/profile";
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
   const resumeId = params.id as string;
+  const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
 
   const [resumeResult, _reexecuteResumeQuery] = useQuery({
     query: GetResumeDocument,
@@ -42,6 +44,16 @@ export default function ProfilePage() {
   const handleMutationSuccess = useCallback(() => {
     reexecuteProfileQuery({ requestPolicy: "network-only" });
   }, [reexecuteProfileQuery]);
+
+  // Handle reference letter upload success - must be defined before any early returns
+  const handleReferenceUploadSuccess = useCallback(
+    (_referenceLetterld: string) => {
+      // TODO: Navigate to validation preview when credfolio2-6dty is implemented
+      // For now, just refetch profile data
+      reexecuteProfileQuery({ requestPolicy: "network-only" });
+    },
+    [reexecuteProfileQuery]
+  );
 
   if (fetching) {
     return (
@@ -126,7 +138,7 @@ export default function ProfilePage() {
   }
 
   const handleAddReference = () => {
-    router.push("/upload");
+    setIsReferenceModalOpen(true);
   };
 
   const handleExport = () => {
@@ -164,6 +176,15 @@ export default function ProfilePage() {
           onExport={handleExport}
           onUploadAnother={handleUploadAnother}
         />
+
+        {userId && (
+          <ReferenceLetterUploadModal
+            open={isReferenceModalOpen}
+            onOpenChange={setIsReferenceModalOpen}
+            userId={userId}
+            onSuccess={handleReferenceUploadSuccess}
+          />
+        )}
       </div>
     </div>
   );
