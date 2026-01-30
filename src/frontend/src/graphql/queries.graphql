@@ -175,3 +175,15 @@ query GetProfile($userId: ID!) {
     updatedAt
   }
 }
+
+query GetTestimonials($profileId: ID!) {
+  testimonials(profileId: $profileId) {
+    id
+    quote
+    authorName
+    authorTitle
+    authorCompany
+    relationship
+    createdAt
+  }
+}

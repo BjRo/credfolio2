@@ -413,3 +413,49 @@ func mapAuthorToTestimonialRelationship(ar domain.AuthorRelationship) domain.Tes
 		return domain.TestimonialRelationshipOther
 	}
 }
+
+// toGraphQLTestimonial converts a domain Testimonial to a GraphQL Testimonial model.
+// The referenceLetter relation can be provided separately if needed.
+func toGraphQLTestimonial(t *domain.Testimonial, referenceLetter *model.ReferenceLetter) *model.Testimonial {
+	if t == nil {
+		return nil
+	}
+
+	// Convert domain relationship to GraphQL relationship
+	var relationship model.TestimonialRelationship
+	switch t.Relationship {
+	case domain.TestimonialRelationshipManager:
+		relationship = model.TestimonialRelationshipManager
+	case domain.TestimonialRelationshipPeer:
+		relationship = model.TestimonialRelationshipPeer
+	case domain.TestimonialRelationshipDirectReport:
+		relationship = model.TestimonialRelationshipDirectReport
+	case domain.TestimonialRelationshipClient:
+		relationship = model.TestimonialRelationshipClient
+	default:
+		relationship = model.TestimonialRelationshipOther
+	}
+
+	return &model.Testimonial{
+		ID:              t.ID.String(),
+		Quote:           t.Quote,
+		AuthorName:      t.AuthorName,
+		AuthorTitle:     t.AuthorTitle,
+		AuthorCompany:   t.AuthorCompany,
+		Relationship:    relationship,
+		ReferenceLetter: referenceLetter,
+		CreatedAt:       t.CreatedAt,
+	}
+}
+
+// toGraphQLTestimonials converts a slice of domain Testimonial to GraphQL models.
+func toGraphQLTestimonials(testimonials []*domain.Testimonial) []*model.Testimonial {
+	if len(testimonials) == 0 {
+		return []*model.Testimonial{}
+	}
+	result := make([]*model.Testimonial, len(testimonials))
+	for i, t := range testimonials {
+		result[i] = toGraphQLTestimonial(t, nil)
+	}
+	return result
+}

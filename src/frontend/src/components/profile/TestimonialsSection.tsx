@@ -1,0 +1,139 @@
+"use client";
+
+import { MessageSquareQuote, Plus, User } from "lucide-react";
+import { type GetTestimonialsQuery, TestimonialRelationship } from "@/graphql/generated/graphql";
+
+const RELATIONSHIP_LABELS: Record<TestimonialRelationship, string> = {
+  [TestimonialRelationship.Manager]: "Manager",
+  [TestimonialRelationship.Peer]: "Peer",
+  [TestimonialRelationship.DirectReport]: "Direct Report",
+  [TestimonialRelationship.Client]: "Client",
+  [TestimonialRelationship.Other]: "Other",
+};
+
+type Testimonial = GetTestimonialsQuery["testimonials"][number];
+
+interface TestimonialCardProps {
+  testimonial: Testimonial;
+}
+
+function TestimonialCard({ testimonial }: TestimonialCardProps) {
+  return (
+    <div className="bg-muted/30 rounded-lg p-6 border border-border/50">
+      {/* Quote */}
+      <blockquote className="relative">
+        <span className="absolute -top-2 -left-1 text-4xl text-primary/20 font-serif">&ldquo;</span>
+        <p className="text-foreground pl-4 pr-2 italic leading-relaxed">{testimonial.quote}</p>
+        <span className="absolute -bottom-4 right-0 text-4xl text-primary/20 font-serif">
+          &rdquo;
+        </span>
+      </blockquote>
+
+      {/* Attribution */}
+      <div className="mt-6 pt-4 border-t border-border/50">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-foreground">{testimonial.authorName}</p>
+            {(testimonial.authorTitle || testimonial.authorCompany) && (
+              <p className="text-sm text-muted-foreground">
+                {testimonial.authorTitle}
+                {testimonial.authorTitle && testimonial.authorCompany && " at "}
+                {testimonial.authorCompany}
+              </p>
+            )}
+            <span className="inline-flex items-center mt-1 px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
+              {RELATIONSHIP_LABELS[testimonial.relationship]}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface TestimonialsSectionProps {
+  testimonials: Testimonial[];
+  isLoading?: boolean;
+  onAddReference?: () => void;
+}
+
+export function TestimonialsSection({
+  testimonials,
+  isLoading = false,
+  onAddReference,
+}: TestimonialsSectionProps) {
+  // Don't render if no testimonials and no way to add one
+  if (testimonials.length === 0 && !onAddReference) {
+    return null;
+  }
+
+  return (
+    <div className="bg-card border rounded-lg p-6 sm:p-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <MessageSquareQuote className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold text-foreground">What Others Say</h2>
+        </div>
+        {onAddReference && (
+          <button
+            type="button"
+            onClick={onAddReference}
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+            aria-label="Add reference letter"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="bg-muted/30 rounded-lg p-6 border border-border/50 animate-pulse"
+            >
+              <div className="h-20 bg-muted rounded" />
+              <div className="mt-6 pt-4 border-t border-border/50">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-muted rounded w-32" />
+                    <div className="h-3 bg-muted rounded w-48" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : testimonials.length > 0 ? (
+        <div className="space-y-4">
+          {testimonials.map((testimonial) => (
+            <TestimonialCard key={testimonial.id} testimonial={testimonial} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <MessageSquareQuote className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+          <p className="text-muted-foreground mb-4">No testimonials yet.</p>
+          <p className="text-sm text-muted-foreground mb-6">
+            Add a reference letter to include testimonials from people who&apos;ve worked with you.
+          </p>
+          {onAddReference && (
+            <button
+              type="button"
+              onClick={onAddReference}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Add Reference Letter
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

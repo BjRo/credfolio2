@@ -396,6 +396,26 @@ type SkillValidationInput struct {
 	QuoteSnippet string `json:"quoteSnippet"`
 }
 
+// A testimonial quote from a reference letter displayed on the profile.
+type Testimonial struct {
+	// Unique identifier for the testimonial.
+	ID string `json:"id"`
+	// The full quote text.
+	Quote string `json:"quote"`
+	// Name of the person who provided the testimonial.
+	AuthorName string `json:"authorName"`
+	// Title/position of the author.
+	AuthorTitle *string `json:"authorTitle,omitempty"`
+	// Company/organization of the author.
+	AuthorCompany *string `json:"authorCompany,omitempty"`
+	// Relationship between the author and the profile owner.
+	Relationship TestimonialRelationship `json:"relationship"`
+	// The reference letter this testimonial was extracted from.
+	ReferenceLetter *ReferenceLetter `json:"referenceLetter,omitempty"`
+	// When the testimonial was created.
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 // Input for creating a testimonial from a reference letter.
 type TestimonialInput struct {
 	// The full quote text for the testimonial.
@@ -656,6 +676,68 @@ func (e *ResumeStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e ResumeStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+// Relationship type between testimonial author and the profile owner.
+type TestimonialRelationship string
+
+const (
+	TestimonialRelationshipManager      TestimonialRelationship = "MANAGER"
+	TestimonialRelationshipPeer         TestimonialRelationship = "PEER"
+	TestimonialRelationshipDirectReport TestimonialRelationship = "DIRECT_REPORT"
+	TestimonialRelationshipClient       TestimonialRelationship = "CLIENT"
+	TestimonialRelationshipOther        TestimonialRelationship = "OTHER"
+)
+
+var AllTestimonialRelationship = []TestimonialRelationship{
+	TestimonialRelationshipManager,
+	TestimonialRelationshipPeer,
+	TestimonialRelationshipDirectReport,
+	TestimonialRelationshipClient,
+	TestimonialRelationshipOther,
+}
+
+func (e TestimonialRelationship) IsValid() bool {
+	switch e {
+	case TestimonialRelationshipManager, TestimonialRelationshipPeer, TestimonialRelationshipDirectReport, TestimonialRelationshipClient, TestimonialRelationshipOther:
+		return true
+	}
+	return false
+}
+
+func (e TestimonialRelationship) String() string {
+	return string(e)
+}
+
+func (e *TestimonialRelationship) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TestimonialRelationship(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TestimonialRelationship", str)
+	}
+	return nil
+}
+
+func (e TestimonialRelationship) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TestimonialRelationship) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TestimonialRelationship) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

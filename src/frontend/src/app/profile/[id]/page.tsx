@@ -10,10 +10,16 @@ import {
   ProfileSkeleton,
   ReferenceLetterUploadModal,
   SkillsSection,
+  TestimonialsSection,
   WorkExperienceSection,
 } from "@/components/profile";
 import { Button } from "@/components/ui/button";
-import { GetProfileDocument, GetResumeDocument, ResumeStatus } from "@/graphql/generated/graphql";
+import {
+  GetProfileDocument,
+  GetResumeDocument,
+  GetTestimonialsDocument,
+  ResumeStatus,
+} from "@/graphql/generated/graphql";
 
 export default function ProfilePage() {
   const params = useParams();
@@ -39,11 +45,24 @@ export default function ProfilePage() {
 
   const { data, fetching, error } = resumeResult;
   const profile = profileResult.data?.profile;
+  const profileId = profile?.id;
 
-  // Refetch profile when mutations succeed - memoized to prevent unnecessary re-renders
+  // Fetch testimonials for the profile
+  const [testimonialsResult, reexecuteTestimonialsQuery] = useQuery({
+    query: GetTestimonialsDocument,
+    variables: { profileId: profileId || "" },
+    pause: !profileId, // Don't run until we have profileId
+    requestPolicy: "network-only",
+  });
+
+  const testimonials = testimonialsResult.data?.testimonials ?? [];
+  const testimonialsLoading = testimonialsResult.fetching;
+
+  // Refetch profile and testimonials when mutations succeed - memoized to prevent unnecessary re-renders
   const handleMutationSuccess = useCallback(() => {
     reexecuteProfileQuery({ requestPolicy: "network-only" });
-  }, [reexecuteProfileQuery]);
+    reexecuteTestimonialsQuery({ requestPolicy: "network-only" });
+  }, [reexecuteProfileQuery, reexecuteTestimonialsQuery]);
 
   // Handle reference letter upload success - navigate to validation preview
   const handleReferenceUploadSuccess = useCallback(
@@ -170,6 +189,13 @@ export default function ProfilePage() {
           userId={userId}
           onMutationSuccess={handleMutationSuccess}
         />
+
+        <TestimonialsSection
+          testimonials={testimonials}
+          isLoading={testimonialsLoading}
+          onAddReference={handleAddReference}
+        />
+
         <ProfileActions
           onAddReference={handleAddReference}
           onExport={handleExport}
