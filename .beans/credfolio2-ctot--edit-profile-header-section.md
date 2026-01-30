@@ -1,11 +1,11 @@
 ---
 # credfolio2-ctot
 title: Edit profile header section
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-29T13:51:30Z
-updated_at: 2026-01-30T14:19:54Z
+updated_at: 2026-01-30T16:04:20Z
 parent: credfolio2-dwid
 ---
 
