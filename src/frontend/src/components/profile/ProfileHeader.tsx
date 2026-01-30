@@ -124,9 +124,6 @@ export function ProfileHeader({ data }: ProfileHeaderProps) {
                 )}
               </div>
             </div>
-            <div className="text-sm text-muted-foreground sm:text-right">
-              <p>Confidence: {Math.round(data.confidence * 100)}%</p>
-            </div>
           </div>
         </div>
       </div>

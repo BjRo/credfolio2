@@ -1,11 +1,11 @@
 ---
 # credfolio2-fuo1
 title: Credibility score calculation and display
-status: draft
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-01-29T13:32:25Z
-updated_at: 2026-01-29T13:32:25Z
+updated_at: 2026-01-30T13:34:03Z
 parent: credfolio2-1kt0
 ---
 
