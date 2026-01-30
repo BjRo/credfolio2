@@ -13,11 +13,7 @@ export function createUrqlClient(url: string = GRAPHQL_ENDPOINT): Client {
     exchanges: [cacheExchange, fetchExchange],
     // Disable GET method to avoid URL length issues
     preferGetMethod: false,
-    fetchOptions: {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    },
+    // Don't set Content-Type header - urql will set it automatically
+    // (application/json for regular requests, multipart/form-data for file uploads)
   });
 }

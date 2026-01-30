@@ -1,10 +1,11 @@
 ---
 # credfolio2-2ex3
 title: Testimonials UI Enhancements
-status: in-progress
+status: todo
 type: epic
+priority: normal
 created_at: 2026-01-30T13:46:56Z
-updated_at: 2026-01-30T13:46:56Z
+updated_at: 2026-01-30T13:58:35Z
 ---
 
 Enhance the testimonials section ("What Others Say") on the profile page with improved trust signals, external linking, and better organization.
