@@ -1,11 +1,11 @@
 ---
 # credfolio2-1twf
 title: Apply reference letter validations mutation
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-23T16:28:40Z
-updated_at: 2026-01-30T10:05:47Z
+updated_at: 2026-01-30T10:16:22Z
 parent: credfolio2-1kt0
 blocking:
     - credfolio2-ksna
