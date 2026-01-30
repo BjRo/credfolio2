@@ -46,6 +46,7 @@ const (
 	ReferenceLetterStatusProcessing ReferenceLetterStatus = "processing"
 	ReferenceLetterStatusCompleted  ReferenceLetterStatus = "completed"
 	ReferenceLetterStatusFailed     ReferenceLetterStatus = "failed"
+	ReferenceLetterStatusApplied    ReferenceLetterStatus = "applied"
 )
 
 // ReferenceLetter represents a reference letter with extracted data.

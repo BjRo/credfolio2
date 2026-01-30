@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-01-23T16:28:40Z
-updated_at: 2026-01-30T09:49:00Z
+updated_at: 2026-01-30T10:05:47Z
 parent: credfolio2-1kt0
 blocking:
     - credfolio2-ksna
@@ -97,7 +97,7 @@ mutation applyReferenceLetterValidations($input: ApplyValidationsInput!) {
 - [x] Create experience_validations records
 - [x] Create testimonials records (with author from extractedData)
 - [x] Create new skills if selected
-- [ ] Update reference_letter status (deferred - requires new "applied" status)
+- [x] Update reference_letter status to "applied"
 - [ ] Calculate credibility score (deferred to credfolio2-fuo1)
 - [x] Handle edge cases (duplicates, missing entities)
 - [x] Write resolver unit tests
@@ -109,13 +109,17 @@ mutation applyReferenceLetterValidations($input: ApplyValidationsInput!) {
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [ ] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
+
+## PR
+
+https://github.com/BjRo/credfolio2/pull/45
 
 ## Implementation Notes
 
 The mutation was implemented with the following key decisions:
 
-1. **No "applied" status**: The current reference letter status enum only includes pending/processing/completed/failed. Adding an "applied" status would require a migration and is deferred.
+1. **"Applied" status**: After validations are applied, the reference letter status is updated to "applied". The status column is VARCHAR(50), so no migration was needed. The resolver allows re-application of validations from letters with either "completed" or "applied" status.
 
 2. **Credibility score**: This is a separate feature (credfolio2-fuo1) and is not calculated in this mutation.
 

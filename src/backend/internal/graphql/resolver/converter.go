@@ -65,6 +65,8 @@ func toGraphQLReferenceLetter(rl *domain.ReferenceLetter, user *model.User, file
 		status = model.ReferenceLetterStatusCompleted
 	case domain.ReferenceLetterStatusFailed:
 		status = model.ReferenceLetterStatusFailed
+	case domain.ReferenceLetterStatusApplied:
+		status = model.ReferenceLetterStatusApplied
 	default:
 		status = model.ReferenceLetterStatusPending
 	}
@@ -394,4 +396,20 @@ func toGraphQLProfileSkills(skills []*domain.ProfileSkill) []*model.ProfileSkill
 		result[i] = toGraphQLProfileSkill(s)
 	}
 	return result
+}
+
+// mapAuthorToTestimonialRelationship maps an AuthorRelationship to a TestimonialRelationship.
+func mapAuthorToTestimonialRelationship(ar domain.AuthorRelationship) domain.TestimonialRelationship {
+	switch ar {
+	case domain.AuthorRelationshipManager:
+		return domain.TestimonialRelationshipManager
+	case domain.AuthorRelationshipPeer, domain.AuthorRelationshipColleague:
+		return domain.TestimonialRelationshipPeer
+	case domain.AuthorRelationshipDirectReport:
+		return domain.TestimonialRelationshipDirectReport
+	case domain.AuthorRelationshipClient:
+		return domain.TestimonialRelationshipClient
+	default:
+		return domain.TestimonialRelationshipOther
+	}
 }

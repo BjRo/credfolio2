@@ -547,6 +547,7 @@ const (
 	ReferenceLetterStatusProcessing ReferenceLetterStatus = "PROCESSING"
 	ReferenceLetterStatusCompleted  ReferenceLetterStatus = "COMPLETED"
 	ReferenceLetterStatusFailed     ReferenceLetterStatus = "FAILED"
+	ReferenceLetterStatusApplied    ReferenceLetterStatus = "APPLIED"
 )
 
 var AllReferenceLetterStatus = []ReferenceLetterStatus{
@@ -554,11 +555,12 @@ var AllReferenceLetterStatus = []ReferenceLetterStatus{
 	ReferenceLetterStatusProcessing,
 	ReferenceLetterStatusCompleted,
 	ReferenceLetterStatusFailed,
+	ReferenceLetterStatusApplied,
 }
 
 func (e ReferenceLetterStatus) IsValid() bool {
 	switch e {
-	case ReferenceLetterStatusPending, ReferenceLetterStatusProcessing, ReferenceLetterStatusCompleted, ReferenceLetterStatusFailed:
+	case ReferenceLetterStatusPending, ReferenceLetterStatusProcessing, ReferenceLetterStatusCompleted, ReferenceLetterStatusFailed, ReferenceLetterStatusApplied:
 		return true
 	}
 	return false

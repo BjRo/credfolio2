@@ -1182,8 +1182,9 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 		}, nil
 	}
 
-	// Reference letter must be completed for validations to be applied
-	if refLetter.Status != domain.ReferenceLetterStatusCompleted {
+	// Reference letter must be completed or applied for validations to be applied
+	// (allowing re-application of validations with different selections)
+	if refLetter.Status != domain.ReferenceLetterStatusCompleted && refLetter.Status != domain.ReferenceLetterStatusApplied {
 		r.log.Warning("Reference letter not completed",
 			logger.Feature("credibility"),
 			logger.String("reference_letter_id", input.ReferenceLetterID),
@@ -1408,6 +1409,17 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 		appliedCount.NewSkills++
 	}
 
+	// Update reference letter status to applied
+	refLetter.Status = domain.ReferenceLetterStatusApplied
+	if updateErr := r.refLetterRepo.Update(ctx, refLetter); updateErr != nil {
+		r.log.Error("Failed to update reference letter status",
+			logger.Feature("credibility"),
+			logger.String("reference_letter_id", input.ReferenceLetterID),
+			logger.Err(updateErr),
+		)
+		// Continue anyway - validations were applied successfully
+	}
+
 	r.log.Info("Applied reference letter validations",
 		logger.Feature("credibility"),
 		logger.String("user_id", userID),
@@ -1437,22 +1449,6 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 		Profile:         toGraphQLProfile(profile, toGraphQLUser(user), toGraphQLProfileExperiences(experiences), toGraphQLProfileEducations(educations), toGraphQLProfileSkills(skills)),
 		AppliedCount:    appliedCount,
 	}, nil
-}
-
-// mapAuthorToTestimonialRelationship maps an AuthorRelationship to a TestimonialRelationship.
-func mapAuthorToTestimonialRelationship(ar domain.AuthorRelationship) domain.TestimonialRelationship {
-	switch ar {
-	case domain.AuthorRelationshipManager:
-		return domain.TestimonialRelationshipManager
-	case domain.AuthorRelationshipPeer, domain.AuthorRelationshipColleague:
-		return domain.TestimonialRelationshipPeer
-	case domain.AuthorRelationshipDirectReport:
-		return domain.TestimonialRelationshipDirectReport
-	case domain.AuthorRelationshipClient:
-		return domain.TestimonialRelationshipClient
-	default:
-		return domain.TestimonialRelationshipOther
-	}
 }
 
 // User is the resolver for the user field.

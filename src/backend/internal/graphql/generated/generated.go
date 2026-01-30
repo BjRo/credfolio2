@@ -1542,6 +1542,7 @@ enum ReferenceLetterStatus {
   PROCESSING
   COMPLETED
   FAILED
+  APPLIED
 }
 
 # ============================================================================
