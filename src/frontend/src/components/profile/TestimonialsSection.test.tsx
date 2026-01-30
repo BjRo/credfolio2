@@ -14,6 +14,7 @@ const mockTestimonials = [
     authorCompany: "Acme Corp",
     relationship: TestimonialRelationship.Manager,
     createdAt: "2024-01-01T00:00:00Z",
+    validatedSkills: [],
   },
   {
     __typename: "Testimonial" as const,
@@ -24,6 +25,24 @@ const mockTestimonials = [
     authorCompany: "Acme Corp",
     relationship: TestimonialRelationship.Peer,
     createdAt: "2024-01-02T00:00:00Z",
+    validatedSkills: [],
+  },
+];
+
+const mockTestimonialsWithSkills = [
+  {
+    __typename: "Testimonial" as const,
+    id: "1",
+    quote: "Great team player with excellent leadership skills.",
+    authorName: "John Manager",
+    authorTitle: "Engineering Manager",
+    authorCompany: "Acme Corp",
+    relationship: TestimonialRelationship.Manager,
+    createdAt: "2024-01-01T00:00:00Z",
+    validatedSkills: [
+      { __typename: "ProfileSkill" as const, id: "skill-1", name: "Leadership" },
+      { __typename: "ProfileSkill" as const, id: "skill-2", name: "Team Management" },
+    ],
   },
 ];
 
@@ -119,6 +138,41 @@ describe("TestimonialsSection", () => {
       expect(
         screen.queryByRole("button", { name: "Add reference letter" })
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Validated skills", () => {
+    it("displays validated skills when present", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsWithSkills} />);
+      expect(screen.getByText("Validates:")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Leadership" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Team Management" })).toBeInTheDocument();
+    });
+
+    it("does not display validated skills section when empty", () => {
+      render(<TestimonialsSection testimonials={mockTestimonials} />);
+      expect(screen.queryByText("Validates:")).not.toBeInTheDocument();
+    });
+
+    it("calls onSkillClick when a skill is clicked", async () => {
+      const user = userEvent.setup();
+      const onSkillClick = vi.fn();
+      render(
+        <TestimonialsSection
+          testimonials={mockTestimonialsWithSkills}
+          onSkillClick={onSkillClick}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Leadership" }));
+      expect(onSkillClick).toHaveBeenCalledWith("skill-1");
+    });
+
+    it("renders skill separators between multiple skills", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsWithSkills} />);
+      // Check that there's a separator (·) between skills
+      const separator = screen.getByText("·");
+      expect(separator).toBeInTheDocument();
     });
   });
 });

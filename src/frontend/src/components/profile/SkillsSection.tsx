@@ -178,7 +178,11 @@ export function SkillsSection({
                   aria-label={`${CATEGORY_LABELS[category]} skills`}
                 >
                   {skills.map((skill) => (
-                    <li key={skill.id}>
+                    <li
+                      key={skill.id}
+                      id={`skill-${skill.id}`}
+                      className="transition-all duration-300"
+                    >
                       <EditableSkillTag
                         skill={skill}
                         onEdit={isEditable ? () => handleEdit(skill) : undefined}

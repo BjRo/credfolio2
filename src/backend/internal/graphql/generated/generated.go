@@ -281,6 +281,7 @@ type ComplexityRoot struct {
 		Quote           func(childComplexity int) int
 		ReferenceLetter func(childComplexity int) int
 		Relationship    func(childComplexity int) int
+		ValidatedSkills func(childComplexity int) int
 	}
 
 	UploadFileResult struct {
@@ -1403,6 +1404,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Testimonial.Relationship(childComplexity), true
+	case "Testimonial.validatedSkills":
+		if e.complexity.Testimonial.ValidatedSkills == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.ValidatedSkills(childComplexity), true
 
 	case "UploadFileResult.file":
 		if e.complexity.UploadFileResult.File == nil {
@@ -2236,6 +2243,8 @@ type Testimonial {
   referenceLetter: ReferenceLetter
   """When the testimonial was created."""
   createdAt: DateTime!
+  """Skills validated by this testimonial's reference letter."""
+  validatedSkills: [ProfileSkill!]!
 }
 
 type Query {
@@ -6896,6 +6905,8 @@ func (ec *executionContext) fieldContext_Query_testimonials(ctx context.Context,
 				return ec.fieldContext_Testimonial_referenceLetter(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Testimonial_createdAt(ctx, field)
+			case "validatedSkills":
+				return ec.fieldContext_Testimonial_validatedSkills(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Testimonial", field.Name)
 		},
@@ -8280,6 +8291,53 @@ func (ec *executionContext) fieldContext_Testimonial_createdAt(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_validatedSkills(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_validatedSkills,
+		func(ctx context.Context) (any, error) {
+			return obj.ValidatedSkills, nil
+		},
+		nil,
+		ec.marshalNProfileSkill2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐProfileSkillᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_validatedSkills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ProfileSkill_id(ctx, field)
+			case "name":
+				return ec.fieldContext_ProfileSkill_name(ctx, field)
+			case "normalizedName":
+				return ec.fieldContext_ProfileSkill_normalizedName(ctx, field)
+			case "category":
+				return ec.fieldContext_ProfileSkill_category(ctx, field)
+			case "displayOrder":
+				return ec.fieldContext_ProfileSkill_displayOrder(ctx, field)
+			case "source":
+				return ec.fieldContext_ProfileSkill_source(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ProfileSkill_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_ProfileSkill_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ProfileSkill", field.Name)
 		},
 	}
 	return fc, nil
@@ -12614,6 +12672,11 @@ func (ec *executionContext) _Testimonial(ctx context.Context, sel ast.SelectionS
 			out.Values[i] = ec._Testimonial_referenceLetter(ctx, field, obj)
 		case "createdAt":
 			out.Values[i] = ec._Testimonial_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "validatedSkills":
+			out.Values[i] = ec._Testimonial_validatedSkills(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

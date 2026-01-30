@@ -1798,7 +1798,36 @@ func (r *queryResolver) Testimonials(ctx context.Context, profileID string) ([]*
 		return nil, fmt.Errorf("failed to get testimonials: %w", err)
 	}
 
-	return toGraphQLTestimonials(testimonials), nil
+	// Collect unique reference letter IDs
+	refLetterIDs := make(map[uuid.UUID]struct{})
+	for _, t := range testimonials {
+		refLetterIDs[t.ReferenceLetterID] = struct{}{}
+	}
+
+	// Build map of reference letter ID -> validated skills
+	validatedSkillsByRefLetter := make(map[string][]*model.ProfileSkill)
+	for refLetterID := range refLetterIDs {
+		// Get skill validations for this reference letter
+		skillValidations, err := r.skillValidationRepo.GetByReferenceLetterID(ctx, refLetterID)
+		if err != nil {
+			// Log but don't fail - validated skills are supplementary
+			continue
+		}
+
+		// Get the profile skills for each validation
+		var skills []*model.ProfileSkill
+		for _, sv := range skillValidations {
+			profileSkill, err := r.profileSkillRepo.GetByID(ctx, sv.ProfileSkillID)
+			if err != nil {
+				continue // Skip if skill was deleted
+			}
+			skills = append(skills, toGraphQLProfileSkill(profileSkill))
+		}
+
+		validatedSkillsByRefLetter[refLetterID.String()] = skills
+	}
+
+	return toGraphQLTestimonials(testimonials, validatedSkillsByRefLetter), nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

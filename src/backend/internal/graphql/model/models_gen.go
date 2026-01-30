@@ -414,6 +414,8 @@ type Testimonial struct {
 	ReferenceLetter *ReferenceLetter `json:"referenceLetter,omitempty"`
 	// When the testimonial was created.
 	CreatedAt time.Time `json:"createdAt"`
+	// Skills validated by this testimonial's reference letter.
+	ValidatedSkills []*ProfileSkill `json:"validatedSkills"`
 }
 
 // Input for creating a testimonial from a reference letter.
