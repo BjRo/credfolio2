@@ -1,11 +1,11 @@
 ---
 # credfolio2-6dty
 title: Validation preview with granular selection
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-23T16:28:37Z
-updated_at: 2026-01-30T10:18:19Z
+updated_at: 2026-01-30T11:02:27Z
 parent: credfolio2-1kt0
 blocking:
     - credfolio2-1twf
