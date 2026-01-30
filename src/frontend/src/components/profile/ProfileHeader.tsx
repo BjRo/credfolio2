@@ -333,7 +333,20 @@ export function ProfileHeader({
 
   return (
     <>
-      <div className="bg-card border rounded-lg p-6 sm:p-8">
+      <div className="bg-card border rounded-lg p-6 sm:p-8 relative">
+        {/* Edit button - positioned absolutely in top-right */}
+        {userId && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsEditDialogOpen(true)}
+            aria-label="Edit profile"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
           <ProfileAvatar
             name={displayName}
@@ -341,47 +354,32 @@ export function ProfileHeader({
             userId={userId}
             onUploadSuccess={onMutationSuccess}
           />
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">
-                  {displayName}
-                </h1>
-                <div className="mt-2 space-y-1 text-muted-foreground">
-                  {displayEmail && (
-                    <p className="flex items-center gap-2 text-sm sm:text-base">
-                      <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                      <a href={`mailto:${displayEmail}`} className="hover:text-primary truncate">
-                        {displayEmail}
-                      </a>
-                    </p>
-                  )}
-                  {displayPhone && (
-                    <p className="flex items-center gap-2 text-sm sm:text-base">
-                      <Phone className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                      <a href={`tel:${displayPhone}`} className="hover:text-primary">
-                        {displayPhone}
-                      </a>
-                    </p>
-                  )}
-                  {displayLocation && (
-                    <p className="flex items-center gap-2 text-sm sm:text-base">
-                      <MapPin className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                      <span>{displayLocation}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-              {userId && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsEditDialogOpen(true)}
-                  aria-label="Edit profile"
-                  className="flex-shrink-0"
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
+          <div className="flex-1 min-w-0 pr-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+              {displayName}
+            </h1>
+            <div className="mt-2 space-y-1 text-muted-foreground">
+              {displayEmail && (
+                <p className="flex items-center gap-2 text-sm sm:text-base">
+                  <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <a href={`mailto:${displayEmail}`} className="hover:text-primary truncate">
+                    {displayEmail}
+                  </a>
+                </p>
+              )}
+              {displayPhone && (
+                <p className="flex items-center gap-2 text-sm sm:text-base">
+                  <Phone className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <a href={`tel:${displayPhone}`} className="hover:text-primary">
+                    {displayPhone}
+                  </a>
+                </p>
+              )}
+              {displayLocation && (
+                <p className="flex items-center gap-2 text-sm sm:text-base">
+                  <MapPin className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span>{displayLocation}</span>
+                </p>
               )}
             </div>
           </div>
