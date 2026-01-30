@@ -8,6 +8,9 @@ import (
 	"backend/internal/graphql/model"
 )
 
+// jsonNull is the string representation of a JSON null value.
+const jsonNull = "null"
+
 // normalizeSkillName produces a lowercase, trimmed version of a skill name for deduplication.
 func normalizeSkillName(name string) string {
 	return strings.ToLower(strings.TrimSpace(name))
@@ -85,7 +88,7 @@ func toGraphQLReferenceLetter(rl *domain.ReferenceLetter, user *model.User, file
 
 // toGraphQLExtractedData converts JSON raw message to typed ExtractedLetterData.
 func toGraphQLExtractedData(raw json.RawMessage) *model.ExtractedLetterData {
-	if len(raw) == 0 || string(raw) == "null" {
+	if len(raw) == 0 || string(raw) == jsonNull {
 		return nil
 	}
 
@@ -213,7 +216,7 @@ func toGraphQLResume(r *domain.Resume, user *model.User, file *model.File) *mode
 
 // toGraphQLResumeExtractedData converts JSON raw message to typed ResumeExtractedData.
 func toGraphQLResumeExtractedData(raw json.RawMessage) *model.ResumeExtractedData {
-	if len(raw) == 0 || string(raw) == "null" {
+	if len(raw) == 0 || string(raw) == jsonNull {
 		return nil
 	}
 

@@ -43,3 +43,7 @@ issues:
       linters:
         - govet
       text: "fieldalignment"
+    # Test functions often have high complexity due to many subtests
+    - path: _test\.go
+      linters:
+        - gocyclo

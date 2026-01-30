@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+// Union type for apply validations result.
+type ApplyValidationsResponse interface {
+	IsApplyValidationsResponse()
+}
+
 // Union type for education create/update result.
 type EducationResponse interface {
 	IsEducationResponse()
@@ -35,6 +40,54 @@ type UploadFileResponse interface {
 type UploadResumeResponse interface {
 	IsUploadResumeResponse()
 }
+
+// Counts of items applied from a reference letter.
+type AppliedCount struct {
+	// Number of skill validations applied.
+	SkillValidations int `json:"skillValidations"`
+	// Number of experience validations applied.
+	ExperienceValidations int `json:"experienceValidations"`
+	// Number of testimonials added.
+	Testimonials int `json:"testimonials"`
+	// Number of new skills added.
+	NewSkills int `json:"newSkills"`
+}
+
+// Error returned when applying validations fails.
+type ApplyValidationsError struct {
+	// Error message describing the failure.
+	Message string `json:"message"`
+	// The field that caused the error, if applicable.
+	Field *string `json:"field,omitempty"`
+}
+
+func (ApplyValidationsError) IsApplyValidationsResponse() {}
+
+// Input for applying selected validations from a reference letter.
+type ApplyValidationsInput struct {
+	// The reference letter ID to apply validations from.
+	ReferenceLetterID string `json:"referenceLetterID"`
+	// Skill validations to apply.
+	SkillValidations []*SkillValidationInput `json:"skillValidations"`
+	// Experience validations to apply.
+	ExperienceValidations []*ExperienceValidationInput `json:"experienceValidations"`
+	// Testimonials to add to the profile.
+	Testimonials []*TestimonialInput `json:"testimonials"`
+	// New skills discovered in the reference letter to add to the profile.
+	NewSkills []*NewSkillInput `json:"newSkills"`
+}
+
+// Result of applying reference letter validations.
+type ApplyValidationsResult struct {
+	// The updated reference letter.
+	ReferenceLetter *ReferenceLetter `json:"referenceLetter"`
+	// The updated profile.
+	Profile *Profile `json:"profile"`
+	// Counts of items that were applied.
+	AppliedCount *AppliedCount `json:"appliedCount"`
+}
+
+func (ApplyValidationsResult) IsApplyValidationsResponse() {}
 
 // Input for creating a new education entry.
 type CreateEducationInput struct {
@@ -128,6 +181,14 @@ type ExperienceValidationError struct {
 
 func (ExperienceValidationError) IsExperienceResponse() {}
 
+// Input for applying an experience validation from a reference letter.
+type ExperienceValidationInput struct {
+	// The profile experience ID to validate.
+	ProfileExperienceID string `json:"profileExperienceID"`
+	// Quote snippet from the reference letter supporting this experience.
+	QuoteSnippet string `json:"quoteSnippet"`
+}
+
 // An uploaded file stored in object storage.
 type File struct {
 	ID          string    `json:"id"`
@@ -152,6 +213,16 @@ func (FileValidationError) IsUploadFileResponse() {}
 func (FileValidationError) IsUploadResumeResponse() {}
 
 type Mutation struct {
+}
+
+// Input for adding a new skill discovered in the reference letter.
+type NewSkillInput struct {
+	// The skill name.
+	Name string `json:"name"`
+	// The skill category.
+	Category domain.SkillCategory `json:"category"`
+	// Quote context from the reference letter mentioning this skill.
+	QuoteContext *string `json:"quoteContext,omitempty"`
 }
 
 // A user's profile containing manually editable data.
@@ -316,6 +387,22 @@ type SkillValidationError struct {
 }
 
 func (SkillValidationError) IsSkillResponse() {}
+
+// Input for applying a skill validation from a reference letter.
+type SkillValidationInput struct {
+	// The profile skill ID to validate.
+	ProfileSkillID string `json:"profileSkillID"`
+	// Quote snippet from the reference letter supporting this skill.
+	QuoteSnippet string `json:"quoteSnippet"`
+}
+
+// Input for creating a testimonial from a reference letter.
+type TestimonialInput struct {
+	// The full quote text for the testimonial.
+	Quote string `json:"quote"`
+	// Skills mentioned in this testimonial.
+	SkillsMentioned []string `json:"skillsMentioned"`
+}
 
 // Input for updating an existing education entry.
 type UpdateEducationInput struct {

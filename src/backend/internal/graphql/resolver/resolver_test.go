@@ -2,6 +2,7 @@ package resolver_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -15,6 +16,12 @@ import (
 )
 
 const testUserName = "Test User"
+
+// Error message constants for test assertions.
+const (
+	errMsgInvalidUserIDFormat = "invalid user ID format"
+	errMsgUserNotFound        = "user not found"
+)
 
 // stringPtr returns a pointer to a string (test helper).
 func stringPtr(s string) *string {
@@ -508,6 +515,203 @@ func (r *mockProfileSkillRepository) DeleteBySourceResumeID(_ context.Context, s
 	return nil
 }
 
+// mockTestimonialRepository is a mock implementation of domain.TestimonialRepository.
+type mockTestimonialRepository struct {
+	testimonials map[uuid.UUID]*domain.Testimonial
+}
+
+func newMockTestimonialRepository() *mockTestimonialRepository {
+	return &mockTestimonialRepository{testimonials: make(map[uuid.UUID]*domain.Testimonial)}
+}
+
+func (r *mockTestimonialRepository) Create(_ context.Context, testimonial *domain.Testimonial) error {
+	if testimonial.ID == uuid.Nil {
+		testimonial.ID = uuid.New()
+	}
+	r.testimonials[testimonial.ID] = testimonial
+	return nil
+}
+
+func (r *mockTestimonialRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Testimonial, error) {
+	testimonial, ok := r.testimonials[id]
+	if !ok {
+		return nil, nil
+	}
+	return testimonial, nil
+}
+
+func (r *mockTestimonialRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.Testimonial, error) {
+	var result []*domain.Testimonial
+	for _, t := range r.testimonials {
+		if t.ProfileID == profileID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockTestimonialRepository) GetByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) ([]*domain.Testimonial, error) {
+	var result []*domain.Testimonial
+	for _, t := range r.testimonials {
+		if t.ReferenceLetterID == refLetterID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockTestimonialRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.testimonials, id)
+	return nil
+}
+
+func (r *mockTestimonialRepository) DeleteByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) error {
+	for id, t := range r.testimonials {
+		if t.ReferenceLetterID == refLetterID {
+			delete(r.testimonials, id)
+		}
+	}
+	return nil
+}
+
+// mockSkillValidationRepository is a mock implementation of domain.SkillValidationRepository.
+type mockSkillValidationRepository struct {
+	validations map[uuid.UUID]*domain.SkillValidation
+}
+
+func newMockSkillValidationRepository() *mockSkillValidationRepository {
+	return &mockSkillValidationRepository{validations: make(map[uuid.UUID]*domain.SkillValidation)}
+}
+
+func (r *mockSkillValidationRepository) Create(_ context.Context, validation *domain.SkillValidation) error {
+	if validation.ID == uuid.Nil {
+		validation.ID = uuid.New()
+	}
+	r.validations[validation.ID] = validation
+	return nil
+}
+
+func (r *mockSkillValidationRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.SkillValidation, error) {
+	validation, ok := r.validations[id]
+	if !ok {
+		return nil, nil
+	}
+	return validation, nil
+}
+
+func (r *mockSkillValidationRepository) GetByProfileSkillID(_ context.Context, profileSkillID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.ProfileSkillID == profileSkillID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockSkillValidationRepository) GetByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.ReferenceLetterID == refLetterID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockSkillValidationRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.validations, id)
+	return nil
+}
+
+func (r *mockSkillValidationRepository) DeleteByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) error {
+	for id, v := range r.validations {
+		if v.ReferenceLetterID == refLetterID {
+			delete(r.validations, id)
+		}
+	}
+	return nil
+}
+
+func (r *mockSkillValidationRepository) CountByProfileSkillID(_ context.Context, profileSkillID uuid.UUID) (int, error) {
+	count := 0
+	for _, v := range r.validations {
+		if v.ProfileSkillID == profileSkillID {
+			count++
+		}
+	}
+	return count, nil
+}
+
+// mockExperienceValidationRepository is a mock implementation of domain.ExperienceValidationRepository.
+type mockExperienceValidationRepository struct {
+	validations map[uuid.UUID]*domain.ExperienceValidation
+}
+
+func newMockExperienceValidationRepository() *mockExperienceValidationRepository {
+	return &mockExperienceValidationRepository{validations: make(map[uuid.UUID]*domain.ExperienceValidation)}
+}
+
+func (r *mockExperienceValidationRepository) Create(_ context.Context, validation *domain.ExperienceValidation) error {
+	if validation.ID == uuid.Nil {
+		validation.ID = uuid.New()
+	}
+	r.validations[validation.ID] = validation
+	return nil
+}
+
+func (r *mockExperienceValidationRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.ExperienceValidation, error) {
+	validation, ok := r.validations[id]
+	if !ok {
+		return nil, nil
+	}
+	return validation, nil
+}
+
+func (r *mockExperienceValidationRepository) GetByProfileExperienceID(_ context.Context, profileExpID uuid.UUID) ([]*domain.ExperienceValidation, error) {
+	var result []*domain.ExperienceValidation
+	for _, v := range r.validations {
+		if v.ProfileExperienceID == profileExpID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockExperienceValidationRepository) GetByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) ([]*domain.ExperienceValidation, error) {
+	var result []*domain.ExperienceValidation
+	for _, v := range r.validations {
+		if v.ReferenceLetterID == refLetterID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockExperienceValidationRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.validations, id)
+	return nil
+}
+
+func (r *mockExperienceValidationRepository) DeleteByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) error {
+	for id, v := range r.validations {
+		if v.ReferenceLetterID == refLetterID {
+			delete(r.validations, id)
+		}
+	}
+	return nil
+}
+
+func (r *mockExperienceValidationRepository) CountByProfileExperienceID(_ context.Context, profileExpID uuid.UUID) (int, error) {
+	count := 0
+	for _, v := range r.validations {
+		if v.ProfileExperienceID == profileExpID {
+			count++
+		}
+	}
+	return count, nil
+}
+
 // testLogger returns a logger that discards all output (for tests).
 func testLogger() logger.Logger {
 	return logger.NewStdoutLogger(logger.WithMinLevel(logger.Severity(100))) // level 100 = discard all
@@ -530,7 +734,7 @@ func TestUserQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns user when found", func(t *testing.T) {
@@ -576,7 +780,7 @@ func TestUserQuery(t *testing.T) {
 	})
 
 	t.Run("returns error when repository fails", func(t *testing.T) {
-		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 		errorQuery := errorR.Query()
 
 		_, err := errorQuery.User(ctx, uuid.New().String())
@@ -611,7 +815,7 @@ func TestFileQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, file)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns file when found", func(t *testing.T) {
@@ -715,7 +919,7 @@ func TestFilesQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, otherFile)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns files for user", func(t *testing.T) {
@@ -811,7 +1015,7 @@ func TestReferenceLetterQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, letter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letter when found", func(t *testing.T) {
@@ -959,7 +1163,7 @@ func TestReferenceLettersQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, otherLetter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letters for user", func(t *testing.T) {
@@ -1033,7 +1237,7 @@ func TestCreateEducation(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	mutation := r.Mutation()
 
 	t.Run("creates education entry", func(t *testing.T) {
@@ -1077,7 +1281,7 @@ func TestCreateEducation(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected EducationValidationError, got %T", result)
 		}
-		if validationErr.Message != "invalid user ID format" {
+		if validationErr.Message != errMsgInvalidUserIDFormat {
 			t.Errorf("unexpected error message: %s", validationErr.Message)
 		}
 	})
@@ -1096,7 +1300,7 @@ func TestCreateEducation(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected EducationValidationError, got %T", result)
 		}
-		if validationErr.Message != "user not found" {
+		if validationErr.Message != errMsgUserNotFound {
 			t.Errorf("unexpected error message: %s", validationErr.Message)
 		}
 	})
@@ -1116,7 +1320,7 @@ func TestUpdateEducation(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	mutation := r.Mutation()
 
 	// Create an education entry first
@@ -1207,7 +1411,7 @@ func TestDeleteEducation(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	mutation := r.Mutation()
 
 	// Create an education entry first
@@ -1276,7 +1480,7 @@ func TestProfileEducationQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	mutation := r.Mutation()
 	query := r.Query()
 
@@ -1357,7 +1561,7 @@ func TestCreateSkill(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	mutation := r.Mutation()
 
 	t.Run("creates skill successfully", func(t *testing.T) {
@@ -1416,7 +1620,7 @@ func TestCreateSkill(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected SkillValidationError, got %T", result)
 		}
-		if valErr.Message != "invalid user ID format" {
+		if valErr.Message != errMsgInvalidUserIDFormat {
 			t.Errorf("unexpected message: %s", valErr.Message)
 		}
 	})
@@ -1436,7 +1640,7 @@ func TestCreateSkill(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected SkillValidationError, got %T", result)
 		}
-		if valErr.Message != "user not found" {
+		if valErr.Message != errMsgUserNotFound {
 			t.Errorf("unexpected message: %s", valErr.Message)
 		}
 	})
@@ -1459,7 +1663,7 @@ func TestUpdateSkill(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	mutation := r.Mutation()
 
 	// Create a skill first
@@ -1536,7 +1740,7 @@ func TestDeleteSkill(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	mutation := r.Mutation()
 
 	// Create a skill first
@@ -1608,7 +1812,7 @@ func TestProfileSkillQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
 	mutation := r.Mutation()
 	query := r.Query()
 
@@ -1660,6 +1864,385 @@ func TestProfileSkillQuery(t *testing.T) {
 		_, err := query.ProfileSkill(ctx, "invalid-uuid")
 		if err == nil {
 			t.Error("expected error for invalid UUID")
+		}
+	})
+}
+
+func TestApplyReferenceLetterValidations(t *testing.T) {
+	userRepo := newMockUserRepository()
+	fileRepo := newMockFileRepository()
+	refLetterRepo := newMockReferenceLetterRepository()
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	skillRepo := newMockProfileSkillRepository()
+	testimonialRepo := newMockTestimonialRepository()
+	skillValidationRepo := newMockSkillValidationRepository()
+	expValidationRepo := newMockExperienceValidationRepository()
+
+	ctx := context.Background()
+
+	// Create a test user
+	name := testUserName
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed",
+		Name:         &name,
+	}
+	mustCreateUser(userRepo, user)
+
+	// Create a profile for the user
+	profile := &domain.Profile{
+		ID:     uuid.New(),
+		UserID: user.ID,
+	}
+	if err := profileRepo.Create(ctx, profile); err != nil {
+		t.Fatalf("setup: failed to create profile: %v", err)
+	}
+
+	// Create a skill for the profile
+	skill := &domain.ProfileSkill{
+		ID:             uuid.New(),
+		ProfileID:      profile.ID,
+		Name:           "Go",
+		NormalizedName: "go",
+		Category:       "TECHNICAL",
+		DisplayOrder:   0,
+		Source:         domain.ExperienceSourceManual,
+	}
+	if err := skillRepo.Create(ctx, skill); err != nil {
+		t.Fatalf("setup: failed to create skill: %v", err)
+	}
+
+	// Create an experience for the profile
+	experience := &domain.ProfileExperience{
+		ID:           uuid.New(),
+		ProfileID:    profile.ID,
+		Company:      "Acme Inc",
+		Title:        "Software Engineer",
+		DisplayOrder: 0,
+		Source:       domain.ExperienceSourceManual,
+	}
+	if err := expRepo.Create(ctx, experience); err != nil {
+		t.Fatalf("setup: failed to create experience: %v", err)
+	}
+
+	// Create extracted data for reference letter
+	extractedData := domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "John Manager",
+			Relationship: domain.AuthorRelationshipManager,
+		},
+		Testimonials: []domain.ExtractedTestimonial{
+			{Quote: "Great team player", SkillsMentioned: []string{"teamwork"}},
+		},
+		SkillMentions: []domain.ExtractedSkillMention{
+			{Skill: "Go", Quote: "Expert in Go programming"},
+		},
+		ExperienceMentions: []domain.ExtractedExperienceMention{
+			{Company: "Acme Inc", Role: "Software Engineer", Quote: "Led the team at Acme Inc"},
+		},
+		DiscoveredSkills: []string{"Kubernetes"},
+	}
+	extractedDataJSON, err := json.Marshal(extractedData)
+	if err != nil {
+		t.Fatalf("setup: failed to marshal extracted data: %v", err)
+	}
+
+	// Create a completed reference letter
+	refLetter := &domain.ReferenceLetter{
+		ID:            uuid.New(),
+		UserID:        user.ID,
+		Status:        domain.ReferenceLetterStatusCompleted,
+		ExtractedData: extractedDataJSON,
+	}
+	mustCreateReferenceLetter(refLetterRepo, refLetter)
+
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, testimonialRepo, skillValidationRepo, expValidationRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	mutation := r.Mutation()
+
+	t.Run("applies skill validations successfully", func(t *testing.T) {
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID: refLetter.ID.String(),
+			SkillValidations: []*model.SkillValidationInput{
+				{
+					ProfileSkillID: skill.ID.String(),
+					QuoteSnippet:   "Expert in Go programming",
+				},
+			},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials:          []*model.TestimonialInput{},
+			NewSkills:             []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("mutation failed: %v", err)
+		}
+
+		successResult, ok := result.(*model.ApplyValidationsResult)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsResult, got %T", result)
+		}
+
+		if successResult.AppliedCount.SkillValidations != 1 {
+			t.Errorf("expected 1 skill validation, got %d", successResult.AppliedCount.SkillValidations)
+		}
+	})
+
+	t.Run("applies experience validations successfully", func(t *testing.T) {
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID: refLetter.ID.String(),
+			SkillValidations:  []*model.SkillValidationInput{},
+			ExperienceValidations: []*model.ExperienceValidationInput{
+				{
+					ProfileExperienceID: experience.ID.String(),
+					QuoteSnippet:        "Led the team at Acme Inc",
+				},
+			},
+			Testimonials: []*model.TestimonialInput{},
+			NewSkills:    []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("mutation failed: %v", err)
+		}
+
+		successResult, ok := result.(*model.ApplyValidationsResult)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsResult, got %T", result)
+		}
+
+		if successResult.AppliedCount.ExperienceValidations != 1 {
+			t.Errorf("expected 1 experience validation, got %d", successResult.AppliedCount.ExperienceValidations)
+		}
+	})
+
+	t.Run("creates testimonials successfully", func(t *testing.T) {
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID:     refLetter.ID.String(),
+			SkillValidations:      []*model.SkillValidationInput{},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials: []*model.TestimonialInput{
+				{
+					Quote:           "Great team player",
+					SkillsMentioned: []string{"teamwork"},
+				},
+			},
+			NewSkills: []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("mutation failed: %v", err)
+		}
+
+		successResult, ok := result.(*model.ApplyValidationsResult)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsResult, got %T", result)
+		}
+
+		if successResult.AppliedCount.Testimonials != 1 {
+			t.Errorf("expected 1 testimonial, got %d", successResult.AppliedCount.Testimonials)
+		}
+	})
+
+	t.Run("creates new skills successfully", func(t *testing.T) {
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID:     refLetter.ID.String(),
+			SkillValidations:      []*model.SkillValidationInput{},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials:          []*model.TestimonialInput{},
+			NewSkills: []*model.NewSkillInput{
+				{
+					Name:         "Kubernetes",
+					Category:     domain.SkillCategoryTechnical,
+					QuoteContext: stringPtr("Deployed services to Kubernetes"),
+				},
+			},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("mutation failed: %v", err)
+		}
+
+		successResult, ok := result.(*model.ApplyValidationsResult)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsResult, got %T", result)
+		}
+
+		if successResult.AppliedCount.NewSkills != 1 {
+			t.Errorf("expected 1 new skill, got %d", successResult.AppliedCount.NewSkills)
+		}
+	})
+
+	t.Run("returns error for invalid user ID", func(t *testing.T) {
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID:     refLetter.ID.String(),
+			SkillValidations:      []*model.SkillValidationInput{},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials:          []*model.TestimonialInput{},
+			NewSkills:             []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, "invalid-uuid", input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		errorResult, ok := result.(*model.ApplyValidationsError)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsError, got %T", result)
+		}
+
+		if errorResult.Message != errMsgInvalidUserIDFormat {
+			t.Errorf("expected '%s', got %s", errMsgInvalidUserIDFormat, errorResult.Message)
+		}
+	})
+
+	t.Run("returns error for non-existent user", func(t *testing.T) {
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID:     refLetter.ID.String(),
+			SkillValidations:      []*model.SkillValidationInput{},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials:          []*model.TestimonialInput{},
+			NewSkills:             []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, uuid.New().String(), input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		errorResult, ok := result.(*model.ApplyValidationsError)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsError, got %T", result)
+		}
+
+		if errorResult.Message != errMsgUserNotFound {
+			t.Errorf("expected '%s', got %s", errMsgUserNotFound, errorResult.Message)
+		}
+	})
+
+	t.Run("returns error for non-existent reference letter", func(t *testing.T) {
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID:     uuid.New().String(),
+			SkillValidations:      []*model.SkillValidationInput{},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials:          []*model.TestimonialInput{},
+			NewSkills:             []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		errorResult, ok := result.(*model.ApplyValidationsError)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsError, got %T", result)
+		}
+
+		if errorResult.Message != "reference letter not found" {
+			t.Errorf("expected 'reference letter not found', got %s", errorResult.Message)
+		}
+	})
+
+	t.Run("returns error for reference letter belonging to different user", func(t *testing.T) {
+		// Create another user
+		otherName := "Other User"
+		otherUser := &domain.User{
+			ID:           uuid.New(),
+			Email:        "other@example.com",
+			PasswordHash: "hashed",
+			Name:         &otherName,
+		}
+		mustCreateUser(userRepo, otherUser)
+
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID:     refLetter.ID.String(), // belongs to first user
+			SkillValidations:      []*model.SkillValidationInput{},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials:          []*model.TestimonialInput{},
+			NewSkills:             []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, otherUser.ID.String(), input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		errorResult, ok := result.(*model.ApplyValidationsError)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsError, got %T", result)
+		}
+
+		if errorResult.Message != "reference letter does not belong to user" {
+			t.Errorf("expected 'reference letter does not belong to user', got %s", errorResult.Message)
+		}
+	})
+
+	t.Run("returns error for pending reference letter", func(t *testing.T) {
+		// Create a pending reference letter
+		pendingLetter := &domain.ReferenceLetter{
+			ID:     uuid.New(),
+			UserID: user.ID,
+			Status: domain.ReferenceLetterStatusPending,
+		}
+		mustCreateReferenceLetter(refLetterRepo, pendingLetter)
+
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID:     pendingLetter.ID.String(),
+			SkillValidations:      []*model.SkillValidationInput{},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials:          []*model.TestimonialInput{},
+			NewSkills:             []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		errorResult, ok := result.(*model.ApplyValidationsError)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsError, got %T", result)
+		}
+
+		if errorResult.Message != "reference letter extraction not completed" {
+			t.Errorf("expected 'reference letter extraction not completed', got %s", errorResult.Message)
+		}
+	})
+
+	t.Run("skips non-existent skills gracefully", func(t *testing.T) {
+		input := model.ApplyValidationsInput{
+			ReferenceLetterID: refLetter.ID.String(),
+			SkillValidations: []*model.SkillValidationInput{
+				{
+					ProfileSkillID: uuid.New().String(), // non-existent skill
+					QuoteSnippet:   "Some quote",
+				},
+			},
+			ExperienceValidations: []*model.ExperienceValidationInput{},
+			Testimonials:          []*model.TestimonialInput{},
+			NewSkills:             []*model.NewSkillInput{},
+		}
+
+		result, err := mutation.ApplyReferenceLetterValidations(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("mutation failed: %v", err)
+		}
+
+		successResult, ok := result.(*model.ApplyValidationsResult)
+		if !ok {
+			t.Fatalf("expected ApplyValidationsResult, got %T", result)
+		}
+
+		// Should succeed but with 0 skill validations since skill doesn't exist
+		if successResult.AppliedCount.SkillValidations != 0 {
+			t.Errorf("expected 0 skill validations for non-existent skill, got %d", successResult.AppliedCount.SkillValidations)
 		}
 	})
 }
