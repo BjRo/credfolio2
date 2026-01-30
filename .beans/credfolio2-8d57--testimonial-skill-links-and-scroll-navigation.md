@@ -1,11 +1,11 @@
 ---
 # credfolio2-8d57
 title: Testimonial skill links and scroll navigation
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-30T11:26:41Z
-updated_at: 2026-01-30T11:26:41Z
+updated_at: 2026-01-30T11:45:52Z
 parent: credfolio2-1kt0
 ---
 
@@ -70,4 +70,4 @@ type Testimonial {
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (UI changes)
 - [x] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review (https://github.com/BjRo/credfolio2/pull/48)
