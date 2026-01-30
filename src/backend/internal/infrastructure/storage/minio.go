@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -17,8 +18,10 @@ import (
 
 // MinIOStorage implements domain.Storage using MinIO/S3.
 type MinIOStorage struct {
-	client *minio.Client
-	bucket string
+	client         *minio.Client
+	bucket         string
+	endpoint       string // Internal endpoint for client connection
+	publicEndpoint string // External endpoint for presigned URLs
 }
 
 // NewMinIOStorage creates a new MinIO storage client.
@@ -31,9 +34,16 @@ func NewMinIOStorage(cfg config.MinIOConfig) (*MinIOStorage, error) {
 		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
 	}
 
+	publicEndpoint := cfg.PublicEndpoint
+	if publicEndpoint == "" {
+		publicEndpoint = cfg.Endpoint
+	}
+
 	return &MinIOStorage{
-		client: client,
-		bucket: cfg.Bucket,
+		client:         client,
+		bucket:         cfg.Bucket,
+		endpoint:       cfg.Endpoint,
+		publicEndpoint: publicEndpoint,
 	}, nil
 }
 
@@ -104,12 +114,21 @@ func (s *MinIOStorage) Delete(ctx context.Context, key string) error {
 }
 
 // GetPresignedURL generates a time-limited URL for direct access.
+// If a public endpoint is configured, the URL is rewritten to use it.
 func (s *MinIOStorage) GetPresignedURL(ctx context.Context, key string, expiry time.Duration) (string, error) {
 	url, err := s.client.PresignedGetObject(ctx, s.bucket, key, expiry, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
 	}
-	return url.String(), nil
+
+	urlStr := url.String()
+
+	// Replace internal endpoint with public endpoint if they differ
+	if s.publicEndpoint != s.endpoint {
+		urlStr = strings.Replace(urlStr, s.endpoint, s.publicEndpoint, 1)
+	}
+
+	return urlStr, nil
 }
 
 // Exists checks if an object exists.

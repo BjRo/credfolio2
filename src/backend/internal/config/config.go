@@ -79,11 +79,12 @@ func (c *DatabaseConfig) URL() string {
 
 // MinIOConfig holds MinIO/S3 connection settings.
 type MinIOConfig struct {
-	Endpoint  string
-	AccessKey string
-	SecretKey string
-	Bucket    string
-	UseSSL    bool
+	Endpoint       string
+	PublicEndpoint string // External endpoint for presigned URLs (defaults to Endpoint if not set)
+	AccessKey      string
+	SecretKey      string
+	Bucket         string
+	UseSSL         bool
 }
 
 // ServerConfig holds HTTP server settings.
@@ -155,11 +156,12 @@ func Load() (*Config, error) {
 			url:      os.Getenv("DATABASE_URL"),
 		},
 		MinIO: MinIOConfig{
-			Endpoint:  getEnv("MINIO_ENDPOINT", "credfolio2-minio:9000"),
-			AccessKey: getEnv("MINIO_ROOT_USER", "minioadmin"),
-			SecretKey: getEnv("MINIO_ROOT_PASSWORD", "minioadmin"),
-			UseSSL:    useSSL,
-			Bucket:    getEnv("MINIO_BUCKET", "credfolio"),
+			Endpoint:       getEnv("MINIO_ENDPOINT", "credfolio2-minio:9000"),
+			PublicEndpoint: getEnv("MINIO_PUBLIC_ENDPOINT", "localhost:9000"),
+			AccessKey:      getEnv("MINIO_ROOT_USER", "minioadmin"),
+			SecretKey:      getEnv("MINIO_ROOT_PASSWORD", "minioadmin"),
+			UseSSL:         useSSL,
+			Bucket:         getEnv("MINIO_BUCKET", "credfolio"),
 		},
 		Server: ServerConfig{
 			Port:         serverPort,
