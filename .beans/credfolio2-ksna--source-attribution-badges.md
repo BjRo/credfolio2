@@ -1,11 +1,11 @@
 ---
 # credfolio2-ksna
 title: Credibility indicators and hover popovers
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-23T16:28:41Z
-updated_at: 2026-01-29T00:00:00Z
+updated_at: 2026-01-30T12:57:55Z
 parent: credfolio2-1kt0
 ---
 
@@ -101,23 +101,23 @@ query experienceValidations($experienceId: ID!) {
 
 ## Checklist
 
-- [ ] Create CredibilityDots component
-- [ ] Create ValidationPopover component
-- [ ] Add skillValidations query
-- [ ] Add experienceValidations query
-- [ ] Integrate dots into SkillTag
-- [ ] Integrate badge into ExperienceCard
-- [ ] Wire up hover/focus to show popover
-- [ ] Style popover with quotes and attribution
-- [ ] Add "View full testimonials" link
-- [ ] Ensure keyboard accessibility
-- [ ] Add loading state for popover content
+- [x] Create CredibilityDots component
+- [x] Create ValidationPopover component
+- [x] Add skillValidations query
+- [x] Add experienceValidations query
+- [x] Integrate dots into SkillTag
+- [x] Integrate badge into ExperienceCard
+- [x] Wire up hover/focus to show popover
+- [x] Style popover with quotes and attribution
+- [x] Add "View full testimonials" link
+- [x] Ensure keyboard accessibility
+- [x] Add loading state for popover content
 
 ## Definition of Done
 
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (UI changes)
-- [ ] All checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (UI changes)
+- [x] All checklist items above are completed
 - [ ] Branch pushed and PR created for human review

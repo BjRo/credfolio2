@@ -19,6 +19,74 @@ import (
 	"github.com/google/uuid"
 )
 
+// Experience is the resolver for the experience field.
+func (r *experienceValidationResolver) Experience(ctx context.Context, obj *model.ExperienceValidation) (*model.ProfileExperience, error) {
+	validationID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid validation ID: %w", err)
+	}
+
+	validation, err := r.expValidationRepo.GetByID(ctx, validationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get experience validation: %w", err)
+	}
+	if validation == nil {
+		return nil, nil
+	}
+
+	experience, err := r.profileExpRepo.GetByID(ctx, validation.ProfileExperienceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile experience: %w", err)
+	}
+	if experience == nil {
+		return nil, nil
+	}
+
+	return toGraphQLProfileExperience(experience), nil
+}
+
+// ReferenceLetter is the resolver for the referenceLetter field.
+func (r *experienceValidationResolver) ReferenceLetter(ctx context.Context, obj *model.ExperienceValidation) (*model.ReferenceLetter, error) {
+	validationID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid validation ID: %w", err)
+	}
+
+	validation, err := r.expValidationRepo.GetByID(ctx, validationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get experience validation: %w", err)
+	}
+	if validation == nil {
+		return nil, nil
+	}
+
+	refLetter, err := r.refLetterRepo.GetByID(ctx, validation.ReferenceLetterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reference letter: %w", err)
+	}
+	if refLetter == nil {
+		return nil, nil
+	}
+
+	// Get the user for the reference letter
+	user, err := r.userRepo.GetByID(ctx, refLetter.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+	gqlUser := toGraphQLUser(user)
+
+	// Get the file if present
+	var gqlFile *model.File
+	if refLetter.FileID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *refLetter.FileID)
+		if err == nil && file != nil {
+			gqlFile = toGraphQLFile(file, gqlUser)
+		}
+	}
+
+	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
+}
+
 // UploadFile is the resolver for the uploadFile field.
 func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error) {
 	r.log.Info("File upload started",
@@ -1453,6 +1521,36 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 	}, nil
 }
 
+// ValidationCount is the resolver for the validationCount field.
+func (r *profileExperienceResolver) ValidationCount(ctx context.Context, obj *model.ProfileExperience) (int, error) {
+	expID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return 0, fmt.Errorf("invalid experience ID: %w", err)
+	}
+
+	count, err := r.expValidationRepo.CountByProfileExperienceID(ctx, expID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count experience validations: %w", err)
+	}
+
+	return count, nil
+}
+
+// ValidationCount is the resolver for the validationCount field.
+func (r *profileSkillResolver) ValidationCount(ctx context.Context, obj *model.ProfileSkill) (int, error) {
+	skillID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return 0, fmt.Errorf("invalid skill ID: %w", err)
+	}
+
+	count, err := r.skillValidationRepo.CountByProfileSkillID(ctx, skillID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count skill validations: %w", err)
+	}
+
+	return count, nil
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	uid, err := uuid.Parse(id)
@@ -1831,11 +1929,152 @@ func (r *queryResolver) Testimonials(ctx context.Context, profileID string) ([]*
 	return toGraphQLTestimonials(testimonials, validatedSkillsByRefLetter), nil
 }
 
+// SkillValidations is the resolver for the skillValidations field.
+func (r *queryResolver) SkillValidations(ctx context.Context, skillID string) ([]*model.SkillValidation, error) {
+	sid, err := uuid.Parse(skillID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid skill ID: %w", err)
+	}
+
+	validations, err := r.skillValidationRepo.GetByProfileSkillID(ctx, sid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get skill validations: %w", err)
+	}
+
+	result := make([]*model.SkillValidation, len(validations))
+	for i, v := range validations {
+		result[i] = &model.SkillValidation{
+			ID:           v.ID.String(),
+			QuoteSnippet: v.QuoteSnippet,
+			CreatedAt:    v.CreatedAt,
+		}
+	}
+
+	return result, nil
+}
+
+// ExperienceValidations is the resolver for the experienceValidations field.
+func (r *queryResolver) ExperienceValidations(ctx context.Context, experienceID string) ([]*model.ExperienceValidation, error) {
+	eid, err := uuid.Parse(experienceID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid experience ID: %w", err)
+	}
+
+	validations, err := r.expValidationRepo.GetByProfileExperienceID(ctx, eid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get experience validations: %w", err)
+	}
+
+	result := make([]*model.ExperienceValidation, len(validations))
+	for i, v := range validations {
+		result[i] = &model.ExperienceValidation{
+			ID:           v.ID.String(),
+			QuoteSnippet: v.QuoteSnippet,
+			CreatedAt:    v.CreatedAt,
+		}
+	}
+
+	return result, nil
+}
+
+// Skill is the resolver for the skill field.
+func (r *skillValidationResolver) Skill(ctx context.Context, obj *model.SkillValidation) (*model.ProfileSkill, error) {
+	// The skill validation was loaded from the database, we need to look up the skill
+	// We need to get the ProfileSkillID from the domain validation
+	// Since we don't have it in the model, we need to fetch the validation again
+	validationID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid validation ID: %w", err)
+	}
+
+	validation, err := r.skillValidationRepo.GetByID(ctx, validationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get skill validation: %w", err)
+	}
+	if validation == nil {
+		return nil, nil
+	}
+
+	skill, err := r.profileSkillRepo.GetByID(ctx, validation.ProfileSkillID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile skill: %w", err)
+	}
+	if skill == nil {
+		return nil, nil
+	}
+
+	return toGraphQLProfileSkill(skill), nil
+}
+
+// ReferenceLetter is the resolver for the referenceLetter field.
+func (r *skillValidationResolver) ReferenceLetter(ctx context.Context, obj *model.SkillValidation) (*model.ReferenceLetter, error) {
+	validationID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid validation ID: %w", err)
+	}
+
+	validation, err := r.skillValidationRepo.GetByID(ctx, validationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get skill validation: %w", err)
+	}
+	if validation == nil {
+		return nil, nil
+	}
+
+	refLetter, err := r.refLetterRepo.GetByID(ctx, validation.ReferenceLetterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reference letter: %w", err)
+	}
+	if refLetter == nil {
+		return nil, nil
+	}
+
+	// Get the user for the reference letter
+	user, err := r.userRepo.GetByID(ctx, refLetter.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+	gqlUser := toGraphQLUser(user)
+
+	// Get the file if present
+	var gqlFile *model.File
+	if refLetter.FileID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *refLetter.FileID)
+		if err == nil && file != nil {
+			gqlFile = toGraphQLFile(file, gqlUser)
+		}
+	}
+
+	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
+}
+
+// ExperienceValidation returns generated.ExperienceValidationResolver implementation.
+func (r *Resolver) ExperienceValidation() generated.ExperienceValidationResolver {
+	return &experienceValidationResolver{r}
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
+// ProfileExperience returns generated.ProfileExperienceResolver implementation.
+func (r *Resolver) ProfileExperience() generated.ProfileExperienceResolver {
+	return &profileExperienceResolver{r}
+}
+
+// ProfileSkill returns generated.ProfileSkillResolver implementation.
+func (r *Resolver) ProfileSkill() generated.ProfileSkillResolver { return &profileSkillResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// SkillValidation returns generated.SkillValidationResolver implementation.
+func (r *Resolver) SkillValidation() generated.SkillValidationResolver {
+	return &skillValidationResolver{r}
+}
+
+type experienceValidationResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type profileExperienceResolver struct{ *Resolver }
+type profileSkillResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type skillValidationResolver struct{ *Resolver }

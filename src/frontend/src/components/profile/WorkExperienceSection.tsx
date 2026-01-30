@@ -2,6 +2,7 @@
 
 import {
   Briefcase,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   MapPin,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/utils";
 import { DeleteExperienceDialog } from "./DeleteExperienceDialog";
 import type { ProfileExperience } from "./types";
+import { ValidationPopover } from "./ValidationPopover";
 import { WorkExperienceFormDialog } from "./WorkExperienceFormDialog";
 
 const DESCRIPTION_COLLAPSE_THRESHOLD = 150;
@@ -144,6 +146,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
   const [isExpanded, setIsExpanded] = useState(false);
   const hasLongDescription =
     experience.description && experience.description.length > DESCRIPTION_COLLAPSE_THRESHOLD;
+  const validationCount = experience.validationCount ?? 0;
 
   const startDate = formatDate(experience.startDate);
   const endDate = experience.isCurrent ? "Present" : formatDate(experience.endDate) || "N/A";
@@ -156,7 +159,7 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
   );
   const duration = durationMonths !== null ? formatDuration(durationMonths) : null;
 
-  return (
+  const card = (
     <div className={`group/card relative ${!isFirst ? "pt-6 border-t border-border" : ""}`}>
       {/* Green current indicator - vertically centered with title row */}
       {experience.isCurrent && (
@@ -187,6 +190,17 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
               {experience.isCurrent && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                   Current
+                </span>
+              )}
+              {validationCount > 0 && (
+                <span
+                  className="inline-flex items-center gap-0.5 text-green-600 dark:text-green-400"
+                  title={`Validated by ${validationCount} reference letter${validationCount === 1 ? "" : "s"}`}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {validationCount > 1 && (
+                    <span className="text-xs font-medium">{validationCount}</span>
+                  )}
                 </span>
               )}
             </h3>
@@ -257,6 +271,22 @@ function ExperienceCard({ experience, isFirst, onEdit, onDelete }: ExperienceCar
       )}
     </div>
   );
+
+  // Wrap with ValidationPopover if there are validations
+  if (validationCount > 0) {
+    return (
+      <ValidationPopover
+        itemId={experience.id}
+        type="experience"
+        itemName={`${experience.title} at ${experience.company}`}
+        validationCount={validationCount}
+      >
+        {card}
+      </ValidationPopover>
+    );
+  }
+
+  return card;
 }
 
 // Role card for displaying individual roles within a company group (multi-role)
@@ -272,6 +302,7 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasLongDescription =
     role.description && role.description.length > DESCRIPTION_COLLAPSE_THRESHOLD;
+  const validationCount = role.validationCount ?? 0;
 
   const startDate = formatDate(role.startDate);
   const endDate = role.isCurrent ? "Present" : formatDate(role.endDate) || "N/A";
@@ -280,7 +311,7 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
   const durationMonths = calculateDurationMonths(role.startDate, role.endDate, role.isCurrent);
   const duration = durationMonths !== null ? formatDuration(durationMonths) : null;
 
-  return (
+  const card = (
     <div className={`group/card relative ${!isFirst ? "mt-4" : ""}`}>
       {/* Timeline connector - always shown for multi-role groups */}
       {/* Dot */}
@@ -313,6 +344,17 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
               {role.isCurrent && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                   Current
+                </span>
+              )}
+              {validationCount > 0 && (
+                <span
+                  className="inline-flex items-center gap-0.5 text-green-600 dark:text-green-400"
+                  title={`Validated by ${validationCount} reference letter${validationCount === 1 ? "" : "s"}`}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {validationCount > 1 && (
+                    <span className="text-xs font-medium">{validationCount}</span>
+                  )}
                 </span>
               )}
             </h4>
@@ -376,6 +418,22 @@ function RoleCard({ role, isFirst, isLast, onEdit, onDelete }: RoleCardProps) {
       </div>
     </div>
   );
+
+  // Wrap with ValidationPopover if there are validations
+  if (validationCount > 0) {
+    return (
+      <ValidationPopover
+        itemId={role.id}
+        type="experience"
+        itemName={`${role.title} at ${role.company}`}
+        validationCount={validationCount}
+      >
+        {card}
+      </ValidationPopover>
+    );
+  }
+
+  return card;
 }
 
 // Company group component showing company header and all roles

@@ -171,6 +171,20 @@ type ExperienceResult struct {
 
 func (ExperienceResult) IsExperienceResponse() {}
 
+// A validation record linking an experience to a reference letter.
+type ExperienceValidation struct {
+	// Unique identifier for the validation.
+	ID string `json:"id"`
+	// The experience being validated.
+	Experience *ProfileExperience `json:"experience"`
+	// The reference letter providing the validation.
+	ReferenceLetter *ReferenceLetter `json:"referenceLetter"`
+	// Quote snippet from the reference letter supporting this experience.
+	QuoteSnippet *string `json:"quoteSnippet,omitempty"`
+	// When the validation was created.
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 // Error returned when experience validation fails.
 type ExperienceValidationError struct {
 	// Error message describing the validation failure.
@@ -291,9 +305,11 @@ type ProfileExperience struct {
 	// Display order for sorting.
 	DisplayOrder int `json:"displayOrder"`
 	// Source of this experience entry.
-	Source    ExperienceSource `json:"source"`
-	CreatedAt time.Time        `json:"createdAt"`
-	UpdatedAt time.Time        `json:"updatedAt"`
+	Source ExperienceSource `json:"source"`
+	// Number of reference letters validating this experience.
+	ValidationCount int       `json:"validationCount"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 // A skill entry in a user's profile.
@@ -309,9 +325,11 @@ type ProfileSkill struct {
 	// Display order for sorting.
 	DisplayOrder int `json:"displayOrder"`
 	// Source of this skill entry.
-	Source    ExperienceSource `json:"source"`
-	CreatedAt time.Time        `json:"createdAt"`
-	UpdatedAt time.Time        `json:"updatedAt"`
+	Source ExperienceSource `json:"source"`
+	// Number of reference letters validating this skill.
+	ValidationCount int       `json:"validationCount"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type Query struct {
@@ -377,6 +395,20 @@ type SkillResult struct {
 }
 
 func (SkillResult) IsSkillResponse() {}
+
+// A validation record linking a skill to a reference letter.
+type SkillValidation struct {
+	// Unique identifier for the validation.
+	ID string `json:"id"`
+	// The skill being validated.
+	Skill *ProfileSkill `json:"skill"`
+	// The reference letter providing the validation.
+	ReferenceLetter *ReferenceLetter `json:"referenceLetter"`
+	// Quote snippet from the reference letter supporting this skill.
+	QuoteSnippet *string `json:"quoteSnippet,omitempty"`
+	// When the validation was created.
+	CreatedAt time.Time `json:"createdAt"`
+}
 
 // Error returned when skill validation fails.
 type SkillValidationError struct {

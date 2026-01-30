@@ -143,6 +143,7 @@ query GetProfile($userId: ID!) {
       highlights
       displayOrder
       source
+      validationCount
       createdAt
       updatedAt
     }
@@ -168,6 +169,7 @@ query GetProfile($userId: ID!) {
       category
       displayOrder
       source
+      validationCount
       createdAt
       updatedAt
     }
@@ -188,6 +190,44 @@ query GetTestimonials($profileId: ID!) {
     validatedSkills {
       id
       name
+    }
+  }
+}
+
+query GetSkillValidations($skillId: ID!) {
+  skillValidations(skillId: $skillId) {
+    id
+    quoteSnippet
+    createdAt
+    referenceLetter {
+      id
+      extractedData {
+        author {
+          name
+          title
+          company
+          relationship
+        }
+      }
+    }
+  }
+}
+
+query GetExperienceValidations($experienceId: ID!) {
+  experienceValidations(experienceId: $experienceId) {
+    id
+    quoteSnippet
+    createdAt
+    referenceLetter {
+      id
+      extractedData {
+        author {
+          name
+          title
+          company
+          relationship
+        }
+      }
     }
   }
 }
