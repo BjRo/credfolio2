@@ -1,11 +1,11 @@
 ---
 # credfolio2-zhnh
 title: Reference letter upload from profile
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-23T16:28:36Z
-updated_at: 2026-01-30T09:05:03Z
+updated_at: 2026-01-30T09:47:29Z
 parent: credfolio2-1kt0
 blocking:
     - credfolio2-6dty
