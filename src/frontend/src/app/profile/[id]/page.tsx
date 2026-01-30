@@ -45,14 +45,13 @@ export default function ProfilePage() {
     reexecuteProfileQuery({ requestPolicy: "network-only" });
   }, [reexecuteProfileQuery]);
 
-  // Handle reference letter upload success - must be defined before any early returns
+  // Handle reference letter upload success - navigate to validation preview
   const handleReferenceUploadSuccess = useCallback(
-    (_referenceLetterld: string) => {
-      // TODO: Navigate to validation preview when credfolio2-6dty is implemented
-      // For now, just refetch profile data
-      reexecuteProfileQuery({ requestPolicy: "network-only" });
+    (referenceLetterld: string) => {
+      // Navigate to the validation preview page
+      router.push(`/profile/${resumeId}/reference-letters/${referenceLetterld}/preview`);
     },
-    [reexecuteProfileQuery]
+    [router, resumeId]
   );
 
   if (fetching) {

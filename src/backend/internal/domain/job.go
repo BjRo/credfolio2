@@ -7,10 +7,11 @@ import (
 )
 
 // DocumentProcessingRequest contains the data needed to enqueue a document processing job.
-type DocumentProcessingRequest struct {
+type DocumentProcessingRequest struct { //nolint:govet // Field ordering matches job args convention
 	StorageKey        string
 	ReferenceLetterID uuid.UUID
 	FileID            uuid.UUID
+	ContentType       string
 }
 
 // JobEnqueuer defines the interface for enqueueing background jobs.

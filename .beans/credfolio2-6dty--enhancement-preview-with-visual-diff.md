@@ -1,11 +1,11 @@
 ---
 # credfolio2-6dty
 title: Validation preview with granular selection
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-23T16:28:37Z
-updated_at: 2026-01-29T00:00:00Z
+updated_at: 2026-01-30T10:18:19Z
 parent: credfolio2-1kt0
 blocking:
     - credfolio2-1twf
@@ -67,24 +67,24 @@ Skills the reference mentioned that aren't in the profile yet.
 
 ## Checklist
 
-- [ ] Create ValidationPreview page/component
-- [ ] Create CorroborationsSection component
-- [ ] Create TestimonialsSection component
-- [ ] Create DiscoveredSkillsSection component
-- [ ] Implement selection state management
-- [ ] Create SelectionControls component (select all, count)
-- [ ] Query extraction results and current profile
-- [ ] Compute skill/experience matches
-- [ ] Style discovered skills as suggestions
-- [ ] Wire up "Apply Selected" to mutation
-- [ ] Handle loading and error states
-- [ ] Navigate to profile on success
+- [x] Create ValidationPreview page/component
+- [x] Create CorroborationsSection component
+- [x] Create TestimonialsSection component
+- [x] Create DiscoveredSkillsSection component
+- [x] Implement selection state management
+- [x] Create SelectionControls component (select all, count)
+- [x] Query extraction results and current profile
+- [x] Compute skill/experience matches
+- [x] Style discovered skills as suggestions
+- [x] Wire up "Apply Selected" to mutation
+- [x] Handle loading and error states
+- [x] Navigate to profile on success
 
 ## Definition of Done
 
 - [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (UI changes)
-- [ ] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (UI changes)
+- [x] All checklist items above are completed
+- [x] Branch pushed and PR created for human review
