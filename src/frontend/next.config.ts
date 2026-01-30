@@ -9,6 +9,18 @@ const nextConfig: NextConfig = {
     webpackMemoryOptimizations: true,
   },
 
+  // Allow images from MinIO storage
+  images: {
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
+        pathname: "/credfolio/**",
+      },
+    ],
+  },
+
   // Proxy API requests through Next.js to avoid port forwarding issues in devcontainer
   async rewrites() {
     return [
