@@ -165,6 +165,7 @@ type ComplexityRoot struct {
 		DeleteSkill                     func(childComplexity int, id string) int
 		UpdateEducation                 func(childComplexity int, id string, input model.UpdateEducationInput) int
 		UpdateExperience                func(childComplexity int, id string, input model.UpdateExperienceInput) int
+		UpdateProfileHeader             func(childComplexity int, userID string, input model.UpdateProfileHeaderInput) int
 		UpdateSkill                     func(childComplexity int, id string, input model.UpdateSkillInput) int
 		UploadFile                      func(childComplexity int, userID string, file graphql.Upload) int
 		UploadResume                    func(childComplexity int, userID string, file graphql.Upload) int
@@ -173,9 +174,14 @@ type ComplexityRoot struct {
 	Profile struct {
 		CreatedAt   func(childComplexity int) int
 		Educations  func(childComplexity int) int
+		Email       func(childComplexity int) int
 		Experiences func(childComplexity int) int
 		ID          func(childComplexity int) int
+		Location    func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Phone       func(childComplexity int) int
 		Skills      func(childComplexity int) int
+		Summary     func(childComplexity int) int
 		UpdatedAt   func(childComplexity int) int
 		User        func(childComplexity int) int
 	}
@@ -211,6 +217,15 @@ type ComplexityRoot struct {
 		Title           func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
 		ValidationCount func(childComplexity int) int
+	}
+
+	ProfileHeaderResult struct {
+		Profile func(childComplexity int) int
+	}
+
+	ProfileHeaderValidationError struct {
+		Field   func(childComplexity int) int
+		Message func(childComplexity int) int
 	}
 
 	ProfileSkill struct {
@@ -334,6 +349,7 @@ type ExperienceValidationResolver interface {
 type MutationResolver interface {
 	UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error)
 	UploadResume(ctx context.Context, userID string, file graphql.Upload) (model.UploadResumeResponse, error)
+	UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error)
 	CreateExperience(ctx context.Context, userID string, input model.CreateExperienceInput) (model.ExperienceResponse, error)
 	UpdateExperience(ctx context.Context, id string, input model.UpdateExperienceInput) (model.ExperienceResponse, error)
 	DeleteExperience(ctx context.Context, id string) (*model.DeleteResult, error)
@@ -819,6 +835,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateExperience(childComplexity, args["id"].(string), args["input"].(model.UpdateExperienceInput)), true
+	case "Mutation.updateProfileHeader":
+		if e.complexity.Mutation.UpdateProfileHeader == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateProfileHeader_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateProfileHeader(childComplexity, args["userId"].(string), args["input"].(model.UpdateProfileHeaderInput)), true
 	case "Mutation.updateSkill":
 		if e.complexity.Mutation.UpdateSkill == nil {
 			break
@@ -865,6 +892,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Profile.Educations(childComplexity), true
+	case "Profile.email":
+		if e.complexity.Profile.Email == nil {
+			break
+		}
+
+		return e.complexity.Profile.Email(childComplexity), true
 	case "Profile.experiences":
 		if e.complexity.Profile.Experiences == nil {
 			break
@@ -877,12 +910,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Profile.ID(childComplexity), true
+	case "Profile.location":
+		if e.complexity.Profile.Location == nil {
+			break
+		}
+
+		return e.complexity.Profile.Location(childComplexity), true
+	case "Profile.name":
+		if e.complexity.Profile.Name == nil {
+			break
+		}
+
+		return e.complexity.Profile.Name(childComplexity), true
+	case "Profile.phone":
+		if e.complexity.Profile.Phone == nil {
+			break
+		}
+
+		return e.complexity.Profile.Phone(childComplexity), true
 	case "Profile.skills":
 		if e.complexity.Profile.Skills == nil {
 			break
 		}
 
 		return e.complexity.Profile.Skills(childComplexity), true
+	case "Profile.summary":
+		if e.complexity.Profile.Summary == nil {
+			break
+		}
+
+		return e.complexity.Profile.Summary(childComplexity), true
 	case "Profile.updatedAt":
 		if e.complexity.Profile.UpdatedAt == nil {
 			break
@@ -1059,6 +1116,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ProfileExperience.ValidationCount(childComplexity), true
+
+	case "ProfileHeaderResult.profile":
+		if e.complexity.ProfileHeaderResult.Profile == nil {
+			break
+		}
+
+		return e.complexity.ProfileHeaderResult.Profile(childComplexity), true
+
+	case "ProfileHeaderValidationError.field":
+		if e.complexity.ProfileHeaderValidationError.Field == nil {
+			break
+		}
+
+		return e.complexity.ProfileHeaderValidationError.Field(childComplexity), true
+	case "ProfileHeaderValidationError.message":
+		if e.complexity.ProfileHeaderValidationError.Message == nil {
+			break
+		}
+
+		return e.complexity.ProfileHeaderValidationError.Message(childComplexity), true
 
 	case "ProfileSkill.category":
 		if e.complexity.ProfileSkill.Category == nil {
@@ -1622,6 +1699,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputTestimonialInput,
 		ec.unmarshalInputUpdateEducationInput,
 		ec.unmarshalInputUpdateExperienceInput,
+		ec.unmarshalInputUpdateProfileHeaderInput,
 		ec.unmarshalInputUpdateSkillInput,
 	)
 	first := true
@@ -2048,6 +2126,16 @@ type Profile {
   id: ID!
   """The user who owns this profile."""
   user: User!
+  """User-edited name (overrides resume extraction if set)."""
+  name: String
+  """User-edited email (overrides resume extraction if set)."""
+  email: String
+  """User-edited phone (overrides resume extraction if set)."""
+  phone: String
+  """User-edited location (overrides resume extraction if set)."""
+  location: String
+  """User-edited professional summary (overrides resume extraction if set)."""
+  summary: String
   """Work experience entries."""
   experiences: [ProfileExperience!]!
   """Education entries."""
@@ -2234,6 +2322,45 @@ type SkillValidationError {
 Union type for skill create/update result.
 """
 union SkillResponse = SkillResult | SkillValidationError
+
+"""
+Input for updating profile header fields.
+"""
+input UpdateProfileHeaderInput {
+  """Name to display."""
+  name: String
+  """Email address."""
+  email: String
+  """Phone number."""
+  phone: String
+  """Location (city, state, country)."""
+  location: String
+  """Professional summary."""
+  summary: String
+}
+
+"""
+Result of a successful profile header update.
+"""
+type ProfileHeaderResult {
+  """The updated profile."""
+  profile: Profile!
+}
+
+"""
+Error returned when profile header validation fails.
+"""
+type ProfileHeaderValidationError {
+  """Error message describing the validation failure."""
+  message: String!
+  """The field that failed validation."""
+  field: String
+}
+
+"""
+Union type for profile header update result.
+"""
+union ProfileHeaderResponse = ProfileHeaderResult | ProfileHeaderValidationError
 
 """
 Result of a delete operation.
@@ -2566,6 +2693,22 @@ type Mutation {
   ): UploadResumeResponse!
 
   # ============================================================================
+  # Profile Header Mutations
+  # ============================================================================
+
+  """
+  Update the profile header fields (name, email, phone, location, summary).
+  Creates the profile if it doesn't exist.
+  Only updates fields that are provided.
+  """
+  updateProfileHeader(
+    """The user ID whose profile to update."""
+    userId: ID!
+    """The header fields to update."""
+    input: UpdateProfileHeaderInput!
+  ): ProfileHeaderResponse!
+
+  # ============================================================================
   # Profile Experience Mutations
   # ============================================================================
 
@@ -2813,6 +2956,22 @@ func (ec *executionContext) field_Mutation_updateExperience_args(ctx context.Con
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateExperienceInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateExperienceInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateProfileHeader_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateProfileHeaderInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileHeaderInput)
 	if err != nil {
 		return nil, err
 	}
@@ -3344,6 +3503,16 @@ func (ec *executionContext) fieldContext_ApplyValidationsResult_profile(_ contex
 				return ec.fieldContext_Profile_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
 			case "experiences":
 				return ec.fieldContext_Profile_experiences(ctx, field)
 			case "educations":
@@ -4897,6 +5066,47 @@ func (ec *executionContext) fieldContext_Mutation_uploadResume(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateProfileHeader(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateProfileHeader,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateProfileHeader(ctx, fc.Args["userId"].(string), fc.Args["input"].(model.UpdateProfileHeaderInput))
+		},
+		nil,
+		ec.marshalNProfileHeaderResponse2backendᚋinternalᚋgraphqlᚋmodelᚐProfileHeaderResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateProfileHeader(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ProfileHeaderResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateProfileHeader_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createExperience(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5390,6 +5600,151 @@ func (ec *executionContext) fieldContext_Profile_user(_ context.Context, field g
 				return ec.fieldContext_User_updatedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_name(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_email(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_email,
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_phone(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_phone,
+		func(ctx context.Context) (any, error) {
+			return obj.Phone, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_phone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_location(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_location,
+		func(ctx context.Context) (any, error) {
+			return obj.Location, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Profile_summary(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_summary,
+		func(ctx context.Context) (any, error) {
+			return obj.Summary, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_summary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6401,6 +6756,119 @@ func (ec *executionContext) fieldContext_ProfileExperience_updatedAt(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _ProfileHeaderResult_profile(ctx context.Context, field graphql.CollectedField, obj *model.ProfileHeaderResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProfileHeaderResult_profile,
+		func(ctx context.Context) (any, error) {
+			return obj.Profile, nil
+		},
+		nil,
+		ec.marshalNProfile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐProfile,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProfileHeaderResult_profile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProfileHeaderResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Profile_id(ctx, field)
+			case "user":
+				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
+			case "experiences":
+				return ec.fieldContext_Profile_experiences(ctx, field)
+			case "educations":
+				return ec.fieldContext_Profile_educations(ctx, field)
+			case "skills":
+				return ec.fieldContext_Profile_skills(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Profile_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Profile_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Profile", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProfileHeaderValidationError_message(ctx context.Context, field graphql.CollectedField, obj *model.ProfileHeaderValidationError) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProfileHeaderValidationError_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProfileHeaderValidationError_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProfileHeaderValidationError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProfileHeaderValidationError_field(ctx context.Context, field graphql.CollectedField, obj *model.ProfileHeaderValidationError) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProfileHeaderValidationError_field,
+		func(ctx context.Context) (any, error) {
+			return obj.Field, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProfileHeaderValidationError_field(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProfileHeaderValidationError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProfileSkill_id(ctx context.Context, field graphql.CollectedField, obj *model.ProfileSkill) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7114,6 +7582,16 @@ func (ec *executionContext) fieldContext_Query_profile(ctx context.Context, fiel
 				return ec.fieldContext_Profile_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
 			case "experiences":
 				return ec.fieldContext_Profile_experiences(ctx, field)
 			case "educations":
@@ -11446,6 +11924,61 @@ func (ec *executionContext) unmarshalInputUpdateExperienceInput(ctx context.Cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateProfileHeaderInput(ctx context.Context, obj any) (model.UpdateProfileHeaderInput, error) {
+	var it model.UpdateProfileHeaderInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "email", "phone", "location", "summary"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "phone":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Phone = data
+		case "location":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Location = data
+		case "summary":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("summary"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Summary = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateSkillInput(ctx context.Context, obj any) (model.UpdateSkillInput, error) {
 	var it model.UpdateSkillInput
 	asMap := map[string]any{}
@@ -11561,6 +12094,33 @@ func (ec *executionContext) _ExperienceResponse(ctx context.Context, sel ast.Sel
 			return typedObj
 		} else {
 			panic(fmt.Errorf("unexpected type %T; non-generated variants of ExperienceResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
+func (ec *executionContext) _ProfileHeaderResponse(ctx context.Context, sel ast.SelectionSet, obj model.ProfileHeaderResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ProfileHeaderValidationError:
+		return ec._ProfileHeaderValidationError(ctx, sel, &obj)
+	case *model.ProfileHeaderValidationError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProfileHeaderValidationError(ctx, sel, obj)
+	case model.ProfileHeaderResult:
+		return ec._ProfileHeaderResult(ctx, sel, &obj)
+	case *model.ProfileHeaderResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProfileHeaderResult(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of ProfileHeaderResponse must implement graphql.Marshaler", obj))
 		}
 	}
 }
@@ -12556,6 +13116,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateProfileHeader":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateProfileHeader(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createExperience":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createExperience(ctx, field)
@@ -12670,6 +13237,16 @@ func (ec *executionContext) _Profile(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "name":
+			out.Values[i] = ec._Profile_name(ctx, field, obj)
+		case "email":
+			out.Values[i] = ec._Profile_email(ctx, field, obj)
+		case "phone":
+			out.Values[i] = ec._Profile_phone(ctx, field, obj)
+		case "location":
+			out.Values[i] = ec._Profile_location(ctx, field, obj)
+		case "summary":
+			out.Values[i] = ec._Profile_summary(ctx, field, obj)
 		case "experiences":
 			out.Values[i] = ec._Profile_experiences(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12902,6 +13479,86 @@ func (ec *executionContext) _ProfileExperience(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var profileHeaderResultImplementors = []string{"ProfileHeaderResult", "ProfileHeaderResponse"}
+
+func (ec *executionContext) _ProfileHeaderResult(ctx context.Context, sel ast.SelectionSet, obj *model.ProfileHeaderResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, profileHeaderResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProfileHeaderResult")
+		case "profile":
+			out.Values[i] = ec._ProfileHeaderResult_profile(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var profileHeaderValidationErrorImplementors = []string{"ProfileHeaderValidationError", "ProfileHeaderResponse"}
+
+func (ec *executionContext) _ProfileHeaderValidationError(ctx context.Context, sel ast.SelectionSet, obj *model.ProfileHeaderValidationError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, profileHeaderValidationErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProfileHeaderValidationError")
+		case "message":
+			out.Values[i] = ec._ProfileHeaderValidationError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "field":
+			out.Values[i] = ec._ProfileHeaderValidationError_field(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14949,6 +15606,16 @@ func (ec *executionContext) marshalNProfileExperience2ᚖbackendᚋinternalᚋgr
 	return ec._ProfileExperience(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNProfileHeaderResponse2backendᚋinternalᚋgraphqlᚋmodelᚐProfileHeaderResponse(ctx context.Context, sel ast.SelectionSet, v model.ProfileHeaderResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProfileHeaderResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNProfileSkill2backendᚋinternalᚋgraphqlᚋmodelᚐProfileSkill(ctx context.Context, sel ast.SelectionSet, v model.ProfileSkill) graphql.Marshaler {
 	return ec._ProfileSkill(ctx, sel, &v)
 }
@@ -15377,6 +16044,11 @@ func (ec *executionContext) unmarshalNUpdateEducationInput2backendᚋinternalᚋ
 
 func (ec *executionContext) unmarshalNUpdateExperienceInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateExperienceInput(ctx context.Context, v any) (model.UpdateExperienceInput, error) {
 	res, err := ec.unmarshalInputUpdateExperienceInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateProfileHeaderInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileHeaderInput(ctx context.Context, v any) (model.UpdateProfileHeaderInput, error) {
+	res, err := ec.unmarshalInputUpdateProfileHeaderInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

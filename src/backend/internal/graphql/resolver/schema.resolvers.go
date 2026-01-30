@@ -431,6 +431,118 @@ func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file
 	}, nil
 }
 
+// UpdateProfileHeader is the resolver for the updateProfileHeader field.
+func (r *mutationResolver) UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error) {
+	r.log.Info("Updating profile header",
+		logger.Feature("profile"),
+		logger.String("user_id", userID),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.ProfileHeaderValidationError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		r.log.Warning("User not found",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+		)
+		return &model.ProfileHeaderValidationError{
+			Message: "user not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Validate email format if provided
+	if input.Email != nil && *input.Email != "" {
+		if !isValidEmail(*input.Email) {
+			return &model.ProfileHeaderValidationError{
+				Message: "invalid email format",
+				Field:   stringPtr("email"),
+			}, nil
+		}
+	}
+
+	// Validate phone format if provided (basic validation)
+	if input.Phone != nil && *input.Phone != "" {
+		if !isValidPhone(*input.Phone) {
+			return &model.ProfileHeaderValidationError{
+				Message: "invalid phone format",
+				Field:   stringPtr("phone"),
+			}, nil
+		}
+	}
+
+	// Get or create profile for user
+	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get or create profile",
+			logger.Feature("profile"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Update only fields that are provided
+	if input.Name != nil {
+		profile.Name = input.Name
+	}
+	if input.Email != nil {
+		profile.Email = input.Email
+	}
+	if input.Phone != nil {
+		profile.Phone = input.Phone
+	}
+	if input.Location != nil {
+		profile.Location = input.Location
+	}
+	if input.Summary != nil {
+		profile.Summary = input.Summary
+	}
+
+	// Persist the changes
+	if err := r.profileRepo.Update(ctx, profile); err != nil {
+		r.log.Error("Failed to update profile",
+			logger.Feature("profile"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to update profile: %w", err)
+	}
+
+	r.log.Info("Profile header updated successfully",
+		logger.Feature("profile"),
+		logger.String("profile_id", profile.ID.String()),
+	)
+
+	// Convert to GraphQL model
+	gqlProfile := domainProfileToGQL(profile)
+
+	return &model.ProfileHeaderResult{
+		Profile: gqlProfile,
+	}, nil
+}
+
 // CreateExperience is the resolver for the createExperience field.
 func (r *mutationResolver) CreateExperience(ctx context.Context, userID string, input model.CreateExperienceInput) (model.ExperienceResponse, error) {
 	r.log.Info("Creating work experience",

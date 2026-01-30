@@ -1,11 +1,24 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Mail, MapPin, Phone, User } from "lucide-react";
+import { ChevronDown, ChevronUp, Mail, MapPin, Pencil, Phone, User } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ProfileHeaderFormDialog } from "./ProfileHeaderFormDialog";
 import type { ProfileData } from "./types";
+
+interface ProfileHeaderOverrides {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  summary?: string | null;
+}
 
 interface ProfileHeaderProps {
   data: ProfileData;
+  profileOverrides?: ProfileHeaderOverrides;
+  userId?: string;
+  onMutationSuccess?: () => void;
 }
 
 interface ProfileSummaryProps {
@@ -88,47 +101,94 @@ function AvatarPlaceholder({ name }: { name: string }) {
   );
 }
 
-export function ProfileHeader({ data }: ProfileHeaderProps) {
+export function ProfileHeader({
+  data,
+  profileOverrides,
+  userId,
+  onMutationSuccess,
+}: ProfileHeaderProps) {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Merge profile overrides with extracted data (profile overrides take precedence if set)
+  const displayName = profileOverrides?.name || data.name;
+  const displayEmail = profileOverrides?.email ?? data.email;
+  const displayPhone = profileOverrides?.phone ?? data.phone;
+  const displayLocation = profileOverrides?.location ?? data.location;
+  const displaySummary = profileOverrides?.summary ?? data.summary;
+
+  const handleEditSuccess = () => {
+    onMutationSuccess?.();
+  };
+
   return (
-    <div className="bg-card border rounded-lg p-6 sm:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-        <AvatarPlaceholder name={data.name} />
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">
-                {data.name}
-              </h1>
-              <div className="mt-2 space-y-1 text-muted-foreground">
-                {data.email && (
-                  <p className="flex items-center gap-2 text-sm sm:text-base">
-                    <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <a href={`mailto:${data.email}`} className="hover:text-primary truncate">
-                      {data.email}
-                    </a>
-                  </p>
-                )}
-                {data.phone && (
-                  <p className="flex items-center gap-2 text-sm sm:text-base">
-                    <Phone className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <a href={`tel:${data.phone}`} className="hover:text-primary">
-                      {data.phone}
-                    </a>
-                  </p>
-                )}
-                {data.location && (
-                  <p className="flex items-center gap-2 text-sm sm:text-base">
-                    <MapPin className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <span>{data.location}</span>
-                  </p>
-                )}
+    <>
+      <div className="bg-card border rounded-lg p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+          <AvatarPlaceholder name={displayName} />
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">
+                  {displayName}
+                </h1>
+                <div className="mt-2 space-y-1 text-muted-foreground">
+                  {displayEmail && (
+                    <p className="flex items-center gap-2 text-sm sm:text-base">
+                      <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                      <a href={`mailto:${displayEmail}`} className="hover:text-primary truncate">
+                        {displayEmail}
+                      </a>
+                    </p>
+                  )}
+                  {displayPhone && (
+                    <p className="flex items-center gap-2 text-sm sm:text-base">
+                      <Phone className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                      <a href={`tel:${displayPhone}`} className="hover:text-primary">
+                        {displayPhone}
+                      </a>
+                    </p>
+                  )}
+                  {displayLocation && (
+                    <p className="flex items-center gap-2 text-sm sm:text-base">
+                      <MapPin className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                      <span>{displayLocation}</span>
+                    </p>
+                  )}
+                </div>
               </div>
+              {userId && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsEditDialogOpen(true)}
+                  aria-label="Edit profile"
+                  className="flex-shrink-0"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
+
+        {displaySummary && <ProfileSummary summary={displaySummary} />}
       </div>
 
-      {data.summary && <ProfileSummary summary={data.summary} />}
-    </div>
+      {userId && (
+        <ProfileHeaderFormDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          userId={userId}
+          headerData={{
+            name: displayName,
+            email: displayEmail,
+            phone: displayPhone,
+            location: displayLocation,
+            summary: displaySummary,
+          }}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+    </>
   );
 }

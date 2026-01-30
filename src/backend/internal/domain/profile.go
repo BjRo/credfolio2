@@ -29,6 +29,13 @@ type Profile struct { //nolint:govet // Field ordering prioritizes readability o
 	CreatedAt time.Time `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt time.Time `bun:"updated_at,notnull,default:current_timestamp"`
 
+	// Header fields (user-editable, override resume extraction if set)
+	Name     *string `bun:"name"`
+	Email    *string `bun:"email"`
+	Phone    *string `bun:"phone"`
+	Location *string `bun:"location"`
+	Summary  *string `bun:"summary"`
+
 	// Relations
 	User        *User                `bun:"rel:belongs-to,join:user_id=id"`
 	Experiences []*ProfileExperience `bun:"rel:has-many,join:id=profile_id"`

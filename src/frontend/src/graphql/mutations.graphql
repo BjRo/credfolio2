@@ -224,3 +224,25 @@ mutation ApplyReferenceLetterValidations($userId: ID!, $input: ApplyValidationsI
     }
   }
 }
+
+mutation UpdateProfileHeader($userId: ID!, $input: UpdateProfileHeaderInput!) {
+  updateProfileHeader(userId: $userId, input: $input) {
+    ... on ProfileHeaderResult {
+      __typename
+      profile {
+        id
+        name
+        email
+        phone
+        location
+        summary
+        updatedAt
+      }
+    }
+    ... on ProfileHeaderValidationError {
+      __typename
+      message
+      field
+    }
+  }
+}

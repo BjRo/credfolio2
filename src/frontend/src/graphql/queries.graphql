@@ -131,6 +131,11 @@ query GetUserResumes($userId: ID!) {
 query GetProfile($userId: ID!) {
   profile(userId: $userId) {
     id
+    name
+    email
+    phone
+    location
+    summary
     experiences {
       id
       company

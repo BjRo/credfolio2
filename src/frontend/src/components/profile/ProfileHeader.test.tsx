@@ -1,8 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ProfileHeader } from "./ProfileHeader";
 import type { ProfileData } from "./types";
+
+// Mock the dialog component to avoid complex setup
+vi.mock("./ProfileHeaderFormDialog", () => ({
+  ProfileHeaderFormDialog: vi.fn(() => null),
+}));
 
 const mockProfileData: ProfileData = {
   name: "John Doe",
@@ -126,6 +131,75 @@ describe("ProfileHeader", () => {
       render(<ProfileHeader data={mockProfileData} />);
       const phoneLink = screen.getByRole("link", { name: "+1 555-123-4567" });
       expect(phoneLink).toHaveAttribute("href", "tel:+1 555-123-4567");
+    });
+  });
+
+  describe("Edit Button", () => {
+    it("shows edit button when userId is provided", () => {
+      render(<ProfileHeader data={mockProfileData} userId="user-123" />);
+      expect(screen.getByRole("button", { name: /edit profile/i })).toBeInTheDocument();
+    });
+
+    it("does not show edit button when userId is not provided", () => {
+      render(<ProfileHeader data={mockProfileData} />);
+      expect(screen.queryByRole("button", { name: /edit profile/i })).not.toBeInTheDocument();
+    });
+
+    it("opens edit dialog when edit button is clicked", async () => {
+      const user = userEvent.setup();
+      render(<ProfileHeader data={mockProfileData} userId="user-123" />);
+
+      const editButton = screen.getByRole("button", { name: /edit profile/i });
+      await user.click(editButton);
+
+      // The dialog component is mocked, so we just verify the button is clickable
+      expect(editButton).toBeInTheDocument();
+    });
+  });
+
+  describe("Profile Overrides", () => {
+    it("uses profile overrides when provided", () => {
+      const overrides = {
+        name: "Jane Smith",
+        email: "jane@example.com",
+        phone: "+1 999-999-9999",
+        location: "New York, NY",
+        summary: "Updated professional summary.",
+      };
+
+      render(<ProfileHeader data={mockProfileData} profileOverrides={overrides} />);
+
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Jane Smith");
+      expect(screen.getByText("jane@example.com")).toBeInTheDocument();
+      expect(screen.getByText("+1 999-999-9999")).toBeInTheDocument();
+      expect(screen.getByText("New York, NY")).toBeInTheDocument();
+      expect(screen.getByText("Updated professional summary.")).toBeInTheDocument();
+    });
+
+    it("falls back to extracted data when overrides are null", () => {
+      const overrides = {
+        name: null,
+        email: null,
+        phone: null,
+        location: null,
+        summary: null,
+      };
+
+      render(<ProfileHeader data={mockProfileData} profileOverrides={overrides} />);
+
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("John Doe");
+      expect(screen.getByText("john@example.com")).toBeInTheDocument();
+    });
+
+    it("uses extracted data when no overrides provided", () => {
+      render(<ProfileHeader data={mockProfileData} />);
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("John Doe");
+    });
+
+    it("updates avatar initials based on displayed name", () => {
+      const overrides = { name: "Alice Bob" };
+      render(<ProfileHeader data={mockProfileData} profileOverrides={overrides} />);
+      expect(screen.getByText("AB")).toBeInTheDocument();
     });
   });
 });

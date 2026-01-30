@@ -26,6 +26,11 @@ type ExperienceResponse interface {
 	IsExperienceResponse()
 }
 
+// Union type for profile header update result.
+type ProfileHeaderResponse interface {
+	IsProfileHeaderResponse()
+}
+
 // Union type for skill create/update result.
 type SkillResponse interface {
 	IsSkillResponse()
@@ -244,6 +249,16 @@ type Profile struct {
 	ID string `json:"id"`
 	// The user who owns this profile.
 	User *User `json:"user"`
+	// User-edited name (overrides resume extraction if set).
+	Name *string `json:"name,omitempty"`
+	// User-edited email (overrides resume extraction if set).
+	Email *string `json:"email,omitempty"`
+	// User-edited phone (overrides resume extraction if set).
+	Phone *string `json:"phone,omitempty"`
+	// User-edited location (overrides resume extraction if set).
+	Location *string `json:"location,omitempty"`
+	// User-edited professional summary (overrides resume extraction if set).
+	Summary *string `json:"summary,omitempty"`
 	// Work experience entries.
 	Experiences []*ProfileExperience `json:"experiences"`
 	// Education entries.
@@ -311,6 +326,24 @@ type ProfileExperience struct {
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
+
+// Result of a successful profile header update.
+type ProfileHeaderResult struct {
+	// The updated profile.
+	Profile *Profile `json:"profile"`
+}
+
+func (ProfileHeaderResult) IsProfileHeaderResponse() {}
+
+// Error returned when profile header validation fails.
+type ProfileHeaderValidationError struct {
+	// Error message describing the validation failure.
+	Message string `json:"message"`
+	// The field that failed validation.
+	Field *string `json:"field,omitempty"`
+}
+
+func (ProfileHeaderValidationError) IsProfileHeaderResponse() {}
 
 // A skill entry in a user's profile.
 type ProfileSkill struct {
@@ -496,6 +529,20 @@ type UpdateExperienceInput struct {
 	Description *string `json:"description,omitempty"`
 	// Key achievements or highlights (bullet points).
 	Highlights []string `json:"highlights,omitempty"`
+}
+
+// Input for updating profile header fields.
+type UpdateProfileHeaderInput struct {
+	// Name to display.
+	Name *string `json:"name,omitempty"`
+	// Email address.
+	Email *string `json:"email,omitempty"`
+	// Phone number.
+	Phone *string `json:"phone,omitempty"`
+	// Location (city, state, country).
+	Location *string `json:"location,omitempty"`
+	// Professional summary.
+	Summary *string `json:"summary,omitempty"`
 }
 
 // Input for updating an existing skill.
