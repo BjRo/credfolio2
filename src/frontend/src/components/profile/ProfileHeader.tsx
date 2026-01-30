@@ -13,13 +13,11 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useMutation } from "urql";
 import { Button } from "@/components/ui/button";
-import {
-  DeleteProfilePhotoDocument,
-  UploadProfilePhotoDocument,
-} from "@/graphql/generated/graphql";
+import { DeleteProfilePhotoDocument } from "@/graphql/generated/graphql";
+import { GRAPHQL_ENDPOINT } from "@/lib/urql/client";
 import { ProfileHeaderFormDialog } from "./ProfileHeaderFormDialog";
 import type { ProfileData } from "./types";
 
@@ -106,10 +104,10 @@ interface ProfileAvatarProps {
 function ProfileAvatar({ name, photoUrl, userId, onUploadSuccess }: ProfileAvatarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [uploadResult, uploadPhoto] = useMutation(UploadProfilePhotoDocument);
+  const [isUploading, setIsUploading] = useState(false);
   const [deleteResult, deletePhoto] = useMutation(DeleteProfilePhotoDocument);
 
-  const isLoading = uploadResult.fetching || deleteResult.fetching;
+  const isLoading = isUploading || deleteResult.fetching;
   const canEdit = !!userId;
 
   const initials = name
@@ -119,6 +117,92 @@ function ProfileAvatar({ name, photoUrl, userId, onUploadSuccess }: ProfileAvata
     .toUpperCase()
     .slice(0, 2);
 
+  // Use XHR for file upload following GraphQL multipart request spec
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (!userId) return;
+
+      setIsUploading(true);
+
+      const operations = JSON.stringify({
+        query: `
+          mutation UploadProfilePhoto($userId: ID!, $file: Upload!) {
+            uploadProfilePhoto(userId: $userId, file: $file) {
+              ... on UploadProfilePhotoResult {
+                __typename
+                profilePhotoUrl
+              }
+              ... on FileValidationError {
+                __typename
+                message
+                field
+              }
+            }
+          }
+        `,
+        variables: {
+          userId,
+          file: null,
+        },
+      });
+
+      const map = JSON.stringify({
+        "0": ["variables.file"],
+      });
+
+      const formData = new FormData();
+      formData.append("operations", operations);
+      formData.append("map", map);
+      formData.append("0", file);
+
+      try {
+        const response = await new Promise<{ success: boolean; error?: string }>(
+          (resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+
+            xhr.addEventListener("load", () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const result = JSON.parse(xhr.responseText);
+                  if (result.errors?.length) {
+                    reject(new Error(result.errors[0].message));
+                    return;
+                  }
+                  const data = result.data?.uploadProfilePhoto;
+                  if (data?.__typename === "FileValidationError") {
+                    reject(new Error(data.message));
+                    return;
+                  }
+                  resolve({ success: true });
+                } catch {
+                  reject(new Error("Failed to parse response"));
+                }
+              } else {
+                reject(new Error(`Upload failed with status ${xhr.status}`));
+              }
+            });
+
+            xhr.addEventListener("error", () => {
+              reject(new Error("Network error during upload"));
+            });
+
+            xhr.open("POST", GRAPHQL_ENDPOINT);
+            xhr.send(formData);
+          }
+        );
+
+        if (response.success) {
+          onUploadSuccess?.();
+        }
+      } catch (err) {
+        console.error("Profile photo upload failed:", err);
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [userId, onUploadSuccess]
+  );
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
@@ -126,14 +210,7 @@ function ProfileAvatar({ name, photoUrl, userId, onUploadSuccess }: ProfileAvata
     // Reset input so the same file can be selected again
     e.target.value = "";
 
-    const result = await uploadPhoto({
-      userId,
-      file,
-    });
-
-    if (result.data?.uploadProfilePhoto?.__typename === "UploadProfilePhotoResult") {
-      onUploadSuccess?.();
-    }
+    await uploadFile(file);
   };
 
   const handleDeletePhoto = async () => {
