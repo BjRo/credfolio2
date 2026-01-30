@@ -130,7 +130,9 @@ function ProfileAvatar({ name, photoUrl, userId, onUploadSuccess }: ProfileAvata
             uploadProfilePhoto(userId: $userId, file: $file) {
               ... on UploadProfilePhotoResult {
                 __typename
-                profilePhotoUrl
+                profile {
+                  profilePhotoUrl
+                }
               }
               ... on FileValidationError {
                 __typename
