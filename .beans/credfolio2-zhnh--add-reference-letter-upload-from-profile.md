@@ -71,4 +71,4 @@ mutation uploadReferenceLetter($userId: ID!, $file: Upload!) {
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (UI changes)
 - [ ] All checklist items above are completed (validation preview navigation blocked)
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review: https://github.com/BjRo/credfolio2/pull/44
