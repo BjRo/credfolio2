@@ -1,58 +1,53 @@
 // Package model contains GraphQL model types.
 package model
 
-import "time"
+import (
+	"time"
 
-// ExtractedLetterData is the GraphQL model for extracted letter data.
-type ExtractedLetterData struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
-	Author          *ExtractedAuthor           `json:"author"`
-	Skills          []string                   `json:"skills"`
-	Qualities       []*ExtractedQuality        `json:"qualities"`
-	Accomplishments []*ExtractedAccomplishment `json:"accomplishments"`
-	Recommendation  *ExtractedRecommendation   `json:"recommendation"`
-	Metadata        *ExtractionMetadata        `json:"metadata"`
+	"backend/internal/domain"
+)
+
+// ExtractedLetterData is the GraphQL model for extracted letter data (credibility-focused).
+type ExtractedLetterData struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
+	Author             *ExtractedAuthor              `json:"author"`
+	Testimonials       []*ExtractedTestimonial       `json:"testimonials"`
+	SkillMentions      []*ExtractedSkillMention      `json:"skillMentions"`
+	ExperienceMentions []*ExtractedExperienceMention `json:"experienceMentions"`
+	DiscoveredSkills   []string                      `json:"discoveredSkills"`
+	Metadata           *ExtractionMetadata           `json:"metadata"`
 }
 
 // ExtractedAuthor is the GraphQL model for author details.
-type ExtractedAuthor struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
-	Name                string  `json:"name"`
-	Title               *string `json:"title,omitempty"`
-	Organization        *string `json:"organization,omitempty"`
-	Relationship        string  `json:"relationship"`
-	RelationshipDetails *string `json:"relationshipDetails,omitempty"`
-	Confidence          float64 `json:"confidence"`
+type ExtractedAuthor struct {
+	Name         string                    `json:"name"`
+	Title        *string                   `json:"title,omitempty"`
+	Company      *string                   `json:"company,omitempty"`
+	Relationship domain.AuthorRelationship `json:"relationship"`
 }
 
-// ExtractedQuality is the GraphQL model for an extracted quality.
-type ExtractedQuality struct {
-	Trait      string   `json:"trait"`
-	Evidence   []string `json:"evidence,omitempty"`
-	Confidence float64  `json:"confidence"`
+// ExtractedTestimonial is the GraphQL model for a testimonial quote.
+type ExtractedTestimonial struct {
+	Quote           string   `json:"quote"`
+	SkillsMentioned []string `json:"skillsMentioned,omitempty"`
 }
 
-// ExtractedAccomplishment is the GraphQL model for an accomplishment.
-type ExtractedAccomplishment struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
-	Description string  `json:"description"`
-	Impact      *string `json:"impact,omitempty"`
-	Timeframe   *string `json:"timeframe,omitempty"`
-	Confidence  float64 `json:"confidence"`
+// ExtractedSkillMention is the GraphQL model for a skill mention with context.
+type ExtractedSkillMention struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
+	Skill   string  `json:"skill"`
+	Quote   string  `json:"quote"`
+	Context *string `json:"context,omitempty"`
 }
 
-// ExtractedRecommendation is the GraphQL model for recommendation assessment.
-type ExtractedRecommendation struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
-	Strength   string   `json:"strength"`
-	Sentiment  float64  `json:"sentiment"`
-	KeyQuotes  []string `json:"keyQuotes,omitempty"`
-	Summary    *string  `json:"summary,omitempty"`
-	Confidence float64  `json:"confidence"`
+// ExtractedExperienceMention is the GraphQL model for an experience mention.
+type ExtractedExperienceMention struct {
+	Company string `json:"company"`
+	Role    string `json:"role"`
+	Quote   string `json:"quote"`
 }
 
 // ExtractionMetadata is the GraphQL model for extraction metadata.
-type ExtractionMetadata struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
-	ExtractedAt       time.Time `json:"extractedAt"`
-	ModelVersion      string    `json:"modelVersion"`
-	OverallConfidence float64   `json:"overallConfidence"`
-	ProcessingTimeMs  *int      `json:"processingTimeMs,omitempty"`
-	WarningsCount     int       `json:"warningsCount"`
-	Warnings          []string  `json:"warnings,omitempty"`
+type ExtractionMetadata struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
+	ExtractedAt      time.Time `json:"extractedAt"`
+	ModelVersion     string    `json:"modelVersion"`
+	ProcessingTimeMs *int      `json:"processingTimeMs,omitempty"`
 }

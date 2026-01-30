@@ -56,3 +56,72 @@ type ReferenceLetterRepository interface {
 	// Delete removes a reference letter by its ID.
 	Delete(ctx context.Context, id uuid.UUID) error
 }
+
+// TestimonialRepository defines operations for testimonial persistence.
+type TestimonialRepository interface {
+	// Create persists a new testimonial.
+	Create(ctx context.Context, testimonial *Testimonial) error
+
+	// GetByID retrieves a testimonial by its ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*Testimonial, error)
+
+	// GetByProfileID retrieves all testimonials for a profile.
+	GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*Testimonial, error)
+
+	// GetByReferenceLetterID retrieves all testimonials from a reference letter.
+	GetByReferenceLetterID(ctx context.Context, referenceLetterID uuid.UUID) ([]*Testimonial, error)
+
+	// Delete removes a testimonial by its ID.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// DeleteByReferenceLetterID removes all testimonials from a reference letter.
+	DeleteByReferenceLetterID(ctx context.Context, referenceLetterID uuid.UUID) error
+}
+
+// SkillValidationRepository defines operations for skill validation persistence.
+type SkillValidationRepository interface {
+	// Create persists a new skill validation.
+	Create(ctx context.Context, validation *SkillValidation) error
+
+	// GetByID retrieves a skill validation by its ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*SkillValidation, error)
+
+	// GetByProfileSkillID retrieves all validations for a specific skill.
+	GetByProfileSkillID(ctx context.Context, profileSkillID uuid.UUID) ([]*SkillValidation, error)
+
+	// GetByReferenceLetterID retrieves all skill validations from a reference letter.
+	GetByReferenceLetterID(ctx context.Context, referenceLetterID uuid.UUID) ([]*SkillValidation, error)
+
+	// Delete removes a skill validation by its ID.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// DeleteByReferenceLetterID removes all skill validations from a reference letter.
+	DeleteByReferenceLetterID(ctx context.Context, referenceLetterID uuid.UUID) error
+
+	// CountByProfileSkillID returns the number of validations for a skill.
+	CountByProfileSkillID(ctx context.Context, profileSkillID uuid.UUID) (int, error)
+}
+
+// ExperienceValidationRepository defines operations for experience validation persistence.
+type ExperienceValidationRepository interface {
+	// Create persists a new experience validation.
+	Create(ctx context.Context, validation *ExperienceValidation) error
+
+	// GetByID retrieves an experience validation by its ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*ExperienceValidation, error)
+
+	// GetByProfileExperienceID retrieves all validations for a specific experience.
+	GetByProfileExperienceID(ctx context.Context, profileExperienceID uuid.UUID) ([]*ExperienceValidation, error)
+
+	// GetByReferenceLetterID retrieves all experience validations from a reference letter.
+	GetByReferenceLetterID(ctx context.Context, referenceLetterID uuid.UUID) ([]*ExperienceValidation, error)
+
+	// Delete removes an experience validation by its ID.
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// DeleteByReferenceLetterID removes all experience validations from a reference letter.
+	DeleteByReferenceLetterID(ctx context.Context, referenceLetterID uuid.UUID) error
+
+	// CountByProfileExperienceID returns the number of validations for an experience.
+	CountByProfileExperienceID(ctx context.Context, profileExperienceID uuid.UUID) (int, error)
+}

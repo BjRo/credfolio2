@@ -18,16 +18,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Relationship is the resolver for the relationship field.
-func (r *extractedAuthorResolver) Relationship(ctx context.Context, obj *model.ExtractedAuthor) (domain.AuthorRelationship, error) {
-	panic(fmt.Errorf("not implemented: Relationship - relationship"))
-}
-
-// Strength is the resolver for the strength field.
-func (r *extractedRecommendationResolver) Strength(ctx context.Context, obj *model.ExtractedRecommendation) (domain.RecommendationStrength, error) {
-	panic(fmt.Errorf("not implemented: Strength - strength"))
-}
-
 // UploadFile is the resolver for the uploadFile field.
 func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error) {
 	r.log.Info("File upload started",
@@ -1438,23 +1428,46 @@ func (r *queryResolver) ProfileSkill(ctx context.Context, id string) (*model.Pro
 	return toGraphQLProfileSkill(skill), nil
 }
 
-// ExtractedAuthor returns generated.ExtractedAuthorResolver implementation.
-func (r *Resolver) ExtractedAuthor() generated.ExtractedAuthorResolver {
-	return &extractedAuthorResolver{r}
-}
-
-// ExtractedRecommendation returns generated.ExtractedRecommendationResolver implementation.
-func (r *Resolver) ExtractedRecommendation() generated.ExtractedRecommendationResolver {
-	return &extractedRecommendationResolver{r}
-}
-
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-type extractedAuthorResolver struct{ *Resolver }
-type extractedRecommendationResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *extractedAuthorResolver) Company(ctx context.Context, obj *model.ExtractedAuthor) (*string, error) {
+	panic(fmt.Errorf("not implemented: Company - company"))
+}
+func (r *extractedAuthorResolver) Relationship(ctx context.Context, obj *model.ExtractedAuthor) (domain.AuthorRelationship, error) {
+	panic(fmt.Errorf("not implemented: Relationship - relationship"))
+}
+func (r *extractedLetterDataResolver) Testimonials(ctx context.Context, obj *model.ExtractedLetterData) ([]*model.ExtractedTestimonial, error) {
+	panic(fmt.Errorf("not implemented: Testimonials - testimonials"))
+}
+func (r *extractedLetterDataResolver) SkillMentions(ctx context.Context, obj *model.ExtractedLetterData) ([]*model.ExtractedSkillMention, error) {
+	panic(fmt.Errorf("not implemented: SkillMentions - skillMentions"))
+}
+func (r *extractedLetterDataResolver) ExperienceMentions(ctx context.Context, obj *model.ExtractedLetterData) ([]*model.ExtractedExperienceMention, error) {
+	panic(fmt.Errorf("not implemented: ExperienceMentions - experienceMentions"))
+}
+func (r *extractedLetterDataResolver) DiscoveredSkills(ctx context.Context, obj *model.ExtractedLetterData) ([]string, error) {
+	panic(fmt.Errorf("not implemented: DiscoveredSkills - discoveredSkills"))
+}
+func (r *Resolver) ExtractedAuthor() generated.ExtractedAuthorResolver {
+	return &extractedAuthorResolver{r}
+}
+func (r *Resolver) ExtractedLetterData() generated.ExtractedLetterDataResolver {
+	return &extractedLetterDataResolver{r}
+}
+type extractedAuthorResolver struct{ *Resolver }
+type extractedLetterDataResolver struct{ *Resolver }
+*/

@@ -40,8 +40,6 @@ type Config struct {
 }
 
 type ResolverRoot interface {
-	ExtractedAuthor() ExtractedAuthorResolver
-	ExtractedRecommendation() ExtractedRecommendationResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 }
@@ -73,52 +71,43 @@ type ComplexityRoot struct {
 		Message func(childComplexity int) int
 	}
 
-	ExtractedAccomplishment struct {
-		Confidence  func(childComplexity int) int
-		Description func(childComplexity int) int
-		Impact      func(childComplexity int) int
-		Timeframe   func(childComplexity int) int
+	ExtractedAuthor struct {
+		Company      func(childComplexity int) int
+		Name         func(childComplexity int) int
+		Relationship func(childComplexity int) int
+		Title        func(childComplexity int) int
 	}
 
-	ExtractedAuthor struct {
-		Confidence          func(childComplexity int) int
-		Name                func(childComplexity int) int
-		Organization        func(childComplexity int) int
-		Relationship        func(childComplexity int) int
-		RelationshipDetails func(childComplexity int) int
-		Title               func(childComplexity int) int
+	ExtractedExperienceMention struct {
+		Company func(childComplexity int) int
+		Quote   func(childComplexity int) int
+		Role    func(childComplexity int) int
 	}
 
 	ExtractedLetterData struct {
-		Accomplishments func(childComplexity int) int
-		Author          func(childComplexity int) int
-		Metadata        func(childComplexity int) int
-		Qualities       func(childComplexity int) int
-		Recommendation  func(childComplexity int) int
-		Skills          func(childComplexity int) int
+		Author             func(childComplexity int) int
+		DiscoveredSkills   func(childComplexity int) int
+		ExperienceMentions func(childComplexity int) int
+		Metadata           func(childComplexity int) int
+		SkillMentions      func(childComplexity int) int
+		Testimonials       func(childComplexity int) int
 	}
 
-	ExtractedQuality struct {
-		Confidence func(childComplexity int) int
-		Evidence   func(childComplexity int) int
-		Trait      func(childComplexity int) int
+	ExtractedSkillMention struct {
+		Context func(childComplexity int) int
+		Quote   func(childComplexity int) int
+		Skill   func(childComplexity int) int
 	}
 
-	ExtractedRecommendation struct {
-		Confidence func(childComplexity int) int
-		KeyQuotes  func(childComplexity int) int
-		Sentiment  func(childComplexity int) int
-		Strength   func(childComplexity int) int
-		Summary    func(childComplexity int) int
+	ExtractedTestimonial struct {
+		Quote           func(childComplexity int) int
+		SkillsMentioned func(childComplexity int) int
 	}
 
 	ExtractionMetadata struct {
-		ExtractedAt       func(childComplexity int) int
-		ModelVersion      func(childComplexity int) int
-		OverallConfidence func(childComplexity int) int
-		ProcessingTimeMs  func(childComplexity int) int
-		Warnings          func(childComplexity int) int
-		WarningsCount     func(childComplexity int) int
+		ExtractedAt      func(childComplexity int) int
+		ModelVersion     func(childComplexity int) int
+		ProcessingTimeMs func(childComplexity int) int
 	}
 
 	File struct {
@@ -282,12 +271,6 @@ type ComplexityRoot struct {
 	}
 }
 
-type ExtractedAuthorResolver interface {
-	Relationship(ctx context.Context, obj *model.ExtractedAuthor) (domain.AuthorRelationship, error)
-}
-type ExtractedRecommendationResolver interface {
-	Strength(ctx context.Context, obj *model.ExtractedRecommendation) (domain.RecommendationStrength, error)
-}
 type MutationResolver interface {
 	UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error)
 	UploadResume(ctx context.Context, userID string, file graphql.Upload) (model.UploadResumeResponse, error)
@@ -387,61 +370,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ExperienceValidationError.Message(childComplexity), true
 
-	case "ExtractedAccomplishment.confidence":
-		if e.complexity.ExtractedAccomplishment.Confidence == nil {
+	case "ExtractedAuthor.company":
+		if e.complexity.ExtractedAuthor.Company == nil {
 			break
 		}
 
-		return e.complexity.ExtractedAccomplishment.Confidence(childComplexity), true
-	case "ExtractedAccomplishment.description":
-		if e.complexity.ExtractedAccomplishment.Description == nil {
-			break
-		}
-
-		return e.complexity.ExtractedAccomplishment.Description(childComplexity), true
-	case "ExtractedAccomplishment.impact":
-		if e.complexity.ExtractedAccomplishment.Impact == nil {
-			break
-		}
-
-		return e.complexity.ExtractedAccomplishment.Impact(childComplexity), true
-	case "ExtractedAccomplishment.timeframe":
-		if e.complexity.ExtractedAccomplishment.Timeframe == nil {
-			break
-		}
-
-		return e.complexity.ExtractedAccomplishment.Timeframe(childComplexity), true
-
-	case "ExtractedAuthor.confidence":
-		if e.complexity.ExtractedAuthor.Confidence == nil {
-			break
-		}
-
-		return e.complexity.ExtractedAuthor.Confidence(childComplexity), true
+		return e.complexity.ExtractedAuthor.Company(childComplexity), true
 	case "ExtractedAuthor.name":
 		if e.complexity.ExtractedAuthor.Name == nil {
 			break
 		}
 
 		return e.complexity.ExtractedAuthor.Name(childComplexity), true
-	case "ExtractedAuthor.organization":
-		if e.complexity.ExtractedAuthor.Organization == nil {
-			break
-		}
-
-		return e.complexity.ExtractedAuthor.Organization(childComplexity), true
 	case "ExtractedAuthor.relationship":
 		if e.complexity.ExtractedAuthor.Relationship == nil {
 			break
 		}
 
 		return e.complexity.ExtractedAuthor.Relationship(childComplexity), true
-	case "ExtractedAuthor.relationshipDetails":
-		if e.complexity.ExtractedAuthor.RelationshipDetails == nil {
-			break
-		}
-
-		return e.complexity.ExtractedAuthor.RelationshipDetails(childComplexity), true
 	case "ExtractedAuthor.title":
 		if e.complexity.ExtractedAuthor.Title == nil {
 			break
@@ -449,92 +395,93 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ExtractedAuthor.Title(childComplexity), true
 
-	case "ExtractedLetterData.accomplishments":
-		if e.complexity.ExtractedLetterData.Accomplishments == nil {
+	case "ExtractedExperienceMention.company":
+		if e.complexity.ExtractedExperienceMention.Company == nil {
 			break
 		}
 
-		return e.complexity.ExtractedLetterData.Accomplishments(childComplexity), true
+		return e.complexity.ExtractedExperienceMention.Company(childComplexity), true
+	case "ExtractedExperienceMention.quote":
+		if e.complexity.ExtractedExperienceMention.Quote == nil {
+			break
+		}
+
+		return e.complexity.ExtractedExperienceMention.Quote(childComplexity), true
+	case "ExtractedExperienceMention.role":
+		if e.complexity.ExtractedExperienceMention.Role == nil {
+			break
+		}
+
+		return e.complexity.ExtractedExperienceMention.Role(childComplexity), true
+
 	case "ExtractedLetterData.author":
 		if e.complexity.ExtractedLetterData.Author == nil {
 			break
 		}
 
 		return e.complexity.ExtractedLetterData.Author(childComplexity), true
+	case "ExtractedLetterData.discoveredSkills":
+		if e.complexity.ExtractedLetterData.DiscoveredSkills == nil {
+			break
+		}
+
+		return e.complexity.ExtractedLetterData.DiscoveredSkills(childComplexity), true
+	case "ExtractedLetterData.experienceMentions":
+		if e.complexity.ExtractedLetterData.ExperienceMentions == nil {
+			break
+		}
+
+		return e.complexity.ExtractedLetterData.ExperienceMentions(childComplexity), true
 	case "ExtractedLetterData.metadata":
 		if e.complexity.ExtractedLetterData.Metadata == nil {
 			break
 		}
 
 		return e.complexity.ExtractedLetterData.Metadata(childComplexity), true
-	case "ExtractedLetterData.qualities":
-		if e.complexity.ExtractedLetterData.Qualities == nil {
+	case "ExtractedLetterData.skillMentions":
+		if e.complexity.ExtractedLetterData.SkillMentions == nil {
 			break
 		}
 
-		return e.complexity.ExtractedLetterData.Qualities(childComplexity), true
-	case "ExtractedLetterData.recommendation":
-		if e.complexity.ExtractedLetterData.Recommendation == nil {
+		return e.complexity.ExtractedLetterData.SkillMentions(childComplexity), true
+	case "ExtractedLetterData.testimonials":
+		if e.complexity.ExtractedLetterData.Testimonials == nil {
 			break
 		}
 
-		return e.complexity.ExtractedLetterData.Recommendation(childComplexity), true
-	case "ExtractedLetterData.skills":
-		if e.complexity.ExtractedLetterData.Skills == nil {
+		return e.complexity.ExtractedLetterData.Testimonials(childComplexity), true
+
+	case "ExtractedSkillMention.context":
+		if e.complexity.ExtractedSkillMention.Context == nil {
 			break
 		}
 
-		return e.complexity.ExtractedLetterData.Skills(childComplexity), true
-
-	case "ExtractedQuality.confidence":
-		if e.complexity.ExtractedQuality.Confidence == nil {
+		return e.complexity.ExtractedSkillMention.Context(childComplexity), true
+	case "ExtractedSkillMention.quote":
+		if e.complexity.ExtractedSkillMention.Quote == nil {
 			break
 		}
 
-		return e.complexity.ExtractedQuality.Confidence(childComplexity), true
-	case "ExtractedQuality.evidence":
-		if e.complexity.ExtractedQuality.Evidence == nil {
+		return e.complexity.ExtractedSkillMention.Quote(childComplexity), true
+	case "ExtractedSkillMention.skill":
+		if e.complexity.ExtractedSkillMention.Skill == nil {
 			break
 		}
 
-		return e.complexity.ExtractedQuality.Evidence(childComplexity), true
-	case "ExtractedQuality.trait":
-		if e.complexity.ExtractedQuality.Trait == nil {
+		return e.complexity.ExtractedSkillMention.Skill(childComplexity), true
+
+	case "ExtractedTestimonial.quote":
+		if e.complexity.ExtractedTestimonial.Quote == nil {
 			break
 		}
 
-		return e.complexity.ExtractedQuality.Trait(childComplexity), true
-
-	case "ExtractedRecommendation.confidence":
-		if e.complexity.ExtractedRecommendation.Confidence == nil {
+		return e.complexity.ExtractedTestimonial.Quote(childComplexity), true
+	case "ExtractedTestimonial.skillsMentioned":
+		if e.complexity.ExtractedTestimonial.SkillsMentioned == nil {
 			break
 		}
 
-		return e.complexity.ExtractedRecommendation.Confidence(childComplexity), true
-	case "ExtractedRecommendation.keyQuotes":
-		if e.complexity.ExtractedRecommendation.KeyQuotes == nil {
-			break
-		}
-
-		return e.complexity.ExtractedRecommendation.KeyQuotes(childComplexity), true
-	case "ExtractedRecommendation.sentiment":
-		if e.complexity.ExtractedRecommendation.Sentiment == nil {
-			break
-		}
-
-		return e.complexity.ExtractedRecommendation.Sentiment(childComplexity), true
-	case "ExtractedRecommendation.strength":
-		if e.complexity.ExtractedRecommendation.Strength == nil {
-			break
-		}
-
-		return e.complexity.ExtractedRecommendation.Strength(childComplexity), true
-	case "ExtractedRecommendation.summary":
-		if e.complexity.ExtractedRecommendation.Summary == nil {
-			break
-		}
-
-		return e.complexity.ExtractedRecommendation.Summary(childComplexity), true
+		return e.complexity.ExtractedTestimonial.SkillsMentioned(childComplexity), true
 
 	case "ExtractionMetadata.extractedAt":
 		if e.complexity.ExtractionMetadata.ExtractedAt == nil {
@@ -548,30 +495,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ExtractionMetadata.ModelVersion(childComplexity), true
-	case "ExtractionMetadata.overallConfidence":
-		if e.complexity.ExtractionMetadata.OverallConfidence == nil {
-			break
-		}
-
-		return e.complexity.ExtractionMetadata.OverallConfidence(childComplexity), true
 	case "ExtractionMetadata.processingTimeMs":
 		if e.complexity.ExtractionMetadata.ProcessingTimeMs == nil {
 			break
 		}
 
 		return e.complexity.ExtractionMetadata.ProcessingTimeMs(childComplexity), true
-	case "ExtractionMetadata.warnings":
-		if e.complexity.ExtractionMetadata.Warnings == nil {
-			break
-		}
-
-		return e.complexity.ExtractionMetadata.Warnings(childComplexity), true
-	case "ExtractionMetadata.warningsCount":
-		if e.complexity.ExtractionMetadata.WarningsCount == nil {
-			break
-		}
-
-		return e.complexity.ExtractionMetadata.WarningsCount(childComplexity), true
 
 	case "File.contentType":
 		if e.complexity.File.ContentType == nil {
@@ -1523,7 +1452,7 @@ enum ReferenceLetterStatus {
 }
 
 # ============================================================================
-# Reference Letter Extraction Schema
+# Reference Letter Extraction Schema (Credibility-Focused)
 # ============================================================================
 
 """
@@ -1531,10 +1460,12 @@ Relationship type between letter author and candidate.
 """
 enum AuthorRelationship {
   MANAGER
-  COLLEAGUE
-  PROFESSOR
+  PEER
+  DIRECT_REPORT
   CLIENT
   MENTOR
+  PROFESSOR
+  COLLEAGUE
   OTHER
 }
 
@@ -1548,15 +1479,6 @@ enum SkillCategory {
 }
 
 """
-Recommendation strength level.
-"""
-enum RecommendationStrength {
-  STRONG
-  MODERATE
-  RESERVED
-}
-
-"""
 Author details extracted from a reference letter.
 """
 type ExtractedAuthor {
@@ -1564,56 +1486,44 @@ type ExtractedAuthor {
   name: String!
   """The author's job title or position."""
   title: String
-  """The organization where the author works."""
-  organization: String
+  """The company where the author works."""
+  company: String
   """The relationship type between author and candidate."""
   relationship: AuthorRelationship!
-  """Additional details about the relationship (e.g., 'Direct supervisor for 3 years')."""
-  relationshipDetails: String
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
 }
 
 """
-A quality or trait mentioned in a reference letter.
+A testimonial quote suitable for display on the profile.
 """
-type ExtractedQuality {
-  """The quality or trait name."""
-  trait: String!
-  """Supporting evidence or quotes from the letter."""
-  evidence: [String!]
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
+type ExtractedTestimonial {
+  """The full quote text."""
+  quote: String!
+  """Skills mentioned in this testimonial."""
+  skillsMentioned: [String!]
 }
 
 """
-An accomplishment cited in a reference letter.
+A specific skill mentioned in the reference letter with context.
 """
-type ExtractedAccomplishment {
-  """Description of the accomplishment."""
-  description: String!
-  """The impact or result of the accomplishment."""
-  impact: String
-  """When the accomplishment occurred (e.g., '2024', 'Q3 2023')."""
-  timeframe: String
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
+type ExtractedSkillMention {
+  """The skill name."""
+  skill: String!
+  """Quote from the letter mentioning this skill."""
+  quote: String!
+  """Context for the skill mention (e.g., 'technical skills', 'leadership')."""
+  context: String
 }
 
 """
-Overall recommendation assessment from a reference letter.
+A reference to a role/company mentioned in the letter.
 """
-type ExtractedRecommendation {
-  """The overall strength of the recommendation."""
-  strength: RecommendationStrength!
-  """Sentiment score from -1.0 (negative) to 1.0 (positive)."""
-  sentiment: Float!
-  """Key quotes that demonstrate the recommendation strength."""
-  keyQuotes: [String!]
-  """Brief summary of the recommendation."""
-  summary: String
-  """Confidence score for this extraction (0.0 to 1.0)."""
-  confidence: Float!
+type ExtractedExperienceMention {
+  """Company name mentioned."""
+  company: String!
+  """Role/title mentioned."""
+  role: String!
+  """Quote from the letter about this experience."""
+  quote: String!
 }
 
 """
@@ -1624,30 +1534,24 @@ type ExtractionMetadata {
   extractedAt: DateTime!
   """The LLM model version used for extraction."""
   modelVersion: String!
-  """Overall confidence score for the entire extraction (0.0 to 1.0)."""
-  overallConfidence: Float!
   """Time taken to process the extraction in milliseconds."""
   processingTimeMs: Int
-  """Number of warnings generated during extraction."""
-  warningsCount: Int!
-  """Warning messages from the extraction process."""
-  warnings: [String!]
 }
 
 """
-Structured data extracted from a reference letter.
+Structured data extracted from a reference letter for credibility validation.
 """
 type ExtractedLetterData {
   """Details about the letter's author."""
   author: ExtractedAuthor!
-  """Skill names mentioned in the letter."""
-  skills: [String!]!
-  """Qualities and traits mentioned in the letter."""
-  qualities: [ExtractedQuality!]!
-  """Accomplishments cited in the letter."""
-  accomplishments: [ExtractedAccomplishment!]!
-  """Overall recommendation assessment."""
-  recommendation: ExtractedRecommendation!
+  """Full testimonial quotes for display."""
+  testimonials: [ExtractedTestimonial!]!
+  """Specific skill mentions with quotes."""
+  skillMentions: [ExtractedSkillMention!]!
+  """Experience/role mentions with quotes."""
+  experienceMentions: [ExtractedExperienceMention!]!
+  """Skills discovered that aren't in the profile yet."""
+  discoveredSkills: [String!]!
   """Metadata about the extraction process."""
   metadata: ExtractionMetadata!
 }
@@ -2897,122 +2801,6 @@ func (ec *executionContext) fieldContext_ExperienceValidationError_field(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedAccomplishment_description(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAccomplishment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedAccomplishment_description,
-		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedAccomplishment_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedAccomplishment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedAccomplishment_impact(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAccomplishment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedAccomplishment_impact,
-		func(ctx context.Context) (any, error) {
-			return obj.Impact, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedAccomplishment_impact(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedAccomplishment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedAccomplishment_timeframe(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAccomplishment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedAccomplishment_timeframe,
-		func(ctx context.Context) (any, error) {
-			return obj.Timeframe, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedAccomplishment_timeframe(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedAccomplishment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedAccomplishment_confidence(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAccomplishment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedAccomplishment_confidence,
-		func(ctx context.Context) (any, error) {
-			return obj.Confidence, nil
-		},
-		nil,
-		ec.marshalNFloat2float64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedAccomplishment_confidence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedAccomplishment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ExtractedAuthor_name(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAuthor) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3071,14 +2859,14 @@ func (ec *executionContext) fieldContext_ExtractedAuthor_title(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedAuthor_organization(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAuthor) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExtractedAuthor_company(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAuthor) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ExtractedAuthor_organization,
+		ec.fieldContext_ExtractedAuthor_company,
 		func(ctx context.Context) (any, error) {
-			return obj.Organization, nil
+			return obj.Company, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -3087,7 +2875,7 @@ func (ec *executionContext) _ExtractedAuthor_organization(ctx context.Context, f
 	)
 }
 
-func (ec *executionContext) fieldContext_ExtractedAuthor_organization(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExtractedAuthor_company(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ExtractedAuthor",
 		Field:      field,
@@ -3107,7 +2895,7 @@ func (ec *executionContext) _ExtractedAuthor_relationship(ctx context.Context, f
 		field,
 		ec.fieldContext_ExtractedAuthor_relationship,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ExtractedAuthor().Relationship(ctx, obj)
+			return obj.Relationship, nil
 		},
 		nil,
 		ec.marshalNAuthorRelationship2backendᚋinternalᚋdomainᚐAuthorRelationship,
@@ -3120,8 +2908,8 @@ func (ec *executionContext) fieldContext_ExtractedAuthor_relationship(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "ExtractedAuthor",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type AuthorRelationship does not have child fields")
 		},
@@ -3129,25 +2917,25 @@ func (ec *executionContext) fieldContext_ExtractedAuthor_relationship(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedAuthor_relationshipDetails(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAuthor) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExtractedExperienceMention_company(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedExperienceMention) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ExtractedAuthor_relationshipDetails,
+		ec.fieldContext_ExtractedExperienceMention_company,
 		func(ctx context.Context) (any, error) {
-			return obj.RelationshipDetails, nil
+			return obj.Company, nil
 		},
 		nil,
-		ec.marshalOString2ᚖstring,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ExtractedAuthor_relationshipDetails(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExtractedExperienceMention_company(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ExtractedAuthor",
+		Object:     "ExtractedExperienceMention",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3158,30 +2946,59 @@ func (ec *executionContext) fieldContext_ExtractedAuthor_relationshipDetails(_ c
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedAuthor_confidence(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedAuthor) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExtractedExperienceMention_role(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedExperienceMention) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ExtractedAuthor_confidence,
+		ec.fieldContext_ExtractedExperienceMention_role,
 		func(ctx context.Context) (any, error) {
-			return obj.Confidence, nil
+			return obj.Role, nil
 		},
 		nil,
-		ec.marshalNFloat2float64,
+		ec.marshalNString2string,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ExtractedAuthor_confidence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExtractedExperienceMention_role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ExtractedAuthor",
+		Object:     "ExtractedExperienceMention",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedExperienceMention_quote(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedExperienceMention) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedExperienceMention_quote,
+		func(ctx context.Context) (any, error) {
+			return obj.Quote, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedExperienceMention_quote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedExperienceMention",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3215,14 +3032,10 @@ func (ec *executionContext) fieldContext_ExtractedLetterData_author(_ context.Co
 				return ec.fieldContext_ExtractedAuthor_name(ctx, field)
 			case "title":
 				return ec.fieldContext_ExtractedAuthor_title(ctx, field)
-			case "organization":
-				return ec.fieldContext_ExtractedAuthor_organization(ctx, field)
+			case "company":
+				return ec.fieldContext_ExtractedAuthor_company(ctx, field)
 			case "relationship":
 				return ec.fieldContext_ExtractedAuthor_relationship(ctx, field)
-			case "relationshipDetails":
-				return ec.fieldContext_ExtractedAuthor_relationshipDetails(ctx, field)
-			case "confidence":
-				return ec.fieldContext_ExtractedAuthor_confidence(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ExtractedAuthor", field.Name)
 		},
@@ -3230,14 +3043,123 @@ func (ec *executionContext) fieldContext_ExtractedLetterData_author(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedLetterData_skills(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedLetterData) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExtractedLetterData_testimonials(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedLetterData) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ExtractedLetterData_skills,
+		ec.fieldContext_ExtractedLetterData_testimonials,
 		func(ctx context.Context) (any, error) {
-			return obj.Skills, nil
+			return obj.Testimonials, nil
+		},
+		nil,
+		ec.marshalNExtractedTestimonial2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedTestimonialᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedLetterData_testimonials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedLetterData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "quote":
+				return ec.fieldContext_ExtractedTestimonial_quote(ctx, field)
+			case "skillsMentioned":
+				return ec.fieldContext_ExtractedTestimonial_skillsMentioned(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ExtractedTestimonial", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedLetterData_skillMentions(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedLetterData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedLetterData_skillMentions,
+		func(ctx context.Context) (any, error) {
+			return obj.SkillMentions, nil
+		},
+		nil,
+		ec.marshalNExtractedSkillMention2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedSkillMentionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedLetterData_skillMentions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedLetterData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "skill":
+				return ec.fieldContext_ExtractedSkillMention_skill(ctx, field)
+			case "quote":
+				return ec.fieldContext_ExtractedSkillMention_quote(ctx, field)
+			case "context":
+				return ec.fieldContext_ExtractedSkillMention_context(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ExtractedSkillMention", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedLetterData_experienceMentions(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedLetterData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedLetterData_experienceMentions,
+		func(ctx context.Context) (any, error) {
+			return obj.ExperienceMentions, nil
+		},
+		nil,
+		ec.marshalNExtractedExperienceMention2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedExperienceMentionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedLetterData_experienceMentions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedLetterData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "company":
+				return ec.fieldContext_ExtractedExperienceMention_company(ctx, field)
+			case "role":
+				return ec.fieldContext_ExtractedExperienceMention_role(ctx, field)
+			case "quote":
+				return ec.fieldContext_ExtractedExperienceMention_quote(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ExtractedExperienceMention", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedLetterData_discoveredSkills(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedLetterData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedLetterData_discoveredSkills,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoveredSkills, nil
 		},
 		nil,
 		ec.marshalNString2ᚕstringᚄ,
@@ -3246,7 +3168,7 @@ func (ec *executionContext) _ExtractedLetterData_skills(ctx context.Context, fie
 	)
 }
 
-func (ec *executionContext) fieldContext_ExtractedLetterData_skills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExtractedLetterData_discoveredSkills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ExtractedLetterData",
 		Field:      field,
@@ -3254,123 +3176,6 @@ func (ec *executionContext) fieldContext_ExtractedLetterData_skills(_ context.Co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedLetterData_qualities(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedLetterData) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedLetterData_qualities,
-		func(ctx context.Context) (any, error) {
-			return obj.Qualities, nil
-		},
-		nil,
-		ec.marshalNExtractedQuality2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedQualityᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedLetterData_qualities(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedLetterData",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "trait":
-				return ec.fieldContext_ExtractedQuality_trait(ctx, field)
-			case "evidence":
-				return ec.fieldContext_ExtractedQuality_evidence(ctx, field)
-			case "confidence":
-				return ec.fieldContext_ExtractedQuality_confidence(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ExtractedQuality", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedLetterData_accomplishments(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedLetterData) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedLetterData_accomplishments,
-		func(ctx context.Context) (any, error) {
-			return obj.Accomplishments, nil
-		},
-		nil,
-		ec.marshalNExtractedAccomplishment2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedAccomplishmentᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedLetterData_accomplishments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedLetterData",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "description":
-				return ec.fieldContext_ExtractedAccomplishment_description(ctx, field)
-			case "impact":
-				return ec.fieldContext_ExtractedAccomplishment_impact(ctx, field)
-			case "timeframe":
-				return ec.fieldContext_ExtractedAccomplishment_timeframe(ctx, field)
-			case "confidence":
-				return ec.fieldContext_ExtractedAccomplishment_confidence(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ExtractedAccomplishment", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedLetterData_recommendation(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedLetterData) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedLetterData_recommendation,
-		func(ctx context.Context) (any, error) {
-			return obj.Recommendation, nil
-		},
-		nil,
-		ec.marshalNExtractedRecommendation2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedRecommendation,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedLetterData_recommendation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedLetterData",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "strength":
-				return ec.fieldContext_ExtractedRecommendation_strength(ctx, field)
-			case "sentiment":
-				return ec.fieldContext_ExtractedRecommendation_sentiment(ctx, field)
-			case "keyQuotes":
-				return ec.fieldContext_ExtractedRecommendation_keyQuotes(ctx, field)
-			case "summary":
-				return ec.fieldContext_ExtractedRecommendation_summary(ctx, field)
-			case "confidence":
-				return ec.fieldContext_ExtractedRecommendation_confidence(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ExtractedRecommendation", field.Name)
 		},
 	}
 	return fc, nil
@@ -3404,14 +3209,8 @@ func (ec *executionContext) fieldContext_ExtractedLetterData_metadata(_ context.
 				return ec.fieldContext_ExtractionMetadata_extractedAt(ctx, field)
 			case "modelVersion":
 				return ec.fieldContext_ExtractionMetadata_modelVersion(ctx, field)
-			case "overallConfidence":
-				return ec.fieldContext_ExtractionMetadata_overallConfidence(ctx, field)
 			case "processingTimeMs":
 				return ec.fieldContext_ExtractionMetadata_processingTimeMs(ctx, field)
-			case "warningsCount":
-				return ec.fieldContext_ExtractionMetadata_warningsCount(ctx, field)
-			case "warnings":
-				return ec.fieldContext_ExtractionMetadata_warnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ExtractionMetadata", field.Name)
 		},
@@ -3419,14 +3218,14 @@ func (ec *executionContext) fieldContext_ExtractedLetterData_metadata(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedQuality_trait(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedQuality) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExtractedSkillMention_skill(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedSkillMention) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ExtractedQuality_trait,
+		ec.fieldContext_ExtractedSkillMention_skill,
 		func(ctx context.Context) (any, error) {
-			return obj.Trait, nil
+			return obj.Skill, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -3435,9 +3234,9 @@ func (ec *executionContext) _ExtractedQuality_trait(ctx context.Context, field g
 	)
 }
 
-func (ec *executionContext) fieldContext_ExtractedQuality_trait(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExtractedSkillMention_skill(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ExtractedQuality",
+		Object:     "ExtractedSkillMention",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3448,25 +3247,25 @@ func (ec *executionContext) fieldContext_ExtractedQuality_trait(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedQuality_evidence(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedQuality) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExtractedSkillMention_quote(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedSkillMention) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ExtractedQuality_evidence,
+		ec.fieldContext_ExtractedSkillMention_quote,
 		func(ctx context.Context) (any, error) {
-			return obj.Evidence, nil
+			return obj.Quote, nil
 		},
 		nil,
-		ec.marshalOString2ᚕstringᚄ,
+		ec.marshalNString2string,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ExtractedQuality_evidence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExtractedSkillMention_quote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ExtractedQuality",
+		Object:     "ExtractedSkillMention",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3477,130 +3276,14 @@ func (ec *executionContext) fieldContext_ExtractedQuality_evidence(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedQuality_confidence(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedQuality) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExtractedSkillMention_context(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedSkillMention) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ExtractedQuality_confidence,
+		ec.fieldContext_ExtractedSkillMention_context,
 		func(ctx context.Context) (any, error) {
-			return obj.Confidence, nil
-		},
-		nil,
-		ec.marshalNFloat2float64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedQuality_confidence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedQuality",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedRecommendation_strength(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedRecommendation) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedRecommendation_strength,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.ExtractedRecommendation().Strength(ctx, obj)
-		},
-		nil,
-		ec.marshalNRecommendationStrength2backendᚋinternalᚋdomainᚐRecommendationStrength,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedRecommendation_strength(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedRecommendation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type RecommendationStrength does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedRecommendation_sentiment(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedRecommendation) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedRecommendation_sentiment,
-		func(ctx context.Context) (any, error) {
-			return obj.Sentiment, nil
-		},
-		nil,
-		ec.marshalNFloat2float64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedRecommendation_sentiment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedRecommendation",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedRecommendation_keyQuotes(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedRecommendation) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedRecommendation_keyQuotes,
-		func(ctx context.Context) (any, error) {
-			return obj.KeyQuotes, nil
-		},
-		nil,
-		ec.marshalOString2ᚕstringᚄ,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractedRecommendation_keyQuotes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractedRecommendation",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractedRecommendation_summary(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedRecommendation) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractedRecommendation_summary,
-		func(ctx context.Context) (any, error) {
-			return obj.Summary, nil
+			return obj.Context, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -3609,9 +3292,9 @@ func (ec *executionContext) _ExtractedRecommendation_summary(ctx context.Context
 	)
 }
 
-func (ec *executionContext) fieldContext_ExtractedRecommendation_summary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExtractedSkillMention_context(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ExtractedRecommendation",
+		Object:     "ExtractedSkillMention",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3622,30 +3305,59 @@ func (ec *executionContext) fieldContext_ExtractedRecommendation_summary(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractedRecommendation_confidence(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedRecommendation) (ret graphql.Marshaler) {
+func (ec *executionContext) _ExtractedTestimonial_quote(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedTestimonial) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ExtractedRecommendation_confidence,
+		ec.fieldContext_ExtractedTestimonial_quote,
 		func(ctx context.Context) (any, error) {
-			return obj.Confidence, nil
+			return obj.Quote, nil
 		},
 		nil,
-		ec.marshalNFloat2float64,
+		ec.marshalNString2string,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ExtractedRecommendation_confidence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ExtractedTestimonial_quote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ExtractedRecommendation",
+		Object:     "ExtractedTestimonial",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedTestimonial_skillsMentioned(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedTestimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedTestimonial_skillsMentioned,
+		func(ctx context.Context) (any, error) {
+			return obj.SkillsMentioned, nil
+		},
+		nil,
+		ec.marshalOString2ᚕstringᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedTestimonial_skillsMentioned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedTestimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3709,35 +3421,6 @@ func (ec *executionContext) fieldContext_ExtractionMetadata_modelVersion(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _ExtractionMetadata_overallConfidence(ctx context.Context, field graphql.CollectedField, obj *model.ExtractionMetadata) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractionMetadata_overallConfidence,
-		func(ctx context.Context) (any, error) {
-			return obj.OverallConfidence, nil
-		},
-		nil,
-		ec.marshalNFloat2float64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractionMetadata_overallConfidence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractionMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ExtractionMetadata_processingTimeMs(ctx context.Context, field graphql.CollectedField, obj *model.ExtractionMetadata) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3762,64 +3445,6 @@ func (ec *executionContext) fieldContext_ExtractionMetadata_processingTimeMs(_ c
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractionMetadata_warningsCount(ctx context.Context, field graphql.CollectedField, obj *model.ExtractionMetadata) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractionMetadata_warningsCount,
-		func(ctx context.Context) (any, error) {
-			return obj.WarningsCount, nil
-		},
-		nil,
-		ec.marshalNInt2int,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractionMetadata_warningsCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractionMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExtractionMetadata_warnings(ctx context.Context, field graphql.CollectedField, obj *model.ExtractionMetadata) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ExtractionMetadata_warnings,
-		func(ctx context.Context) (any, error) {
-			return obj.Warnings, nil
-		},
-		nil,
-		ec.marshalOString2ᚕstringᚄ,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_ExtractionMetadata_warnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExtractionMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6856,14 +6481,14 @@ func (ec *executionContext) fieldContext_ReferenceLetter_extractedData(_ context
 			switch field.Name {
 			case "author":
 				return ec.fieldContext_ExtractedLetterData_author(ctx, field)
-			case "skills":
-				return ec.fieldContext_ExtractedLetterData_skills(ctx, field)
-			case "qualities":
-				return ec.fieldContext_ExtractedLetterData_qualities(ctx, field)
-			case "accomplishments":
-				return ec.fieldContext_ExtractedLetterData_accomplishments(ctx, field)
-			case "recommendation":
-				return ec.fieldContext_ExtractedLetterData_recommendation(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_ExtractedLetterData_testimonials(ctx, field)
+			case "skillMentions":
+				return ec.fieldContext_ExtractedLetterData_skillMentions(ctx, field)
+			case "experienceMentions":
+				return ec.fieldContext_ExtractedLetterData_experienceMentions(ctx, field)
+			case "discoveredSkills":
+				return ec.fieldContext_ExtractedLetterData_discoveredSkills(ctx, field)
 			case "metadata":
 				return ec.fieldContext_ExtractedLetterData_metadata(ctx, field)
 			}
@@ -10134,28 +9759,28 @@ func (ec *executionContext) _ExperienceValidationError(ctx context.Context, sel 
 	return out
 }
 
-var extractedAccomplishmentImplementors = []string{"ExtractedAccomplishment"}
+var extractedAuthorImplementors = []string{"ExtractedAuthor"}
 
-func (ec *executionContext) _ExtractedAccomplishment(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedAccomplishment) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, extractedAccomplishmentImplementors)
+func (ec *executionContext) _ExtractedAuthor(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedAuthor) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, extractedAuthorImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ExtractedAccomplishment")
-		case "description":
-			out.Values[i] = ec._ExtractedAccomplishment_description(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("ExtractedAuthor")
+		case "name":
+			out.Values[i] = ec._ExtractedAuthor_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "impact":
-			out.Values[i] = ec._ExtractedAccomplishment_impact(ctx, field, obj)
-		case "timeframe":
-			out.Values[i] = ec._ExtractedAccomplishment_timeframe(ctx, field, obj)
-		case "confidence":
-			out.Values[i] = ec._ExtractedAccomplishment_confidence(ctx, field, obj)
+		case "title":
+			out.Values[i] = ec._ExtractedAuthor_title(ctx, field, obj)
+		case "company":
+			out.Values[i] = ec._ExtractedAuthor_company(ctx, field, obj)
+		case "relationship":
+			out.Values[i] = ec._ExtractedAuthor_relationship(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10182,68 +9807,31 @@ func (ec *executionContext) _ExtractedAccomplishment(ctx context.Context, sel as
 	return out
 }
 
-var extractedAuthorImplementors = []string{"ExtractedAuthor"}
+var extractedExperienceMentionImplementors = []string{"ExtractedExperienceMention"}
 
-func (ec *executionContext) _ExtractedAuthor(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedAuthor) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, extractedAuthorImplementors)
+func (ec *executionContext) _ExtractedExperienceMention(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedExperienceMention) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, extractedExperienceMentionImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ExtractedAuthor")
-		case "name":
-			out.Values[i] = ec._ExtractedAuthor_name(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("ExtractedExperienceMention")
+		case "company":
+			out.Values[i] = ec._ExtractedExperienceMention_company(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
-		case "title":
-			out.Values[i] = ec._ExtractedAuthor_title(ctx, field, obj)
-		case "organization":
-			out.Values[i] = ec._ExtractedAuthor_organization(ctx, field, obj)
-		case "relationship":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ExtractedAuthor_relationship(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "relationshipDetails":
-			out.Values[i] = ec._ExtractedAuthor_relationshipDetails(ctx, field, obj)
-		case "confidence":
-			out.Values[i] = ec._ExtractedAuthor_confidence(ctx, field, obj)
+		case "role":
+			out.Values[i] = ec._ExtractedExperienceMention_role(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
+			}
+		case "quote":
+			out.Values[i] = ec._ExtractedExperienceMention_quote(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -10284,23 +9872,23 @@ func (ec *executionContext) _ExtractedLetterData(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "skills":
-			out.Values[i] = ec._ExtractedLetterData_skills(ctx, field, obj)
+		case "testimonials":
+			out.Values[i] = ec._ExtractedLetterData_testimonials(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "qualities":
-			out.Values[i] = ec._ExtractedLetterData_qualities(ctx, field, obj)
+		case "skillMentions":
+			out.Values[i] = ec._ExtractedLetterData_skillMentions(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "accomplishments":
-			out.Values[i] = ec._ExtractedLetterData_accomplishments(ctx, field, obj)
+		case "experienceMentions":
+			out.Values[i] = ec._ExtractedLetterData_experienceMentions(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "recommendation":
-			out.Values[i] = ec._ExtractedLetterData_recommendation(ctx, field, obj)
+		case "discoveredSkills":
+			out.Values[i] = ec._ExtractedLetterData_discoveredSkills(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10332,29 +9920,29 @@ func (ec *executionContext) _ExtractedLetterData(ctx context.Context, sel ast.Se
 	return out
 }
 
-var extractedQualityImplementors = []string{"ExtractedQuality"}
+var extractedSkillMentionImplementors = []string{"ExtractedSkillMention"}
 
-func (ec *executionContext) _ExtractedQuality(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedQuality) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, extractedQualityImplementors)
+func (ec *executionContext) _ExtractedSkillMention(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedSkillMention) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, extractedSkillMentionImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ExtractedQuality")
-		case "trait":
-			out.Values[i] = ec._ExtractedQuality_trait(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("ExtractedSkillMention")
+		case "skill":
+			out.Values[i] = ec._ExtractedSkillMention_skill(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "evidence":
-			out.Values[i] = ec._ExtractedQuality_evidence(ctx, field, obj)
-		case "confidence":
-			out.Values[i] = ec._ExtractedQuality_confidence(ctx, field, obj)
+		case "quote":
+			out.Values[i] = ec._ExtractedSkillMention_quote(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "context":
+			out.Values[i] = ec._ExtractedSkillMention_context(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10378,67 +9966,24 @@ func (ec *executionContext) _ExtractedQuality(ctx context.Context, sel ast.Selec
 	return out
 }
 
-var extractedRecommendationImplementors = []string{"ExtractedRecommendation"}
+var extractedTestimonialImplementors = []string{"ExtractedTestimonial"}
 
-func (ec *executionContext) _ExtractedRecommendation(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedRecommendation) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, extractedRecommendationImplementors)
+func (ec *executionContext) _ExtractedTestimonial(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedTestimonial) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, extractedTestimonialImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ExtractedRecommendation")
-		case "strength":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ExtractedRecommendation_strength(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "sentiment":
-			out.Values[i] = ec._ExtractedRecommendation_sentiment(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("ExtractedTestimonial")
+		case "quote":
+			out.Values[i] = ec._ExtractedTestimonial_quote(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
-		case "keyQuotes":
-			out.Values[i] = ec._ExtractedRecommendation_keyQuotes(ctx, field, obj)
-		case "summary":
-			out.Values[i] = ec._ExtractedRecommendation_summary(ctx, field, obj)
-		case "confidence":
-			out.Values[i] = ec._ExtractedRecommendation_confidence(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
+		case "skillsMentioned":
+			out.Values[i] = ec._ExtractedTestimonial_skillsMentioned(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10483,20 +10028,8 @@ func (ec *executionContext) _ExtractionMetadata(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "overallConfidence":
-			out.Values[i] = ec._ExtractionMetadata_overallConfidence(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "processingTimeMs":
 			out.Values[i] = ec._ExtractionMetadata_processingTimeMs(ctx, field, obj)
-		case "warningsCount":
-			out.Values[i] = ec._ExtractionMetadata_warningsCount(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "warnings":
-			out.Values[i] = ec._ExtractionMetadata_warnings(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12201,60 +11734,6 @@ func (ec *executionContext) marshalNExperienceSource2backendᚋinternalᚋgraphq
 	return v
 }
 
-func (ec *executionContext) marshalNExtractedAccomplishment2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedAccomplishmentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedAccomplishment) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNExtractedAccomplishment2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedAccomplishment(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNExtractedAccomplishment2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedAccomplishment(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedAccomplishment) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ExtractedAccomplishment(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNExtractedAuthor2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedAuthor(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedAuthor) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -12265,7 +11744,7 @@ func (ec *executionContext) marshalNExtractedAuthor2ᚖbackendᚋinternalᚋgrap
 	return ec._ExtractedAuthor(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNExtractedQuality2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedQualityᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedQuality) graphql.Marshaler {
+func (ec *executionContext) marshalNExtractedExperienceMention2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedExperienceMentionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedExperienceMention) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12289,7 +11768,7 @@ func (ec *executionContext) marshalNExtractedQuality2ᚕᚖbackendᚋinternalᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNExtractedQuality2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedQuality(ctx, sel, v[i])
+			ret[i] = ec.marshalNExtractedExperienceMention2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedExperienceMention(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12309,24 +11788,122 @@ func (ec *executionContext) marshalNExtractedQuality2ᚕᚖbackendᚋinternalᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNExtractedQuality2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedQuality(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedQuality) graphql.Marshaler {
+func (ec *executionContext) marshalNExtractedExperienceMention2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedExperienceMention(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedExperienceMention) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._ExtractedQuality(ctx, sel, v)
+	return ec._ExtractedExperienceMention(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNExtractedRecommendation2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedRecommendation(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedRecommendation) graphql.Marshaler {
+func (ec *executionContext) marshalNExtractedSkillMention2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedSkillMentionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedSkillMention) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNExtractedSkillMention2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedSkillMention(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNExtractedSkillMention2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedSkillMention(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedSkillMention) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._ExtractedRecommendation(ctx, sel, v)
+	return ec._ExtractedSkillMention(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNExtractedTestimonial2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedTestimonialᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedTestimonial) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNExtractedTestimonial2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedTestimonial(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNExtractedTestimonial2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedTestimonial(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedTestimonial) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ExtractedTestimonial(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNExtractionMetadata2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractionMetadata(ctx context.Context, sel ast.SelectionSet, v *model.ExtractionMetadata) graphql.Marshaler {
@@ -12601,23 +12178,6 @@ func (ec *executionContext) marshalNProfileSkill2ᚖbackendᚋinternalᚋgraphql
 		return graphql.Null
 	}
 	return ec._ProfileSkill(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNRecommendationStrength2backendᚋinternalᚋdomainᚐRecommendationStrength(ctx context.Context, v any) (domain.RecommendationStrength, error) {
-	tmp, err := graphql.UnmarshalString(v)
-	res := domain.RecommendationStrength(tmp)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNRecommendationStrength2backendᚋinternalᚋdomainᚐRecommendationStrength(ctx context.Context, sel ast.SelectionSet, v domain.RecommendationStrength) graphql.Marshaler {
-	_ = sel
-	res := graphql.MarshalString(string(v))
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
 }
 
 func (ec *executionContext) marshalNReferenceLetter2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐReferenceLetterᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ReferenceLetter) graphql.Marshaler {
