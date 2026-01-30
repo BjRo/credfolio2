@@ -19,6 +19,56 @@ export type Scalars = {
   Upload: { input: any; output: any; }
 };
 
+/** Counts of items applied from a reference letter. */
+export type AppliedCount = {
+  __typename?: 'AppliedCount';
+  /** Number of experience validations applied. */
+  experienceValidations: Scalars['Int']['output'];
+  /** Number of new skills added. */
+  newSkills: Scalars['Int']['output'];
+  /** Number of skill validations applied. */
+  skillValidations: Scalars['Int']['output'];
+  /** Number of testimonials added. */
+  testimonials: Scalars['Int']['output'];
+};
+
+/** Error returned when applying validations fails. */
+export type ApplyValidationsError = {
+  __typename?: 'ApplyValidationsError';
+  /** The field that caused the error, if applicable. */
+  field?: Maybe<Scalars['String']['output']>;
+  /** Error message describing the failure. */
+  message: Scalars['String']['output'];
+};
+
+/** Input for applying selected validations from a reference letter. */
+export type ApplyValidationsInput = {
+  /** Experience validations to apply. */
+  experienceValidations: Array<ExperienceValidationInput>;
+  /** New skills discovered in the reference letter to add to the profile. */
+  newSkills: Array<NewSkillInput>;
+  /** The reference letter ID to apply validations from. */
+  referenceLetterID: Scalars['ID']['input'];
+  /** Skill validations to apply. */
+  skillValidations: Array<SkillValidationInput>;
+  /** Testimonials to add to the profile. */
+  testimonials: Array<TestimonialInput>;
+};
+
+/** Union type for apply validations result. */
+export type ApplyValidationsResponse = ApplyValidationsError | ApplyValidationsResult;
+
+/** Result of applying reference letter validations. */
+export type ApplyValidationsResult = {
+  __typename?: 'ApplyValidationsResult';
+  /** Counts of items that were applied. */
+  appliedCount: AppliedCount;
+  /** The updated profile. */
+  profile: Profile;
+  /** The updated reference letter. */
+  referenceLetter: ReferenceLetter;
+};
+
 /** Relationship type between letter author and candidate. */
 export enum AuthorRelationship {
   Client = 'CLIENT',
@@ -134,6 +184,14 @@ export type ExperienceValidationError = {
   message: Scalars['String']['output'];
 };
 
+/** Input for applying an experience validation from a reference letter. */
+export type ExperienceValidationInput = {
+  /** The profile experience ID to validate. */
+  profileExperienceID: Scalars['ID']['input'];
+  /** Quote snippet from the reference letter supporting this experience. */
+  quoteSnippet: Scalars['String']['input'];
+};
+
 /** Author details extracted from a reference letter. */
 export type ExtractedAuthor = {
   __typename?: 'ExtractedAuthor';
@@ -230,6 +288,12 @@ export type FileValidationError = {
 export type Mutation = {
   __typename?: 'Mutation';
   /**
+   * Apply selected validations from a reference letter to the profile.
+   * Creates skill validations, experience validations, testimonials, and new skills.
+   * Updates the reference letter status to indicate validations have been applied.
+   */
+  applyReferenceLetterValidations: ApplyValidationsResponse;
+  /**
    * Create a new education entry for a user's profile.
    * Creates the profile if it doesn't exist.
    */
@@ -277,6 +341,12 @@ export type Mutation = {
    * Creates a file record and queues the resume for LLM extraction.
    */
   uploadResume: UploadResumeResponse;
+};
+
+
+export type MutationApplyReferenceLetterValidationsArgs = {
+  input: ApplyValidationsInput;
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -340,6 +410,16 @@ export type MutationUploadFileArgs = {
 export type MutationUploadResumeArgs = {
   file: Scalars['Upload']['input'];
   userId: Scalars['ID']['input'];
+};
+
+/** Input for adding a new skill discovered in the reference letter. */
+export type NewSkillInput = {
+  /** The skill category. */
+  category: SkillCategory;
+  /** The skill name. */
+  name: Scalars['String']['input'];
+  /** Quote context from the reference letter mentioning this skill. */
+  quoteContext?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** A user's profile containing manually editable data. */
@@ -540,6 +620,7 @@ export type ReferenceLetter = {
 
 /** Processing status of a reference letter. */
 export enum ReferenceLetterStatus {
+  Applied = 'APPLIED',
   Completed = 'COMPLETED',
   Failed = 'FAILED',
   Pending = 'PENDING',
@@ -617,6 +698,22 @@ export type SkillValidationError = {
   field?: Maybe<Scalars['String']['output']>;
   /** Error message describing the validation failure. */
   message: Scalars['String']['output'];
+};
+
+/** Input for applying a skill validation from a reference letter. */
+export type SkillValidationInput = {
+  /** The profile skill ID to validate. */
+  profileSkillID: Scalars['ID']['input'];
+  /** Quote snippet from the reference letter supporting this skill. */
+  quoteSnippet: Scalars['String']['input'];
+};
+
+/** Input for creating a testimonial from a reference letter. */
+export type TestimonialInput = {
+  /** The full quote text for the testimonial. */
+  quote: Scalars['String']['input'];
+  /** Skills mentioned in this testimonial. */
+  skillsMentioned: Array<Scalars['String']['input']>;
 };
 
 /** Input for updating an existing education entry. */
@@ -799,6 +896,17 @@ export type UploadReferenceLetterMutation = { __typename?: 'Mutation', uploadFil
     | { __typename: 'UploadFileResult', file: { __typename?: 'File', id: string, filename: string, contentType: string, sizeBytes: number }, referenceLetter: { __typename?: 'ReferenceLetter', id: string, status: ReferenceLetterStatus } }
    };
 
+export type ApplyReferenceLetterValidationsMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  input: ApplyValidationsInput;
+}>;
+
+
+export type ApplyReferenceLetterValidationsMutation = { __typename?: 'Mutation', applyReferenceLetterValidations:
+    | { __typename: 'ApplyValidationsError', message: string, field?: string | null }
+    | { __typename: 'ApplyValidationsResult', referenceLetter: { __typename?: 'ReferenceLetter', id: string, status: ReferenceLetterStatus }, profile: { __typename?: 'Profile', id: string, skills: Array<{ __typename?: 'ProfileSkill', id: string, name: string, normalizedName: string, category: SkillCategory }>, experiences: Array<{ __typename?: 'ProfileExperience', id: string, company: string, title: string }> }, appliedCount: { __typename?: 'AppliedCount', skillValidations: number, experienceValidations: number, testimonials: number, newSkills: number } }
+   };
+
 export type GetReferenceLetterQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -866,6 +974,7 @@ export const CreateSkillDocument = {"kind":"Document","definitions":[{"kind":"Op
 export const UpdateSkillDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateSkill"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateSkillInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateSkill"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"SkillResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skill"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"normalizedName"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"displayOrder"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"SkillValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateSkillMutation, UpdateSkillMutationVariables>;
 export const DeleteSkillDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteSkill"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteSkill"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"deletedId"}}]}}]}}]} as unknown as DocumentNode<DeleteSkillMutation, DeleteSkillMutationVariables>;
 export const UploadReferenceLetterDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UploadReferenceLetter"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"uploadFile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"UploadFileResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"sizeBytes"}}]}},{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FileValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<UploadReferenceLetterMutation, UploadReferenceLetterMutationVariables>;
+export const ApplyReferenceLetterValidationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ApplyReferenceLetterValidations"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ApplyValidationsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"applyReferenceLetterValidations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ApplyValidationsResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"skills"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"normalizedName"}},{"kind":"Field","name":{"kind":"Name","value":"category"}}]}},{"kind":"Field","name":{"kind":"Name","value":"experiences"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"title"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"appliedCount"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skillValidations"}},{"kind":"Field","name":{"kind":"Name","value":"experienceValidations"}},{"kind":"Field","name":{"kind":"Name","value":"testimonials"}},{"kind":"Field","name":{"kind":"Name","value":"newSkills"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ApplyValidationsError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<ApplyReferenceLetterValidationsMutation, ApplyReferenceLetterValidationsMutationVariables>;
 export const GetReferenceLetterDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetter"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"dateWritten"}},{"kind":"Field","name":{"kind":"Name","value":"rawText"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"relationship"}}]}},{"kind":"Field","name":{"kind":"Name","value":"testimonials"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"skillsMentioned"}}]}},{"kind":"Field","name":{"kind":"Name","value":"skillMentions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skill"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"context"}}]}},{"kind":"Field","name":{"kind":"Name","value":"experienceMentions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}}]}},{"kind":"Field","name":{"kind":"Name","value":"discoveredSkills"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"extractedAt"}},{"kind":"Field","name":{"kind":"Name","value":"modelVersion"}},{"kind":"Field","name":{"kind":"Name","value":"processingTimeMs"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"sizeBytes"}}]}}]}}]}}]} as unknown as DocumentNode<GetReferenceLetterQuery, GetReferenceLetterQueryVariables>;
 export const GetReferenceLettersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetters"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetters"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetReferenceLettersQuery, GetReferenceLettersQueryVariables>;
 export const GetReferenceLetterStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetterStatus"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<GetReferenceLetterStatusQuery, GetReferenceLetterStatusQueryVariables>;

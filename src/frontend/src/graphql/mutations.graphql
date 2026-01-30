@@ -187,3 +187,40 @@ mutation UploadReferenceLetter($userId: ID!, $file: Upload!) {
     }
   }
 }
+
+mutation ApplyReferenceLetterValidations($userId: ID!, $input: ApplyValidationsInput!) {
+  applyReferenceLetterValidations(userId: $userId, input: $input) {
+    ... on ApplyValidationsResult {
+      __typename
+      referenceLetter {
+        id
+        status
+      }
+      profile {
+        id
+        skills {
+          id
+          name
+          normalizedName
+          category
+        }
+        experiences {
+          id
+          company
+          title
+        }
+      }
+      appliedCount {
+        skillValidations
+        experienceValidations
+        testimonials
+        newSkills
+      }
+    }
+    ... on ApplyValidationsError {
+      __typename
+      message
+      field
+    }
+  }
+}
