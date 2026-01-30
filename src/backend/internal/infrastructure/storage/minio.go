@@ -17,9 +17,11 @@ import (
 
 // MinIOStorage implements domain.Storage using MinIO/S3.
 type MinIOStorage struct {
-	client       *minio.Client // Client for internal operations (upload, download, delete)
-	publicClient *minio.Client // Client for generating presigned URLs with public endpoint
-	bucket       string
+	client         *minio.Client // Client for internal operations (upload, download, delete)
+	publicClient   *minio.Client // Client for generating presigned URLs with public endpoint
+	bucket         string
+	publicEndpoint string
+	internalEndpoint string
 }
 
 // NewMinIOStorage creates a new MinIO storage client.
@@ -35,6 +37,8 @@ func NewMinIOStorage(cfg config.MinIOConfig) (*MinIOStorage, error) {
 
 	// Public client for generating presigned URLs
 	// Uses public endpoint so signatures are valid when accessed from browser
+	// Set region explicitly to skip bucket location lookup (which would fail
+	// because the public endpoint isn't accessible from inside the container)
 	publicEndpoint := cfg.PublicEndpoint
 	if publicEndpoint == "" {
 		publicEndpoint = cfg.Endpoint
@@ -43,15 +47,18 @@ func NewMinIOStorage(cfg config.MinIOConfig) (*MinIOStorage, error) {
 	publicClient, err := minio.New(publicEndpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
 		Secure: cfg.UseSSL,
+		Region: "us-east-1", // Default region for MinIO, avoids bucket location lookup
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create public MinIO client: %w", err)
 	}
 
 	return &MinIOStorage{
-		client:       client,
-		publicClient: publicClient,
-		bucket:       cfg.Bucket,
+		client:           client,
+		publicClient:     publicClient,
+		bucket:           cfg.Bucket,
+		publicEndpoint:   publicEndpoint,
+		internalEndpoint: cfg.Endpoint,
 	}, nil
 }
 
