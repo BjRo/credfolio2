@@ -159,6 +159,7 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 			ReferenceLetterID: refLetter.ID,
 			FileID:            fileID,
 			StorageKey:        storageKey,
+			ContentType:       file.ContentType,
 		}); enqueueErr != nil {
 			r.log.Error("Failed to enqueue document processing",
 				logger.Feature("upload"),

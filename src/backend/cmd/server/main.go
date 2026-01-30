@@ -90,14 +90,16 @@ func run(log logger.Logger) error {
 
 	// Create job queue workers
 	workers := river.NewWorkers()
-	river.AddWorker(workers, job.NewDocumentProcessingWorker(refLetterRepo, fileStorage, log))
 
-	// Register resume processing worker only if LLM is configured
+	// Register processing workers only if LLM is configured
 	if extractor != nil {
 		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, fileStorage, extractor, log))
 		log.Info("Resume processing worker registered", logger.Feature("jobs"))
+
+		river.AddWorker(workers, job.NewReferenceLetterProcessingWorker(refLetterRepo, fileRepo, fileStorage, extractor, log))
+		log.Info("Reference letter processing worker registered", logger.Feature("jobs"))
 	} else {
-		log.Warning("Resume processing worker not registered (LLM not configured)", logger.Feature("jobs"))
+		log.Warning("Processing workers not registered (LLM not configured)", logger.Feature("jobs"))
 	}
 
 	// Create job queue client

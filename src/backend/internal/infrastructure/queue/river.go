@@ -101,17 +101,18 @@ func (c *Client) River() *river.Client[pgx.Tx] {
 	return c.riverClient
 }
 
-// EnqueueDocumentProcessing adds a document processing job to the queue.
+// EnqueueDocumentProcessing adds a reference letter processing job to the queue.
 func (c *Client) EnqueueDocumentProcessing(ctx context.Context, req domain.DocumentProcessingRequest) error {
-	args := job.DocumentProcessingArgs{
+	args := job.ReferenceLetterProcessingArgs{
 		StorageKey:        req.StorageKey,
 		ReferenceLetterID: req.ReferenceLetterID,
 		FileID:            req.FileID,
+		ContentType:       req.ContentType,
 	}
 
 	_, err := c.riverClient.Insert(ctx, args, nil)
 	if err != nil {
-		return fmt.Errorf("failed to enqueue document processing job: %w", err)
+		return fmt.Errorf("failed to enqueue reference letter processing job: %w", err)
 	}
 
 	return nil
