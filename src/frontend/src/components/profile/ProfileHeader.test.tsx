@@ -11,7 +11,6 @@ const mockProfileData: ProfileData = {
   location: "San Francisco, CA",
   summary: "Experienced software engineer with 10 years of experience.",
   extractedAt: "2024-01-01T00:00:00Z",
-  confidence: 0.95,
 };
 
 const longSummary =
@@ -46,11 +45,6 @@ describe("ProfileHeader", () => {
     expect(
       screen.getByText("Experienced software engineer with 10 years of experience.")
     ).toBeInTheDocument();
-  });
-
-  it("renders the confidence score", () => {
-    render(<ProfileHeader data={mockProfileData} />);
-    expect(screen.getByText("Confidence: 95%")).toBeInTheDocument();
   });
 
   it("does not render email when not provided", () => {
