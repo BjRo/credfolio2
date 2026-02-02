@@ -864,7 +864,11 @@ func TestReferenceLetterProcessingWorker_PassesProfileSkillsToExtractor(t *testi
 	}
 }
 
-func TestReferenceLetterProcessingWorker_CreatesTestimonialsAndValidations(t *testing.T) {
+// TestReferenceLetterProcessingWorker_StoresExtractedDataOnly verifies that the job
+// extracts data and stores it as JSON, but does NOT create testimonials or validations.
+// Record creation is handled by the applyReferenceLetterValidations mutation based on
+// user selection, not automatically during processing.
+func TestReferenceLetterProcessingWorker_StoresExtractedDataOnly(t *testing.T) {
 	worker, mocks := newTestLetterWorker()
 
 	// Set up test data
@@ -885,15 +889,6 @@ func TestReferenceLetterProcessingWorker_CreatesTestimonialsAndValidations(t *te
 		Name:           "Go",
 		NormalizedName: "go",
 		Category:       "TECHNICAL",
-	}
-
-	leadershipSkillID := uuid.New()
-	mocks.profileSkillRepo.skills[leadershipSkillID] = &domain.ProfileSkill{
-		ID:             leadershipSkillID,
-		ProfileID:      profileID,
-		Name:           "Leadership",
-		NormalizedName: "leadership",
-		Category:       "SOFT",
 	}
 
 	// Create reference letter
@@ -951,47 +946,35 @@ func TestReferenceLetterProcessingWorker_CreatesTestimonialsAndValidations(t *te
 		t.Fatalf("Work() returned error: %v", err)
 	}
 
-	// Verify testimonials were created
-	if len(mocks.testimonialRepo.testimonials) != 2 {
-		t.Errorf("Expected 2 testimonials, got %d", len(mocks.testimonialRepo.testimonials))
+	// Verify extracted data is stored in JSON (status becomes completed)
+	updatedLetter := mocks.letterRepo.letters[letterID]
+	if updatedLetter.Status != domain.ReferenceLetterStatusCompleted {
+		t.Errorf("Letter status = %q, want 'completed'", updatedLetter.Status)
+	}
+	if len(updatedLetter.ExtractedData) == 0 {
+		t.Error("Expected ExtractedData to be populated")
 	}
 
-	// Verify author was created
-	if len(mocks.authorRepo.authors) != 1 {
-		t.Errorf("Expected 1 author, got %d", len(mocks.authorRepo.authors))
-	}
-	for _, author := range mocks.authorRepo.authors {
-		if author.Name != "John Smith" {
-			t.Errorf("Author name = %q, want 'John Smith'", author.Name)
-		}
+	// Verify NO testimonials were created (they're created by apply mutation)
+	if len(mocks.testimonialRepo.testimonials) != 0 {
+		t.Errorf("Expected 0 testimonials (job should not create records), got %d", len(mocks.testimonialRepo.testimonials))
 	}
 
-	// Verify skill validations were created (2 from testimonials + 1 from skill mention)
-	if len(mocks.skillValidationRepo.validations) < 2 {
-		t.Errorf("Expected at least 2 skill validations, got %d", len(mocks.skillValidationRepo.validations))
+	// Verify NO authors were created
+	if len(mocks.authorRepo.authors) != 0 {
+		t.Errorf("Expected 0 authors (job should not create records), got %d", len(mocks.authorRepo.authors))
 	}
 
-	// Check that validations link to the correct skills
-	goValidationCount := 0
-	leadershipValidationCount := 0
-	for _, v := range mocks.skillValidationRepo.validations {
-		if v.ProfileSkillID == goSkillID {
-			goValidationCount++
-		}
-		if v.ProfileSkillID == leadershipSkillID {
-			leadershipValidationCount++
-		}
-	}
-
-	if goValidationCount == 0 {
-		t.Error("Expected at least one validation for Go skill")
-	}
-	if leadershipValidationCount == 0 {
-		t.Error("Expected at least one validation for Leadership skill")
+	// Verify NO skill validations were created
+	if len(mocks.skillValidationRepo.validations) != 0 {
+		t.Errorf("Expected 0 skill validations (job should not create records), got %d", len(mocks.skillValidationRepo.validations))
 	}
 }
 
-func TestReferenceLetterProcessingWorker_CreatesDiscoveredSkills(t *testing.T) {
+// TestReferenceLetterProcessingWorker_DoesNotCreateDiscoveredSkills verifies that the job
+// extracts discovered skills but does NOT create ProfileSkill records.
+// Discovered skill records are created by the applyReferenceLetterValidations mutation.
+func TestReferenceLetterProcessingWorker_DoesNotCreateDiscoveredSkills(t *testing.T) {
 	worker, mocks := newTestLetterWorker()
 
 	// Set up test data
@@ -1054,37 +1037,20 @@ func TestReferenceLetterProcessingWorker_CreatesDiscoveredSkills(t *testing.T) {
 		t.Fatalf("Work() returned error: %v", err)
 	}
 
-	// Verify discovered skills were created
-	if len(mocks.profileSkillRepo.skills) != 2 {
-		t.Errorf("Expected 2 profile skills, got %d", len(mocks.profileSkillRepo.skills))
+	// Verify letter is completed with extracted data
+	updatedLetter := mocks.letterRepo.letters[letterID]
+	if updatedLetter.Status != domain.ReferenceLetterStatusCompleted {
+		t.Errorf("Letter status = %q, want 'completed'", updatedLetter.Status)
+	}
+	if len(updatedLetter.ExtractedData) == 0 {
+		t.Error("Expected ExtractedData to be populated with discovered skills")
 	}
 
-	// Verify skill properties
-	foundKubernetes := false
-	foundTeamBuilding := false
-	for _, skill := range mocks.profileSkillRepo.skills {
-		if skill.Name == "Kubernetes" {
-			foundKubernetes = true
-			if skill.Category != "TECHNICAL" {
-				t.Errorf("Kubernetes category = %q, want 'TECHNICAL'", skill.Category)
-			}
-			if skill.SourceReferenceLetterID == nil || *skill.SourceReferenceLetterID != letterID {
-				t.Error("Kubernetes skill should have SourceReferenceLetterID set")
-			}
-		}
-		if skill.Name == "Team Building" {
-			foundTeamBuilding = true
-			if skill.Category != "SOFT" {
-				t.Errorf("Team Building category = %q, want 'SOFT'", skill.Category)
-			}
-		}
-	}
-
-	if !foundKubernetes {
-		t.Error("Expected to find Kubernetes skill")
-	}
-	if !foundTeamBuilding {
-		t.Error("Expected to find Team Building skill")
+	// Verify NO profile skills were created (job should not create records)
+	// Discovered skills are stored in ExtractedData JSON and created later
+	// by the applyReferenceLetterValidations mutation based on user selection
+	if len(mocks.profileSkillRepo.skills) != 0 {
+		t.Errorf("Expected 0 profile skills (job should not create records), got %d", len(mocks.profileSkillRepo.skills))
 	}
 }
 
