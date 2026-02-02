@@ -1,10 +1,11 @@
 ---
 # credfolio2-rnzw
 title: Deep link from testimonial to source PDF document
-status: todo
+status: scrapped
 type: feature
+priority: normal
 created_at: 2026-02-02T14:20:08Z
-updated_at: 2026-02-02T14:20:08Z
+updated_at: 2026-02-02T16:57:28Z
 parent: credfolio2-2ex3
 ---
 
