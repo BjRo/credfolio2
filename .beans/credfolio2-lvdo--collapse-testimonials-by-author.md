@@ -81,4 +81,4 @@ const groupedByAuthor = testimonials.reduce((acc, t) => {
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
