@@ -24,7 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   dnsmasq \
   aggregate \
   jq \
+  lsof \
   nano \
+  procps \
+  psmisc \
   vim \
   wget \
   postgresql-client \
