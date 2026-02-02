@@ -1,10 +1,11 @@
 ---
 # credfolio2-8azs
 title: Use expiring presigned URLs for PDF document downloads
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-02-02T13:17:30Z
-updated_at: 2026-02-02T13:17:30Z
+updated_at: 2026-02-02T13:29:55Z
 ---
 
 The File.url resolver currently uses GetPublicURL which returns permanent proxy URLs when storageProxyURL is configured. The GraphQL schema explicitly states the URL should expire.
