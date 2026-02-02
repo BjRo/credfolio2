@@ -163,6 +163,14 @@ func (e *LLMError) Unwrap() error {
 	return e.Err
 }
 
+// ProfileSkillContext provides skill information for extraction context.
+// This helps the LLM distinguish between existing skills (for validation) and new skills.
+type ProfileSkillContext struct {
+	Name           string
+	NormalizedName string
+	Category       string
+}
+
 // DocumentExtractor defines the interface for extracting data from documents using LLM.
 type DocumentExtractor interface {
 	// ExtractText extracts raw text from a document (image or PDF).
@@ -172,5 +180,7 @@ type DocumentExtractor interface {
 	ExtractResumeData(ctx context.Context, text string) (*ResumeExtractedData, error)
 
 	// ExtractLetterData extracts structured reference letter data from text using LLM.
-	ExtractLetterData(ctx context.Context, text string) (*ExtractedLetterData, error)
+	// The profileSkills parameter provides existing skills for context, enabling the LLM to
+	// distinguish between mentions of existing skills (for validation) and newly discovered skills.
+	ExtractLetterData(ctx context.Context, text string, profileSkills []ProfileSkillContext) (*ExtractedLetterData, error)
 }

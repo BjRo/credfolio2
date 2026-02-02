@@ -214,7 +214,23 @@ func TestDocumentExtractor_ExtractLetterData(t *testing.T) {
 				"quote": "During her time as Senior Engineer at Acme Corp, Jane..."
 			}
 		],
-		"discoveredSkills": ["mentoring", "system design", "cross-team collaboration"]
+		"discoveredSkills": [
+			{
+				"skill": "mentoring",
+				"quote": "Jane mentored several junior developers on the team.",
+				"context": "leadership"
+			},
+			{
+				"skill": "system design",
+				"quote": "She designed the architecture for our new microservices platform.",
+				"context": "technical skills"
+			},
+			{
+				"skill": "cross-team collaboration",
+				"quote": "Jane excelled at working across teams to deliver complex projects.",
+				"context": "soft skills"
+			}
+		]
 	}`
 
 	inner := &mockProvider{
@@ -229,7 +245,7 @@ func TestDocumentExtractor_ExtractLetterData(t *testing.T) {
 
 	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
-	result, err := extractor.ExtractLetterData(context.Background(), "Reference letter text here...")
+	result, err := extractor.ExtractLetterData(context.Background(), "Reference letter text here...", nil)
 
 	if err != nil {
 		t.Fatalf("ExtractLetterData() error = %v", err)
@@ -282,12 +298,18 @@ func TestDocumentExtractor_ExtractLetterData(t *testing.T) {
 		t.Errorf("ExperienceMentions[0].Role = %q, want %q", result.ExperienceMentions[0].Role, "Senior Engineer")
 	}
 
-	// Verify discovered skills
+	// Verify discovered skills (now objects with skill, quote, context)
 	if len(result.DiscoveredSkills) != 3 {
 		t.Errorf("len(DiscoveredSkills) = %d, want 3", len(result.DiscoveredSkills))
 	}
-	if result.DiscoveredSkills[0] != "mentoring" {
-		t.Errorf("DiscoveredSkills[0] = %q, want %q", result.DiscoveredSkills[0], "mentoring")
+	if result.DiscoveredSkills[0].Skill != "mentoring" {
+		t.Errorf("DiscoveredSkills[0].Skill = %q, want %q", result.DiscoveredSkills[0].Skill, "mentoring")
+	}
+	if result.DiscoveredSkills[0].Quote != "Jane mentored several junior developers on the team." {
+		t.Errorf("DiscoveredSkills[0].Quote = %q, want %q", result.DiscoveredSkills[0].Quote, "Jane mentored several junior developers on the team.")
+	}
+	if result.DiscoveredSkills[0].Context == nil || *result.DiscoveredSkills[0].Context != "leadership" {
+		t.Errorf("DiscoveredSkills[0].Context = %v, want %q", result.DiscoveredSkills[0].Context, "leadership")
 	}
 }
 
@@ -314,7 +336,7 @@ func TestDocumentExtractor_ExtractLetterData_MarkdownCodeBlock(t *testing.T) {
 
 	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
-	result, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+	result, err := extractor.ExtractLetterData(context.Background(), "Letter text", nil)
 
 	if err != nil {
 		t.Fatalf("ExtractLetterData() error = %v", err)
@@ -358,7 +380,7 @@ func TestDocumentExtractor_ExtractLetterData_EmptyArrays(t *testing.T) {
 
 	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
-	result, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+	result, err := extractor.ExtractLetterData(context.Background(), "Letter text", nil)
 
 	if err != nil {
 		t.Fatalf("ExtractLetterData() error = %v", err)
@@ -414,7 +436,7 @@ func TestDocumentExtractor_ExtractLetterData_AllRelationshipTypes(t *testing.T) 
 
 			extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
-			result, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+			result, err := extractor.ExtractLetterData(context.Background(), "Letter text", nil)
 
 			if err != nil {
 				t.Fatalf("ExtractLetterData() error = %v", err)
@@ -437,7 +459,7 @@ func TestDocumentExtractor_ExtractLetterData_Error(t *testing.T) {
 
 	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
-	_, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+	_, err := extractor.ExtractLetterData(context.Background(), "Letter text", nil)
 
 	if err == nil {
 		t.Fatal("expected error")
@@ -453,7 +475,7 @@ func TestDocumentExtractor_ExtractLetterData_InvalidJSON(t *testing.T) {
 
 	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
 
-	_, err := extractor.ExtractLetterData(context.Background(), "Letter text")
+	_, err := extractor.ExtractLetterData(context.Background(), "Letter text", nil)
 
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")

@@ -57,6 +57,9 @@ models:
   ExtractedExperienceMention:
     model:
       - backend/internal/graphql/model.ExtractedExperienceMention
+  DiscoveredSkill:
+    model:
+      - backend/internal/graphql/model.DiscoveredSkill
   ExtractionMetadata:
     model:
       - backend/internal/graphql/model.ExtractionMetadata
@@ -69,6 +72,8 @@ models:
   ProfileSkill:
     fields:
       validationCount:
+        resolver: true
+      sourceReferenceLetter:
         resolver: true
   ProfileExperience:
     fields:
@@ -89,6 +94,8 @@ models:
       skill:
         resolver: true
       referenceLetter:
+        resolver: true
+      testimonial:
         resolver: true
   ExperienceValidation:
     fields:

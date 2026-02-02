@@ -26,7 +26,8 @@ EXTRACTION RULES:
    - skillsMentioned: List skills referenced in each testimonial quote
 
 3. SKILL MENTIONS (for skill validation):
-   - Extract specific mentions of technical or professional skills
+   - Extract specific mentions of skills that MATCH the candidate's existing profile skills
+   - The user prompt will include a list of existing profile skills - only include matches here
    - skill: The skill name (normalize to standard form, e.g., "Golang" → "Go")
    - quote: The exact sentence(s) mentioning this skill
    - context: Brief category like "technical skills", "leadership", "communication"
@@ -38,7 +39,11 @@ EXTRACTION RULES:
    - quote: The sentence(s) discussing this role/company
 
 5. DISCOVERED SKILLS:
-   - List skills mentioned in the letter that might not be in the candidate's profile
+   - Extract skills mentioned in the letter that are NOT in the candidate's existing profile
+   - Include the quote/context for each discovered skill so it can be linked to the source
+   - skill: The skill name (normalized)
+   - quote: The exact sentence(s) mentioning this skill
+   - context: Brief category like "technical skills", "leadership", "communication"
    - Focus on soft skills, leadership qualities, and less obvious technical skills
    - Examples: "mentoring", "cross-functional collaboration", "strategic thinking"
 

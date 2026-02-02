@@ -2467,6 +2467,7 @@ func TestApplyReferenceLetterValidations(t *testing.T) {
 	}
 
 	// Create extracted data for reference letter
+	kubernetesContext := "infrastructure"
 	extractedData := domain.ExtractedLetterData{
 		Author: domain.ExtractedAuthor{
 			Name:         "John Manager",
@@ -2481,7 +2482,9 @@ func TestApplyReferenceLetterValidations(t *testing.T) {
 		ExperienceMentions: []domain.ExtractedExperienceMention{
 			{Company: "Acme Inc", Role: "Software Engineer", Quote: "Led the team at Acme Inc"},
 		},
-		DiscoveredSkills: []string{"Kubernetes"},
+		DiscoveredSkills: []domain.DiscoveredSkill{
+			{Skill: "Kubernetes", Quote: "Deployed applications on Kubernetes", Context: &kubernetesContext},
+		},
 	}
 	extractedDataJSON, err := json.Marshal(extractedData)
 	if err != nil {

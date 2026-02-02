@@ -129,6 +129,18 @@ type ExtractionMetadata {
 }
 
 """
+A skill discovered in a reference letter that may not be on the profile.
+"""
+type DiscoveredSkill {
+  """The skill name."""
+  skill: String!
+  """Quote from the letter mentioning this skill."""
+  quote: String!
+  """Context for the skill mention (e.g., 'technical skills', 'leadership')."""
+  context: String
+}
+
+"""
 Structured data extracted from a reference letter for credibility validation.
 """
 type ExtractedLetterData {
@@ -140,8 +152,8 @@ type ExtractedLetterData {
   skillMentions: [ExtractedSkillMention!]!
   """Experience/role mentions with quotes."""
   experienceMentions: [ExtractedExperienceMention!]!
-  """Skills discovered that aren't in the profile yet."""
-  discoveredSkills: [String!]!
+  """Skills discovered in the letter that aren't in the profile yet (with attribution)."""
+  discoveredSkills: [DiscoveredSkill!]!
   """Metadata about the extraction process."""
   metadata: ExtractionMetadata!
 }
@@ -317,6 +329,8 @@ type ProfileSkill {
   source: ExperienceSource!
   """Number of reference letters validating this skill."""
   validationCount: Int!
+  """The reference letter this skill was discovered from (if source is reference letter)."""
+  sourceReferenceLetter: ReferenceLetter
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -801,6 +815,8 @@ type SkillValidation {
   skill: ProfileSkill!
   """The reference letter providing the validation."""
   referenceLetter: ReferenceLetter!
+  """The specific testimonial that validates this skill (if applicable)."""
+  testimonial: Testimonial
   """Quote snippet from the reference letter supporting this skill."""
   quoteSnippet: String
   """When the validation was created."""

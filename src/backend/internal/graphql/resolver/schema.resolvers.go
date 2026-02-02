@@ -2072,6 +2072,52 @@ func (r *profileSkillResolver) ValidationCount(ctx context.Context, obj *model.P
 	return count, nil
 }
 
+// SourceReferenceLetter is the resolver for the sourceReferenceLetter field.
+func (r *profileSkillResolver) SourceReferenceLetter(ctx context.Context, obj *model.ProfileSkill) (*model.ReferenceLetter, error) {
+	skillID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid skill ID: %w", err)
+	}
+
+	// Get the profile skill to find the source reference letter ID
+	skill, err := r.profileSkillRepo.GetByID(ctx, skillID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile skill: %w", err)
+	}
+	if skill == nil || skill.SourceReferenceLetterID == nil {
+		return nil, nil
+	}
+
+	// Fetch the reference letter
+	refLetter, err := r.refLetterRepo.GetByID(ctx, *skill.SourceReferenceLetterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reference letter: %w", err)
+	}
+	if refLetter == nil {
+		return nil, nil
+	}
+
+	// Get user for the reference letter
+	var gqlUser *model.User
+	if refLetter.UserID != uuid.Nil {
+		user, err := r.userRepo.GetByID(ctx, refLetter.UserID)
+		if err == nil && user != nil {
+			gqlUser = toGraphQLUser(user)
+		}
+	}
+
+	// Get file for the reference letter
+	var gqlFile *model.File
+	if refLetter.FileID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *refLetter.FileID)
+		if err == nil && file != nil {
+			gqlFile = toGraphQLFile(file, gqlUser)
+		}
+	}
+
+	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
 	uid, err := uuid.Parse(id)
@@ -2641,6 +2687,34 @@ func (r *skillValidationResolver) ReferenceLetter(ctx context.Context, obj *mode
 	}
 
 	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
+}
+
+// Testimonial is the resolver for the testimonial field.
+func (r *skillValidationResolver) Testimonial(ctx context.Context, obj *model.SkillValidation) (*model.Testimonial, error) {
+	validationID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid validation ID: %w", err)
+	}
+
+	// Get the skill validation to find the testimonial ID
+	validation, err := r.skillValidationRepo.GetByID(ctx, validationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get skill validation: %w", err)
+	}
+	if validation == nil || validation.TestimonialID == nil {
+		return nil, nil
+	}
+
+	// Fetch the testimonial
+	testimonial, err := r.testimonialRepo.GetByID(ctx, *validation.TestimonialID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get testimonial: %w", err)
+	}
+	if testimonial == nil {
+		return nil, nil
+	}
+
+	return toGraphQLTestimonial(testimonial, nil, nil), nil
 }
 
 // Author is the resolver for the author field.

@@ -508,9 +508,25 @@ var letterOutputSchema = map[string]any{
 		},
 		"discoveredSkills": map[string]any{
 			"type":        "array",
-			"description": "Skills mentioned that might not be in the candidate's profile",
+			"description": "Skills mentioned that are NOT in the candidate's existing profile skills",
 			"items": map[string]any{
-				"type": "string",
+				"type":                 "object",
+				"additionalProperties": false,
+				"properties": map[string]any{
+					"skill": map[string]any{
+						"type":        "string",
+						"description": "Skill name (normalized, e.g., 'Golang' → 'Go')",
+					},
+					"quote": map[string]any{
+						"type":        "string",
+						"description": "Exact sentence(s) mentioning this skill",
+					},
+					"context": map[string]any{
+						"type":        "string",
+						"description": "Brief category like 'technical skills', 'leadership', 'communication'",
+					},
+				},
+				"required": []string{"skill", "quote", "context"},
 			},
 		},
 	},
@@ -519,18 +535,23 @@ var letterOutputSchema = map[string]any{
 
 // LetterTemplateData holds the data for rendering the letter extraction user prompt.
 type LetterTemplateData struct {
-	Text string
+	Text          string
+	ProfileSkills []domain.ProfileSkillContext
 }
 
 // ExtractLetterData implements domain.DocumentExtractor interface.
 // It extracts structured credibility data from reference letter text using LLM with structured output.
-func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string) (*domain.ExtractedLetterData, error) {
+// The profileSkills parameter provides existing skills context for the LLM to distinguish
+// between mentions of existing skills (for validation) and newly discovered skills.
+//
+//nolint:gocyclo // Complex extraction logic with multiple validation paths
+func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
 	// Get the appropriate provider for resume extraction (reusing same chain for letters)
 	provider := e.getProviderForChain(e.config.ResumeExtractionChain)
 
-	// Render the user prompt template with the letter text
+	// Render the user prompt template with the letter text and profile skills context
 	var userPromptBuf bytes.Buffer
-	if err := letterUserTemplate.Execute(&userPromptBuf, LetterTemplateData{Text: text}); err != nil {
+	if err := letterUserTemplate.Execute(&userPromptBuf, LetterTemplateData{Text: text, ProfileSkills: profileSkills}); err != nil {
 		return nil, fmt.Errorf("failed to render user prompt template: %w", err)
 	}
 
@@ -575,7 +596,11 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string) 
 			Role    string `json:"role"`
 			Quote   string `json:"quote"`
 		} `json:"experienceMentions"`
-		DiscoveredSkills []string `json:"discoveredSkills"`
+		DiscoveredSkills []struct {
+			Skill   string `json:"skill"`
+			Quote   string `json:"quote"`
+			Context string `json:"context"`
+		} `json:"discoveredSkills"`
 	}
 
 	if err := json.Unmarshal([]byte(jsonContent), &rawData); err != nil {
@@ -591,7 +616,7 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string) 
 		Testimonials:       make([]domain.ExtractedTestimonial, 0, len(rawData.Testimonials)),
 		SkillMentions:      make([]domain.ExtractedSkillMention, 0, len(rawData.SkillMentions)),
 		ExperienceMentions: make([]domain.ExtractedExperienceMention, 0, len(rawData.ExperienceMentions)),
-		DiscoveredSkills:   rawData.DiscoveredSkills,
+		DiscoveredSkills:   make([]domain.DiscoveredSkill, 0, len(rawData.DiscoveredSkills)),
 	}
 
 	// Handle optional author fields
@@ -631,6 +656,18 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string) 
 		})
 	}
 
+	// Convert discovered skills
+	for _, ds := range rawData.DiscoveredSkills {
+		skill := domain.DiscoveredSkill{
+			Skill: ds.Skill,
+			Quote: ds.Quote,
+		}
+		if ds.Context != "" {
+			skill.Context = &ds.Context
+		}
+		data.DiscoveredSkills = append(data.DiscoveredSkills, skill)
+	}
+
 	// Ensure slices are initialized (not nil)
 	if data.Testimonials == nil {
 		data.Testimonials = []domain.ExtractedTestimonial{}
@@ -642,7 +679,7 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string) 
 		data.ExperienceMentions = []domain.ExtractedExperienceMention{}
 	}
 	if data.DiscoveredSkills == nil {
-		data.DiscoveredSkills = []string{}
+		data.DiscoveredSkills = []domain.DiscoveredSkill{}
 	}
 
 	return data, nil

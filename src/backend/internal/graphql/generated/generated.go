@@ -92,6 +92,12 @@ type ComplexityRoot struct {
 		Success   func(childComplexity int) int
 	}
 
+	DiscoveredSkill struct {
+		Context func(childComplexity int) int
+		Quote   func(childComplexity int) int
+		Skill   func(childComplexity int) int
+	}
+
 	EducationResult struct {
 		Education func(childComplexity int) int
 	}
@@ -251,15 +257,16 @@ type ComplexityRoot struct {
 	}
 
 	ProfileSkill struct {
-		Category        func(childComplexity int) int
-		CreatedAt       func(childComplexity int) int
-		DisplayOrder    func(childComplexity int) int
-		ID              func(childComplexity int) int
-		Name            func(childComplexity int) int
-		NormalizedName  func(childComplexity int) int
-		Source          func(childComplexity int) int
-		UpdatedAt       func(childComplexity int) int
-		ValidationCount func(childComplexity int) int
+		Category              func(childComplexity int) int
+		CreatedAt             func(childComplexity int) int
+		DisplayOrder          func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		Name                  func(childComplexity int) int
+		NormalizedName        func(childComplexity int) int
+		Source                func(childComplexity int) int
+		SourceReferenceLetter func(childComplexity int) int
+		UpdatedAt             func(childComplexity int) int
+		ValidationCount       func(childComplexity int) int
 	}
 
 	Query struct {
@@ -328,6 +335,7 @@ type ComplexityRoot struct {
 		QuoteSnippet    func(childComplexity int) int
 		ReferenceLetter func(childComplexity int) int
 		Skill           func(childComplexity int) int
+		Testimonial     func(childComplexity int) int
 	}
 
 	SkillValidationError struct {
@@ -401,6 +409,7 @@ type ProfileExperienceResolver interface {
 }
 type ProfileSkillResolver interface {
 	ValidationCount(ctx context.Context, obj *model.ProfileSkill) (int, error)
+	SourceReferenceLetter(ctx context.Context, obj *model.ProfileSkill) (*model.ReferenceLetter, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, id string) (*model.User, error)
@@ -423,6 +432,7 @@ type QueryResolver interface {
 type SkillValidationResolver interface {
 	Skill(ctx context.Context, obj *model.SkillValidation) (*model.ProfileSkill, error)
 	ReferenceLetter(ctx context.Context, obj *model.SkillValidation) (*model.ReferenceLetter, error)
+	Testimonial(ctx context.Context, obj *model.SkillValidation) (*model.Testimonial, error)
 }
 type TestimonialResolver interface {
 	Author(ctx context.Context, obj *model.Testimonial) (*model.Author, error)
@@ -576,6 +586,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DeleteResult.Success(childComplexity), true
+
+	case "DiscoveredSkill.context":
+		if e.complexity.DiscoveredSkill.Context == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredSkill.Context(childComplexity), true
+	case "DiscoveredSkill.quote":
+		if e.complexity.DiscoveredSkill.Quote == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredSkill.Quote(childComplexity), true
+	case "DiscoveredSkill.skill":
+		if e.complexity.DiscoveredSkill.Skill == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredSkill.Skill(childComplexity), true
 
 	case "EducationResult.education":
 		if e.complexity.EducationResult.Education == nil {
@@ -1324,6 +1353,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ProfileSkill.Source(childComplexity), true
+	case "ProfileSkill.sourceReferenceLetter":
+		if e.complexity.ProfileSkill.SourceReferenceLetter == nil {
+			break
+		}
+
+		return e.complexity.ProfileSkill.SourceReferenceLetter(childComplexity), true
 	case "ProfileSkill.updatedAt":
 		if e.complexity.ProfileSkill.UpdatedAt == nil {
 			break
@@ -1722,6 +1757,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SkillValidation.Skill(childComplexity), true
+	case "SkillValidation.testimonial":
+		if e.complexity.SkillValidation.Testimonial == nil {
+			break
+		}
+
+		return e.complexity.SkillValidation.Testimonial(childComplexity), true
 
 	case "SkillValidationError.field":
 		if e.complexity.SkillValidationError.Field == nil {
@@ -2110,6 +2151,18 @@ type ExtractionMetadata {
 }
 
 """
+A skill discovered in a reference letter that may not be on the profile.
+"""
+type DiscoveredSkill {
+  """The skill name."""
+  skill: String!
+  """Quote from the letter mentioning this skill."""
+  quote: String!
+  """Context for the skill mention (e.g., 'technical skills', 'leadership')."""
+  context: String
+}
+
+"""
 Structured data extracted from a reference letter for credibility validation.
 """
 type ExtractedLetterData {
@@ -2121,8 +2174,8 @@ type ExtractedLetterData {
   skillMentions: [ExtractedSkillMention!]!
   """Experience/role mentions with quotes."""
   experienceMentions: [ExtractedExperienceMention!]!
-  """Skills discovered that aren't in the profile yet."""
-  discoveredSkills: [String!]!
+  """Skills discovered in the letter that aren't in the profile yet (with attribution)."""
+  discoveredSkills: [DiscoveredSkill!]!
   """Metadata about the extraction process."""
   metadata: ExtractionMetadata!
 }
@@ -2298,6 +2351,8 @@ type ProfileSkill {
   source: ExperienceSource!
   """Number of reference letters validating this skill."""
   validationCount: Int!
+  """The reference letter this skill was discovered from (if source is reference letter)."""
+  sourceReferenceLetter: ReferenceLetter
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -2782,6 +2837,8 @@ type SkillValidation {
   skill: ProfileSkill!
   """The reference letter providing the validation."""
   referenceLetter: ReferenceLetter!
+  """The specific testimonial that validates this skill (if applicable)."""
+  testimonial: Testimonial
   """Quote snippet from the reference letter supporting this skill."""
   quoteSnippet: String
   """When the validation was created."""
@@ -4277,6 +4334,93 @@ func (ec *executionContext) fieldContext_DeleteResult_deletedId(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _DiscoveredSkill_skill(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredSkill) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DiscoveredSkill_skill,
+		func(ctx context.Context) (any, error) {
+			return obj.Skill, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredSkill_skill(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredSkill",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredSkill_quote(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredSkill) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DiscoveredSkill_quote,
+		func(ctx context.Context) (any, error) {
+			return obj.Quote, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredSkill_quote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredSkill",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredSkill_context(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredSkill) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DiscoveredSkill_context,
+		func(ctx context.Context) (any, error) {
+			return obj.Context, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredSkill_context(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredSkill",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _EducationResult_education(ctx context.Context, field graphql.CollectedField, obj *model.EducationResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5073,7 +5217,7 @@ func (ec *executionContext) _ExtractedLetterData_discoveredSkills(ctx context.Co
 			return obj.DiscoveredSkills, nil
 		},
 		nil,
-		ec.marshalNString2ᚕstringᚄ,
+		ec.marshalNDiscoveredSkill2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDiscoveredSkillᚄ,
 		true,
 		true,
 	)
@@ -5086,7 +5230,15 @@ func (ec *executionContext) fieldContext_ExtractedLetterData_discoveredSkills(_ 
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "skill":
+				return ec.fieldContext_DiscoveredSkill_skill(ctx, field)
+			case "quote":
+				return ec.fieldContext_DiscoveredSkill_quote(ctx, field)
+			case "context":
+				return ec.fieldContext_DiscoveredSkill_context(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DiscoveredSkill", field.Name)
 		},
 	}
 	return fc, nil
@@ -6753,6 +6905,8 @@ func (ec *executionContext) fieldContext_Profile_skills(_ context.Context, field
 				return ec.fieldContext_ProfileSkill_source(ctx, field)
 			case "validationCount":
 				return ec.fieldContext_ProfileSkill_validationCount(ctx, field)
+			case "sourceReferenceLetter":
+				return ec.fieldContext_ProfileSkill_sourceReferenceLetter(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_ProfileSkill_createdAt(ctx, field)
 			case "updatedAt":
@@ -7923,6 +8077,63 @@ func (ec *executionContext) fieldContext_ProfileSkill_validationCount(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _ProfileSkill_sourceReferenceLetter(ctx context.Context, field graphql.CollectedField, obj *model.ProfileSkill) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProfileSkill_sourceReferenceLetter,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.ProfileSkill().SourceReferenceLetter(ctx, obj)
+		},
+		nil,
+		ec.marshalOReferenceLetter2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐReferenceLetter,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProfileSkill_sourceReferenceLetter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProfileSkill",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ReferenceLetter_id(ctx, field)
+			case "title":
+				return ec.fieldContext_ReferenceLetter_title(ctx, field)
+			case "authorName":
+				return ec.fieldContext_ReferenceLetter_authorName(ctx, field)
+			case "authorTitle":
+				return ec.fieldContext_ReferenceLetter_authorTitle(ctx, field)
+			case "organization":
+				return ec.fieldContext_ReferenceLetter_organization(ctx, field)
+			case "dateWritten":
+				return ec.fieldContext_ReferenceLetter_dateWritten(ctx, field)
+			case "rawText":
+				return ec.fieldContext_ReferenceLetter_rawText(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_ReferenceLetter_extractedData(ctx, field)
+			case "status":
+				return ec.fieldContext_ReferenceLetter_status(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ReferenceLetter_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_ReferenceLetter_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_ReferenceLetter_user(ctx, field)
+			case "file":
+				return ec.fieldContext_ReferenceLetter_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReferenceLetter", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProfileSkill_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.ProfileSkill) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8656,6 +8867,8 @@ func (ec *executionContext) fieldContext_Query_profileSkill(ctx context.Context,
 				return ec.fieldContext_ProfileSkill_source(ctx, field)
 			case "validationCount":
 				return ec.fieldContext_ProfileSkill_validationCount(ctx, field)
+			case "sourceReferenceLetter":
+				return ec.fieldContext_ProfileSkill_sourceReferenceLetter(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_ProfileSkill_createdAt(ctx, field)
 			case "updatedAt":
@@ -8890,6 +9103,8 @@ func (ec *executionContext) fieldContext_Query_skillValidations(ctx context.Cont
 				return ec.fieldContext_SkillValidation_skill(ctx, field)
 			case "referenceLetter":
 				return ec.fieldContext_SkillValidation_referenceLetter(ctx, field)
+			case "testimonial":
+				return ec.fieldContext_SkillValidation_testimonial(ctx, field)
 			case "quoteSnippet":
 				return ec.fieldContext_SkillValidation_quoteSnippet(ctx, field)
 			case "createdAt":
@@ -10013,6 +10228,8 @@ func (ec *executionContext) fieldContext_SkillResult_skill(_ context.Context, fi
 				return ec.fieldContext_ProfileSkill_source(ctx, field)
 			case "validationCount":
 				return ec.fieldContext_ProfileSkill_validationCount(ctx, field)
+			case "sourceReferenceLetter":
+				return ec.fieldContext_ProfileSkill_sourceReferenceLetter(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_ProfileSkill_createdAt(ctx, field)
 			case "updatedAt":
@@ -10091,6 +10308,8 @@ func (ec *executionContext) fieldContext_SkillValidation_skill(_ context.Context
 				return ec.fieldContext_ProfileSkill_source(ctx, field)
 			case "validationCount":
 				return ec.fieldContext_ProfileSkill_validationCount(ctx, field)
+			case "sourceReferenceLetter":
+				return ec.fieldContext_ProfileSkill_sourceReferenceLetter(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_ProfileSkill_createdAt(ctx, field)
 			case "updatedAt":
@@ -10154,6 +10373,57 @@ func (ec *executionContext) fieldContext_SkillValidation_referenceLetter(_ conte
 				return ec.fieldContext_ReferenceLetter_file(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ReferenceLetter", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SkillValidation_testimonial(ctx context.Context, field graphql.CollectedField, obj *model.SkillValidation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SkillValidation_testimonial,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.SkillValidation().Testimonial(ctx, obj)
+		},
+		nil,
+		ec.marshalOTestimonial2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonial,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SkillValidation_testimonial(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SkillValidation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Testimonial_id(ctx, field)
+			case "quote":
+				return ec.fieldContext_Testimonial_quote(ctx, field)
+			case "author":
+				return ec.fieldContext_Testimonial_author(ctx, field)
+			case "authorName":
+				return ec.fieldContext_Testimonial_authorName(ctx, field)
+			case "authorTitle":
+				return ec.fieldContext_Testimonial_authorTitle(ctx, field)
+			case "authorCompany":
+				return ec.fieldContext_Testimonial_authorCompany(ctx, field)
+			case "relationship":
+				return ec.fieldContext_Testimonial_relationship(ctx, field)
+			case "referenceLetter":
+				return ec.fieldContext_Testimonial_referenceLetter(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Testimonial_createdAt(ctx, field)
+			case "validatedSkills":
+				return ec.fieldContext_Testimonial_validatedSkills(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Testimonial", field.Name)
 		},
 	}
 	return fc, nil
@@ -10620,6 +10890,8 @@ func (ec *executionContext) fieldContext_Testimonial_validatedSkills(_ context.C
 				return ec.fieldContext_ProfileSkill_source(ctx, field)
 			case "validationCount":
 				return ec.fieldContext_ProfileSkill_validationCount(ctx, field)
+			case "sourceReferenceLetter":
+				return ec.fieldContext_ProfileSkill_sourceReferenceLetter(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_ProfileSkill_createdAt(ctx, field)
 			case "updatedAt":
@@ -13693,6 +13965,52 @@ func (ec *executionContext) _DeleteResult(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var discoveredSkillImplementors = []string{"DiscoveredSkill"}
+
+func (ec *executionContext) _DiscoveredSkill(ctx context.Context, sel ast.SelectionSet, obj *model.DiscoveredSkill) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, discoveredSkillImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DiscoveredSkill")
+		case "skill":
+			out.Values[i] = ec._DiscoveredSkill_skill(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "quote":
+			out.Values[i] = ec._DiscoveredSkill_quote(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "context":
+			out.Values[i] = ec._DiscoveredSkill_context(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var educationResultImplementors = []string{"EducationResult", "EducationResponse"}
 
 func (ec *executionContext) _EducationResult(ctx context.Context, sel ast.SelectionSet, obj *model.EducationResult) graphql.Marshaler {
@@ -15013,6 +15331,39 @@ func (ec *executionContext) _ProfileSkill(ctx context.Context, sel ast.Selection
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "sourceReferenceLetter":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ProfileSkill_sourceReferenceLetter(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._ProfileSkill_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -15725,6 +16076,39 @@ func (ec *executionContext) _SkillValidation(ctx context.Context, sel ast.Select
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "testimonial":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SkillValidation_testimonial(ctx, field, obj)
 				return res
 			}
 
@@ -16671,6 +17055,60 @@ func (ec *executionContext) marshalNDeleteResult2ᚖbackendᚋinternalᚋgraphql
 		return graphql.Null
 	}
 	return ec._DeleteResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDiscoveredSkill2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDiscoveredSkillᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.DiscoveredSkill) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDiscoveredSkill2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDiscoveredSkill(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDiscoveredSkill2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDiscoveredSkill(ctx context.Context, sel ast.SelectionSet, v *model.DiscoveredSkill) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DiscoveredSkill(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNEducationResponse2backendᚋinternalᚋgraphqlᚋmodelᚐEducationResponse(ctx context.Context, sel ast.SelectionSet, v model.EducationResponse) graphql.Marshaler {
@@ -18175,6 +18613,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTestimonial2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonial(ctx context.Context, sel ast.SelectionSet, v *model.Testimonial) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Testimonial(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOUser2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
