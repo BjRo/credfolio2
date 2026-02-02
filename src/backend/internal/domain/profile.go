@@ -168,25 +168,37 @@ type ProfileEducationRepository interface {
 	DeleteBySourceResumeID(ctx context.Context, sourceResumeID uuid.UUID) error
 }
 
+// SkillSource represents where a skill entry came from.
+type SkillSource string
+
+// Skill source constants.
+const (
+	SkillSourceManual          SkillSource = "manual"
+	SkillSourceResumeExtracted SkillSource = "resume_extracted"
+	SkillSourceLetterDiscovered SkillSource = "letter_discovered"
+)
+
 // ProfileSkill represents a skill entry in a user's profile.
 type ProfileSkill struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
 	bun.BaseModel `bun:"table:profile_skills,alias:ps"`
 
-	ID             uuid.UUID        `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
-	ProfileID      uuid.UUID        `bun:"profile_id,notnull,type:uuid"`
-	Name           string           `bun:"name,notnull"`
-	NormalizedName string           `bun:"normalized_name,notnull"`
-	Category       string           `bun:"category,notnull,default:'TECHNICAL'"`
-	DisplayOrder   int              `bun:"display_order,notnull,default:0"`
-	Source         ExperienceSource `bun:"source,notnull,default:'manual'"`
-	SourceResumeID *uuid.UUID       `bun:"source_resume_id,type:uuid"`
-	OriginalData   json.RawMessage  `bun:"original_data,type:jsonb"`
-	CreatedAt      time.Time        `bun:"created_at,notnull,default:current_timestamp"`
-	UpdatedAt      time.Time        `bun:"updated_at,notnull,default:current_timestamp"`
+	ID                      uuid.UUID        `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileID               uuid.UUID        `bun:"profile_id,notnull,type:uuid"`
+	Name                    string           `bun:"name,notnull"`
+	NormalizedName          string           `bun:"normalized_name,notnull"`
+	Category                string           `bun:"category,notnull,default:'TECHNICAL'"`
+	DisplayOrder            int              `bun:"display_order,notnull,default:0"`
+	Source                  ExperienceSource `bun:"source,notnull,default:'manual'"`
+	SourceResumeID          *uuid.UUID       `bun:"source_resume_id,type:uuid"`
+	SourceReferenceLetterID *uuid.UUID       `bun:"source_reference_letter_id,type:uuid"`
+	OriginalData            json.RawMessage  `bun:"original_data,type:jsonb"`
+	CreatedAt               time.Time        `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt               time.Time        `bun:"updated_at,notnull,default:current_timestamp"`
 
 	// Relations
-	Profile      *Profile `bun:"rel:belongs-to,join:profile_id=id"`
-	SourceResume *Resume  `bun:"rel:belongs-to,join:source_resume_id=id"`
+	Profile               *Profile         `bun:"rel:belongs-to,join:profile_id=id"`
+	SourceResume          *Resume          `bun:"rel:belongs-to,join:source_resume_id=id"`
+	SourceReferenceLetter *ReferenceLetter `bun:"rel:belongs-to,join:source_reference_letter_id=id"`
 }
 
 // ProfileSkillRepository defines operations for profile skill persistence.

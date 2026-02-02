@@ -143,24 +143,13 @@ export default function ValidationPreviewPage() {
 
   // Discovered skills (skills mentioned but not in profile)
   const discoveredSkills = useMemo((): DiscoveredSkill[] => {
-    if (!extractedData?.discoveredSkills || !extractedData?.skillMentions) return [];
+    if (!extractedData?.discoveredSkills) return [];
 
-    const discovered: DiscoveredSkill[] = [];
-
-    for (const skillName of extractedData.discoveredSkills) {
-      // Find the quote context for this skill
-      const mention = extractedData.skillMentions.find(
-        (m) => m.skill.toLowerCase() === skillName.toLowerCase()
-      );
-
-      discovered.push({
-        name: skillName,
-        quote: mention?.quote || "",
-      });
-    }
-
-    return discovered;
-  }, [extractedData?.discoveredSkills, extractedData?.skillMentions]);
+    return extractedData.discoveredSkills.map((ds) => ({
+      name: ds.skill,
+      quote: ds.quote || "",
+    }));
+  }, [extractedData?.discoveredSkills]);
 
   // Initialize selections when data loads (select all corroborations and testimonials by default)
   useMemo(() => {

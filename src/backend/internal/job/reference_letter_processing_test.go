@@ -153,10 +153,11 @@ func (s *mockStorage) Exists(_ context.Context, key string) (bool, error) {
 
 // mockDocumentExtractor implements domain.DocumentExtractor for testing.
 type mockDocumentExtractor struct {
-	extractTextResult  string
-	extractTextError   error
-	extractLetterData  *domain.ExtractedLetterData
-	extractLetterError error
+	extractTextResult    string
+	extractTextError     error
+	extractLetterData    *domain.ExtractedLetterData
+	extractLetterError   error
+	lastProfileSkillsCtx []domain.ProfileSkillContext // captures what was passed to ExtractLetterData
 }
 
 func (e *mockDocumentExtractor) ExtractText(_ context.Context, _ []byte, _ string) (string, error) {
@@ -167,8 +168,195 @@ func (e *mockDocumentExtractor) ExtractResumeData(_ context.Context, _ string) (
 	return nil, nil
 }
 
-func (e *mockDocumentExtractor) ExtractLetterData(_ context.Context, _ string) (*domain.ExtractedLetterData, error) {
+func (e *mockDocumentExtractor) ExtractLetterData(_ context.Context, _ string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
+	e.lastProfileSkillsCtx = profileSkills
 	return e.extractLetterData, e.extractLetterError
+}
+
+// mockAuthorRepository implements domain.AuthorRepository for testing.
+// Note: mockProfileRepository and mockProfileSkillRepository are defined in resume_processing_test.go
+type mockAuthorRepository struct {
+	authors map[uuid.UUID]*domain.Author
+}
+
+func newMockAuthorRepository() *mockAuthorRepository {
+	return &mockAuthorRepository{authors: make(map[uuid.UUID]*domain.Author)}
+}
+
+func (r *mockAuthorRepository) Create(_ context.Context, author *domain.Author) error {
+	if author.ID == uuid.Nil {
+		author.ID = uuid.New()
+	}
+	r.authors[author.ID] = author
+	return nil
+}
+
+func (r *mockAuthorRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Author, error) {
+	return r.authors[id], nil
+}
+
+func (r *mockAuthorRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.Author, error) {
+	var result []*domain.Author
+	for _, a := range r.authors {
+		if a.ProfileID == profileID {
+			result = append(result, a)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockAuthorRepository) FindByNameAndCompany(_ context.Context, profileID uuid.UUID, name string, company *string) (*domain.Author, error) {
+	for _, a := range r.authors {
+		if a.ProfileID == profileID && a.Name == name {
+			if company == nil && a.Company == nil {
+				return a, nil
+			}
+			if company != nil && a.Company != nil && *company == *a.Company {
+				return a, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (r *mockAuthorRepository) Update(_ context.Context, author *domain.Author) error {
+	r.authors[author.ID] = author
+	return nil
+}
+
+func (r *mockAuthorRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.authors, id)
+	return nil
+}
+
+// mockTestimonialRepository implements domain.TestimonialRepository for testing.
+type mockTestimonialRepository struct {
+	testimonials map[uuid.UUID]*domain.Testimonial
+}
+
+func newMockTestimonialRepository() *mockTestimonialRepository {
+	return &mockTestimonialRepository{testimonials: make(map[uuid.UUID]*domain.Testimonial)}
+}
+
+func (r *mockTestimonialRepository) Create(_ context.Context, testimonial *domain.Testimonial) error {
+	if testimonial.ID == uuid.Nil {
+		testimonial.ID = uuid.New()
+	}
+	r.testimonials[testimonial.ID] = testimonial
+	return nil
+}
+
+func (r *mockTestimonialRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Testimonial, error) {
+	return r.testimonials[id], nil
+}
+
+func (r *mockTestimonialRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.Testimonial, error) {
+	var result []*domain.Testimonial
+	for _, t := range r.testimonials {
+		if t.ProfileID == profileID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockTestimonialRepository) GetByReferenceLetterID(_ context.Context, referenceLetterID uuid.UUID) ([]*domain.Testimonial, error) {
+	var result []*domain.Testimonial
+	for _, t := range r.testimonials {
+		if t.ReferenceLetterID == referenceLetterID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockTestimonialRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.testimonials, id)
+	return nil
+}
+
+func (r *mockTestimonialRepository) DeleteByReferenceLetterID(_ context.Context, referenceLetterID uuid.UUID) error {
+	for id, t := range r.testimonials {
+		if t.ReferenceLetterID == referenceLetterID {
+			delete(r.testimonials, id)
+		}
+	}
+	return nil
+}
+
+// mockSkillValidationRepository implements domain.SkillValidationRepository for testing.
+type mockSkillValidationRepository struct {
+	validations map[uuid.UUID]*domain.SkillValidation
+}
+
+func newMockSkillValidationRepository() *mockSkillValidationRepository {
+	return &mockSkillValidationRepository{validations: make(map[uuid.UUID]*domain.SkillValidation)}
+}
+
+func (r *mockSkillValidationRepository) Create(_ context.Context, validation *domain.SkillValidation) error {
+	if validation.ID == uuid.Nil {
+		validation.ID = uuid.New()
+	}
+	r.validations[validation.ID] = validation
+	return nil
+}
+
+func (r *mockSkillValidationRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.SkillValidation, error) {
+	return r.validations[id], nil
+}
+
+func (r *mockSkillValidationRepository) GetByProfileSkillID(_ context.Context, profileSkillID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.ProfileSkillID == profileSkillID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockSkillValidationRepository) GetByReferenceLetterID(_ context.Context, referenceLetterID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.ReferenceLetterID == referenceLetterID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockSkillValidationRepository) GetByTestimonialID(_ context.Context, testimonialID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.TestimonialID != nil && *v.TestimonialID == testimonialID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockSkillValidationRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.validations, id)
+	return nil
+}
+
+func (r *mockSkillValidationRepository) DeleteByReferenceLetterID(_ context.Context, referenceLetterID uuid.UUID) error {
+	for id, v := range r.validations {
+		if v.ReferenceLetterID == referenceLetterID {
+			delete(r.validations, id)
+		}
+	}
+	return nil
+}
+
+func (r *mockSkillValidationRepository) CountByProfileSkillID(_ context.Context, profileSkillID uuid.UUID) (int, error) {
+	count := 0
+	for _, v := range r.validations {
+		if v.ProfileSkillID == profileSkillID {
+			count++
+		}
+	}
+	return count, nil
 }
 
 // mockLogger implements logger.Logger for testing.
@@ -180,21 +368,45 @@ func (l *mockLogger) Warning(_ string, _ ...logger.Attr)  {}
 func (l *mockLogger) Error(_ string, _ ...logger.Attr)    {}
 func (l *mockLogger) Critical(_ string, _ ...logger.Attr) {}
 
-func newTestLetterWorker() (*ReferenceLetterProcessingWorker, *mockReferenceLetterRepository, *mockFileRepository, *mockStorage, *mockDocumentExtractor) {
-	letterRepo := newMockReferenceLetterRepository()
-	fileRepo := newMockFileRepository()
-	storage := newMockStorage()
-	extractor := &mockDocumentExtractor{}
+type testLetterWorkerMocks struct {
+	letterRepo          *mockReferenceLetterRepository
+	fileRepo            *mockFileRepository
+	profileRepo         *mockProfileRepository
+	profileSkillRepo    *mockProfileSkillRepository
+	authorRepo          *mockAuthorRepository
+	testimonialRepo     *mockTestimonialRepository
+	skillValidationRepo *mockSkillValidationRepository
+	storage             *mockStorage
+	extractor           *mockDocumentExtractor
+}
+
+func newTestLetterWorker() (*ReferenceLetterProcessingWorker, *testLetterWorkerMocks) {
+	mocks := &testLetterWorkerMocks{
+		letterRepo:          newMockReferenceLetterRepository(),
+		fileRepo:            newMockFileRepository(),
+		profileRepo:         newMockProfileRepository(),
+		profileSkillRepo:    newMockProfileSkillRepository(),
+		authorRepo:          newMockAuthorRepository(),
+		testimonialRepo:     newMockTestimonialRepository(),
+		skillValidationRepo: newMockSkillValidationRepository(),
+		storage:             newMockStorage(),
+		extractor:           &mockDocumentExtractor{},
+	}
 
 	worker := NewReferenceLetterProcessingWorker(
-		letterRepo,
-		fileRepo,
-		storage,
-		extractor,
+		mocks.letterRepo,
+		mocks.fileRepo,
+		mocks.profileRepo,
+		mocks.profileSkillRepo,
+		mocks.authorRepo,
+		mocks.testimonialRepo,
+		mocks.skillValidationRepo,
+		mocks.storage,
+		mocks.extractor,
 		&mockLogger{},
 	)
 
-	return worker, letterRepo, fileRepo, storage, extractor
+	return worker, mocks
 }
 
 func TestReferenceLetterProcessingArgs_Kind(t *testing.T) {
@@ -205,7 +417,7 @@ func TestReferenceLetterProcessingArgs_Kind(t *testing.T) {
 }
 
 func TestReferenceLetterProcessingWorker_Work_Success(t *testing.T) {
-	worker, letterRepo, fileRepo, storage, extractor := newTestLetterWorker()
+	worker, mocks := newTestLetterWorker()
 
 	// Set up test data
 	letterID := uuid.New()
@@ -220,7 +432,7 @@ func TestReferenceLetterProcessingWorker_Work_Success(t *testing.T) {
 		FileID: &fileID,
 		Status: domain.ReferenceLetterStatusPending,
 	}
-	letterRepo.letters[letterID] = letter
+	mocks.letterRepo.letters[letterID] = letter
 
 	// Create file record
 	file := &domain.File{
@@ -228,17 +440,18 @@ func TestReferenceLetterProcessingWorker_Work_Success(t *testing.T) {
 		StorageKey:  storageKey,
 		ContentType: "application/pdf",
 	}
-	fileRepo.files[fileID] = file
+	mocks.fileRepo.files[fileID] = file
 
 	// Upload test file
-	storage.data[storageKey] = []byte("fake pdf content")
+	mocks.storage.data[storageKey] = []byte("fake pdf content")
 
 	// Set up extractor response
 	authorTitle := "Engineering Manager"
 	authorCompany := "Acme Corp"
 	skillContext := "technical skills"
-	extractor.extractTextResult = "This is a reference letter for Jane..."
-	extractor.extractLetterData = &domain.ExtractedLetterData{
+	leadershipContext := "leadership"
+	mocks.extractor.extractTextResult = "This is a reference letter for Jane..."
+	mocks.extractor.extractLetterData = &domain.ExtractedLetterData{
 		Author: domain.ExtractedAuthor{
 			Name:         "John Smith",
 			Title:        &authorTitle,
@@ -254,7 +467,10 @@ func TestReferenceLetterProcessingWorker_Work_Success(t *testing.T) {
 		ExperienceMentions: []domain.ExtractedExperienceMention{
 			{Company: "Acme Corp", Role: "Senior Engineer", Quote: "During her time as Senior Engineer..."},
 		},
-		DiscoveredSkills: []string{"mentoring", "system design"},
+		DiscoveredSkills: []domain.DiscoveredSkill{
+			{Skill: "mentoring", Quote: "She mentored junior developers...", Context: &leadershipContext},
+			{Skill: "system design", Quote: "Her system design skills...", Context: &skillContext},
+		},
 	}
 
 	// Create job
@@ -274,7 +490,7 @@ func TestReferenceLetterProcessingWorker_Work_Success(t *testing.T) {
 	}
 
 	// Verify status is completed
-	updatedLetter := letterRepo.letters[letterID]
+	updatedLetter := mocks.letterRepo.letters[letterID]
 	if updatedLetter.Status != domain.ReferenceLetterStatusCompleted {
 		t.Errorf("Status = %q, want %q", updatedLetter.Status, domain.ReferenceLetterStatusCompleted)
 	}
@@ -306,7 +522,7 @@ func TestReferenceLetterProcessingWorker_Work_Success(t *testing.T) {
 }
 
 func TestReferenceLetterProcessingWorker_Work_ExtractTextFails(t *testing.T) {
-	worker, letterRepo, fileRepo, storage, extractor := newTestLetterWorker()
+	worker, mocks := newTestLetterWorker()
 
 	// Set up test data
 	letterID := uuid.New()
@@ -319,19 +535,19 @@ func TestReferenceLetterProcessingWorker_Work_ExtractTextFails(t *testing.T) {
 		FileID: &fileID,
 		Status: domain.ReferenceLetterStatusPending,
 	}
-	letterRepo.letters[letterID] = letter
+	mocks.letterRepo.letters[letterID] = letter
 
 	file := &domain.File{
 		ID:          fileID,
 		StorageKey:  storageKey,
 		ContentType: "application/pdf",
 	}
-	fileRepo.files[fileID] = file
+	mocks.fileRepo.files[fileID] = file
 
-	storage.data[storageKey] = []byte("fake pdf content")
+	mocks.storage.data[storageKey] = []byte("fake pdf content")
 
 	// Set extractor to fail
-	extractor.extractTextError = fmt.Errorf("OCR failed")
+	mocks.extractor.extractTextError = fmt.Errorf("OCR failed")
 
 	job := &river.Job[ReferenceLetterProcessingArgs]{
 		Args: ReferenceLetterProcessingArgs{
@@ -348,7 +564,7 @@ func TestReferenceLetterProcessingWorker_Work_ExtractTextFails(t *testing.T) {
 	}
 
 	// Verify status is failed
-	updatedLetter := letterRepo.letters[letterID]
+	updatedLetter := mocks.letterRepo.letters[letterID]
 	if updatedLetter.Status != domain.ReferenceLetterStatusFailed {
 		t.Errorf("Status = %q, want %q", updatedLetter.Status, domain.ReferenceLetterStatusFailed)
 	}
@@ -358,7 +574,7 @@ func TestReferenceLetterProcessingWorker_Work_ExtractTextFails(t *testing.T) {
 }
 
 func TestReferenceLetterProcessingWorker_Work_LetterExtractionFails(t *testing.T) {
-	worker, letterRepo, fileRepo, storage, extractor := newTestLetterWorker()
+	worker, mocks := newTestLetterWorker()
 
 	letterID := uuid.New()
 	fileID := uuid.New()
@@ -370,20 +586,20 @@ func TestReferenceLetterProcessingWorker_Work_LetterExtractionFails(t *testing.T
 		FileID: &fileID,
 		Status: domain.ReferenceLetterStatusPending,
 	}
-	letterRepo.letters[letterID] = letter
+	mocks.letterRepo.letters[letterID] = letter
 
 	file := &domain.File{
 		ID:          fileID,
 		StorageKey:  storageKey,
 		ContentType: "application/pdf",
 	}
-	fileRepo.files[fileID] = file
+	mocks.fileRepo.files[fileID] = file
 
-	storage.data[storageKey] = []byte("fake pdf content")
+	mocks.storage.data[storageKey] = []byte("fake pdf content")
 
 	// Text extraction succeeds but structured extraction fails
-	extractor.extractTextResult = "This is a reference letter..."
-	extractor.extractLetterError = fmt.Errorf("LLM parsing failed")
+	mocks.extractor.extractTextResult = "This is a reference letter..."
+	mocks.extractor.extractLetterError = fmt.Errorf("LLM parsing failed")
 
 	job := &river.Job[ReferenceLetterProcessingArgs]{
 		Args: ReferenceLetterProcessingArgs{
@@ -399,14 +615,14 @@ func TestReferenceLetterProcessingWorker_Work_LetterExtractionFails(t *testing.T
 		t.Fatal("expected error when letter extraction fails")
 	}
 
-	updatedLetter := letterRepo.letters[letterID]
+	updatedLetter := mocks.letterRepo.letters[letterID]
 	if updatedLetter.Status != domain.ReferenceLetterStatusFailed {
 		t.Errorf("Status = %q, want %q", updatedLetter.Status, domain.ReferenceLetterStatusFailed)
 	}
 }
 
 func TestReferenceLetterProcessingWorker_Work_StorageDownloadFails(t *testing.T) {
-	worker, letterRepo, fileRepo, _, extractor := newTestLetterWorker()
+	worker, mocks := newTestLetterWorker()
 
 	letterID := uuid.New()
 	fileID := uuid.New()
@@ -418,17 +634,17 @@ func TestReferenceLetterProcessingWorker_Work_StorageDownloadFails(t *testing.T)
 		FileID: &fileID,
 		Status: domain.ReferenceLetterStatusPending,
 	}
-	letterRepo.letters[letterID] = letter
+	mocks.letterRepo.letters[letterID] = letter
 
 	file := &domain.File{
 		ID:          fileID,
 		StorageKey:  storageKey,
 		ContentType: "application/pdf",
 	}
-	fileRepo.files[fileID] = file
+	mocks.fileRepo.files[fileID] = file
 
 	// Don't upload any file to storage - download will fail
-	extractor.extractTextResult = "unused"
+	mocks.extractor.extractTextResult = "unused"
 
 	job := &river.Job[ReferenceLetterProcessingArgs]{
 		Args: ReferenceLetterProcessingArgs{
@@ -444,14 +660,14 @@ func TestReferenceLetterProcessingWorker_Work_StorageDownloadFails(t *testing.T)
 		t.Fatal("expected error when storage download fails")
 	}
 
-	updatedLetter := letterRepo.letters[letterID]
+	updatedLetter := mocks.letterRepo.letters[letterID]
 	if updatedLetter.Status != domain.ReferenceLetterStatusFailed {
 		t.Errorf("Status = %q, want %q", updatedLetter.Status, domain.ReferenceLetterStatusFailed)
 	}
 }
 
 func TestReferenceLetterProcessingWorker_Work_LetterNotFound(t *testing.T) {
-	worker, _, _, _, _ := newTestLetterWorker()
+	worker, _ := newTestLetterWorker()
 
 	// Don't create the letter - it won't be found
 	job := &river.Job[ReferenceLetterProcessingArgs]{
@@ -470,7 +686,7 @@ func TestReferenceLetterProcessingWorker_Work_LetterNotFound(t *testing.T) {
 }
 
 func TestReferenceLetterProcessingWorker_Work_FallbackToFileContentType(t *testing.T) {
-	worker, letterRepo, fileRepo, storage, extractor := newTestLetterWorker()
+	worker, mocks := newTestLetterWorker()
 
 	letterID := uuid.New()
 	fileID := uuid.New()
@@ -482,7 +698,7 @@ func TestReferenceLetterProcessingWorker_Work_FallbackToFileContentType(t *testi
 		FileID: &fileID,
 		Status: domain.ReferenceLetterStatusPending,
 	}
-	letterRepo.letters[letterID] = letter
+	mocks.letterRepo.letters[letterID] = letter
 
 	// File has the content type
 	file := &domain.File{
@@ -490,12 +706,12 @@ func TestReferenceLetterProcessingWorker_Work_FallbackToFileContentType(t *testi
 		StorageKey:  storageKey,
 		ContentType: "application/pdf",
 	}
-	fileRepo.files[fileID] = file
+	mocks.fileRepo.files[fileID] = file
 
-	storage.data[storageKey] = []byte("fake pdf content")
+	mocks.storage.data[storageKey] = []byte("fake pdf content")
 
-	extractor.extractTextResult = "Letter text"
-	extractor.extractLetterData = &domain.ExtractedLetterData{
+	mocks.extractor.extractTextResult = "Letter text"
+	mocks.extractor.extractLetterData = &domain.ExtractedLetterData{
 		Author: domain.ExtractedAuthor{
 			Name:         "Test Author",
 			Relationship: domain.AuthorRelationshipOther,
@@ -518,14 +734,14 @@ func TestReferenceLetterProcessingWorker_Work_FallbackToFileContentType(t *testi
 	}
 
 	// Verify it completed successfully
-	updatedLetter := letterRepo.letters[letterID]
+	updatedLetter := mocks.letterRepo.letters[letterID]
 	if updatedLetter.Status != domain.ReferenceLetterStatusCompleted {
 		t.Errorf("Status = %q, want %q", updatedLetter.Status, domain.ReferenceLetterStatusCompleted)
 	}
 }
 
 func TestReferenceLetterProcessingWorker_updateStatus(t *testing.T) {
-	worker, letterRepo, _, _, _ := newTestLetterWorker()
+	worker, mocks := newTestLetterWorker()
 
 	letterID := uuid.New()
 	letter := &domain.ReferenceLetter{
@@ -533,7 +749,7 @@ func TestReferenceLetterProcessingWorker_updateStatus(t *testing.T) {
 		UserID: uuid.New(),
 		Status: domain.ReferenceLetterStatusPending,
 	}
-	letterRepo.letters[letterID] = letter
+	mocks.letterRepo.letters[letterID] = letter
 
 	// Test updating to processing
 	err := worker.updateStatus(context.Background(), letterID, domain.ReferenceLetterStatusProcessing, nil)
@@ -541,8 +757,8 @@ func TestReferenceLetterProcessingWorker_updateStatus(t *testing.T) {
 		t.Fatalf("updateStatus() returned error: %v", err)
 	}
 
-	if letterRepo.letters[letterID].Status != domain.ReferenceLetterStatusProcessing {
-		t.Errorf("Status = %q, want %q", letterRepo.letters[letterID].Status, domain.ReferenceLetterStatusProcessing)
+	if mocks.letterRepo.letters[letterID].Status != domain.ReferenceLetterStatusProcessing {
+		t.Errorf("Status = %q, want %q", mocks.letterRepo.letters[letterID].Status, domain.ReferenceLetterStatusProcessing)
 	}
 
 	// Test updating to failed with error message
@@ -552,20 +768,329 @@ func TestReferenceLetterProcessingWorker_updateStatus(t *testing.T) {
 		t.Fatalf("updateStatus() returned error: %v", err)
 	}
 
-	if letterRepo.letters[letterID].Status != domain.ReferenceLetterStatusFailed {
-		t.Errorf("Status = %q, want %q", letterRepo.letters[letterID].Status, domain.ReferenceLetterStatusFailed)
+	if mocks.letterRepo.letters[letterID].Status != domain.ReferenceLetterStatusFailed {
+		t.Errorf("Status = %q, want %q", mocks.letterRepo.letters[letterID].Status, domain.ReferenceLetterStatusFailed)
 	}
-	if letterRepo.letters[letterID].ErrorMessage == nil || *letterRepo.letters[letterID].ErrorMessage != errMsg {
-		t.Errorf("ErrorMessage = %v, want %q", letterRepo.letters[letterID].ErrorMessage, errMsg)
+	if mocks.letterRepo.letters[letterID].ErrorMessage == nil || *mocks.letterRepo.letters[letterID].ErrorMessage != errMsg {
+		t.Errorf("ErrorMessage = %v, want %q", mocks.letterRepo.letters[letterID].ErrorMessage, errMsg)
 	}
 }
 
 func TestReferenceLetterProcessingWorker_updateStatus_NotFound(t *testing.T) {
-	worker, _, _, _, _ := newTestLetterWorker()
+	worker, _ := newTestLetterWorker()
 
 	// Try to update non-existent letter
 	err := worker.updateStatus(context.Background(), uuid.New(), domain.ReferenceLetterStatusProcessing, nil)
 	if err == nil {
 		t.Fatal("expected error when letter not found")
+	}
+}
+
+func TestReferenceLetterProcessingWorker_PassesProfileSkillsToExtractor(t *testing.T) {
+	worker, mocks := newTestLetterWorker()
+
+	// Set up test data
+	letterID := uuid.New()
+	fileID := uuid.New()
+	userID := uuid.New()
+	profileID := uuid.New()
+	storageKey := "test/letter.pdf"
+
+	// Create profile with existing skills
+	profile := &domain.Profile{ID: profileID, UserID: userID}
+	mocks.profileRepo.profiles[profileID] = profile
+
+	goSkillID := uuid.New()
+	mocks.profileSkillRepo.skills[goSkillID] = &domain.ProfileSkill{
+		ID:             goSkillID,
+		ProfileID:      profileID,
+		Name:           "Go",
+		NormalizedName: "go",
+		Category:       "TECHNICAL",
+	}
+
+	// Create reference letter
+	letter := &domain.ReferenceLetter{
+		ID:     letterID,
+		UserID: userID,
+		FileID: &fileID,
+		Status: domain.ReferenceLetterStatusPending,
+	}
+	mocks.letterRepo.letters[letterID] = letter
+
+	// Create file record
+	file := &domain.File{
+		ID:          fileID,
+		StorageKey:  storageKey,
+		ContentType: "application/pdf",
+	}
+	mocks.fileRepo.files[fileID] = file
+
+	mocks.storage.data[storageKey] = []byte("fake pdf content")
+
+	// Set up extractor response
+	mocks.extractor.extractTextResult = "This is a reference letter..."
+	mocks.extractor.extractLetterData = &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "Test Author",
+			Relationship: domain.AuthorRelationshipOther,
+		},
+	}
+
+	// Create and execute job
+	job := &river.Job[ReferenceLetterProcessingArgs]{
+		Args: ReferenceLetterProcessingArgs{
+			StorageKey:        storageKey,
+			ReferenceLetterID: letterID,
+			FileID:            fileID,
+			ContentType:       "application/pdf",
+		},
+	}
+
+	err := worker.Work(context.Background(), job)
+	if err != nil {
+		t.Fatalf("Work() returned error: %v", err)
+	}
+
+	// Verify profile skills were passed to extractor
+	if mocks.extractor.lastProfileSkillsCtx == nil {
+		t.Fatal("Expected profile skills context to be passed to extractor")
+	}
+	if len(mocks.extractor.lastProfileSkillsCtx) != 1 {
+		t.Errorf("Expected 1 profile skill in context, got %d", len(mocks.extractor.lastProfileSkillsCtx))
+	}
+	if mocks.extractor.lastProfileSkillsCtx[0].Name != "Go" {
+		t.Errorf("Expected skill name 'Go', got %q", mocks.extractor.lastProfileSkillsCtx[0].Name)
+	}
+}
+
+// TestReferenceLetterProcessingWorker_StoresExtractedDataOnly verifies that the job
+// extracts data and stores it as JSON, but does NOT create testimonials or validations.
+// Record creation is handled by the applyReferenceLetterValidations mutation based on
+// user selection, not automatically during processing.
+func TestReferenceLetterProcessingWorker_StoresExtractedDataOnly(t *testing.T) {
+	worker, mocks := newTestLetterWorker()
+
+	// Set up test data
+	letterID := uuid.New()
+	fileID := uuid.New()
+	userID := uuid.New()
+	profileID := uuid.New()
+	storageKey := "test/letter.pdf"
+
+	// Create profile with existing skills
+	profile := &domain.Profile{ID: profileID, UserID: userID}
+	mocks.profileRepo.profiles[profileID] = profile
+
+	goSkillID := uuid.New()
+	mocks.profileSkillRepo.skills[goSkillID] = &domain.ProfileSkill{
+		ID:             goSkillID,
+		ProfileID:      profileID,
+		Name:           "Go",
+		NormalizedName: "go",
+		Category:       "TECHNICAL",
+	}
+
+	// Create reference letter
+	letter := &domain.ReferenceLetter{
+		ID:     letterID,
+		UserID: userID,
+		FileID: &fileID,
+		Status: domain.ReferenceLetterStatusPending,
+	}
+	mocks.letterRepo.letters[letterID] = letter
+
+	// Create file record
+	file := &domain.File{
+		ID:          fileID,
+		StorageKey:  storageKey,
+		ContentType: "application/pdf",
+	}
+	mocks.fileRepo.files[fileID] = file
+
+	mocks.storage.data[storageKey] = []byte("fake pdf content")
+
+	// Set up extractor response with testimonials mentioning skills
+	authorTitle := "Engineering Manager"
+	authorCompany := "Acme Corp"
+	skillContext := "technical skills"
+	mocks.extractor.extractTextResult = "This is a reference letter..."
+	mocks.extractor.extractLetterData = &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "John Smith",
+			Title:        &authorTitle,
+			Company:      &authorCompany,
+			Relationship: domain.AuthorRelationshipManager,
+		},
+		Testimonials: []domain.ExtractedTestimonial{
+			{Quote: "Their leadership was exceptional.", SkillsMentioned: []string{"leadership"}},
+			{Quote: "Their Go expertise helped us greatly.", SkillsMentioned: []string{"Go"}},
+		},
+		SkillMentions: []domain.ExtractedSkillMention{
+			{Skill: "Go", Quote: "Deep Go expertise...", Context: &skillContext},
+		},
+	}
+
+	// Execute job
+	job := &river.Job[ReferenceLetterProcessingArgs]{
+		Args: ReferenceLetterProcessingArgs{
+			StorageKey:        storageKey,
+			ReferenceLetterID: letterID,
+			FileID:            fileID,
+			ContentType:       "application/pdf",
+		},
+	}
+
+	err := worker.Work(context.Background(), job)
+	if err != nil {
+		t.Fatalf("Work() returned error: %v", err)
+	}
+
+	// Verify extracted data is stored in JSON (status becomes completed)
+	updatedLetter := mocks.letterRepo.letters[letterID]
+	if updatedLetter.Status != domain.ReferenceLetterStatusCompleted {
+		t.Errorf("Letter status = %q, want 'completed'", updatedLetter.Status)
+	}
+	if len(updatedLetter.ExtractedData) == 0 {
+		t.Error("Expected ExtractedData to be populated")
+	}
+
+	// Verify NO testimonials were created (they're created by apply mutation)
+	if len(mocks.testimonialRepo.testimonials) != 0 {
+		t.Errorf("Expected 0 testimonials (job should not create records), got %d", len(mocks.testimonialRepo.testimonials))
+	}
+
+	// Verify NO authors were created
+	if len(mocks.authorRepo.authors) != 0 {
+		t.Errorf("Expected 0 authors (job should not create records), got %d", len(mocks.authorRepo.authors))
+	}
+
+	// Verify NO skill validations were created
+	if len(mocks.skillValidationRepo.validations) != 0 {
+		t.Errorf("Expected 0 skill validations (job should not create records), got %d", len(mocks.skillValidationRepo.validations))
+	}
+}
+
+// TestReferenceLetterProcessingWorker_DoesNotCreateDiscoveredSkills verifies that the job
+// extracts discovered skills but does NOT create ProfileSkill records.
+// Discovered skill records are created by the applyReferenceLetterValidations mutation.
+func TestReferenceLetterProcessingWorker_DoesNotCreateDiscoveredSkills(t *testing.T) {
+	worker, mocks := newTestLetterWorker()
+
+	// Set up test data
+	letterID := uuid.New()
+	fileID := uuid.New()
+	userID := uuid.New()
+	profileID := uuid.New()
+	storageKey := "test/letter.pdf"
+
+	// Create profile with NO existing skills
+	profile := &domain.Profile{ID: profileID, UserID: userID}
+	mocks.profileRepo.profiles[profileID] = profile
+
+	// Create reference letter
+	letter := &domain.ReferenceLetter{
+		ID:     letterID,
+		UserID: userID,
+		FileID: &fileID,
+		Status: domain.ReferenceLetterStatusPending,
+	}
+	mocks.letterRepo.letters[letterID] = letter
+
+	// Create file record
+	file := &domain.File{
+		ID:          fileID,
+		StorageKey:  storageKey,
+		ContentType: "application/pdf",
+	}
+	mocks.fileRepo.files[fileID] = file
+
+	mocks.storage.data[storageKey] = []byte("fake pdf content")
+
+	// Set up extractor response with discovered skills
+	technicalContext := "technical programming"
+	softContext := "leadership skills"
+	mocks.extractor.extractTextResult = "This is a reference letter..."
+	mocks.extractor.extractLetterData = &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "Test Author",
+			Relationship: domain.AuthorRelationshipOther,
+		},
+		DiscoveredSkills: []domain.DiscoveredSkill{
+			{Skill: "Kubernetes", Quote: "Expert in Kubernetes...", Context: &technicalContext},
+			{Skill: "Team Building", Quote: "Great at team building...", Context: &softContext},
+		},
+	}
+
+	// Execute job
+	job := &river.Job[ReferenceLetterProcessingArgs]{
+		Args: ReferenceLetterProcessingArgs{
+			StorageKey:        storageKey,
+			ReferenceLetterID: letterID,
+			FileID:            fileID,
+			ContentType:       "application/pdf",
+		},
+	}
+
+	err := worker.Work(context.Background(), job)
+	if err != nil {
+		t.Fatalf("Work() returned error: %v", err)
+	}
+
+	// Verify letter is completed with extracted data
+	updatedLetter := mocks.letterRepo.letters[letterID]
+	if updatedLetter.Status != domain.ReferenceLetterStatusCompleted {
+		t.Errorf("Letter status = %q, want 'completed'", updatedLetter.Status)
+	}
+	if len(updatedLetter.ExtractedData) == 0 {
+		t.Error("Expected ExtractedData to be populated with discovered skills")
+	}
+
+	// Verify NO profile skills were created (job should not create records)
+	// Discovered skills are stored in ExtractedData JSON and created later
+	// by the applyReferenceLetterValidations mutation based on user selection
+	if len(mocks.profileSkillRepo.skills) != 0 {
+		t.Errorf("Expected 0 profile skills (job should not create records), got %d", len(mocks.profileSkillRepo.skills))
+	}
+}
+
+func TestNormalizeSkillName(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Go", "go"},
+		{"  Go  ", "go"},
+		{"KUBERNETES", "kubernetes"},
+		{"Team Building", "team building"},
+		{"  Mixed CASE  ", "mixed case"},
+	}
+
+	for _, tt := range tests {
+		result := normalizeSkillName(tt.input)
+		if result != tt.expected {
+			t.Errorf("normalizeSkillName(%q) = %q, want %q", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestMapAuthorToTestimonialRelationship(t *testing.T) {
+	tests := []struct {
+		input    domain.AuthorRelationship
+		expected domain.TestimonialRelationship
+	}{
+		{domain.AuthorRelationshipManager, domain.TestimonialRelationshipManager},
+		{domain.AuthorRelationshipPeer, domain.TestimonialRelationshipPeer},
+		{domain.AuthorRelationshipColleague, domain.TestimonialRelationshipPeer},
+		{domain.AuthorRelationshipDirectReport, domain.TestimonialRelationshipDirectReport},
+		{domain.AuthorRelationshipClient, domain.TestimonialRelationshipClient},
+		{domain.AuthorRelationshipOther, domain.TestimonialRelationshipOther},
+	}
+
+	for _, tt := range tests {
+		result := mapAuthorToTestimonialRelationship(tt.input)
+		if result != tt.expected {
+			t.Errorf("mapAuthorToTestimonialRelationship(%q) = %q, want %q", tt.input, result, tt.expected)
+		}
 	}
 }

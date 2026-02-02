@@ -28,7 +28,11 @@ query GetReferenceLetter($id: ID!) {
         role
         quote
       }
-      discoveredSkills
+      discoveredSkills {
+        skill
+        quote
+        context
+      }
       metadata {
         extractedAt
         modelVersion

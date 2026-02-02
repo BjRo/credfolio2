@@ -114,6 +114,9 @@ type SkillValidationRepository interface {
 	// GetByReferenceLetterID retrieves all skill validations from a reference letter.
 	GetByReferenceLetterID(ctx context.Context, referenceLetterID uuid.UUID) ([]*SkillValidation, error)
 
+	// GetByTestimonialID retrieves all skill validations for a specific testimonial.
+	GetByTestimonialID(ctx context.Context, testimonialID uuid.UUID) ([]*SkillValidation, error)
+
 	// Delete removes a skill validation by its ID.
 	Delete(ctx context.Context, id uuid.UUID) error
 

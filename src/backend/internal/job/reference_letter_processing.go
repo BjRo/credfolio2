@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,27 +31,42 @@ func (ReferenceLetterProcessingArgs) Kind() string {
 // ReferenceLetterProcessingWorker processes uploaded reference letters to extract credibility data.
 type ReferenceLetterProcessingWorker struct {
 	river.WorkerDefaults[ReferenceLetterProcessingArgs]
-	letterRepo domain.ReferenceLetterRepository
-	fileRepo   domain.FileRepository
-	storage    domain.Storage
-	extractor  domain.DocumentExtractor
-	log        logger.Logger
+	letterRepo          domain.ReferenceLetterRepository
+	fileRepo            domain.FileRepository
+	profileRepo         domain.ProfileRepository
+	profileSkillRepo    domain.ProfileSkillRepository
+	authorRepo          domain.AuthorRepository
+	testimonialRepo     domain.TestimonialRepository
+	skillValidationRepo domain.SkillValidationRepository
+	storage             domain.Storage
+	extractor           domain.DocumentExtractor
+	log                 logger.Logger
 }
 
 // NewReferenceLetterProcessingWorker creates a new reference letter processing worker.
 func NewReferenceLetterProcessingWorker(
 	letterRepo domain.ReferenceLetterRepository,
 	fileRepo domain.FileRepository,
+	profileRepo domain.ProfileRepository,
+	profileSkillRepo domain.ProfileSkillRepository,
+	authorRepo domain.AuthorRepository,
+	testimonialRepo domain.TestimonialRepository,
+	skillValidationRepo domain.SkillValidationRepository,
 	storage domain.Storage,
 	extractor domain.DocumentExtractor,
 	log logger.Logger,
 ) *ReferenceLetterProcessingWorker {
 	return &ReferenceLetterProcessingWorker{
-		letterRepo: letterRepo,
-		fileRepo:   fileRepo,
-		storage:    storage,
-		extractor:  extractor,
-		log:        log,
+		letterRepo:          letterRepo,
+		fileRepo:            fileRepo,
+		profileRepo:         profileRepo,
+		profileSkillRepo:    profileSkillRepo,
+		authorRepo:          authorRepo,
+		testimonialRepo:     testimonialRepo,
+		skillValidationRepo: skillValidationRepo,
+		storage:             storage,
+		extractor:           extractor,
+		log:                 log,
 	}
 }
 
@@ -120,8 +136,23 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 		return fmt.Errorf("failed to read file data: %w", err)
 	}
 
-	// Extract credibility data using LLM
-	extractedData, err := w.extractLetterData(ctx, data, contentType)
+	// Get reference letter to find user ID
+	letter, err := w.letterRepo.GetByID(ctx, args.ReferenceLetterID)
+	if err != nil || letter == nil {
+		errMsg := "reference letter not found"
+		if err != nil {
+			errMsg = fmt.Sprintf("failed to get reference letter: %v", err)
+		}
+		_ = w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg) //nolint:errcheck
+		return fmt.Errorf("reference letter not found: %s", args.ReferenceLetterID)
+	}
+
+	// Get the user's profile and existing skills for context
+	// Note: existingSkillsMap is no longer needed since processExtractedData was removed
+	profileSkills, _ := w.getProfileSkillsContext(ctx, letter.UserID)
+
+	// Extract credibility data using LLM with profile skills context
+	extractedData, err := w.extractLetterData(ctx, data, contentType, profileSkills)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to extract letter data: %v", err)
 		w.log.Error("Letter extraction failed",
@@ -145,6 +176,11 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 		return fmt.Errorf("failed to save extracted data: %w", saveErr)
 	}
 
+	// Note: We don't create testimonials/validations here. The extracted data is stored
+	// in JSON format for the user to preview. When they click "Apply Selected" on the
+	// validation preview page, the applyReferenceLetterValidations mutation creates
+	// the selected records. This gives users control over what gets imported.
+
 	w.log.Info("Reference letter processing completed",
 		logger.Feature("jobs"),
 		logger.String("reference_letter_id", args.ReferenceLetterID.String()),
@@ -152,13 +188,16 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 		logger.Int("testimonials_count", len(extractedData.Testimonials)),
 		logger.Int("skill_mentions_count", len(extractedData.SkillMentions)),
 		logger.Int("experience_mentions_count", len(extractedData.ExperienceMentions)),
+		logger.Int("discovered_skills_count", len(extractedData.DiscoveredSkills)),
 	)
 
 	return nil
 }
 
 // extractLetterData uses the LLM to extract structured credibility data from the reference letter.
-func (w *ReferenceLetterProcessingWorker) extractLetterData(ctx context.Context, data []byte, contentType string) (*domain.ExtractedLetterData, error) {
+// The profileSkills parameter provides context about existing profile skills, enabling the LLM to
+// distinguish between mentions of existing skills (for validation) and newly discovered skills.
+func (w *ReferenceLetterProcessingWorker) extractLetterData(ctx context.Context, data []byte, contentType string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
 	// First, extract text from the document
 	text, err := w.extractor.ExtractText(ctx, data, contentType)
 	if err != nil {
@@ -166,7 +205,7 @@ func (w *ReferenceLetterProcessingWorker) extractLetterData(ctx context.Context,
 	}
 
 	// Then, use LLM to extract structured credibility data from the text
-	extractedData, err := w.extractor.ExtractLetterData(ctx, text)
+	extractedData, err := w.extractor.ExtractLetterData(ctx, text, profileSkills)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract letter data: %w", err)
 	}
@@ -242,4 +281,76 @@ func (w *ReferenceLetterProcessingWorker) updateStatus(ctx context.Context, id u
 // updateStatusFailed is a helper to update status to failed with an error message.
 func (w *ReferenceLetterProcessingWorker) updateStatusFailed(ctx context.Context, id uuid.UUID, errMsg string) error {
 	return w.updateStatus(ctx, id, domain.ReferenceLetterStatusFailed, &errMsg)
+}
+
+// normalizeSkillName produces a lowercase, trimmed version of a skill name for matching.
+func normalizeSkillName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
+}
+
+// getProfileSkillsContext fetches the user's profile skills and returns:
+// 1. A slice of ProfileSkillContext for the LLM
+// 2. A map of normalized skill names to ProfileSkill records for matching
+func (w *ReferenceLetterProcessingWorker) getProfileSkillsContext(ctx context.Context, userID uuid.UUID) ([]domain.ProfileSkillContext, map[string]*domain.ProfileSkill) {
+	// Get user's profile
+	profile, err := w.profileRepo.GetByUserID(ctx, userID)
+	if err != nil || profile == nil {
+		w.log.Warning("Could not get profile for skill context",
+			logger.Feature("jobs"),
+			logger.String("user_id", userID.String()),
+			logger.Err(err),
+		)
+		return nil, nil
+	}
+
+	// Get profile skills
+	skills, err := w.profileSkillRepo.GetByProfileID(ctx, profile.ID)
+	if err != nil {
+		w.log.Warning("Could not get profile skills for context",
+			logger.Feature("jobs"),
+			logger.String("profile_id", profile.ID.String()),
+			logger.Err(err),
+		)
+		return nil, nil
+	}
+
+	// Build context and lookup map
+	skillContext := make([]domain.ProfileSkillContext, 0, len(skills))
+	skillsMap := make(map[string]*domain.ProfileSkill, len(skills))
+	for _, skill := range skills {
+		skillContext = append(skillContext, domain.ProfileSkillContext{
+			Name:           skill.Name,
+			NormalizedName: skill.NormalizedName,
+			Category:       skill.Category,
+		})
+		skillsMap[normalizeSkillName(skill.Name)] = skill
+		// Also add by normalized name for better matching
+		if skill.NormalizedName != "" {
+			skillsMap[skill.NormalizedName] = skill
+		}
+	}
+
+	return skillContext, skillsMap
+}
+
+// NOTE: processExtractedData, findOrCreateAuthor, and related functions were removed.
+// The job now only extracts data and stores it as JSON. Record creation (testimonials,
+// skill validations, discovered skills) happens in the applyReferenceLetterValidations
+// mutation based on user selection, not automatically during processing.
+
+// mapAuthorToTestimonialRelationship maps an AuthorRelationship to a TestimonialRelationship.
+// NOTE: This function is also defined in converter.go for use by the resolver.
+func mapAuthorToTestimonialRelationship(ar domain.AuthorRelationship) domain.TestimonialRelationship {
+	switch ar {
+	case domain.AuthorRelationshipManager:
+		return domain.TestimonialRelationshipManager
+	case domain.AuthorRelationshipPeer, domain.AuthorRelationshipColleague:
+		return domain.TestimonialRelationshipPeer
+	case domain.AuthorRelationshipDirectReport:
+		return domain.TestimonialRelationshipDirectReport
+	case domain.AuthorRelationshipClient:
+		return domain.TestimonialRelationshipClient
+	default:
+		return domain.TestimonialRelationshipOther
+	}
 }

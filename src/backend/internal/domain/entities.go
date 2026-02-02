@@ -122,17 +122,20 @@ type Testimonial struct { //nolint:govet // Field ordering prioritizes readabili
 }
 
 // SkillValidation links a profile skill to a reference letter that validates it.
+// When TestimonialID is set, this validation is linked to a specific testimonial quote.
 type SkillValidation struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
 	bun.BaseModel `bun:"table:skill_validations,alias:sv"`
 
-	ID                uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
-	ProfileSkillID    uuid.UUID `bun:"profile_skill_id,notnull,type:uuid"`
-	ReferenceLetterID uuid.UUID `bun:"reference_letter_id,notnull,type:uuid"`
-	QuoteSnippet      *string   `bun:"quote_snippet"`
-	CreatedAt         time.Time `bun:"created_at,notnull,default:current_timestamp"`
+	ID                uuid.UUID  `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileSkillID    uuid.UUID  `bun:"profile_skill_id,notnull,type:uuid"`
+	ReferenceLetterID uuid.UUID  `bun:"reference_letter_id,notnull,type:uuid"`
+	TestimonialID     *uuid.UUID `bun:"testimonial_id,type:uuid"`
+	QuoteSnippet      *string    `bun:"quote_snippet"`
+	CreatedAt         time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 
 	// Relations
 	ReferenceLetter *ReferenceLetter `bun:"rel:belongs-to,join:reference_letter_id=id"`
+	Testimonial     *Testimonial     `bun:"rel:belongs-to,join:testimonial_id=id"`
 }
 
 // ExperienceValidation links a profile experience to a reference letter that validates it.

@@ -407,9 +407,11 @@ type ProfileSkill struct {
 	// Source of this skill entry.
 	Source ExperienceSource `json:"source"`
 	// Number of reference letters validating this skill.
-	ValidationCount int       `json:"validationCount"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	ValidationCount int `json:"validationCount"`
+	// The reference letter this skill was discovered from (if source is reference letter).
+	SourceReferenceLetter *ReferenceLetter `json:"sourceReferenceLetter,omitempty"`
+	CreatedAt             time.Time        `json:"createdAt"`
+	UpdatedAt             time.Time        `json:"updatedAt"`
 }
 
 type Query struct {
@@ -484,6 +486,8 @@ type SkillValidation struct {
 	Skill *ProfileSkill `json:"skill"`
 	// The reference letter providing the validation.
 	ReferenceLetter *ReferenceLetter `json:"referenceLetter"`
+	// The specific testimonial that validates this skill (if applicable).
+	Testimonial *Testimonial `json:"testimonial,omitempty"`
 	// Quote snippet from the reference letter supporting this skill.
 	QuoteSnippet *string `json:"quoteSnippet,omitempty"`
 	// When the validation was created.

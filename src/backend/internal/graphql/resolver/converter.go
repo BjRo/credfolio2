@@ -149,9 +149,25 @@ func toGraphQLExtractedData(raw json.RawMessage) *model.ExtractedLetterData {
 		Testimonials:       toGraphQLExtractedTestimonials(data.Testimonials),
 		SkillMentions:      toGraphQLExtractedSkillMentions(data.SkillMentions),
 		ExperienceMentions: toGraphQLExtractedExperienceMentions(data.ExperienceMentions),
-		DiscoveredSkills:   data.DiscoveredSkills,
+		DiscoveredSkills:   toGraphQLDiscoveredSkills(data.DiscoveredSkills),
 		Metadata:           toGraphQLExtractionMetadata(&data.Metadata),
 	}
+}
+
+// toGraphQLDiscoveredSkills converts a slice of domain DiscoveredSkill to GraphQL models.
+func toGraphQLDiscoveredSkills(skills []domain.DiscoveredSkill) []*model.DiscoveredSkill {
+	if len(skills) == 0 {
+		return []*model.DiscoveredSkill{}
+	}
+	result := make([]*model.DiscoveredSkill, len(skills))
+	for i, s := range skills {
+		result[i] = &model.DiscoveredSkill{
+			Skill:   s.Skill,
+			Quote:   s.Quote,
+			Context: s.Context,
+		}
+	}
+	return result
 }
 
 // toGraphQLExtractedAuthor converts domain ExtractedAuthor to GraphQL model.

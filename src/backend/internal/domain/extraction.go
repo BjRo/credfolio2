@@ -63,6 +63,13 @@ type ExtractionMetadata struct { //nolint:govet // Field ordering prioritizes JS
 	ProcessingTimeMs *int      `json:"processingTimeMs,omitempty"`
 }
 
+// DiscoveredSkill represents a skill discovered in a reference letter that may not be on the profile.
+type DiscoveredSkill struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
+	Skill   string  `json:"skill"`
+	Quote   string  `json:"quote"`
+	Context *string `json:"context,omitempty"`
+}
+
 // ExtractedLetterData is the complete extracted data from a reference letter.
 // This schema is designed for the credibility system, focusing on validations.
 type ExtractedLetterData struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
@@ -70,6 +77,6 @@ type ExtractedLetterData struct { //nolint:govet // Field ordering prioritizes J
 	Testimonials       []ExtractedTestimonial       `json:"testimonials"`
 	SkillMentions      []ExtractedSkillMention      `json:"skillMentions"`
 	ExperienceMentions []ExtractedExperienceMention `json:"experienceMentions"`
-	DiscoveredSkills   []string                     `json:"discoveredSkills"`
+	DiscoveredSkills   []DiscoveredSkill            `json:"discoveredSkills"`
 	Metadata           ExtractionMetadata           `json:"metadata"`
 }

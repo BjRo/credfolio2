@@ -97,7 +97,7 @@ func run(log logger.Logger) error {
 		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, fileStorage, extractor, log))
 		log.Info("Resume processing worker registered", logger.Feature("jobs"))
 
-		river.AddWorker(workers, job.NewReferenceLetterProcessingWorker(refLetterRepo, fileRepo, fileStorage, extractor, log))
+		river.AddWorker(workers, job.NewReferenceLetterProcessingWorker(refLetterRepo, fileRepo, profileRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, fileStorage, extractor, log))
 		log.Info("Reference letter processing worker registered", logger.Feature("jobs"))
 	} else {
 		log.Warning("Processing workers not registered (LLM not configured)", logger.Feature("jobs"))
