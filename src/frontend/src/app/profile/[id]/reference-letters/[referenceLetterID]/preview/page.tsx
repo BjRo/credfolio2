@@ -33,6 +33,7 @@ export interface ExperienceCorroboration {
 export interface TestimonialItem {
   quote: string;
   skillsMentioned: string[];
+  pageNumber: number | null | undefined;
 }
 
 export interface DiscoveredSkill {
@@ -138,6 +139,7 @@ export default function ValidationPreviewPage() {
     return extractedData.testimonials.map((t) => ({
       quote: t.quote,
       skillsMentioned: t.skillsMentioned || [],
+      pageNumber: t.pageNumber,
     }));
   }, [extractedData?.testimonials]);
 
@@ -290,6 +292,7 @@ export default function ValidationPreviewPage() {
       .map((t) => ({
         quote: t.quote,
         skillsMentioned: t.skillsMentioned,
+        pageNumber: t.pageNumber,
       }));
 
     // Build new skills input (use SOFT as default category for discovered skills)

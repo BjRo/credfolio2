@@ -9,6 +9,9 @@ EXTRACTION RULES:
 5. Do not summarize or paraphrase - extract the complete text
 6. Maintain the reading order (top to bottom, left to right for English)
 7. Preserve bullet points, numbered lists, and section headers
+8. For multi-page documents, insert page markers: "--- Page N ---" at the start of each page
+   - Always start with "--- Page 1 ---" before the first page content
+   - This helps track where content appears in the original document
 
 NORMALIZATION RULES (CRITICAL - Fix OCR artifacts):
 

@@ -90,6 +90,8 @@ type ExtractedTestimonial {
   quote: String!
   """Skills mentioned in this testimonial."""
   skillsMentioned: [String!]
+  """Page number in the source document where the quote appears (1-indexed)."""
+  pageNumber: Int
 }
 
 """
@@ -648,6 +650,8 @@ input TestimonialInput {
   quote: String!
   """Skills mentioned in this testimonial."""
   skillsMentioned: [String!]!
+  """Page number in the source document where the quote appears (1-indexed)."""
+  pageNumber: Int
 }
 
 """
@@ -795,6 +799,8 @@ type Testimonial {
   relationship: TestimonialRelationship!
   """The reference letter this testimonial was extracted from."""
   referenceLetter: ReferenceLetter
+  """Page number in the source document where the quote appears (1-indexed)."""
+  pageNumber: Int
   """When the testimonial was created."""
   createdAt: DateTime!
   """Skills validated by this testimonial's reference letter."""

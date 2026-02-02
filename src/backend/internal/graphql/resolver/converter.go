@@ -193,6 +193,7 @@ func toGraphQLExtractedTestimonials(testimonials []domain.ExtractedTestimonial) 
 		result[i] = &model.ExtractedTestimonial{
 			Quote:           t.Quote,
 			SkillsMentioned: t.SkillsMentioned,
+			PageNumber:      t.PageNumber,
 		}
 	}
 	return result
@@ -560,6 +561,7 @@ func toGraphQLTestimonial(t *domain.Testimonial, referenceLetter *model.Referenc
 		AuthorCompany:   authorCompany,
 		Relationship:    relationship,
 		ReferenceLetter: referenceLetter,
+		PageNumber:      t.PageNumber,
 		CreatedAt:       t.CreatedAt,
 		ValidatedSkills: validatedSkills,
 	}

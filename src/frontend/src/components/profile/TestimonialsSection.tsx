@@ -171,8 +171,11 @@ function TestimonialGroupCard({ group, onSkillClick }: TestimonialGroupCardProps
   const hiddenCount = testimonials.length - COLLAPSE_THRESHOLD;
 
   // Get the first available source URL from testimonials in this group
-  const sourceUrl = testimonials.find((t) => t.referenceLetter?.file?.url)?.referenceLetter?.file
-    ?.url;
+  // Include page number fragment if available for deep linking
+  const testimonialWithSource = testimonials.find((t) => t.referenceLetter?.file?.url);
+  const baseUrl = testimonialWithSource?.referenceLetter?.file?.url;
+  const pageNumber = testimonialWithSource?.pageNumber;
+  const sourceUrl = baseUrl && pageNumber ? `${baseUrl}#page=${pageNumber}` : baseUrl;
 
   return (
     <div className="group/card relative bg-muted/30 rounded-lg p-6 border border-border/50">

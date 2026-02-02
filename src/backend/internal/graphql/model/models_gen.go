@@ -530,6 +530,8 @@ type Testimonial struct {
 	Relationship TestimonialRelationship `json:"relationship"`
 	// The reference letter this testimonial was extracted from.
 	ReferenceLetter *ReferenceLetter `json:"referenceLetter,omitempty"`
+	// Page number in the source document where the quote appears (1-indexed).
+	PageNumber *int `json:"pageNumber,omitempty"`
 	// When the testimonial was created.
 	CreatedAt time.Time `json:"createdAt"`
 	// Skills validated by this testimonial's reference letter.
@@ -542,6 +544,8 @@ type TestimonialInput struct {
 	Quote string `json:"quote"`
 	// Skills mentioned in this testimonial.
 	SkillsMentioned []string `json:"skillsMentioned"`
+	// Page number in the source document where the quote appears (1-indexed).
+	PageNumber *int `json:"pageNumber,omitempty"`
 }
 
 // Input for updating an author's information.

@@ -113,6 +113,7 @@ type Testimonial struct { //nolint:govet // Field ordering prioritizes readabili
 	AuthorCompany     *string                 `bun:"author_company"`
 	Relationship      TestimonialRelationship `bun:"relationship,notnull,default:'other'"`
 	SkillsMentioned   []string                `bun:"skills_mentioned,array"`
+	PageNumber        *int                    `bun:"page_number"`
 	CreatedAt         time.Time               `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt         time.Time               `bun:"updated_at,notnull,default:current_timestamp"`
 

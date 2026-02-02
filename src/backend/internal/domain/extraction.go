@@ -37,9 +37,10 @@ type ExtractedAuthor struct {
 }
 
 // ExtractedTestimonial represents a full quote suitable for display on the profile.
-type ExtractedTestimonial struct {
+type ExtractedTestimonial struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
 	Quote           string   `json:"quote"`
 	SkillsMentioned []string `json:"skillsMentioned,omitempty"`
+	PageNumber      *int     `json:"pageNumber,omitempty"`
 }
 
 // ExtractedSkillMention represents a specific skill mentioned in the letter with context.

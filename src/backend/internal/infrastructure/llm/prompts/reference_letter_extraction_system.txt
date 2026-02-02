@@ -24,6 +24,10 @@ EXTRACTION RULES:
    - Each quote should be a complete, impactful statement about the candidate
    - Include quotes that highlight leadership, achievements, or character
    - skillsMentioned: List skills referenced in each testimonial quote
+   - pageNumber: The page number where the quote appears (1-indexed)
+     * Look for "--- Page N ---" markers in the text to determine page numbers
+     * If no page markers exist, use page 1
+     * This enables deep linking to the source document location
 
 3. SKILL MENTIONS (for skill validation):
    - Extract specific mentions of skills that MATCH the candidate's existing profile skills

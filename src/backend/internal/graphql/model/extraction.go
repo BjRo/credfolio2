@@ -33,9 +33,10 @@ type ExtractedAuthor struct {
 }
 
 // ExtractedTestimonial is the GraphQL model for a testimonial quote.
-type ExtractedTestimonial struct {
+type ExtractedTestimonial struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
 	Quote           string   `json:"quote"`
 	SkillsMentioned []string `json:"skillsMentioned,omitempty"`
+	PageNumber      *int     `json:"pageNumber,omitempty"`
 }
 
 // ExtractedSkillMention is the GraphQL model for a skill mention with context.

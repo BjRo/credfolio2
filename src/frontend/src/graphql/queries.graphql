@@ -17,6 +17,7 @@ query GetReferenceLetter($id: ID!) {
       testimonials {
         quote
         skillsMentioned
+        pageNumber
       }
       skillMentions {
         skill
@@ -203,6 +204,7 @@ query GetTestimonials($profileId: ID!) {
     authorTitle
     authorCompany
     relationship
+    pageNumber
     createdAt
     validatedSkills {
       id

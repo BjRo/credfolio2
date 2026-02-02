@@ -153,6 +153,7 @@ type ComplexityRoot struct {
 	}
 
 	ExtractedTestimonial struct {
+		PageNumber      func(childComplexity int) int
 		Quote           func(childComplexity int) int
 		SkillsMentioned func(childComplexity int) int
 	}
@@ -350,6 +351,7 @@ type ComplexityRoot struct {
 		AuthorTitle     func(childComplexity int) int
 		CreatedAt       func(childComplexity int) int
 		ID              func(childComplexity int) int
+		PageNumber      func(childComplexity int) int
 		Quote           func(childComplexity int) int
 		ReferenceLetter func(childComplexity int) int
 		Relationship    func(childComplexity int) int
@@ -777,6 +779,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ExtractedSkillMention.Skill(childComplexity), true
 
+	case "ExtractedTestimonial.pageNumber":
+		if e.complexity.ExtractedTestimonial.PageNumber == nil {
+			break
+		}
+
+		return e.complexity.ExtractedTestimonial.PageNumber(childComplexity), true
 	case "ExtractedTestimonial.quote":
 		if e.complexity.ExtractedTestimonial.Quote == nil {
 			break
@@ -1813,6 +1821,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Testimonial.ID(childComplexity), true
+	case "Testimonial.pageNumber":
+		if e.complexity.Testimonial.PageNumber == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.PageNumber(childComplexity), true
 	case "Testimonial.quote":
 		if e.complexity.Testimonial.Quote == nil {
 			break
@@ -2112,6 +2126,8 @@ type ExtractedTestimonial {
   quote: String!
   """Skills mentioned in this testimonial."""
   skillsMentioned: [String!]
+  """Page number in the source document where the quote appears (1-indexed)."""
+  pageNumber: Int
 }
 
 """
@@ -2670,6 +2686,8 @@ input TestimonialInput {
   quote: String!
   """Skills mentioned in this testimonial."""
   skillsMentioned: [String!]!
+  """Page number in the source document where the quote appears (1-indexed)."""
+  pageNumber: Int
 }
 
 """
@@ -2817,6 +2835,8 @@ type Testimonial {
   relationship: TestimonialRelationship!
   """The reference letter this testimonial was extracted from."""
   referenceLetter: ReferenceLetter
+  """Page number in the source document where the quote appears (1-indexed)."""
+  pageNumber: Int
   """When the testimonial was created."""
   createdAt: DateTime!
   """Skills validated by this testimonial's reference letter."""
@@ -4236,6 +4256,8 @@ func (ec *executionContext) fieldContext_Author_testimonials(_ context.Context, 
 				return ec.fieldContext_Testimonial_relationship(ctx, field)
 			case "referenceLetter":
 				return ec.fieldContext_Testimonial_referenceLetter(ctx, field)
+			case "pageNumber":
+				return ec.fieldContext_Testimonial_pageNumber(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Testimonial_createdAt(ctx, field)
 			case "validatedSkills":
@@ -5126,6 +5148,8 @@ func (ec *executionContext) fieldContext_ExtractedLetterData_testimonials(_ cont
 				return ec.fieldContext_ExtractedTestimonial_quote(ctx, field)
 			case "skillsMentioned":
 				return ec.fieldContext_ExtractedTestimonial_skillsMentioned(ctx, field)
+			case "pageNumber":
+				return ec.fieldContext_ExtractedTestimonial_pageNumber(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ExtractedTestimonial", field.Name)
 		},
@@ -5421,6 +5445,35 @@ func (ec *executionContext) fieldContext_ExtractedTestimonial_skillsMentioned(_ 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedTestimonial_pageNumber(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedTestimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedTestimonial_pageNumber,
+		func(ctx context.Context) (any, error) {
+			return obj.PageNumber, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedTestimonial_pageNumber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedTestimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8932,6 +8985,8 @@ func (ec *executionContext) fieldContext_Query_testimonials(ctx context.Context,
 				return ec.fieldContext_Testimonial_relationship(ctx, field)
 			case "referenceLetter":
 				return ec.fieldContext_Testimonial_referenceLetter(ctx, field)
+			case "pageNumber":
+				return ec.fieldContext_Testimonial_pageNumber(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Testimonial_createdAt(ctx, field)
 			case "validatedSkills":
@@ -10418,6 +10473,8 @@ func (ec *executionContext) fieldContext_SkillValidation_testimonial(_ context.C
 				return ec.fieldContext_Testimonial_relationship(ctx, field)
 			case "referenceLetter":
 				return ec.fieldContext_Testimonial_referenceLetter(ctx, field)
+			case "pageNumber":
+				return ec.fieldContext_Testimonial_pageNumber(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Testimonial_createdAt(ctx, field)
 			case "validatedSkills":
@@ -10818,6 +10875,35 @@ func (ec *executionContext) fieldContext_Testimonial_referenceLetter(_ context.C
 				return ec.fieldContext_ReferenceLetter_file(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ReferenceLetter", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_pageNumber(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_pageNumber,
+		func(ctx context.Context) (any, error) {
+			return obj.PageNumber, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_pageNumber(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -13106,7 +13192,7 @@ func (ec *executionContext) unmarshalInputTestimonialInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"quote", "skillsMentioned"}
+	fieldsInOrder := [...]string{"quote", "skillsMentioned", "pageNumber"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13127,6 +13213,13 @@ func (ec *executionContext) unmarshalInputTestimonialInput(ctx context.Context, 
 				return it, err
 			}
 			it.SkillsMentioned = data
+		case "pageNumber":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pageNumber"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PageNumber = data
 		}
 	}
 
@@ -14514,6 +14607,8 @@ func (ec *executionContext) _ExtractedTestimonial(ctx context.Context, sel ast.S
 			}
 		case "skillsMentioned":
 			out.Values[i] = ec._ExtractedTestimonial_skillsMentioned(ctx, field, obj)
+		case "pageNumber":
+			out.Values[i] = ec._ExtractedTestimonial_pageNumber(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16304,6 +16399,8 @@ func (ec *executionContext) _Testimonial(ctx context.Context, sel ast.SelectionS
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "pageNumber":
+			out.Values[i] = ec._Testimonial_pageNumber(ctx, field, obj)
 		case "createdAt":
 			out.Values[i] = ec._Testimonial_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

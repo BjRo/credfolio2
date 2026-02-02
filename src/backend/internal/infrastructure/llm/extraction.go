@@ -456,8 +456,12 @@ var letterOutputSchema = map[string]any{
 							"type": "string",
 						},
 					},
+					"pageNumber": map[string]any{
+						"type":        "integer",
+						"description": "Page number where this quote appears in the document (1-indexed). Use 1 for single-page documents.",
+					},
 				},
-				"required": []string{"quote", "skillsMentioned"},
+				"required": []string{"quote", "skillsMentioned", "pageNumber"},
 			},
 		},
 		"skillMentions": map[string]any{
@@ -585,6 +589,7 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 		Testimonials []struct {
 			Quote           string   `json:"quote"`
 			SkillsMentioned []string `json:"skillsMentioned"`
+			PageNumber      int      `json:"pageNumber"`
 		} `json:"testimonials"`
 		SkillMentions []struct {
 			Skill   string `json:"skill"`
@@ -629,10 +634,15 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 
 	// Convert testimonials
 	for _, t := range rawData.Testimonials {
-		data.Testimonials = append(data.Testimonials, domain.ExtractedTestimonial{
+		testimonial := domain.ExtractedTestimonial{
 			Quote:           t.Quote,
 			SkillsMentioned: t.SkillsMentioned,
-		})
+		}
+		if t.PageNumber > 0 {
+			pageNum := t.PageNumber
+			testimonial.PageNumber = &pageNum
+		}
+		data.Testimonials = append(data.Testimonials, testimonial)
 	}
 
 	// Convert skill mentions

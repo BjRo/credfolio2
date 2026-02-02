@@ -1873,6 +1873,7 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 			Quote:             ti.Quote,
 			Relationship:      relationship,
 			SkillsMentioned:   ti.SkillsMentioned,
+			PageNumber:        ti.PageNumber,
 		}
 
 		// Link to author if created successfully
@@ -2872,3 +2873,19 @@ type profileSkillResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type skillValidationResolver struct{ *Resolver }
 type testimonialResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *extractedTestimonialResolver) PageNumber(ctx context.Context, obj *model.ExtractedTestimonial) (*int, error) {
+	return obj.PageNumber, nil
+}
+func (r *Resolver) ExtractedTestimonial() generated.ExtractedTestimonialResolver {
+	return &extractedTestimonialResolver{r}
+}
+type extractedTestimonialResolver struct{ *Resolver }
+*/
