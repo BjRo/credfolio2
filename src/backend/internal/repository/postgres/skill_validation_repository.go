@@ -68,6 +68,20 @@ func (r *SkillValidationRepository) GetByReferenceLetterID(ctx context.Context, 
 	return validations, nil
 }
 
+// GetByTestimonialID retrieves all skill validations for a specific testimonial.
+func (r *SkillValidationRepository) GetByTestimonialID(ctx context.Context, testimonialID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var validations []*domain.SkillValidation
+	err := r.db.NewSelect().
+		Model(&validations).
+		Where("testimonial_id = ?", testimonialID).
+		Order("created_at ASC").
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return validations, nil
+}
+
 // Delete removes a skill validation by its ID.
 func (r *SkillValidationRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.NewDelete().Model((*domain.SkillValidation)(nil)).Where("id = ?", id).Exec(ctx)

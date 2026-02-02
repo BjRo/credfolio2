@@ -680,6 +680,16 @@ func (r *mockSkillValidationRepository) GetByReferenceLetterID(_ context.Context
 	return result, nil
 }
 
+func (r *mockSkillValidationRepository) GetByTestimonialID(_ context.Context, testimonialID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.TestimonialID != nil && *v.TestimonialID == testimonialID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
 func (r *mockSkillValidationRepository) Delete(_ context.Context, id uuid.UUID) error {
 	delete(r.validations, id)
 	return nil

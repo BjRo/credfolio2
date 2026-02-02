@@ -2802,17 +2802,8 @@ func (r *testimonialResolver) ValidatedSkills(ctx context.Context, obj *model.Te
 		return nil, fmt.Errorf("invalid testimonial ID: %w", err)
 	}
 
-	// Get the testimonial to find the reference letter ID
-	testimonial, err := r.testimonialRepo.GetByID(ctx, testimonialID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get testimonial: %w", err)
-	}
-	if testimonial == nil {
-		return []*model.ProfileSkill{}, nil
-	}
-
-	// Get skill validations for this reference letter
-	validations, err := r.skillValidationRepo.GetByReferenceLetterID(ctx, testimonial.ReferenceLetterID)
+	// Get skill validations for this specific testimonial
+	validations, err := r.skillValidationRepo.GetByTestimonialID(ctx, testimonialID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get skill validations: %w", err)
 	}
