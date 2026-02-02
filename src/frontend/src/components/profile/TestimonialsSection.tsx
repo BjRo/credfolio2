@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, MessageSquareQuote, Plus, User } from "lucide-react";
+import { CheckCircle2, FileText, MessageSquareQuote, Plus, User } from "lucide-react";
 import { useCallback } from "react";
 import { type GetTestimonialsQuery, TestimonialRelationship } from "@/graphql/generated/graphql";
 
@@ -40,8 +40,25 @@ function TestimonialCard({ testimonial, onSkillClick }: TestimonialCardProps) {
     [onSkillClick]
   );
 
+  // Get the source PDF URL from the reference letter
+  const sourceUrl = testimonial.referenceLetter?.file?.url;
+
   return (
-    <div className="bg-muted/30 rounded-lg p-6 border border-border/50">
+    <div className="bg-muted/30 rounded-lg p-6 border border-border/50 relative">
+      {/* Source Badge - shows link to original reference letter PDF */}
+      {sourceUrl && (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute top-4 right-4 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+          title="View source document"
+        >
+          <FileText className="h-4 w-4" />
+          <span className="sr-only">View source</span>
+        </a>
+      )}
+
       {/* Quote */}
       <blockquote className="relative">
         <span className="absolute -top-2 -left-1 text-4xl text-primary/20 font-serif">&ldquo;</span>

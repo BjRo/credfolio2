@@ -61,7 +61,11 @@ models:
     model:
       - backend/internal/graphql/model.ExtractionMetadata
 
-  # Field resolvers for validation counts
+  # Field resolvers for computed fields
+  File:
+    fields:
+      url:
+        resolver: true
   ProfileSkill:
     fields:
       validationCount:

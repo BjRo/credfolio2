@@ -41,6 +41,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	ExperienceValidation() ExperienceValidationResolver
+	File() FileResolver
 	Mutation() MutationResolver
 	ProfileExperience() ProfileExperienceResolver
 	ProfileSkill() ProfileSkillResolver
@@ -151,6 +152,7 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		SizeBytes   func(childComplexity int) int
 		StorageKey  func(childComplexity int) int
+		URL         func(childComplexity int) int
 		User        func(childComplexity int) int
 	}
 
@@ -356,6 +358,9 @@ type ComplexityRoot struct {
 type ExperienceValidationResolver interface {
 	Experience(ctx context.Context, obj *model.ExperienceValidation) (*model.ProfileExperience, error)
 	ReferenceLetter(ctx context.Context, obj *model.ExperienceValidation) (*model.ReferenceLetter, error)
+}
+type FileResolver interface {
+	URL(ctx context.Context, obj *model.File) (string, error)
 }
 type MutationResolver interface {
 	UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error)
@@ -736,6 +741,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.File.StorageKey(childComplexity), true
+	case "File.url":
+		if e.complexity.File.URL == nil {
+			break
+		}
+
+		return e.complexity.File.URL(childComplexity), true
 	case "File.user":
 		if e.complexity.File.User == nil {
 			break
@@ -1879,6 +1890,8 @@ type File {
   contentType: String!
   sizeBytes: Int!
   storageKey: String!
+  """Presigned URL for downloading the file. Expires after a short time."""
+  url: String!
   createdAt: DateTime!
   user: User!
 }
@@ -5018,6 +5031,35 @@ func (ec *executionContext) fieldContext_File_storageKey(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _File_url(ctx context.Context, field graphql.CollectedField, obj *model.File) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_File_url,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.File().URL(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_File_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "File",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _File_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.File) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7493,6 +7535,8 @@ func (ec *executionContext) fieldContext_Query_file(ctx context.Context, field g
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "url":
+				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_File_createdAt(ctx, field)
 			case "user":
@@ -7550,6 +7594,8 @@ func (ec *executionContext) fieldContext_Query_files(ctx context.Context, field 
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "url":
+				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_File_createdAt(ctx, field)
 			case "user":
@@ -8781,6 +8827,8 @@ func (ec *executionContext) fieldContext_ReferenceLetter_file(_ context.Context,
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "url":
+				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_File_createdAt(ctx, field)
 			case "user":
@@ -9057,6 +9105,8 @@ func (ec *executionContext) fieldContext_Resume_file(_ context.Context, field gr
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "url":
+				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_File_createdAt(ctx, field)
 			case "user":
@@ -9914,6 +9964,8 @@ func (ec *executionContext) fieldContext_UploadFileResult_file(_ context.Context
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "url":
+				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_File_createdAt(ctx, field)
 			case "user":
@@ -10073,6 +10125,8 @@ func (ec *executionContext) fieldContext_UploadResumeResult_file(_ context.Conte
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "url":
+				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_File_createdAt(ctx, field)
 			case "user":
@@ -13411,37 +13465,73 @@ func (ec *executionContext) _File(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._File_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "filename":
 			out.Values[i] = ec._File_filename(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "contentType":
 			out.Values[i] = ec._File_contentType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "sizeBytes":
 			out.Values[i] = ec._File_sizeBytes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "storageKey":
 			out.Values[i] = ec._File_storageKey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "url":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._File_url(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._File_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "user":
 			out.Values[i] = ec._File_user(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

@@ -88,6 +88,23 @@ func (r *experienceValidationResolver) ReferenceLetter(ctx context.Context, obj 
 	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
 }
 
+// URL is the resolver for the url field.
+// It generates a presigned URL for downloading the file.
+func (r *fileResolver) URL(ctx context.Context, obj *model.File) (string, error) {
+	// Generate a presigned URL valid for 1 hour
+	url, err := r.storage.GetPublicURL(ctx, obj.StorageKey, time.Hour)
+	if err != nil {
+		r.log.Error("Failed to generate file URL",
+			logger.Feature("file"),
+			logger.String("file_id", obj.ID),
+			logger.String("storage_key", obj.StorageKey),
+			logger.Err(err),
+		)
+		return "", fmt.Errorf("failed to generate file URL: %w", err)
+	}
+	return url, nil
+}
+
 // UploadFile is the resolver for the uploadFile field.
 func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error) {
 	r.log.Info("File upload started",
@@ -2490,6 +2507,9 @@ func (r *Resolver) ExperienceValidation() generated.ExperienceValidationResolver
 	return &experienceValidationResolver{r}
 }
 
+// File returns generated.FileResolver implementation.
+func (r *Resolver) File() generated.FileResolver { return &fileResolver{r} }
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -2510,6 +2530,7 @@ func (r *Resolver) SkillValidation() generated.SkillValidationResolver {
 }
 
 type experienceValidationResolver struct{ *Resolver }
+type fileResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type profileExperienceResolver struct{ *Resolver }
 type profileSkillResolver struct{ *Resolver }

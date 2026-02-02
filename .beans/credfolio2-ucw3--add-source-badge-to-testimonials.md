@@ -1,11 +1,11 @@
 ---
 # credfolio2-ucw3
 title: Add source badge to testimonials
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-30T13:47:08Z
-updated_at: 2026-01-30T13:50:46Z
+updated_at: 2026-02-02T09:19:40Z
 parent: credfolio2-2ex3
 ---
 
@@ -42,20 +42,23 @@ type File {
 ```
 
 ### Tasks
-- [ ] Update testimonials query to include `referenceLetter { file { url } }`
-- [ ] Design source badge component (document icon + tooltip)
-- [ ] Add badge to TestimonialCard component
-- [ ] Link badge to PDF URL (opens in new tab)
-- [ ] Handle case where reference letter has no file attached (hide badge)
+- [x] Update testimonials query to include `referenceLetter { file { url } }`
+- [x] Design source badge component (document icon + tooltip)
+- [x] Add badge to TestimonialCard component
+- [x] Link badge to PDF URL (opens in new tab)
+- [x] Handle case where reference letter has no file attached (hide badge)
 
 ## Notes
 - This feature is **independent** of the Author entity work
 - Can be implemented immediately
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (for UI changes)
+  - Profile page renders correctly
+  - Testimonials section shows empty state (no fixture reference letter available)
+  - Source badge tested via unit tests (renders when file URL exists)
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
