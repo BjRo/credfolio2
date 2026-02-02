@@ -430,22 +430,22 @@ describe("TestimonialsSection", () => {
 
     it("displays one kebab menu per card with source documents", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
-      // John's group has 2 reference letters with files, but one kebab menu per card
+      // John's group has reference letters with files, so one kebab menu
       // Sarah's group has no reference letter, so no kebab menu
       const menuButtons = screen.getAllByRole("button", { name: /more actions/i });
       expect(menuButtons).toHaveLength(1);
     });
 
-    it("kebab menu shows multiple source documents when author has multiple", async () => {
+    it("kebab menu shows single source document option at author level", async () => {
       const user = userEvent.setup();
       render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
 
       const menuButton = screen.getByRole("button", { name: /more actions/i });
       await user.click(menuButton);
 
-      // Should show two "View source document" items for John's two reference letters
+      // Should show one "View source document" item per author card
       const viewSourceItems = screen.getAllByRole("menuitem", { name: /view source document/i });
-      expect(viewSourceItems).toHaveLength(2);
+      expect(viewSourceItems).toHaveLength(1);
     });
 
     it("shows relationship badge in author group header", () => {

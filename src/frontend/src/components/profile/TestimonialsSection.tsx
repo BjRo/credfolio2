@@ -170,15 +170,14 @@ function TestimonialGroupCard({ group, onSkillClick }: TestimonialGroupCardProps
   const visibleTestimonials = isExpanded ? testimonials : testimonials.slice(0, COLLAPSE_THRESHOLD);
   const hiddenCount = testimonials.length - COLLAPSE_THRESHOLD;
 
-  // Collect all source URLs from testimonials in this group
-  const sourceUrls = testimonials
-    .map((t) => t.referenceLetter?.file?.url)
-    .filter((url): url is string => !!url);
+  // Get the first available source URL from testimonials in this group
+  const sourceUrl = testimonials.find((t) => t.referenceLetter?.file?.url)?.referenceLetter?.file
+    ?.url;
 
   return (
     <div className="group/card relative bg-muted/30 rounded-lg p-6 border border-border/50">
       {/* Kebab menu - top right, visible on hover */}
-      {sourceUrls.length > 0 && (
+      {sourceUrl && (
         <div className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -191,14 +190,12 @@ function TestimonialGroupCard({ group, onSkillClick }: TestimonialGroupCardProps
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {sourceUrls.map((url, index) => (
-                <DropdownMenuItem key={url} asChild>
-                  <a href={url} target="_blank" rel="noopener noreferrer">
-                    <FileText className="h-4 w-4" />
-                    View source document{sourceUrls.length > 1 ? ` ${index + 1}` : ""}
-                  </a>
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuItem asChild>
+                <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                  <FileText className="h-4 w-4" />
+                  View source document
+                </a>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
