@@ -48,10 +48,12 @@ function TestimonialCard({ testimonial, onSkillClick }: TestimonialCardProps) {
       {/* Quote */}
       <blockquote className="relative">
         <span className="absolute -top-2 -left-1 text-4xl text-primary/20 font-serif">&ldquo;</span>
-        <p className="text-foreground pl-4 pr-2 italic leading-relaxed">{testimonial.quote}</p>
-        <span className="absolute -bottom-4 right-0 text-4xl text-primary/20 font-serif">
-          &rdquo;
-        </span>
+        <p className="text-foreground pl-4 pr-2 italic leading-relaxed">
+          {testimonial.quote}
+          <span className="text-4xl text-primary/20 font-serif leading-none align-bottom">
+            &rdquo;
+          </span>
+        </p>
       </blockquote>
 
       {/* Attribution */}
