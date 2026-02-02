@@ -120,4 +120,4 @@ After extraction, `reference_letter_processing.go` should:
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes) - N/A: backend-only changes
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review: https://github.com/BjRo/credfolio2/pull/58
