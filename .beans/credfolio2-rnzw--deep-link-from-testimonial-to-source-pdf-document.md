@@ -78,4 +78,4 @@ As a profile viewer, I want to click on a testimonial and be taken to the exact 
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (profile page verified, code changes confirmed)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review: https://github.com/BjRo/credfolio2/pull/59
