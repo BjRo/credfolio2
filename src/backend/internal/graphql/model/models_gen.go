@@ -228,13 +228,15 @@ type ExperienceValidationInput struct {
 
 // An uploaded file stored in object storage.
 type File struct {
-	ID          string    `json:"id"`
-	Filename    string    `json:"filename"`
-	ContentType string    `json:"contentType"`
-	SizeBytes   int       `json:"sizeBytes"`
-	StorageKey  string    `json:"storageKey"`
-	CreatedAt   time.Time `json:"createdAt"`
-	User        *User     `json:"user"`
+	ID          string `json:"id"`
+	Filename    string `json:"filename"`
+	ContentType string `json:"contentType"`
+	SizeBytes   int    `json:"sizeBytes"`
+	StorageKey  string `json:"storageKey"`
+	// Presigned URL for downloading the file. Expires after a short time.
+	URL       string    `json:"url"`
+	CreatedAt time.Time `json:"createdAt"`
+	User      *User     `json:"user"`
 }
 
 // Error returned when file validation fails.

@@ -197,6 +197,13 @@ query GetTestimonials($profileId: ID!) {
       id
       name
     }
+    referenceLetter {
+      id
+      file {
+        id
+        url
+      }
+    }
   }
 }
 

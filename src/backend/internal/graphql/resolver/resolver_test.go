@@ -1,9 +1,11 @@
 package resolver_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -2721,6 +2723,68 @@ func TestApplyReferenceLetterValidations(t *testing.T) {
 		// Should succeed but with 0 skill validations since skill doesn't exist
 		if successResult.AppliedCount.SkillValidations != 0 {
 			t.Errorf("expected 0 skill validations for non-existent skill, got %d", successResult.AppliedCount.SkillValidations)
+		}
+	})
+}
+
+func TestFileResolver_URL(t *testing.T) {
+	ctx := context.Background()
+
+	// Create mock storage with a file
+	mockStorage := storage.NewMockStorage()
+	storageKey := "test-files/doc.pdf"
+	_, err := mockStorage.Upload(ctx, storageKey, bytes.NewReader([]byte("test content")), 12, "application/pdf")
+	if err != nil {
+		t.Fatalf("failed to upload test file: %v", err)
+	}
+
+	// Create resolver with mock storage
+	r := resolver.NewResolver(
+		newMockUserRepository(),
+		newMockFileRepository(),
+		newMockReferenceLetterRepository(),
+		newMockResumeRepository(),
+		newMockProfileRepository(),
+		newMockProfileExperienceRepository(),
+		newMockProfileEducationRepository(),
+		newMockProfileSkillRepository(),
+		newMockTestimonialRepository(),
+		newMockSkillValidationRepository(),
+		newMockExperienceValidationRepository(),
+		mockStorage,
+		newMockJobEnqueuer(),
+		testLogger(),
+	)
+
+	fileResolver := r.File()
+
+	t.Run("returns presigned URL for existing file", func(t *testing.T) {
+		file := &model.File{
+			ID:         uuid.New().String(),
+			StorageKey: storageKey,
+		}
+
+		url, err := fileResolver.URL(ctx, file)
+		if err != nil {
+			t.Fatalf("URL resolver failed: %v", err)
+		}
+
+		// MockStorage returns URL in format: http://mock-storage/{key}?expiry={duration}
+		expectedPrefix := "http://mock-storage/" + storageKey
+		if !strings.HasPrefix(url, expectedPrefix) {
+			t.Errorf("expected URL to start with %s, got %s", expectedPrefix, url)
+		}
+	})
+
+	t.Run("returns error for non-existent file", func(t *testing.T) {
+		file := &model.File{
+			ID:         uuid.New().String(),
+			StorageKey: "non-existent-key",
+		}
+
+		_, err := fileResolver.URL(ctx, file)
+		if err == nil {
+			t.Error("expected error for non-existent file, got nil")
 		}
 	})
 }

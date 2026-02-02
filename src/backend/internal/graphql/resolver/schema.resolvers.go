@@ -88,6 +88,24 @@ func (r *experienceValidationResolver) ReferenceLetter(ctx context.Context, obj 
 	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
 }
 
+// URL is the resolver for the url field.
+// It generates a presigned URL for downloading the file.
+// Uses GetPresignedURL directly to ensure URLs expire (not permanent proxy URLs).
+func (r *fileResolver) URL(ctx context.Context, obj *model.File) (string, error) {
+	// Generate a presigned URL valid for 1 hour
+	url, err := r.storage.GetPresignedURL(ctx, obj.StorageKey, time.Hour)
+	if err != nil {
+		r.log.Error("Failed to generate file URL",
+			logger.Feature("file"),
+			logger.String("file_id", obj.ID),
+			logger.String("storage_key", obj.StorageKey),
+			logger.Err(err),
+		)
+		return "", fmt.Errorf("failed to generate file URL: %w", err)
+	}
+	return url, nil
+}
+
 // UploadFile is the resolver for the uploadFile field.
 func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error) {
 	r.log.Info("File upload started",
@@ -2485,10 +2503,64 @@ func (r *skillValidationResolver) ReferenceLetter(ctx context.Context, obj *mode
 	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
 }
 
+// ReferenceLetter is the resolver for the referenceLetter field.
+func (r *testimonialResolver) ReferenceLetter(ctx context.Context, obj *model.Testimonial) (*model.ReferenceLetter, error) {
+	testimonialID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid testimonial ID: %w", err)
+	}
+
+	// Get the testimonial to find the reference letter ID
+	testimonial, err := r.testimonialRepo.GetByID(ctx, testimonialID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get testimonial: %w", err)
+	}
+	if testimonial == nil {
+		return nil, nil
+	}
+
+	// Get the reference letter
+	refLetter, err := r.refLetterRepo.GetByID(ctx, testimonial.ReferenceLetterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reference letter: %w", err)
+	}
+	if refLetter == nil {
+		return nil, nil
+	}
+
+	// Get the user for the reference letter
+	user, err := r.userRepo.GetByID(ctx, refLetter.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+	gqlUser := toGraphQLUser(user)
+
+	// Get the file if present
+	var gqlFile *model.File
+	if refLetter.FileID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *refLetter.FileID)
+		if err != nil {
+			r.log.Error("Failed to get file for reference letter",
+				logger.Feature("testimonial"),
+				logger.String("reference_letter_id", refLetter.ID.String()),
+				logger.Err(err),
+			)
+			// Don't fail the request, just skip the file
+		} else if file != nil {
+			gqlFile = toGraphQLFile(file, gqlUser)
+		}
+	}
+
+	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
+}
+
 // ExperienceValidation returns generated.ExperienceValidationResolver implementation.
 func (r *Resolver) ExperienceValidation() generated.ExperienceValidationResolver {
 	return &experienceValidationResolver{r}
 }
+
+// File returns generated.FileResolver implementation.
+func (r *Resolver) File() generated.FileResolver { return &fileResolver{r} }
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
@@ -2509,9 +2581,14 @@ func (r *Resolver) SkillValidation() generated.SkillValidationResolver {
 	return &skillValidationResolver{r}
 }
 
+// Testimonial returns generated.TestimonialResolver implementation.
+func (r *Resolver) Testimonial() generated.TestimonialResolver { return &testimonialResolver{r} }
+
 type experienceValidationResolver struct{ *Resolver }
+type fileResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type profileExperienceResolver struct{ *Resolver }
 type profileSkillResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type skillValidationResolver struct{ *Resolver }
+type testimonialResolver struct{ *Resolver }

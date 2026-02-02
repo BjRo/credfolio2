@@ -24,6 +24,8 @@ type File {
   contentType: String!
   sizeBytes: Int!
   storageKey: String!
+  """Presigned URL for downloading the file. Expires after a short time."""
+  url: String!
   createdAt: DateTime!
   user: User!
 }

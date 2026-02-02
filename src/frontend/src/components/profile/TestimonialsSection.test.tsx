@@ -15,6 +15,7 @@ const mockTestimonials = [
     relationship: TestimonialRelationship.Manager,
     createdAt: "2024-01-01T00:00:00Z",
     validatedSkills: [],
+    referenceLetter: null,
   },
   {
     __typename: "Testimonial" as const,
@@ -26,6 +27,7 @@ const mockTestimonials = [
     relationship: TestimonialRelationship.Peer,
     createdAt: "2024-01-02T00:00:00Z",
     validatedSkills: [],
+    referenceLetter: null,
   },
 ];
 
@@ -43,6 +45,46 @@ const mockTestimonialsWithSkills = [
       { __typename: "ProfileSkill" as const, id: "skill-1", name: "Leadership" },
       { __typename: "ProfileSkill" as const, id: "skill-2", name: "Team Management" },
     ],
+    referenceLetter: null,
+  },
+];
+
+const mockTestimonialsWithSourceBadge = [
+  {
+    __typename: "Testimonial" as const,
+    id: "1",
+    quote: "Great team player with excellent leadership skills.",
+    authorName: "John Manager",
+    authorTitle: "Engineering Manager",
+    authorCompany: "Acme Corp",
+    relationship: TestimonialRelationship.Manager,
+    createdAt: "2024-01-01T00:00:00Z",
+    validatedSkills: [],
+    referenceLetter: {
+      __typename: "ReferenceLetter" as const,
+      id: "ref-1",
+      file: {
+        __typename: "File" as const,
+        id: "file-1",
+        url: "https://example.com/reference-letter.pdf",
+      },
+    },
+  },
+  {
+    __typename: "Testimonial" as const,
+    id: "2",
+    quote: "A brilliant collaborator who consistently delivers high-quality work.",
+    authorName: "Sarah Peer",
+    authorTitle: "Senior Engineer",
+    authorCompany: "Acme Corp",
+    relationship: TestimonialRelationship.Peer,
+    createdAt: "2024-01-02T00:00:00Z",
+    validatedSkills: [],
+    referenceLetter: {
+      __typename: "ReferenceLetter" as const,
+      id: "ref-2",
+      file: null, // No file attached
+    },
   },
 ];
 
@@ -173,6 +215,41 @@ describe("TestimonialsSection", () => {
       // Check that there's a separator (·) between skills
       const separator = screen.getByText("·");
       expect(separator).toBeInTheDocument();
+    });
+  });
+
+  describe("Source badge", () => {
+    it("displays source badge when testimonial has a reference letter with file", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
+      // Should show exactly one source badge (the one with file)
+      const sourceLinks = screen.getAllByRole("link", { name: /source/i });
+      expect(sourceLinks).toHaveLength(1);
+    });
+
+    it("source badge links to the PDF file URL", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
+      const sourceLink = screen.getByRole("link", { name: /source/i });
+      expect(sourceLink).toHaveAttribute("href", "https://example.com/reference-letter.pdf");
+    });
+
+    it("source badge opens in a new tab", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
+      const sourceLink = screen.getByRole("link", { name: /source/i });
+      expect(sourceLink).toHaveAttribute("target", "_blank");
+      expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+    });
+
+    it("does not display source badge when reference letter has no file", () => {
+      // The second testimonial in mockTestimonialsWithSourceBadge has no file
+      render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
+      // Only one source link should exist (for the first testimonial)
+      const sourceLinks = screen.getAllByRole("link", { name: /source/i });
+      expect(sourceLinks).toHaveLength(1);
+    });
+
+    it("does not display source badge when there is no reference letter", () => {
+      render(<TestimonialsSection testimonials={mockTestimonials} />);
+      expect(screen.queryByRole("link", { name: /source/i })).not.toBeInTheDocument();
     });
   });
 });
