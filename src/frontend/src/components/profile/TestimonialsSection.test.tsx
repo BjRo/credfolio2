@@ -9,6 +9,14 @@ const mockTestimonials = [
     __typename: "Testimonial" as const,
     id: "1",
     quote: "Great team player with excellent leadership skills.",
+    author: {
+      __typename: "Author" as const,
+      id: "author-1",
+      name: "John Manager",
+      title: "Engineering Manager",
+      company: "Acme Corp",
+      linkedInUrl: null,
+    },
     authorName: "John Manager",
     authorTitle: "Engineering Manager",
     authorCompany: "Acme Corp",
@@ -21,6 +29,14 @@ const mockTestimonials = [
     __typename: "Testimonial" as const,
     id: "2",
     quote: "A brilliant collaborator who consistently delivers high-quality work.",
+    author: {
+      __typename: "Author" as const,
+      id: "author-2",
+      name: "Sarah Peer",
+      title: "Senior Engineer",
+      company: "Acme Corp",
+      linkedInUrl: null,
+    },
     authorName: "Sarah Peer",
     authorTitle: "Senior Engineer",
     authorCompany: "Acme Corp",
@@ -36,6 +52,14 @@ const mockTestimonialsWithSkills = [
     __typename: "Testimonial" as const,
     id: "1",
     quote: "Great team player with excellent leadership skills.",
+    author: {
+      __typename: "Author" as const,
+      id: "author-1",
+      name: "John Manager",
+      title: "Engineering Manager",
+      company: "Acme Corp",
+      linkedInUrl: null,
+    },
     authorName: "John Manager",
     authorTitle: "Engineering Manager",
     authorCompany: "Acme Corp",
@@ -54,6 +78,14 @@ const mockTestimonialsWithSourceBadge = [
     __typename: "Testimonial" as const,
     id: "1",
     quote: "Great team player with excellent leadership skills.",
+    author: {
+      __typename: "Author" as const,
+      id: "author-1",
+      name: "John Manager",
+      title: "Engineering Manager",
+      company: "Acme Corp",
+      linkedInUrl: null,
+    },
     authorName: "John Manager",
     authorTitle: "Engineering Manager",
     authorCompany: "Acme Corp",
@@ -74,6 +106,14 @@ const mockTestimonialsWithSourceBadge = [
     __typename: "Testimonial" as const,
     id: "2",
     quote: "A brilliant collaborator who consistently delivers high-quality work.",
+    author: {
+      __typename: "Author" as const,
+      id: "author-2",
+      name: "Sarah Peer",
+      title: "Senior Engineer",
+      company: "Acme Corp",
+      linkedInUrl: null,
+    },
     authorName: "Sarah Peer",
     authorTitle: "Senior Engineer",
     authorCompany: "Acme Corp",
@@ -250,6 +290,367 @@ describe("TestimonialsSection", () => {
     it("does not display source badge when there is no reference letter", () => {
       render(<TestimonialsSection testimonials={mockTestimonials} />);
       expect(screen.queryByRole("link", { name: /source/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Grouping by author", () => {
+    const mockTestimonialsFromSameAuthor = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "First quote from John about leadership.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: "https://linkedin.com/in/johnmanager",
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: {
+          __typename: "ReferenceLetter" as const,
+          id: "ref-1",
+          file: {
+            __typename: "File" as const,
+            id: "file-1",
+            url: "https://example.com/letter1.pdf",
+          },
+        },
+      },
+      {
+        __typename: "Testimonial" as const,
+        id: "2",
+        quote: "Second quote from John about teamwork.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: "https://linkedin.com/in/johnmanager",
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-02T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: {
+          __typename: "ReferenceLetter" as const,
+          id: "ref-2",
+          file: {
+            __typename: "File" as const,
+            id: "file-2",
+            url: "https://example.com/letter2.pdf",
+          },
+        },
+      },
+      {
+        __typename: "Testimonial" as const,
+        id: "3",
+        quote: "Quote from a different author.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-2",
+          name: "Sarah Peer",
+          title: "Senior Engineer",
+          company: "Tech Inc",
+          linkedInUrl: null,
+        },
+        authorName: "Sarah Peer",
+        authorTitle: "Senior Engineer",
+        authorCompany: "Tech Inc",
+        relationship: TestimonialRelationship.Peer,
+        createdAt: "2024-01-03T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("groups testimonials from the same author together", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
+      // Should show author name only once per group
+      const johnNames = screen.getAllByText("John Manager");
+      expect(johnNames).toHaveLength(1);
+      // But both quotes from John should be visible
+      expect(screen.getByText("First quote from John about leadership.")).toBeInTheDocument();
+      expect(screen.getByText("Second quote from John about teamwork.")).toBeInTheDocument();
+    });
+
+    it("shows author info once per group", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
+      // John's title/company should appear once
+      const johnAttribution = screen.getAllByText("Engineering Manager at Acme Corp");
+      expect(johnAttribution).toHaveLength(1);
+      // Sarah's title/company should appear once
+      expect(screen.getByText("Senior Engineer at Tech Inc")).toBeInTheDocument();
+    });
+
+    it("shows LinkedIn link when author has linkedInUrl", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
+      const linkedInLink = screen.getByRole("link", { name: /linkedin/i });
+      expect(linkedInLink).toHaveAttribute("href", "https://linkedin.com/in/johnmanager");
+      expect(linkedInLink).toHaveAttribute("target", "_blank");
+    });
+
+    it("displays source badge on each quote within a group", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
+      // Both of John's quotes have source badges (2 reference letters)
+      const sourceLinks = screen.getAllByRole("link", { name: /source/i });
+      expect(sourceLinks).toHaveLength(2);
+    });
+
+    it("shows relationship badge in author group header", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
+      // Manager badge for John
+      expect(screen.getByText("Manager")).toBeInTheDocument();
+      // Peer badge for Sarah
+      expect(screen.getByText("Peer")).toBeInTheDocument();
+    });
+  });
+
+  describe("Expand/collapse functionality", () => {
+    const mockManyQuotesFromSameAuthor = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "First visible quote.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "Prolific Author",
+          title: "CEO",
+          company: "Big Corp",
+          linkedInUrl: null,
+        },
+        authorName: "Prolific Author",
+        authorTitle: "CEO",
+        authorCompany: "Big Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+      {
+        __typename: "Testimonial" as const,
+        id: "2",
+        quote: "Second visible quote.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "Prolific Author",
+          title: "CEO",
+          company: "Big Corp",
+          linkedInUrl: null,
+        },
+        authorName: "Prolific Author",
+        authorTitle: "CEO",
+        authorCompany: "Big Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-02T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+      {
+        __typename: "Testimonial" as const,
+        id: "3",
+        quote: "Third collapsed quote.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "Prolific Author",
+          title: "CEO",
+          company: "Big Corp",
+          linkedInUrl: null,
+        },
+        authorName: "Prolific Author",
+        authorTitle: "CEO",
+        authorCompany: "Big Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-03T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+      {
+        __typename: "Testimonial" as const,
+        id: "4",
+        quote: "Fourth collapsed quote.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "Prolific Author",
+          title: "CEO",
+          company: "Big Corp",
+          linkedInUrl: null,
+        },
+        authorName: "Prolific Author",
+        authorTitle: "CEO",
+        authorCompany: "Big Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-04T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("shows first two quotes expanded by default when author has 3+ quotes", () => {
+      render(<TestimonialsSection testimonials={mockManyQuotesFromSameAuthor} />);
+      // First two quotes should be visible
+      expect(screen.getByText("First visible quote.")).toBeInTheDocument();
+      expect(screen.getByText("Second visible quote.")).toBeInTheDocument();
+      // Third and fourth quotes should be hidden initially
+      expect(screen.queryByText("Third collapsed quote.")).not.toBeInTheDocument();
+      expect(screen.queryByText("Fourth collapsed quote.")).not.toBeInTheDocument();
+    });
+
+    it("shows 'Show X more' button when quotes are collapsed", () => {
+      render(<TestimonialsSection testimonials={mockManyQuotesFromSameAuthor} />);
+      expect(screen.getByRole("button", { name: /show 2 more/i })).toBeInTheDocument();
+    });
+
+    it("expands all quotes when 'Show more' is clicked", async () => {
+      const user = userEvent.setup();
+      render(<TestimonialsSection testimonials={mockManyQuotesFromSameAuthor} />);
+
+      await user.click(screen.getByRole("button", { name: /show 2 more/i }));
+
+      // All quotes should now be visible
+      expect(screen.getByText("First visible quote.")).toBeInTheDocument();
+      expect(screen.getByText("Second visible quote.")).toBeInTheDocument();
+      expect(screen.getByText("Third collapsed quote.")).toBeInTheDocument();
+      expect(screen.getByText("Fourth collapsed quote.")).toBeInTheDocument();
+    });
+
+    it("shows 'Show less' button after expanding", async () => {
+      const user = userEvent.setup();
+      render(<TestimonialsSection testimonials={mockManyQuotesFromSameAuthor} />);
+
+      await user.click(screen.getByRole("button", { name: /show 2 more/i }));
+
+      expect(screen.getByRole("button", { name: /show less/i })).toBeInTheDocument();
+    });
+
+    it("collapses quotes when 'Show less' is clicked", async () => {
+      const user = userEvent.setup();
+      render(<TestimonialsSection testimonials={mockManyQuotesFromSameAuthor} />);
+
+      // Expand
+      await user.click(screen.getByRole("button", { name: /show 2 more/i }));
+      // Collapse
+      await user.click(screen.getByRole("button", { name: /show less/i }));
+
+      // Back to initial state
+      expect(screen.getByText("First visible quote.")).toBeInTheDocument();
+      expect(screen.getByText("Second visible quote.")).toBeInTheDocument();
+      expect(screen.queryByText("Third collapsed quote.")).not.toBeInTheDocument();
+      expect(screen.queryByText("Fourth collapsed quote.")).not.toBeInTheDocument();
+    });
+
+    it("shows all quotes expanded when author has only 1-2 quotes", () => {
+      const twoQuotes = mockManyQuotesFromSameAuthor.slice(0, 2);
+      render(<TestimonialsSection testimonials={twoQuotes} />);
+
+      expect(screen.getByText("First visible quote.")).toBeInTheDocument();
+      expect(screen.getByText("Second visible quote.")).toBeInTheDocument();
+      // No "Show more" button when all quotes are visible
+      expect(screen.queryByRole("button", { name: /show.*more/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Validated skills in grouped testimonials", () => {
+    const mockGroupedWithSkills = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Quote about leadership skills.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [
+          { __typename: "ProfileSkill" as const, id: "skill-1", name: "Leadership" },
+        ],
+        referenceLetter: null,
+      },
+      {
+        __typename: "Testimonial" as const,
+        id: "2",
+        quote: "Quote about teamwork skills.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-02T00:00:00Z",
+        validatedSkills: [{ __typename: "ProfileSkill" as const, id: "skill-2", name: "Teamwork" }],
+        referenceLetter: null,
+      },
+    ];
+
+    it("displays validated skills for each quote within a group", () => {
+      render(<TestimonialsSection testimonials={mockGroupedWithSkills} />);
+      expect(screen.getByRole("button", { name: "Leadership" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Teamwork" })).toBeInTheDocument();
+    });
+
+    it("calls onSkillClick when a skill in a grouped quote is clicked", async () => {
+      const user = userEvent.setup();
+      const onSkillClick = vi.fn();
+      render(
+        <TestimonialsSection testimonials={mockGroupedWithSkills} onSkillClick={onSkillClick} />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Leadership" }));
+      expect(onSkillClick).toHaveBeenCalledWith("skill-1");
+
+      await user.click(screen.getByRole("button", { name: "Teamwork" }));
+      expect(onSkillClick).toHaveBeenCalledWith("skill-2");
+    });
+  });
+
+  describe("Fallback for testimonials without author entity", () => {
+    const mockTestimonialsWithoutAuthor = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Legacy testimonial without author entity.",
+        author: null,
+        authorName: "Legacy Author",
+        authorTitle: "Old Title",
+        authorCompany: "Old Company",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("falls back to legacy author fields when author entity is null", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsWithoutAuthor} />);
+      expect(screen.getByText("Legacy Author")).toBeInTheDocument();
+      expect(screen.getByText("Old Title at Old Company")).toBeInTheDocument();
     });
   });
 });

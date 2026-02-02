@@ -1,11 +1,11 @@
 ---
 # credfolio2-lvdo
 title: Collapse testimonials by author
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-30T13:47:26Z
-updated_at: 2026-01-30T13:51:05Z
+updated_at: 2026-02-02T14:27:14Z
 parent: credfolio2-2ex3
 ---
 
@@ -68,17 +68,17 @@ const groupedByAuthor = testimonials.reduce((acc, t) => {
 ```
 
 ### Tasks
-- [ ] Create TestimonialGroup component (shows author + multiple quotes)
-- [ ] Implement grouping logic in TestimonialsSection
-- [ ] Add expand/collapse functionality
-- [ ] Default state: expanded for 1-2 quotes, collapsed for 3+
-- [ ] Ensure source badges display on each quote
-- [ ] Ensure validated skills still link correctly
+- [x] Create TestimonialGroup component (shows author + multiple quotes)
+- [x] Implement grouping logic in TestimonialsSection
+- [x] Add expand/collapse functionality
+- [x] Default state: expanded for 1-2 quotes, collapsed for 3+
+- [x] Ensure source badges display on each quote
+- [x] Ensure validated skills still link correctly
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (for UI changes)
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
