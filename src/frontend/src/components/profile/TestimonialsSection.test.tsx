@@ -258,38 +258,63 @@ describe("TestimonialsSection", () => {
     });
   });
 
-  describe("Source badge", () => {
-    it("displays source badge when testimonial has a reference letter with file", () => {
+  describe("Kebab menu", () => {
+    it("displays kebab menu when testimonial has a reference letter with file", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
-      // Should show exactly one source badge (the one with file)
-      const sourceLinks = screen.getAllByRole("link", { name: /source/i });
-      expect(sourceLinks).toHaveLength(1);
+      // Should show exactly one kebab menu button (the one with file)
+      const menuButtons = screen.getAllByRole("button", { name: /more actions/i });
+      expect(menuButtons).toHaveLength(1);
     });
 
-    it("source badge links to the PDF file URL", () => {
+    it("kebab menu contains 'View source document' option", async () => {
+      const user = userEvent.setup();
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
-      const sourceLink = screen.getByRole("link", { name: /source/i });
-      expect(sourceLink).toHaveAttribute("href", "https://example.com/reference-letter.pdf");
+
+      const menuButton = screen.getByRole("button", { name: /more actions/i });
+      await user.click(menuButton);
+
+      expect(screen.getByRole("menuitem", { name: /view source document/i })).toBeInTheDocument();
     });
 
-    it("source badge opens in a new tab", () => {
+    it("'View source document' links to the PDF file URL", async () => {
+      const user = userEvent.setup();
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
-      const sourceLink = screen.getByRole("link", { name: /source/i });
-      expect(sourceLink).toHaveAttribute("target", "_blank");
-      expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+
+      const menuButton = screen.getByRole("button", { name: /more actions/i });
+      await user.click(menuButton);
+
+      const viewSourceItem = screen.getByRole("menuitem", { name: /view source document/i });
+      // The menuitem should be a link
+      expect(viewSourceItem.closest("a")).toHaveAttribute(
+        "href",
+        "https://example.com/reference-letter.pdf"
+      );
     });
 
-    it("does not display source badge when reference letter has no file", () => {
+    it("'View source document' opens in a new tab", async () => {
+      const user = userEvent.setup();
+      render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
+
+      const menuButton = screen.getByRole("button", { name: /more actions/i });
+      await user.click(menuButton);
+
+      const viewSourceItem = screen.getByRole("menuitem", { name: /view source document/i });
+      const link = viewSourceItem.closest("a");
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    });
+
+    it("does not display kebab menu when reference letter has no file", () => {
       // The second testimonial in mockTestimonialsWithSourceBadge has no file
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
-      // Only one source link should exist (for the first testimonial)
-      const sourceLinks = screen.getAllByRole("link", { name: /source/i });
-      expect(sourceLinks).toHaveLength(1);
+      // Only one menu button should exist (for the first testimonial)
+      const menuButtons = screen.getAllByRole("button", { name: /more actions/i });
+      expect(menuButtons).toHaveLength(1);
     });
 
-    it("does not display source badge when there is no reference letter", () => {
+    it("does not display kebab menu when there is no reference letter", () => {
       render(<TestimonialsSection testimonials={mockTestimonials} />);
-      expect(screen.queryByRole("link", { name: /source/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /more actions/i })).not.toBeInTheDocument();
     });
   });
 
@@ -399,11 +424,11 @@ describe("TestimonialsSection", () => {
       expect(linkedInLink).toHaveAttribute("target", "_blank");
     });
 
-    it("displays source badge on each quote within a group", () => {
+    it("displays kebab menu on each quote within a group that has source", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
-      // Both of John's quotes have source badges (2 reference letters)
-      const sourceLinks = screen.getAllByRole("link", { name: /source/i });
-      expect(sourceLinks).toHaveLength(2);
+      // Both of John's quotes have kebab menus (2 reference letters with files)
+      const menuButtons = screen.getAllByRole("button", { name: /more actions/i });
+      expect(menuButtons).toHaveLength(2);
     });
 
     it("shows relationship badge in author group header", () => {

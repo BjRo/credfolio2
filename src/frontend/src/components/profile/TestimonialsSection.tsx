@@ -7,10 +7,17 @@ import {
   FileText,
   Linkedin,
   MessageSquareQuote,
+  MoreVertical,
   Plus,
   User,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { type GetTestimonialsQuery, TestimonialRelationship } from "@/graphql/generated/graphql";
 
 const RELATIONSHIP_LABELS: Record<TestimonialRelationship, string> = {
@@ -127,19 +134,28 @@ function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
         </p>
       </blockquote>
 
-      {/* Source badge and validated skills */}
+      {/* Kebab menu and validated skills */}
       <div className="mt-2 flex items-center gap-3 flex-wrap">
         {sourceUrl && (
-          <a
-            href={sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-            title="View original reference letter"
-          >
-            <FileText className="h-3 w-3" />
-            <span>Source</span>
-          </a>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                aria-label="More actions"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem asChild>
+                <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                  <FileText className="h-4 w-4" />
+                  View source document
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/* Validated Skills */}
