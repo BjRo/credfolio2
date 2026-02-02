@@ -90,9 +90,10 @@ func (r *experienceValidationResolver) ReferenceLetter(ctx context.Context, obj 
 
 // URL is the resolver for the url field.
 // It generates a presigned URL for downloading the file.
+// Uses GetPresignedURL directly to ensure URLs expire (not permanent proxy URLs).
 func (r *fileResolver) URL(ctx context.Context, obj *model.File) (string, error) {
 	// Generate a presigned URL valid for 1 hour
-	url, err := r.storage.GetPublicURL(ctx, obj.StorageKey, time.Hour)
+	url, err := r.storage.GetPresignedURL(ctx, obj.StorageKey, time.Hour)
 	if err != nil {
 		r.log.Error("Failed to generate file URL",
 			logger.Feature("file"),
