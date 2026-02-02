@@ -74,6 +74,10 @@ models:
     fields:
       validationCount:
         resolver: true
+  Testimonial:
+    fields:
+      referenceLetter:
+        resolver: true
 
   # Field resolvers for validation types
   SkillValidation:

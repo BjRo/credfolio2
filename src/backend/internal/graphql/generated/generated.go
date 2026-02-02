@@ -47,6 +47,7 @@ type ResolverRoot interface {
 	ProfileSkill() ProfileSkillResolver
 	Query() QueryResolver
 	SkillValidation() SkillValidationResolver
+	Testimonial() TestimonialResolver
 }
 
 type DirectiveRoot struct {
@@ -404,6 +405,9 @@ type QueryResolver interface {
 type SkillValidationResolver interface {
 	Skill(ctx context.Context, obj *model.SkillValidation) (*model.ProfileSkill, error)
 	ReferenceLetter(ctx context.Context, obj *model.SkillValidation) (*model.ReferenceLetter, error)
+}
+type TestimonialResolver interface {
+	ReferenceLetter(ctx context.Context, obj *model.Testimonial) (*model.ReferenceLetter, error)
 }
 
 type executableSchema struct {
@@ -9802,7 +9806,7 @@ func (ec *executionContext) _Testimonial_referenceLetter(ctx context.Context, fi
 		field,
 		ec.fieldContext_Testimonial_referenceLetter,
 		func(ctx context.Context) (any, error) {
-			return obj.ReferenceLetter, nil
+			return ec.resolvers.Testimonial().ReferenceLetter(ctx, obj)
 		},
 		nil,
 		ec.marshalOReferenceLetter2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐReferenceLetter,
@@ -9815,8 +9819,8 @@ func (ec *executionContext) fieldContext_Testimonial_referenceLetter(_ context.C
 	fc = &graphql.FieldContext{
 		Object:     "Testimonial",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -14971,17 +14975,17 @@ func (ec *executionContext) _Testimonial(ctx context.Context, sel ast.SelectionS
 		case "id":
 			out.Values[i] = ec._Testimonial_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "quote":
 			out.Values[i] = ec._Testimonial_quote(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "authorName":
 			out.Values[i] = ec._Testimonial_authorName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "authorTitle":
 			out.Values[i] = ec._Testimonial_authorTitle(ctx, field, obj)
@@ -14990,19 +14994,50 @@ func (ec *executionContext) _Testimonial(ctx context.Context, sel ast.SelectionS
 		case "relationship":
 			out.Values[i] = ec._Testimonial_relationship(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "referenceLetter":
-			out.Values[i] = ec._Testimonial_referenceLetter(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Testimonial_referenceLetter(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._Testimonial_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "validatedSkills":
 			out.Values[i] = ec._Testimonial_validatedSkills(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
