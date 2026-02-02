@@ -222,19 +222,19 @@ describe("TestimonialsSection", () => {
     it("displays source badge when testimonial has a reference letter with file", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
       // Should show exactly one source badge (the one with file)
-      const sourceLinks = screen.getAllByRole("link", { name: /view source/i });
+      const sourceLinks = screen.getAllByRole("link", { name: /source/i });
       expect(sourceLinks).toHaveLength(1);
     });
 
     it("source badge links to the PDF file URL", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
-      const sourceLink = screen.getByRole("link", { name: /view source/i });
+      const sourceLink = screen.getByRole("link", { name: /source/i });
       expect(sourceLink).toHaveAttribute("href", "https://example.com/reference-letter.pdf");
     });
 
     it("source badge opens in a new tab", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
-      const sourceLink = screen.getByRole("link", { name: /view source/i });
+      const sourceLink = screen.getByRole("link", { name: /source/i });
       expect(sourceLink).toHaveAttribute("target", "_blank");
       expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
     });
@@ -243,13 +243,13 @@ describe("TestimonialsSection", () => {
       // The second testimonial in mockTestimonialsWithSourceBadge has no file
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
       // Only one source link should exist (for the first testimonial)
-      const sourceLinks = screen.getAllByRole("link", { name: /view source/i });
+      const sourceLinks = screen.getAllByRole("link", { name: /source/i });
       expect(sourceLinks).toHaveLength(1);
     });
 
     it("does not display source badge when there is no reference letter", () => {
       render(<TestimonialsSection testimonials={mockTestimonials} />);
-      expect(screen.queryByRole("link", { name: /view source/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /source/i })).not.toBeInTheDocument();
     });
   });
 });

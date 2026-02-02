@@ -44,21 +44,7 @@ function TestimonialCard({ testimonial, onSkillClick }: TestimonialCardProps) {
   const sourceUrl = testimonial.referenceLetter?.file?.url;
 
   return (
-    <div className="bg-muted/30 rounded-lg p-6 border border-border/50 relative">
-      {/* Source Badge - shows link to original reference letter PDF */}
-      {sourceUrl && (
-        <a
-          href={sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute top-4 right-4 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-          title="View source document"
-        >
-          <FileText className="h-4 w-4" />
-          <span className="sr-only">View source</span>
-        </a>
-      )}
-
+    <div className="bg-muted/30 rounded-lg p-6 border border-border/50">
       {/* Quote */}
       <blockquote className="relative">
         <span className="absolute -top-2 -left-1 text-4xl text-primary/20 font-serif">&ldquo;</span>
@@ -83,9 +69,23 @@ function TestimonialCard({ testimonial, onSkillClick }: TestimonialCardProps) {
                 {testimonial.authorCompany}
               </p>
             )}
-            <span className="inline-flex items-center mt-1 px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
-              {RELATIONSHIP_LABELS[testimonial.relationship]}
-            </span>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
+                {RELATIONSHIP_LABELS[testimonial.relationship]}
+              </span>
+              {sourceUrl && (
+                <a
+                  href={sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                  title="View original reference letter"
+                >
+                  <FileText className="h-3 w-3" />
+                  <span>Source</span>
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
