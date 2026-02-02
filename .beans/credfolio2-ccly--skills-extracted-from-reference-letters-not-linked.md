@@ -1,11 +1,11 @@
 ---
 # credfolio2-ccly
 title: Skills extracted from reference letters not linked to source document
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-02T14:18:26Z
-updated_at: 2026-02-02T15:07:36Z
+updated_at: 2026-02-02T16:20:25Z
 parent: credfolio2-2ex3
 ---
 
