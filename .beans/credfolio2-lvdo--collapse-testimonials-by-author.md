@@ -1,11 +1,11 @@
 ---
 # credfolio2-lvdo
 title: Collapse testimonials by author
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-30T13:47:26Z
-updated_at: 2026-02-02T14:27:14Z
+updated_at: 2026-02-02T14:38:44Z
 parent: credfolio2-2ex3
 ---
 
