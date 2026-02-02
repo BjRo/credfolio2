@@ -1,11 +1,11 @@
 ---
 # credfolio2-9qfq
 title: Replace source icon with kebab menu in testimonials
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-02T14:21:54Z
-updated_at: 2026-02-02T14:39:54Z
+updated_at: 2026-02-02T14:54:11Z
 parent: credfolio2-2ex3
 ---
 
