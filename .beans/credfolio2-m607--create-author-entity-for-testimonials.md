@@ -149,4 +149,7 @@ mutation updateAuthor(id: ID!, input: UpdateAuthorInput!): Author!
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
+
+## Pull Request
+https://github.com/BjRo/credfolio2/pull/55
