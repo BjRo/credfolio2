@@ -118,9 +118,6 @@ function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
     [onSkillClick]
   );
 
-  // Get the source PDF URL from the reference letter
-  const sourceUrl = testimonial.referenceLetter?.file?.url;
-
   return (
     <div className="pl-4 border-l-2 border-primary/20">
       {/* Quote */}
@@ -134,54 +131,29 @@ function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
         </p>
       </blockquote>
 
-      {/* Kebab menu and validated skills */}
-      <div className="mt-2 flex items-center gap-3 flex-wrap">
-        {sourceUrl && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      {/* Validated Skills */}
+      {testimonial.validatedSkills && testimonial.validatedSkills.length > 0 && (
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" />
+            Validates:
+          </span>
+          {testimonial.validatedSkills.map((skill, index) => (
+            <span key={skill.id} className="inline-flex items-center">
               <button
                 type="button"
-                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-                aria-label="More actions"
+                onClick={() => handleSkillClick(skill.id)}
+                className="text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
               >
-                <MoreVertical className="h-4 w-4" />
+                {skill.name}
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem asChild>
-                <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
-                  <FileText className="h-4 w-4" />
-                  View source document
-                </a>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
-        {/* Validated Skills */}
-        {testimonial.validatedSkills && testimonial.validatedSkills.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" />
-              Validates:
+              {index < testimonial.validatedSkills.length - 1 && (
+                <span className="text-muted-foreground mx-1">·</span>
+              )}
             </span>
-            {testimonial.validatedSkills.map((skill, index) => (
-              <span key={skill.id} className="inline-flex items-center">
-                <button
-                  type="button"
-                  onClick={() => handleSkillClick(skill.id)}
-                  className="text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
-                >
-                  {skill.name}
-                </button>
-                {index < testimonial.validatedSkills.length - 1 && (
-                  <span className="text-muted-foreground mx-1">·</span>
-                )}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -198,8 +170,40 @@ function TestimonialGroupCard({ group, onSkillClick }: TestimonialGroupCardProps
   const visibleTestimonials = isExpanded ? testimonials : testimonials.slice(0, COLLAPSE_THRESHOLD);
   const hiddenCount = testimonials.length - COLLAPSE_THRESHOLD;
 
+  // Collect all source URLs from testimonials in this group
+  const sourceUrls = testimonials
+    .map((t) => t.referenceLetter?.file?.url)
+    .filter((url): url is string => !!url);
+
   return (
-    <div className="bg-muted/30 rounded-lg p-6 border border-border/50">
+    <div className="group/card relative bg-muted/30 rounded-lg p-6 border border-border/50">
+      {/* Kebab menu - top right, visible on hover */}
+      {sourceUrls.length > 0 && (
+        <div className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                aria-label="More actions"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {sourceUrls.map((url, index) => (
+                <DropdownMenuItem key={url} asChild>
+                  <a href={url} target="_blank" rel="noopener noreferrer">
+                    <FileText className="h-4 w-4" />
+                    View source document{sourceUrls.length > 1 ? ` ${index + 1}` : ""}
+                  </a>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
       {/* Author header */}
       <div className="flex items-start gap-3 mb-4">
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
