@@ -1,11 +1,11 @@
 ---
 # credfolio2-ucw3
 title: Add source badge to testimonials
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-30T13:47:08Z
-updated_at: 2026-02-02T09:19:40Z
+updated_at: 2026-02-02T09:30:58Z
 parent: credfolio2-2ex3
 ---
 
@@ -61,4 +61,4 @@ type File {
   - Testimonials section shows empty state (no fixture reference letter available)
   - Source badge tested via unit tests (renders when file URL exists)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review: https://github.com/BjRo/credfolio2/pull/54
