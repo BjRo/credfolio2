@@ -1829,6 +1829,39 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 	}
 
 	// Create testimonials
+	// First, find or create the Author entity for all testimonials from this reference letter
+	var author *domain.Author
+	if len(input.Testimonials) > 0 {
+		// Try to find existing author with same name and company
+		existingAuthor, findErr := r.authorRepo.FindByNameAndCompany(ctx, profile.ID, extractedData.Author.Name, extractedData.Author.Company)
+		if findErr != nil {
+			r.log.Error("Failed to find existing author",
+				logger.Feature("credibility"),
+				logger.String("profile_id", profile.ID.String()),
+				logger.Err(findErr),
+			)
+		}
+
+		if existingAuthor != nil {
+			author = existingAuthor
+		} else {
+			// Create new author
+			author = &domain.Author{
+				ProfileID: profile.ID,
+				Name:      extractedData.Author.Name,
+				Title:     extractedData.Author.Title,
+				Company:   extractedData.Author.Company,
+			}
+			if createErr := r.authorRepo.Create(ctx, author); createErr != nil {
+				r.log.Error("Failed to create author",
+					logger.Feature("credibility"),
+					logger.String("profile_id", profile.ID.String()),
+					logger.Err(createErr),
+				)
+			}
+		}
+	}
+
 	for _, ti := range input.Testimonials {
 		// Map author relationship from extracted data to testimonial relationship
 		relationship := mapAuthorToTestimonialRelationship(extractedData.Author.Relationship)
@@ -1838,12 +1871,19 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 			ProfileID:         profile.ID,
 			ReferenceLetterID: refLetterID,
 			Quote:             ti.Quote,
-			AuthorName:        extractedData.Author.Name,
-			AuthorTitle:       extractedData.Author.Title,
-			AuthorCompany:     extractedData.Author.Company,
 			Relationship:      relationship,
 			SkillsMentioned:   ti.SkillsMentioned,
 		}
+
+		// Link to author if created successfully
+		if author != nil {
+			testimonial.AuthorID = &author.ID
+		}
+
+		// Also populate legacy fields for backward compatibility
+		testimonial.AuthorName = &extractedData.Author.Name
+		testimonial.AuthorTitle = extractedData.Author.Title
+		testimonial.AuthorCompany = extractedData.Author.Company
 
 		if createErr := r.testimonialRepo.Create(ctx, testimonial); createErr != nil {
 			r.log.Error("Failed to create testimonial",
@@ -1962,6 +2002,44 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 		Profile:         toGraphQLProfile(profile, toGraphQLUser(user), toGraphQLProfileExperiences(experiences), toGraphQLProfileEducations(educations), toGraphQLProfileSkills(skills), photoURL),
 		AppliedCount:    appliedCount,
 	}, nil
+}
+
+// UpdateAuthor is the resolver for the updateAuthor field.
+func (r *mutationResolver) UpdateAuthor(ctx context.Context, id string, input model.UpdateAuthorInput) (*model.Author, error) {
+	authorID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid author ID: %w", err)
+	}
+
+	// Get existing author
+	author, err := r.authorRepo.GetByID(ctx, authorID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get author: %w", err)
+	}
+	if author == nil {
+		return nil, fmt.Errorf("author not found")
+	}
+
+	// Apply updates
+	if input.Name != nil {
+		author.Name = *input.Name
+	}
+	if input.Title != nil {
+		author.Title = input.Title
+	}
+	if input.Company != nil {
+		author.Company = input.Company
+	}
+	if input.LinkedInURL != nil {
+		author.LinkedInURL = input.LinkedInURL
+	}
+
+	// Save updates
+	if err := r.authorRepo.Update(ctx, author); err != nil {
+		return nil, fmt.Errorf("failed to update author: %w", err)
+	}
+
+	return toGraphQLAuthor(author), nil
 }
 
 // ValidationCount is the resolver for the validationCount field.
@@ -2352,10 +2430,35 @@ func (r *queryResolver) Testimonials(ctx context.Context, profileID string) ([]*
 		return nil, fmt.Errorf("failed to get testimonials: %w", err)
 	}
 
-	// Collect unique reference letter IDs
+	// Collect unique reference letter IDs and author IDs
 	refLetterIDs := make(map[uuid.UUID]struct{})
+	authorIDs := make(map[uuid.UUID]struct{})
 	for _, t := range testimonials {
 		refLetterIDs[t.ReferenceLetterID] = struct{}{}
+		if t.AuthorID != nil {
+			authorIDs[*t.AuthorID] = struct{}{}
+		}
+	}
+
+	// Load authors and build map
+	authorsMap := make(map[uuid.UUID]*domain.Author)
+	for authorID := range authorIDs {
+		author, err := r.authorRepo.GetByID(ctx, authorID)
+		if err != nil {
+			continue // Skip on error
+		}
+		if author != nil {
+			authorsMap[authorID] = author
+		}
+	}
+
+	// Attach authors to testimonials
+	for _, t := range testimonials {
+		if t.AuthorID != nil {
+			if author, ok := authorsMap[*t.AuthorID]; ok {
+				t.Author = author
+			}
+		}
 	}
 
 	// Build map of reference letter ID -> validated skills
@@ -2382,6 +2485,43 @@ func (r *queryResolver) Testimonials(ctx context.Context, profileID string) ([]*
 	}
 
 	return toGraphQLTestimonials(testimonials, validatedSkillsByRefLetter), nil
+}
+
+// Author is the resolver for the author field.
+func (r *queryResolver) Author(ctx context.Context, id string) (*model.Author, error) {
+	authorID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid author ID: %w", err)
+	}
+
+	author, err := r.authorRepo.GetByID(ctx, authorID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get author: %w", err)
+	}
+	if author == nil {
+		return nil, nil
+	}
+
+	return toGraphQLAuthor(author), nil
+}
+
+// Authors is the resolver for the authors field.
+func (r *queryResolver) Authors(ctx context.Context, profileID string) ([]*model.Author, error) {
+	pid, err := uuid.Parse(profileID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid profile ID: %w", err)
+	}
+
+	authors, err := r.authorRepo.GetByProfileID(ctx, pid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get authors: %w", err)
+	}
+
+	result := make([]*model.Author, len(authors))
+	for i, a := range authors {
+		result[i] = toGraphQLAuthor(a)
+	}
+	return result, nil
 }
 
 // SkillValidations is the resolver for the skillValidations field.

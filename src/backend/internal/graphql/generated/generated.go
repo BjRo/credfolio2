@@ -72,6 +72,17 @@ type ComplexityRoot struct {
 		ReferenceLetter func(childComplexity int) int
 	}
 
+	Author struct {
+		Company      func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
+		ID           func(childComplexity int) int
+		LinkedInURL  func(childComplexity int) int
+		Name         func(childComplexity int) int
+		Testimonials func(childComplexity int) int
+		Title        func(childComplexity int) int
+		UpdatedAt    func(childComplexity int) int
+	}
+
 	DeleteProfilePhotoResult struct {
 		Success func(childComplexity int) int
 	}
@@ -171,6 +182,7 @@ type ComplexityRoot struct {
 		DeleteExperience                func(childComplexity int, id string) int
 		DeleteProfilePhoto              func(childComplexity int, userID string) int
 		DeleteSkill                     func(childComplexity int, id string) int
+		UpdateAuthor                    func(childComplexity int, id string, input model.UpdateAuthorInput) int
 		UpdateEducation                 func(childComplexity int, id string, input model.UpdateEducationInput) int
 		UpdateExperience                func(childComplexity int, id string, input model.UpdateExperienceInput) int
 		UpdateProfileHeader             func(childComplexity int, userID string, input model.UpdateProfileHeaderInput) int
@@ -251,6 +263,8 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Author                func(childComplexity int, id string) int
+		Authors               func(childComplexity int, profileID string) int
 		ExperienceValidations func(childComplexity int, experienceID string) int
 		File                  func(childComplexity int, id string) int
 		Files                 func(childComplexity int, userID string) int
@@ -322,6 +336,7 @@ type ComplexityRoot struct {
 	}
 
 	Testimonial struct {
+		Author          func(childComplexity int) int
 		AuthorCompany   func(childComplexity int) int
 		AuthorName      func(childComplexity int) int
 		AuthorTitle     func(childComplexity int) int
@@ -379,6 +394,7 @@ type MutationResolver interface {
 	UpdateSkill(ctx context.Context, id string, input model.UpdateSkillInput) (model.SkillResponse, error)
 	DeleteSkill(ctx context.Context, id string) (*model.DeleteResult, error)
 	ApplyReferenceLetterValidations(ctx context.Context, userID string, input model.ApplyValidationsInput) (model.ApplyValidationsResponse, error)
+	UpdateAuthor(ctx context.Context, id string, input model.UpdateAuthorInput) (*model.Author, error)
 }
 type ProfileExperienceResolver interface {
 	ValidationCount(ctx context.Context, obj *model.ProfileExperience) (int, error)
@@ -399,6 +415,8 @@ type QueryResolver interface {
 	ProfileEducation(ctx context.Context, id string) (*model.ProfileEducation, error)
 	ProfileSkill(ctx context.Context, id string) (*model.ProfileSkill, error)
 	Testimonials(ctx context.Context, profileID string) ([]*model.Testimonial, error)
+	Author(ctx context.Context, id string) (*model.Author, error)
+	Authors(ctx context.Context, profileID string) ([]*model.Author, error)
 	SkillValidations(ctx context.Context, skillID string) ([]*model.SkillValidation, error)
 	ExperienceValidations(ctx context.Context, experienceID string) ([]*model.ExperienceValidation, error)
 }
@@ -485,6 +503,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ApplyValidationsResult.ReferenceLetter(childComplexity), true
+
+	case "Author.company":
+		if e.complexity.Author.Company == nil {
+			break
+		}
+
+		return e.complexity.Author.Company(childComplexity), true
+	case "Author.createdAt":
+		if e.complexity.Author.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Author.CreatedAt(childComplexity), true
+	case "Author.id":
+		if e.complexity.Author.ID == nil {
+			break
+		}
+
+		return e.complexity.Author.ID(childComplexity), true
+	case "Author.linkedInUrl":
+		if e.complexity.Author.LinkedInURL == nil {
+			break
+		}
+
+		return e.complexity.Author.LinkedInURL(childComplexity), true
+	case "Author.name":
+		if e.complexity.Author.Name == nil {
+			break
+		}
+
+		return e.complexity.Author.Name(childComplexity), true
+	case "Author.testimonials":
+		if e.complexity.Author.Testimonials == nil {
+			break
+		}
+
+		return e.complexity.Author.Testimonials(childComplexity), true
+	case "Author.title":
+		if e.complexity.Author.Title == nil {
+			break
+		}
+
+		return e.complexity.Author.Title(childComplexity), true
+	case "Author.updatedAt":
+		if e.complexity.Author.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Author.UpdatedAt(childComplexity), true
 
 	case "DeleteProfilePhotoResult.success":
 		if e.complexity.DeleteProfilePhotoResult.Success == nil {
@@ -859,6 +926,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeleteSkill(childComplexity, args["id"].(string)), true
+	case "Mutation.updateAuthor":
+		if e.complexity.Mutation.UpdateAuthor == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateAuthor_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateAuthor(childComplexity, args["id"].(string), args["input"].(model.UpdateAuthorInput)), true
 	case "Mutation.updateEducation":
 		if e.complexity.Mutation.UpdateEducation == nil {
 			break
@@ -1255,6 +1333,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ProfileSkill.ValidationCount(childComplexity), true
 
+	case "Query.author":
+		if e.complexity.Query.Author == nil {
+			break
+		}
+
+		args, err := ec.field_Query_author_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Author(childComplexity, args["id"].(string)), true
+	case "Query.authors":
+		if e.complexity.Query.Authors == nil {
+			break
+		}
+
+		args, err := ec.field_Query_authors_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Authors(childComplexity, args["profileId"].(string)), true
 	case "Query.experienceValidations":
 		if e.complexity.Query.ExperienceValidations == nil {
 			break
@@ -1632,6 +1732,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SkillValidationError.Message(childComplexity), true
 
+	case "Testimonial.author":
+		if e.complexity.Testimonial.Author == nil {
+			break
+		}
+
+		return e.complexity.Testimonial.Author(childComplexity), true
 	case "Testimonial.authorCompany":
 		if e.complexity.Testimonial.AuthorCompany == nil {
 			break
@@ -1767,6 +1873,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNewSkillInput,
 		ec.unmarshalInputSkillValidationInput,
 		ec.unmarshalInputTestimonialInput,
+		ec.unmarshalInputUpdateAuthorInput,
 		ec.unmarshalInputUpdateEducationInput,
 		ec.unmarshalInputUpdateExperienceInput,
 		ec.unmarshalInputUpdateProfileHeaderInput,
@@ -2576,6 +2683,47 @@ Union type for apply validations result.
 union ApplyValidationsResponse = ApplyValidationsResult | ApplyValidationsError
 
 # ============================================================================
+# Author Type
+# ============================================================================
+
+"""
+A person who provided testimonials for the profile. Authors are deduplicated
+by name and company within a profile.
+"""
+type Author {
+  """Unique identifier for the author."""
+  id: ID!
+  """Name of the author."""
+  name: String!
+  """Title/position of the author."""
+  title: String
+  """Company/organization of the author."""
+  company: String
+  """LinkedIn profile URL of the author."""
+  linkedInUrl: String
+  """When the author record was created."""
+  createdAt: DateTime!
+  """When the author record was last updated."""
+  updatedAt: DateTime!
+  """All testimonials from this author."""
+  testimonials: [Testimonial!]!
+}
+
+"""
+Input for updating an author's information.
+"""
+input UpdateAuthorInput {
+  """Updated name of the author."""
+  name: String
+  """Updated title/position of the author."""
+  title: String
+  """Updated company/organization of the author."""
+  company: String
+  """Updated LinkedIn profile URL of the author."""
+  linkedInUrl: String
+}
+
+# ============================================================================
 # Testimonial Type
 # ============================================================================
 
@@ -2598,11 +2746,13 @@ type Testimonial {
   id: ID!
   """The full quote text."""
   quote: String!
-  """Name of the person who provided the testimonial."""
+  """The author who provided this testimonial."""
+  author: Author
+  """Name of the person who provided the testimonial. (Deprecated: use author.name)"""
   authorName: String!
-  """Title/position of the author."""
+  """Title/position of the author. (Deprecated: use author.title)"""
   authorTitle: String
-  """Company/organization of the author."""
+  """Company/organization of the author. (Deprecated: use author.company)"""
   authorCompany: String
   """Relationship between the author and the profile owner."""
   relationship: TestimonialRelationship!
@@ -2711,6 +2861,16 @@ type Query {
   Get all testimonials for a profile.
   """
   testimonials(profileId: ID!): [Testimonial!]!
+
+  """
+  Get an author by ID.
+  """
+  author(id: ID!): Author
+
+  """
+  Get all authors for a profile.
+  """
+  authors(profileId: ID!): [Author!]!
 
   """
   Get all validations for a specific skill.
@@ -2946,6 +3106,21 @@ type Mutation {
     """The validations to apply."""
     input: ApplyValidationsInput!
   ): ApplyValidationsResponse!
+
+  # ============================================================================
+  # Author Mutations
+  # ============================================================================
+
+  """
+  Update an author's information.
+  Allows correcting author details and adding LinkedIn profile links.
+  """
+  updateAuthor(
+    """The author ID to update."""
+    id: ID!
+    """The fields to update."""
+    input: UpdateAuthorInput!
+  ): Author!
 }
 `, BuiltIn: false},
 }
@@ -3060,6 +3235,22 @@ func (ec *executionContext) field_Mutation_deleteSkill_args(ctx context.Context,
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateAuthor_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateAuthorInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateAuthorInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -3183,6 +3374,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_author_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_authors_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "profileId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["profileId"] = arg0
 	return args, nil
 }
 
@@ -3714,6 +3927,260 @@ func (ec *executionContext) fieldContext_ApplyValidationsResult_appliedCount(_ c
 				return ec.fieldContext_AppliedCount_newSkills(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AppliedCount", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_id(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_name(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_title(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_company(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_company,
+		func(ctx context.Context) (any, error) {
+			return obj.Company, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_company(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_linkedInUrl(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_linkedInUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.LinkedInURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_linkedInUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNDateTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_testimonials(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_testimonials,
+		func(ctx context.Context) (any, error) {
+			return obj.Testimonials, nil
+		},
+		nil,
+		ec.marshalNTestimonial2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonialᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_testimonials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Testimonial_id(ctx, field)
+			case "quote":
+				return ec.fieldContext_Testimonial_quote(ctx, field)
+			case "author":
+				return ec.fieldContext_Testimonial_author(ctx, field)
+			case "authorName":
+				return ec.fieldContext_Testimonial_authorName(ctx, field)
+			case "authorTitle":
+				return ec.fieldContext_Testimonial_authorTitle(ctx, field)
+			case "authorCompany":
+				return ec.fieldContext_Testimonial_authorCompany(ctx, field)
+			case "relationship":
+				return ec.fieldContext_Testimonial_relationship(ctx, field)
+			case "referenceLetter":
+				return ec.fieldContext_Testimonial_referenceLetter(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Testimonial_createdAt(ctx, field)
+			case "validatedSkills":
+				return ec.fieldContext_Testimonial_validatedSkills(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Testimonial", field.Name)
 		},
 	}
 	return fc, nil
@@ -5819,6 +6286,65 @@ func (ec *executionContext) fieldContext_Mutation_applyReferenceLetterValidation
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_applyReferenceLetterValidations_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateAuthor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateAuthor,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateAuthor(ctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateAuthorInput))
+		},
+		nil,
+		ec.marshalNAuthor2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthor,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateAuthor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Author_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Author_name(ctx, field)
+			case "title":
+				return ec.fieldContext_Author_title(ctx, field)
+			case "company":
+				return ec.fieldContext_Author_company(ctx, field)
+			case "linkedInUrl":
+				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Author_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Author_updatedAt(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Author_testimonials(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Author", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateAuthor_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8177,6 +8703,8 @@ func (ec *executionContext) fieldContext_Query_testimonials(ctx context.Context,
 				return ec.fieldContext_Testimonial_id(ctx, field)
 			case "quote":
 				return ec.fieldContext_Testimonial_quote(ctx, field)
+			case "author":
+				return ec.fieldContext_Testimonial_author(ctx, field)
 			case "authorName":
 				return ec.fieldContext_Testimonial_authorName(ctx, field)
 			case "authorTitle":
@@ -8203,6 +8731,124 @@ func (ec *executionContext) fieldContext_Query_testimonials(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_testimonials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_author(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_author,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Author(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOAuthor2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthor,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_author(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Author_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Author_name(ctx, field)
+			case "title":
+				return ec.fieldContext_Author_title(ctx, field)
+			case "company":
+				return ec.fieldContext_Author_company(ctx, field)
+			case "linkedInUrl":
+				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Author_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Author_updatedAt(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Author_testimonials(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Author", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_author_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_authors(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_authors,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Authors(ctx, fc.Args["profileId"].(string))
+		},
+		nil,
+		ec.marshalNAuthor2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_authors(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Author_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Author_name(ctx, field)
+			case "title":
+				return ec.fieldContext_Author_title(ctx, field)
+			case "company":
+				return ec.fieldContext_Author_company(ctx, field)
+			case "linkedInUrl":
+				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Author_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Author_updatedAt(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Author_testimonials(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Author", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_authors_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9678,6 +10324,53 @@ func (ec *executionContext) fieldContext_Testimonial_quote(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Testimonial_author(ctx context.Context, field graphql.CollectedField, obj *model.Testimonial) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Testimonial_author,
+		func(ctx context.Context) (any, error) {
+			return obj.Author, nil
+		},
+		nil,
+		ec.marshalOAuthor2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthor,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Testimonial_author(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Testimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Author_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Author_name(ctx, field)
+			case "title":
+				return ec.fieldContext_Author_title(ctx, field)
+			case "company":
+				return ec.fieldContext_Author_company(ctx, field)
+			case "linkedInUrl":
+				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Author_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Author_updatedAt(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Author_testimonials(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Author", field.Name)
 		},
 	}
 	return fc, nil
@@ -12164,6 +12857,54 @@ func (ec *executionContext) unmarshalInputTestimonialInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateAuthorInput(ctx context.Context, obj any) (model.UpdateAuthorInput, error) {
+	var it model.UpdateAuthorInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "title", "company", "linkedInUrl"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "company":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("company"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Company = data
+		case "linkedInUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedInUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedInURL = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateEducationInput(ctx context.Context, obj any) (model.UpdateEducationInput, error) {
 	var it model.UpdateEducationInput
 	asMap := map[string]any{}
@@ -12774,6 +13515,71 @@ func (ec *executionContext) _ApplyValidationsResult(ctx context.Context, sel ast
 			}
 		case "appliedCount":
 			out.Values[i] = ec._ApplyValidationsResult_appliedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var authorImplementors = []string{"Author"}
+
+func (ec *executionContext) _Author(ctx context.Context, sel ast.SelectionSet, obj *model.Author) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, authorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Author")
+		case "id":
+			out.Values[i] = ec._Author_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._Author_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._Author_title(ctx, field, obj)
+		case "company":
+			out.Values[i] = ec._Author_company(ctx, field, obj)
+		case "linkedInUrl":
+			out.Values[i] = ec._Author_linkedInUrl(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._Author_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Author_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "testimonials":
+			out.Values[i] = ec._Author_testimonials(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -13728,6 +14534,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateAuthor":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateAuthor(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14488,6 +15301,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "author":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_author(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "authors":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_authors(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "skillValidations":
 			field := field
 
@@ -14982,6 +15836,8 @@ func (ec *executionContext) _Testimonial(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "author":
+			out.Values[i] = ec._Testimonial_author(ctx, field, obj)
 		case "authorName":
 			out.Values[i] = ec._Testimonial_authorName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -15603,6 +16459,64 @@ func (ec *executionContext) marshalNApplyValidationsResponse2backendᚋinternal�
 		return graphql.Null
 	}
 	return ec._ApplyValidationsResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAuthor2backendᚋinternalᚋgraphqlᚋmodelᚐAuthor(ctx context.Context, sel ast.SelectionSet, v model.Author) graphql.Marshaler {
+	return ec._Author(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAuthor2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthorᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Author) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAuthor2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthor(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAuthor2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthor(ctx context.Context, sel ast.SelectionSet, v *model.Author) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Author(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNAuthorRelationship2backendᚋinternalᚋdomainᚐAuthorRelationship(ctx context.Context, v any) (domain.AuthorRelationship, error) {
@@ -16654,6 +17568,11 @@ func (ec *executionContext) marshalNTestimonialRelationship2backendᚋinternal�
 	return v
 }
 
+func (ec *executionContext) unmarshalNUpdateAuthorInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateAuthorInput(ctx context.Context, v any) (model.UpdateAuthorInput, error) {
+	res, err := ec.unmarshalInputUpdateAuthorInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNUpdateEducationInput2backendᚋinternalᚋgraphqlᚋmodelᚐUpdateEducationInput(ctx context.Context, v any) (model.UpdateEducationInput, error) {
 	res, err := ec.unmarshalInputUpdateEducationInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -16981,6 +17900,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalOAuthor2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthor(ctx context.Context, sel ast.SelectionSet, v *model.Author) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Author(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {

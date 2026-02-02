@@ -73,6 +73,20 @@ type ReferenceLetter struct { //nolint:govet // Field ordering prioritizes reada
 	File *File `bun:"rel:belongs-to,join:file_id=id"`
 }
 
+// Author represents a person who provided testimonials for the profile.
+type Author struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
+	bun.BaseModel `bun:"table:authors,alias:a"`
+
+	ID          uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileID   uuid.UUID `bun:"profile_id,notnull,type:uuid"`
+	Name        string    `bun:"name,notnull"`
+	Title       *string   `bun:"title"`
+	Company     *string   `bun:"company"`
+	LinkedInURL *string   `bun:"linkedin_url"`
+	CreatedAt   time.Time `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt   time.Time `bun:"updated_at,notnull,default:current_timestamp"`
+}
+
 // TestimonialRelationship represents the relationship between the author and the candidate.
 type TestimonialRelationship string
 
@@ -92,8 +106,9 @@ type Testimonial struct { //nolint:govet // Field ordering prioritizes readabili
 	ID                uuid.UUID               `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
 	ProfileID         uuid.UUID               `bun:"profile_id,notnull,type:uuid"`
 	ReferenceLetterID uuid.UUID               `bun:"reference_letter_id,notnull,type:uuid"`
+	AuthorID          *uuid.UUID              `bun:"author_id,type:uuid"`
 	Quote             string                  `bun:"quote,notnull"`
-	AuthorName        string                  `bun:"author_name,notnull"`
+	AuthorName        *string                 `bun:"author_name"`
 	AuthorTitle       *string                 `bun:"author_title"`
 	AuthorCompany     *string                 `bun:"author_company"`
 	Relationship      TestimonialRelationship `bun:"relationship,notnull,default:'other'"`
@@ -103,6 +118,7 @@ type Testimonial struct { //nolint:govet // Field ordering prioritizes readabili
 
 	// Relations
 	ReferenceLetter *ReferenceLetter `bun:"rel:belongs-to,join:reference_letter_id=id"`
+	Author          *Author          `bun:"rel:belongs-to,join:author_id=id"`
 }
 
 // SkillValidation links a profile skill to a reference letter that validates it.

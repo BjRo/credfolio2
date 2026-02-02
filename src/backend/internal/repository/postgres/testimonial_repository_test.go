@@ -52,7 +52,7 @@ func TestTestimonialRepository_Create(t *testing.T) {
 		ProfileID:         profile.ID,
 		ReferenceLetterID: letter.ID,
 		Quote:             "Jane is an exceptional engineer with outstanding leadership skills.",
-		AuthorName:        "John Smith",
+		AuthorName:        strPtr("John Smith"),
 		AuthorTitle:       strPtr("Engineering Manager"),
 		AuthorCompany:     strPtr("Acme Corp"),
 		Relationship:      domain.TestimonialRelationshipManager,
@@ -108,7 +108,7 @@ func TestTestimonialRepository_GetByID(t *testing.T) {
 		ProfileID:         profile.ID,
 		ReferenceLetterID: letter.ID,
 		Quote:             "Great team player.",
-		AuthorName:        "Jane Doe",
+		AuthorName:        strPtr("Jane Doe"),
 		Relationship:      domain.TestimonialRelationshipPeer,
 	}
 	if err := testimonialRepo.Create(ctx, testimonial); err != nil {
@@ -176,11 +176,12 @@ func TestTestimonialRepository_GetByProfileID(t *testing.T) {
 
 	// Create multiple testimonials
 	for i := 0; i < 3; i++ {
+		authorName := "Author " + string(rune('A'+i))
 		testimonial := &domain.Testimonial{
 			ProfileID:         profile.ID,
 			ReferenceLetterID: letter.ID,
 			Quote:             "Testimonial " + string(rune('A'+i)),
-			AuthorName:        "Author " + string(rune('A'+i)),
+			AuthorName:        &authorName,
 			Relationship:      domain.TestimonialRelationshipOther,
 		}
 		if err := testimonialRepo.Create(ctx, testimonial); err != nil {
@@ -245,11 +246,12 @@ func TestTestimonialRepository_DeleteByReferenceLetterID(t *testing.T) {
 
 	// Create multiple testimonials
 	for i := 0; i < 3; i++ {
+		authorName := "Author"
 		testimonial := &domain.Testimonial{
 			ProfileID:         profile.ID,
 			ReferenceLetterID: letter.ID,
 			Quote:             "Delete test " + string(rune('A'+i)),
-			AuthorName:        "Author",
+			AuthorName:        &authorName,
 			Relationship:      domain.TestimonialRelationshipOther,
 		}
 		if err := testimonialRepo.Create(ctx, testimonial); err != nil {
