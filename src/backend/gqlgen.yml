@@ -76,7 +76,11 @@ models:
         resolver: true
   Testimonial:
     fields:
+      author:
+        resolver: true
       referenceLetter:
+        resolver: true
+      validatedSkills:
         resolver: true
 
   # Field resolvers for validation types

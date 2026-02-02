@@ -76,6 +76,7 @@ func run(log logger.Logger) error {
 	profileExpRepo := postgres.NewProfileExperienceRepository(db)
 	profileEduRepo := postgres.NewProfileEducationRepository(db)
 	profileSkillRepo := postgres.NewProfileSkillRepository(db)
+	authorRepo := postgres.NewAuthorRepository(db)
 	testimonialRepo := postgres.NewTestimonialRepository(db)
 	skillValidationRepo := postgres.NewSkillValidationRepository(db)
 	expValidationRepo := postgres.NewExperienceValidationRepository(db)
@@ -139,7 +140,7 @@ func run(log logger.Logger) error {
 	r.Post("/api/extract", extractHandler.ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, testimonialRepo, skillValidationRepo, expValidationRepo, fileStorage, queueClient, log))
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, fileStorage, queueClient, log))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)

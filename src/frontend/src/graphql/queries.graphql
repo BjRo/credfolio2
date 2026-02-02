@@ -188,6 +188,13 @@ query GetTestimonials($profileId: ID!) {
   testimonials(profileId: $profileId) {
     id
     quote
+    author {
+      id
+      name
+      title
+      company
+      linkedInUrl
+    }
     authorName
     authorTitle
     authorCompany

@@ -57,6 +57,28 @@ type ReferenceLetterRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
+// AuthorRepository defines operations for author persistence.
+type AuthorRepository interface {
+	// Create persists a new author.
+	Create(ctx context.Context, author *Author) error
+
+	// GetByID retrieves an author by its ID.
+	GetByID(ctx context.Context, id uuid.UUID) (*Author, error)
+
+	// GetByProfileID retrieves all authors for a profile.
+	GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*Author, error)
+
+	// FindByNameAndCompany finds an author by profile, name, and company.
+	// Returns nil if not found.
+	FindByNameAndCompany(ctx context.Context, profileID uuid.UUID, name string, company *string) (*Author, error)
+
+	// Update persists changes to an existing author.
+	Update(ctx context.Context, author *Author) error
+
+	// Delete removes an author by its ID.
+	Delete(ctx context.Context, id uuid.UUID) error
+}
+
 // TestimonialRepository defines operations for testimonial persistence.
 type TestimonialRepository interface {
 	// Create persists a new testimonial.

@@ -104,6 +104,27 @@ type ApplyValidationsResult struct {
 
 func (ApplyValidationsResult) IsApplyValidationsResponse() {}
 
+// A person who provided testimonials for the profile. Authors are deduplicated
+// by name and company within a profile.
+type Author struct {
+	// Unique identifier for the author.
+	ID string `json:"id"`
+	// Name of the author.
+	Name string `json:"name"`
+	// Title/position of the author.
+	Title *string `json:"title,omitempty"`
+	// Company/organization of the author.
+	Company *string `json:"company,omitempty"`
+	// LinkedIn profile URL of the author.
+	LinkedInURL *string `json:"linkedInUrl,omitempty"`
+	// When the author record was created.
+	CreatedAt time.Time `json:"createdAt"`
+	// When the author record was last updated.
+	UpdatedAt time.Time `json:"updatedAt"`
+	// All testimonials from this author.
+	Testimonials []*Testimonial `json:"testimonials"`
+}
+
 // Input for creating a new education entry.
 type CreateEducationInput struct {
 	// Institution name (required).
@@ -493,11 +514,13 @@ type Testimonial struct {
 	ID string `json:"id"`
 	// The full quote text.
 	Quote string `json:"quote"`
-	// Name of the person who provided the testimonial.
+	// The author who provided this testimonial.
+	Author *Author `json:"author,omitempty"`
+	// Name of the person who provided the testimonial. (Deprecated: use author.name)
 	AuthorName string `json:"authorName"`
-	// Title/position of the author.
+	// Title/position of the author. (Deprecated: use author.title)
 	AuthorTitle *string `json:"authorTitle,omitempty"`
-	// Company/organization of the author.
+	// Company/organization of the author. (Deprecated: use author.company)
 	AuthorCompany *string `json:"authorCompany,omitempty"`
 	// Relationship between the author and the profile owner.
 	Relationship TestimonialRelationship `json:"relationship"`
@@ -515,6 +538,18 @@ type TestimonialInput struct {
 	Quote string `json:"quote"`
 	// Skills mentioned in this testimonial.
 	SkillsMentioned []string `json:"skillsMentioned"`
+}
+
+// Input for updating an author's information.
+type UpdateAuthorInput struct {
+	// Updated name of the author.
+	Name *string `json:"name,omitempty"`
+	// Updated title/position of the author.
+	Title *string `json:"title,omitempty"`
+	// Updated company/organization of the author.
+	Company *string `json:"company,omitempty"`
+	// Updated LinkedIn profile URL of the author.
+	LinkedInURL *string `json:"linkedInUrl,omitempty"`
 }
 
 // Input for updating an existing education entry.

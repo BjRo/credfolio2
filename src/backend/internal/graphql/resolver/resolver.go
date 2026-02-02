@@ -22,6 +22,7 @@ type Resolver struct {
 	profileExpRepo        domain.ProfileExperienceRepository
 	profileEduRepo        domain.ProfileEducationRepository
 	profileSkillRepo      domain.ProfileSkillRepository
+	authorRepo            domain.AuthorRepository
 	testimonialRepo       domain.TestimonialRepository
 	skillValidationRepo   domain.SkillValidationRepository
 	expValidationRepo     domain.ExperienceValidationRepository
@@ -40,6 +41,7 @@ func NewResolver(
 	profileExpRepo domain.ProfileExperienceRepository,
 	profileEduRepo domain.ProfileEducationRepository,
 	profileSkillRepo domain.ProfileSkillRepository,
+	authorRepo domain.AuthorRepository,
 	testimonialRepo domain.TestimonialRepository,
 	skillValidationRepo domain.SkillValidationRepository,
 	expValidationRepo domain.ExperienceValidationRepository,
@@ -56,6 +58,7 @@ func NewResolver(
 		profileExpRepo:        profileExpRepo,
 		profileEduRepo:        profileEduRepo,
 		profileSkillRepo:      profileSkillRepo,
+		authorRepo:            authorRepo,
 		testimonialRepo:       testimonialRepo,
 		skillValidationRepo:   skillValidationRepo,
 		expValidationRepo:     expValidationRepo,

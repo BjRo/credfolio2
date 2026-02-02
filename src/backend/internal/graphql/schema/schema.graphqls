@@ -706,6 +706,47 @@ Union type for apply validations result.
 union ApplyValidationsResponse = ApplyValidationsResult | ApplyValidationsError
 
 # ============================================================================
+# Author Type
+# ============================================================================
+
+"""
+A person who provided testimonials for the profile. Authors are deduplicated
+by name and company within a profile.
+"""
+type Author {
+  """Unique identifier for the author."""
+  id: ID!
+  """Name of the author."""
+  name: String!
+  """Title/position of the author."""
+  title: String
+  """Company/organization of the author."""
+  company: String
+  """LinkedIn profile URL of the author."""
+  linkedInUrl: String
+  """When the author record was created."""
+  createdAt: DateTime!
+  """When the author record was last updated."""
+  updatedAt: DateTime!
+  """All testimonials from this author."""
+  testimonials: [Testimonial!]!
+}
+
+"""
+Input for updating an author's information.
+"""
+input UpdateAuthorInput {
+  """Updated name of the author."""
+  name: String
+  """Updated title/position of the author."""
+  title: String
+  """Updated company/organization of the author."""
+  company: String
+  """Updated LinkedIn profile URL of the author."""
+  linkedInUrl: String
+}
+
+# ============================================================================
 # Testimonial Type
 # ============================================================================
 
@@ -728,11 +769,13 @@ type Testimonial {
   id: ID!
   """The full quote text."""
   quote: String!
-  """Name of the person who provided the testimonial."""
+  """The author who provided this testimonial."""
+  author: Author
+  """Name of the person who provided the testimonial. (Deprecated: use author.name)"""
   authorName: String!
-  """Title/position of the author."""
+  """Title/position of the author. (Deprecated: use author.title)"""
   authorTitle: String
-  """Company/organization of the author."""
+  """Company/organization of the author. (Deprecated: use author.company)"""
   authorCompany: String
   """Relationship between the author and the profile owner."""
   relationship: TestimonialRelationship!
@@ -841,6 +884,16 @@ type Query {
   Get all testimonials for a profile.
   """
   testimonials(profileId: ID!): [Testimonial!]!
+
+  """
+  Get an author by ID.
+  """
+  author(id: ID!): Author
+
+  """
+  Get all authors for a profile.
+  """
+  authors(profileId: ID!): [Author!]!
 
   """
   Get all validations for a specific skill.
@@ -1076,4 +1129,19 @@ type Mutation {
     """The validations to apply."""
     input: ApplyValidationsInput!
   ): ApplyValidationsResponse!
+
+  # ============================================================================
+  # Author Mutations
+  # ============================================================================
+
+  """
+  Update an author's information.
+  Allows correcting author details and adding LinkedIn profile links.
+  """
+  updateAuthor(
+    """The author ID to update."""
+    id: ID!
+    """The fields to update."""
+    input: UpdateAuthorInput!
+  ): Author!
 }

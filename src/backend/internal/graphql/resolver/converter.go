@@ -58,6 +58,22 @@ func toGraphQLUser(u *domain.User) *model.User {
 	}
 }
 
+// toGraphQLAuthor converts a domain Author to a GraphQL Author model.
+func toGraphQLAuthor(a *domain.Author) *model.Author {
+	if a == nil {
+		return nil
+	}
+	return &model.Author{
+		ID:          a.ID.String(),
+		Name:        a.Name,
+		Title:       a.Title,
+		Company:     a.Company,
+		LinkedInURL: a.LinkedInURL,
+		CreatedAt:   a.CreatedAt,
+		UpdatedAt:   a.UpdatedAt,
+	}
+}
+
 // toGraphQLFile converts a domain File to a GraphQL File model.
 // If user is provided, it will be set on the result.
 func toGraphQLFile(f *domain.File, user *model.User) *model.File {
@@ -499,12 +515,33 @@ func toGraphQLTestimonial(t *domain.Testimonial, referenceLetter *model.Referenc
 		validatedSkills = []*model.ProfileSkill{}
 	}
 
+	// Get author information - prefer Author relation, fall back to legacy fields
+	var authorName string
+	var authorTitle *string
+	var authorCompany *string
+	var author *model.Author
+
+	if t.Author != nil {
+		author = toGraphQLAuthor(t.Author)
+		authorName = t.Author.Name
+		authorTitle = t.Author.Title
+		authorCompany = t.Author.Company
+	} else {
+		// Legacy: use denormalized fields
+		if t.AuthorName != nil {
+			authorName = *t.AuthorName
+		}
+		authorTitle = t.AuthorTitle
+		authorCompany = t.AuthorCompany
+	}
+
 	return &model.Testimonial{
 		ID:              t.ID.String(),
 		Quote:           t.Quote,
-		AuthorName:      t.AuthorName,
-		AuthorTitle:     t.AuthorTitle,
-		AuthorCompany:   t.AuthorCompany,
+		Author:          author,
+		AuthorName:      authorName,
+		AuthorTitle:     authorTitle,
+		AuthorCompany:   authorCompany,
 		Relationship:    relationship,
 		ReferenceLetter: referenceLetter,
 		CreatedAt:       t.CreatedAt,

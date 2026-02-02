@@ -1,11 +1,11 @@
 ---
 # credfolio2-m607
 title: Create Author entity for testimonials
-status: draft
+status: in-progress
 type: task
 priority: high
 created_at: 2026-01-30T13:50:32Z
-updated_at: 2026-01-30T13:52:47Z
+updated_at: 2026-02-02T13:42:24Z
 parent: credfolio2-2ex3
 blocking:
     - credfolio2-cm02
@@ -133,20 +133,23 @@ mutation updateAuthor(id: ID!, input: UpdateAuthorInput!): Author!
 ```
 
 ## Tasks
-- [ ] Create migration for `authors` table
-- [ ] Create migration to add `author_id` to testimonials
-- [ ] Create data migration to populate authors from existing testimonials
-- [ ] Update domain model (`Author` struct, update `Testimonial`)
-- [ ] Create `AuthorRepository` interface and implementation
-- [ ] Update `TestimonialRepository` to handle author relation
-- [ ] Update GraphQL schema (Author type, mutations)
-- [ ] Update resolvers
-- [ ] Update extraction flow to find/create authors
-- [ ] Update frontend queries and components
+- [x] Create migration for `authors` table
+- [x] Create migration to add `author_id` to testimonials
+- [x] Create data migration to populate authors from existing testimonials
+- [x] Update domain model (`Author` struct, update `Testimonial`)
+- [x] Create `AuthorRepository` interface and implementation
+- [x] Update `TestimonialRepository` to handle author relation
+- [x] Update GraphQL schema (Author type, mutations)
+- [x] Update resolvers
+- [x] Update extraction flow to find/create authors
+- [x] Update frontend queries and components
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review
+
+## Pull Request
+https://github.com/BjRo/credfolio2/pull/55
