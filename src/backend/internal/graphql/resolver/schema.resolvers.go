@@ -2643,6 +2643,33 @@ func (r *skillValidationResolver) ReferenceLetter(ctx context.Context, obj *mode
 	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
 }
 
+// Author is the resolver for the author field.
+func (r *testimonialResolver) Author(ctx context.Context, obj *model.Testimonial) (*model.Author, error) {
+	testimonialID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid testimonial ID: %w", err)
+	}
+
+	// Get the testimonial to find the author ID
+	testimonial, err := r.testimonialRepo.GetByID(ctx, testimonialID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get testimonial: %w", err)
+	}
+	if testimonial == nil || testimonial.AuthorID == nil {
+		return nil, nil
+	}
+
+	author, err := r.authorRepo.GetByID(ctx, *testimonial.AuthorID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get author: %w", err)
+	}
+	if author == nil {
+		return nil, nil
+	}
+
+	return toGraphQLAuthor(author), nil
+}
+
 // ReferenceLetter is the resolver for the referenceLetter field.
 func (r *testimonialResolver) ReferenceLetter(ctx context.Context, obj *model.Testimonial) (*model.ReferenceLetter, error) {
 	testimonialID, err := uuid.Parse(obj.ID)
@@ -2692,6 +2719,54 @@ func (r *testimonialResolver) ReferenceLetter(ctx context.Context, obj *model.Te
 	}
 
 	return toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile), nil
+}
+
+// ValidatedSkills is the resolver for the validatedSkills field.
+func (r *testimonialResolver) ValidatedSkills(ctx context.Context, obj *model.Testimonial) ([]*model.ProfileSkill, error) {
+	testimonialID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid testimonial ID: %w", err)
+	}
+
+	// Get the testimonial to find the reference letter ID
+	testimonial, err := r.testimonialRepo.GetByID(ctx, testimonialID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get testimonial: %w", err)
+	}
+	if testimonial == nil {
+		return []*model.ProfileSkill{}, nil
+	}
+
+	// Get skill validations for this reference letter
+	validations, err := r.skillValidationRepo.GetByReferenceLetterID(ctx, testimonial.ReferenceLetterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get skill validations: %w", err)
+	}
+
+	// Collect unique skill IDs
+	skillIDs := make(map[uuid.UUID]bool)
+	for _, v := range validations {
+		skillIDs[v.ProfileSkillID] = true
+	}
+
+	// Fetch the skills
+	var skills []*model.ProfileSkill
+	for skillID := range skillIDs {
+		skill, err := r.profileSkillRepo.GetByID(ctx, skillID)
+		if err != nil {
+			r.log.Error("Failed to get skill for validation",
+				logger.Feature("testimonial"),
+				logger.String("skill_id", skillID.String()),
+				logger.Err(err),
+			)
+			continue
+		}
+		if skill != nil {
+			skills = append(skills, toGraphQLProfileSkill(skill))
+		}
+	}
+
+	return skills, nil
 }
 
 // ExperienceValidation returns generated.ExperienceValidationResolver implementation.
