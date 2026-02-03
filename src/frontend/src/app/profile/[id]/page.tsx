@@ -199,6 +199,7 @@ export default function ProfilePage() {
           testimonials={testimonials}
           isLoading={testimonialsLoading}
           onAddReference={handleAddReference}
+          onTestimonialDeleted={handleMutationSuccess}
         />
 
         <ProfileActions

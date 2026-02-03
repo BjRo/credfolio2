@@ -259,11 +259,10 @@ describe("TestimonialsSection", () => {
   });
 
   describe("Kebab menu", () => {
-    it("displays kebab menu at card level when any testimonial has a source", () => {
+    it("displays kebab menu for each quote that has a source", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
-      // Each author group card with at least one source should have one kebab menu
       // mockTestimonialsWithSourceBadge has 2 testimonials from 2 different authors,
-      // but only one has a file, so only one menu
+      // but only one (John Manager) has a file, so only one menu
       const menuButtons = screen.getAllByRole("button", { name: /more actions/i });
       expect(menuButtons).toHaveLength(1);
     });
@@ -274,8 +273,8 @@ describe("TestimonialsSection", () => {
       // Check that the menu button's container has opacity-0 class (hidden by default)
       const menuContainer = menuButton.parentElement;
       expect(menuContainer).toHaveClass("opacity-0");
-      // Check it has hover visibility classes
-      expect(menuContainer).toHaveClass("group-hover/card:opacity-100");
+      // Check it has hover visibility classes (now on quote level)
+      expect(menuContainer).toHaveClass("group-hover/quote:opacity-100");
     });
 
     it("kebab menu contains 'View source document' option", async () => {
@@ -428,24 +427,24 @@ describe("TestimonialsSection", () => {
       expect(linkedInLink).toHaveAttribute("target", "_blank");
     });
 
-    it("displays one kebab menu per card with source documents", () => {
+    it("displays one kebab menu per quote with source documents", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
-      // John's group has reference letters with files, so one kebab menu
-      // Sarah's group has no reference letter, so no kebab menu
+      // John's 2 quotes both have reference letters with files, so 2 kebab menus
+      // Sarah's quote has no reference letter, so no kebab menu
       const menuButtons = screen.getAllByRole("button", { name: /more actions/i });
-      expect(menuButtons).toHaveLength(1);
+      expect(menuButtons).toHaveLength(2);
     });
 
-    it("kebab menu shows single source document option at author level", async () => {
+    it("kebab menu shows source document option for each quote", async () => {
       const user = userEvent.setup();
       render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
 
-      const menuButton = screen.getByRole("button", { name: /more actions/i });
-      await user.click(menuButton);
+      const menuButtons = screen.getAllByRole("button", { name: /more actions/i });
+      await user.click(menuButtons[0]);
 
-      // Should show one "View source document" item per author card
-      const viewSourceItems = screen.getAllByRole("menuitem", { name: /view source document/i });
-      expect(viewSourceItems).toHaveLength(1);
+      // Should show "View source document" option
+      const viewSourceItem = screen.getByRole("menuitem", { name: /view source document/i });
+      expect(viewSourceItem).toBeInTheDocument();
     });
 
     it("shows relationship badge in author group header", () => {

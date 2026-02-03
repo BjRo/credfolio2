@@ -1191,4 +1191,16 @@ type Mutation {
     """The fields to update."""
     input: UpdateAuthorInput!
   ): Author!
+
+  # ============================================================================
+  # Testimonial Mutations
+  # ============================================================================
+
+  """
+  Delete a testimonial.
+  """
+  deleteTestimonial(
+    """The testimonial ID to delete."""
+    id: ID!
+  ): DeleteResult!
 }

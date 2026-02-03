@@ -9,6 +9,7 @@ import {
   MessageSquareQuote,
   MoreVertical,
   Plus,
+  Trash2,
   User,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -16,9 +17,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { type GetTestimonialsQuery, TestimonialRelationship } from "@/graphql/generated/graphql";
+import { DeleteTestimonialDialog } from "./DeleteTestimonialDialog";
 
 const RELATIONSHIP_LABELS: Record<TestimonialRelationship, string> = {
   [TestimonialRelationship.Manager]: "Manager",
@@ -94,10 +97,12 @@ function groupTestimonialsByAuthor(testimonials: Testimonial[]): TestimonialGrou
 
 interface QuoteItemProps {
   testimonial: Testimonial;
+  sourceUrl?: string;
   onSkillClick?: (skillId: string) => void;
+  onDeleteClick?: (testimonial: Testimonial) => void;
 }
 
-function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
+function QuoteItem({ testimonial, sourceUrl, onSkillClick, onDeleteClick }: QuoteItemProps) {
   const handleSkillClick = useCallback(
     (skillId: string) => {
       if (onSkillClick) {
@@ -118,8 +123,47 @@ function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
     [onSkillClick]
   );
 
+  const hasMenuActions = sourceUrl || onDeleteClick;
+
   return (
-    <div className="pl-4" data-testid="quote-item">
+    <div className="group/quote pl-4 relative" data-testid="quote-item">
+      {/* Kebab menu - appears on hover */}
+      {hasMenuActions && (
+        <div className="absolute -right-2 top-0 opacity-0 group-hover/quote:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                aria-label="More actions"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {sourceUrl && (
+                <DropdownMenuItem asChild>
+                  <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                    <FileText className="h-4 w-4" />
+                    View source document
+                  </a>
+                </DropdownMenuItem>
+              )}
+              {sourceUrl && onDeleteClick && <DropdownMenuSeparator />}
+              {onDeleteClick && (
+                <DropdownMenuItem
+                  onClick={() => onDeleteClick(testimonial)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
       {/* Quote */}
       <blockquote>
         <p className="text-foreground italic leading-relaxed text-sm">
@@ -166,46 +210,21 @@ function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
 interface TestimonialGroupCardProps {
   group: TestimonialGroup;
   onSkillClick?: (skillId: string) => void;
+  onDeleteClick?: (testimonial: Testimonial) => void;
 }
 
-function TestimonialGroupCard({ group, onSkillClick }: TestimonialGroupCardProps) {
+function TestimonialGroupCard({ group, onSkillClick, onDeleteClick }: TestimonialGroupCardProps) {
   const { author, relationship, testimonials } = group;
   const [isExpanded, setIsExpanded] = useState(testimonials.length <= COLLAPSE_THRESHOLD);
 
   const visibleTestimonials = isExpanded ? testimonials : testimonials.slice(0, COLLAPSE_THRESHOLD);
   const hiddenCount = testimonials.length - COLLAPSE_THRESHOLD;
 
-  // Get the first available source URL from testimonials in this group
-  const sourceUrl = testimonials.find((t) => t.referenceLetter?.file?.url)?.referenceLetter?.file
-    ?.url;
+  // Get source URL for each testimonial (for the per-quote kebab menu)
+  const getSourceUrl = (testimonial: Testimonial) => testimonial.referenceLetter?.file?.url;
 
   return (
     <div className="group/card relative bg-muted/30 rounded-lg p-6 border border-border/50">
-      {/* Kebab menu - top right, visible on hover */}
-      {sourceUrl && (
-        <div className="absolute top-4 right-4 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-within:opacity-100 transition-opacity">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-                aria-label="More actions"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
-                  <FileText className="h-4 w-4" />
-                  View source document
-                </a>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
-
       {/* Author header */}
       <div className="flex items-start gap-3 mb-4">
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -242,7 +261,13 @@ function TestimonialGroupCard({ group, onSkillClick }: TestimonialGroupCardProps
       {/* Quotes */}
       <div className="border-l-2 border-primary/20 space-y-4" data-testid="quotes-wrapper">
         {visibleTestimonials.map((testimonial) => (
-          <QuoteItem key={testimonial.id} testimonial={testimonial} onSkillClick={onSkillClick} />
+          <QuoteItem
+            key={testimonial.id}
+            testimonial={testimonial}
+            sourceUrl={getSourceUrl(testimonial)}
+            onSkillClick={onSkillClick}
+            onDeleteClick={onDeleteClick}
+          />
         ))}
       </div>
 
@@ -275,6 +300,7 @@ interface TestimonialsSectionProps {
   isLoading?: boolean;
   onAddReference?: () => void;
   onSkillClick?: (skillId: string) => void;
+  onTestimonialDeleted?: () => void;
 }
 
 export function TestimonialsSection({
@@ -282,9 +308,24 @@ export function TestimonialsSection({
   isLoading = false,
   onAddReference,
   onSkillClick,
+  onTestimonialDeleted,
 }: TestimonialsSectionProps) {
+  // State for delete dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [testimonialToDelete, setTestimonialToDelete] = useState<Testimonial | null>(null);
+
   // Group testimonials by author (must be called before any early returns)
   const groups = useMemo(() => groupTestimonialsByAuthor(testimonials), [testimonials]);
+
+  const handleDeleteClick = useCallback((testimonial: Testimonial) => {
+    setTestimonialToDelete(testimonial);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleDeleteSuccess = useCallback(() => {
+    setTestimonialToDelete(null);
+    onTestimonialDeleted?.();
+  }, [onTestimonialDeleted]);
 
   // Don't render if no testimonials and no way to add one
   if (testimonials.length === 0 && !onAddReference) {
@@ -292,69 +333,89 @@ export function TestimonialsSection({
   }
 
   return (
-    <div id="testimonials" className="bg-card border rounded-lg p-6 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <MessageSquareQuote className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-bold text-foreground">What Others Say</h2>
-        </div>
-        {onAddReference && (
-          <button
-            type="button"
-            onClick={onAddReference}
-            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-            aria-label="Add reference letter"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-        )}
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="bg-muted/30 rounded-lg p-6 border border-border/50 animate-pulse"
-            >
-              <div className="h-20 bg-muted rounded" />
-              <div className="mt-6 pt-4 border-t border-border/50">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-muted" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-muted rounded w-32" />
-                    <div className="h-3 bg-muted rounded w-48" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : testimonials.length > 0 ? (
-        <div className="space-y-4">
-          {groups.map((group) => (
-            <TestimonialGroupCard key={group.author.id} group={group} onSkillClick={onSkillClick} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <MessageSquareQuote className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">No testimonials yet.</p>
-          <p className="text-sm text-muted-foreground mb-6">
-            Add a reference letter to include testimonials from people who&apos;ve worked with you.
-          </p>
+    <>
+      <div id="testimonials" className="bg-card border rounded-lg p-6 sm:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <MessageSquareQuote className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold text-foreground">What Others Say</h2>
+          </div>
           {onAddReference && (
             <button
               type="button"
               onClick={onAddReference}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+              aria-label="Add reference letter"
             >
-              <Plus className="h-4 w-4" />
-              Add Reference Letter
+              <Plus className="h-5 w-5" />
             </button>
           )}
         </div>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="bg-muted/30 rounded-lg p-6 border border-border/50 animate-pulse"
+              >
+                <div className="h-20 bg-muted rounded" />
+                <div className="mt-6 pt-4 border-t border-border/50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-muted" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-32" />
+                      <div className="h-3 bg-muted rounded w-48" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : testimonials.length > 0 ? (
+          <div className="space-y-4">
+            {groups.map((group) => (
+              <TestimonialGroupCard
+                key={group.author.id}
+                group={group}
+                onSkillClick={onSkillClick}
+                onDeleteClick={onTestimonialDeleted ? handleDeleteClick : undefined}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <MessageSquareQuote className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">No testimonials yet.</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Add a reference letter to include testimonials from people who&apos;ve worked with
+              you.
+            </p>
+            {onAddReference && (
+              <button
+                type="button"
+                onClick={onAddReference}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Add Reference Letter
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Delete confirmation dialog */}
+      {testimonialToDelete && (
+        <DeleteTestimonialDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          testimonialId={testimonialToDelete.id}
+          quote={testimonialToDelete.quote}
+          authorName={getAuthorInfo(testimonialToDelete).name}
+          onSuccess={handleDeleteSuccess}
+        />
       )}
-    </div>
+    </>
   );
 }
