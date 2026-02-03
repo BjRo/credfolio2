@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CredibilityDotsProps {
@@ -10,37 +11,24 @@ interface CredibilityDotsProps {
 }
 
 /**
- * Displays credibility dots indicating how many reference letters validate an item.
- * - 0 dots: No validations (only from resume)
- * - 1 dot: 1 reference letter validates this
- * - 2 dots: 2 reference letters validate this
- * - 3 dots: 3+ reference letters validate this
+ * Displays a verified checkmark indicating validation from reference letters.
+ * Shows a single CheckCircle2 icon when there's at least one validation.
  */
 export function CredibilityDots({ count, className }: CredibilityDotsProps) {
   if (count === 0) {
     return null;
   }
 
-  // Cap at 3 dots for display
-  const displayCount = Math.min(count, 3);
-
   const label = `Validated by ${count} reference letter${count === 1 ? "" : "s"}`;
 
   return (
     <span
       role="img"
-      className={cn("inline-flex items-center gap-0.5 ml-1.5", className)}
+      className={cn("inline-flex items-center ml-1.5", className)}
       aria-label={label}
       title={label}
     >
-      {Array.from({ length: displayCount }).map((_, i) => (
-        <span
-          // biome-ignore lint/suspicious/noArrayIndexKey: Static dots that never reorder
-          key={i}
-          className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"
-          aria-hidden="true"
-        />
-      ))}
+      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" aria-hidden="true" />
     </span>
   );
 }
