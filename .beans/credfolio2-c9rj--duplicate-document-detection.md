@@ -54,7 +54,7 @@ Calculate and store a content hash (SHA-256) for each uploaded file, then check 
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
 
 ## Technical Notes
 
