@@ -340,7 +340,7 @@ describe("AuthorEditModal", () => {
       });
     });
 
-    it("converts empty optional fields to null", async () => {
+    it("sends empty strings for cleared optional fields (to signal field clearing to backend)", async () => {
       const user = userEvent.setup();
       render(
         <AuthorEditModal
@@ -359,13 +359,15 @@ describe("AuthorEditModal", () => {
       const saveButton = screen.getByRole("button", { name: /save/i });
       await user.click(saveButton);
 
+      // Empty strings signal "clear this field" to the backend
+      // (null values in GraphQL are indistinguishable from "field not provided")
       await waitFor(() => {
         expect(mockUpdateAuthor).toHaveBeenCalledWith({
           id: "author-1",
           input: expect.objectContaining({
-            title: null,
-            company: null,
-            linkedInUrl: null,
+            title: "",
+            company: "",
+            linkedInUrl: "",
           }),
         });
       });

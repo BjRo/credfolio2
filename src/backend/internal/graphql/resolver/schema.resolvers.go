@@ -2360,13 +2360,25 @@ func (r *mutationResolver) UpdateAuthor(ctx context.Context, id string, input mo
 		author.Name = *input.Name
 	}
 	if input.Title != nil {
-		author.Title = input.Title
+		if *input.Title == "" {
+			author.Title = nil
+		} else {
+			author.Title = input.Title
+		}
 	}
 	if input.Company != nil {
-		author.Company = input.Company
+		if *input.Company == "" {
+			author.Company = nil
+		} else {
+			author.Company = input.Company
+		}
 	}
 	if input.LinkedInURL != nil {
-		author.LinkedInURL = input.LinkedInURL
+		if *input.LinkedInURL == "" {
+			author.LinkedInURL = nil
+		} else {
+			author.LinkedInURL = input.LinkedInURL
+		}
 	}
 	if input.ImageID != nil {
 		if *input.ImageID == "" {

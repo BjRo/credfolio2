@@ -218,13 +218,14 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
 
       // Step 2: Update author details (name, title, company, linkedInUrl)
       // If image was removed and no new image uploaded, clear the imageId
+      // Note: Empty strings signal "clear this field" to the backend
       const result = await updateAuthor({
         id: author.id,
         input: {
           name: formData.name.trim(),
-          title: formData.title.trim() || null,
-          company: formData.company.trim() || null,
-          linkedInUrl: formData.linkedInUrl.trim() || null,
+          title: formData.title.trim(),
+          company: formData.company.trim(),
+          linkedInUrl: formData.linkedInUrl.trim(),
           // Clear imageId if user removed the image and didn't upload a new one
           ...(imageRemoved && !pendingImageFile ? { imageId: "" } : {}),
         },
