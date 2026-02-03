@@ -21,9 +21,13 @@ const (
 	structuredOutputsBeta anthropic.AnthropicBeta = "structured-outputs-2025-11-13"
 )
 
+// AnthropicMiddleware is the type for Anthropic SDK middleware functions.
+type AnthropicMiddleware = func(*http.Request, option.MiddlewareNext) (*http.Response, error)
+
 // AnthropicConfig holds configuration for the Anthropic provider.
 type AnthropicConfig struct {
 	HTTPClient   *http.Client
+	Middleware   AnthropicMiddleware // Optional middleware for tracing/logging
 	APIKey       string
 	BaseURL      string
 	DefaultModel string
@@ -56,6 +60,11 @@ func NewAnthropicProvider(config AnthropicConfig) *AnthropicProvider {
 
 	if config.HTTPClient != nil {
 		opts = append(opts, option.WithHTTPClient(config.HTTPClient))
+	}
+
+	// Add middleware for tracing if configured
+	if config.Middleware != nil {
+		opts = append(opts, option.WithMiddleware(config.Middleware))
 	}
 
 	client := anthropic.NewClient(opts...)
