@@ -1,11 +1,11 @@
 ---
 # credfolio2-1m2j
 title: Allow deleting a testimonial
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-03T10:33:12Z
-updated_at: 2026-02-03T12:06:55Z
+updated_at: 2026-02-03T12:28:11Z
 parent: credfolio2-2ex3
 ---
 
