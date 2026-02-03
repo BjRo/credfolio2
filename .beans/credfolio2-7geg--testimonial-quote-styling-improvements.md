@@ -46,4 +46,4 @@ Reduce the gap between the decorative opening quote (`"`) and the first word. Cu
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
