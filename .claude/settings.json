@@ -1,6 +1,11 @@
 {
   "permissions": {
-    "allow": []
+    "allow": [],
+    "deny": [
+      "Read(.env)",
+      "Edit(.env)",
+      "Write(.env)"
+    ]
   },
   "hooks": {
     "PreToolUse": [
