@@ -116,4 +116,4 @@ Reference letters sometimes don't explicitly name the author, causing the LLM ex
 - [x] `pnpm test` passes with no failures
 - [ ] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review - https://github.com/BjRo/credfolio2/pull/66
