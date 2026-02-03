@@ -40,8 +40,8 @@ Braintrust provides LLM observability, allowing inspection of prompts, responses
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [ ] All checklist items above are completed (pending: verify traces in Braintrust dashboard)
+- [x] Branch pushed and PR created for human review: https://github.com/BjRo/credfolio2/pull/68
 
 ## How to View Traces in Braintrust
 
