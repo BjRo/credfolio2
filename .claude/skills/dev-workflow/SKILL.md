@@ -9,25 +9,40 @@ Follow this workflow for all feature development. It ensures clean git history, 
 
 ## Starting Work on a Bean
 
-### 1. Ensure Main is Up-to-Date
+### Quick Start (Recommended)
 
-Before creating a branch, always sync with remote:
+Use the automated script to set up your branch and mark the bean in-progress:
+
+```bash
+./scripts/start-work.sh <bean-id> <type> <short-description>
+
+# Examples:
+./scripts/start-work.sh credfolio2-kdtx feat docker-compose
+./scripts/start-work.sh credfolio2-abc1 fix upload-validation
+./scripts/start-work.sh credfolio2-xyz9 refactor clean-handlers
+```
+
+This script automatically:
+- Ensures main is up-to-date
+- Creates a properly named feature branch
+- Verifies the bean exists
+- Marks the bean as in-progress
+- Commits the bean status change
+
+### Manual Steps (Reference)
+
+If you need to do this manually:
+
+#### 1. Ensure Main is Up-to-Date
 
 ```bash
 git checkout main
 git pull origin main
 ```
 
-### 2. Create a Feature Branch
+#### 2. Create a Feature Branch
 
 Branch naming convention: `<type>/<bean-id>-<short-description>`
-
-```bash
-# Examples:
-git checkout -b feat/credfolio2-kdtx-docker-compose
-git checkout -b fix/credfolio2-abc1-upload-validation
-git checkout -b refactor/credfolio2-xyz9-clean-handlers
-```
 
 Types:
 - `feat/` - New features
@@ -36,7 +51,7 @@ Types:
 - `chore/` - Build, tooling, dependencies
 - `docs/` - Documentation only
 
-### 3. Mark Bean as In-Progress
+#### 3. Mark Bean as In-Progress
 
 ```bash
 beans update <bean-id> --status in-progress
@@ -155,18 +170,23 @@ EOF
 
 ### 9. After Merge: Complete the Bean
 
-Once the PR is merged by a human, use the automated post-merge command:
+Once the PR is merged by a human, use the automated post-merge script:
 
 ```bash
-/post-merge <bean-id>
+./scripts/post-merge.sh <bean-id>
+
+# Example:
+./scripts/post-merge.sh credfolio2-abc1
 ```
 
-This automatically:
+This script automatically:
 - Verifies the PR is merged
 - Switches to main and pulls latest
 - Deletes the local and remote feature branches
 - Marks the bean as completed
 - Commits and pushes the bean status change
+
+**Note**: Run this from your feature branch (not main).
 
 **Manual alternative** (if needed):
 
@@ -180,10 +200,8 @@ git add .beans/ && git commit -m "chore: Mark <bean-id> as completed" && git pus
 ## Quick Reference
 
 ```bash
-# Start work
-git checkout main && git pull origin main
-git checkout -b feat/<bean-id>-<description>
-beans update <bean-id> --status in-progress
+# Start work (automated)
+./scripts/start-work.sh <bean-id> <type> <description>
 
 # During work (repeat TDD cycle)
 # 1. Write failing test
@@ -204,8 +222,8 @@ git push -u origin <branch-name>
 gh pr create --title "..." --body "..."
 # WAIT for human review and merge
 
-# After merge (automated)
-/post-merge <bean-id>
+# After merge (from feature branch)
+./scripts/post-merge.sh <bean-id>
 ```
 
 ## Rules
