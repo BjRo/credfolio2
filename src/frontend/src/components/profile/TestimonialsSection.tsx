@@ -318,10 +318,10 @@ function TestimonialGroupCard({
                 href={author.linkedInUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="flex items-center justify-center w-4 h-4 bg-muted-foreground/80 hover:bg-foreground rounded-[3px] transition-colors"
                 aria-label="LinkedIn profile"
               >
-                <Linkedin className="h-4 w-4" />
+                <Linkedin className="h-3 w-3 text-background" strokeWidth={0} fill="currentColor" />
               </a>
             )}
           </div>
