@@ -119,11 +119,16 @@ function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
   );
 
   return (
-    <div className="pl-4 border-l-2 border-primary/20">
+    <div className="pl-4" data-testid="quote-item">
       {/* Quote */}
-      <blockquote className="relative">
-        <span className="absolute -top-1 -left-1 text-2xl text-primary/20 font-serif">&ldquo;</span>
-        <p className="text-foreground pl-4 pr-2 italic leading-relaxed text-sm">
+      <blockquote>
+        <p className="text-foreground italic leading-relaxed text-sm">
+          <span
+            className="text-2xl text-primary/20 font-serif leading-none align-text-top mr-0.5"
+            data-testid="opening-quote-mark"
+          >
+            &ldquo;
+          </span>
           {testimonial.quote}
           <span className="text-2xl text-primary/20 font-serif leading-none align-bottom">
             &rdquo;
@@ -235,7 +240,7 @@ function TestimonialGroupCard({ group, onSkillClick }: TestimonialGroupCardProps
       </div>
 
       {/* Quotes */}
-      <div className="space-y-4">
+      <div className="border-l-2 border-primary/20 space-y-4" data-testid="quotes-wrapper">
         {visibleTestimonials.map((testimonial) => (
           <QuoteItem key={testimonial.id} testimonial={testimonial} onSkillClick={onSkillClick} />
         ))}
