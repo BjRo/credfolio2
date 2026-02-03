@@ -14,7 +14,7 @@ const ALLOWED_EXTENSIONS = Object.values(ALLOWED_TYPES).join(", ");
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const POLL_INTERVAL_MS = 2000; // Poll every 2 seconds
 
-type UploadStatus = "idle" | "uploading" | "processing" | "success" | "error";
+type UploadStatus = "idle" | "uploading" | "processing" | "success" | "error" | "duplicate";
 type ResumeStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 interface ResumeUploadResult {
@@ -33,6 +33,20 @@ interface ValidationError {
   __typename: "FileValidationError";
   message: string;
   field: string;
+}
+
+interface DuplicateFileDetected {
+  __typename: "DuplicateFileDetected";
+  existingFile: {
+    id: string;
+    filename: string;
+    createdAt: string;
+  };
+  existingResume?: {
+    id: string;
+    status: ResumeStatus;
+  };
+  message: string;
 }
 
 interface ResumeUploadProps {
@@ -54,6 +68,8 @@ export function ResumeUpload({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [uploadedResume, setUploadedResume] = useState<ResumeUploadResult | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<DuplicateFileDetected | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const validateFile = useCallback((file: File): string | null => {
     if (!Object.keys(ALLOWED_TYPES).includes(file.type)) {
@@ -110,7 +126,7 @@ export function ResumeUpload({
   }, [status, uploadedResume, router, onProcessingComplete, onError]);
 
   const uploadFile = useCallback(
-    async (file: File) => {
+    async (file: File, forceReimport = false) => {
       const validationError = validateFile(file);
       if (validationError) {
         setError(validationError);
@@ -122,11 +138,12 @@ export function ResumeUpload({
       setStatus("uploading");
       setProgress(0);
       setError(null);
+      setDuplicateInfo(null);
 
       const operations = JSON.stringify({
         query: `
-          mutation UploadResume($userId: ID!, $file: Upload!) {
-            uploadResume(userId: $userId, file: $file) {
+          mutation UploadResume($userId: ID!, $file: Upload!, $forceReimport: Boolean) {
+            uploadResume(userId: $userId, file: $file, forceReimport: $forceReimport) {
               ... on UploadResumeResult {
                 __typename
                 file {
@@ -145,12 +162,26 @@ export function ResumeUpload({
                 message
                 field
               }
+              ... on DuplicateFileDetected {
+                __typename
+                existingFile {
+                  id
+                  filename
+                  createdAt
+                }
+                existingResume {
+                  id
+                  status
+                }
+                message
+              }
             }
           }
         `,
         variables: {
           userId,
           file: null,
+          forceReimport: forceReimport || null,
         },
       });
 
@@ -164,55 +195,66 @@ export function ResumeUpload({
       formData.append("0", file);
 
       try {
-        const result = await new Promise<ResumeUploadResult>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
+        const result = await new Promise<ResumeUploadResult | DuplicateFileDetected>(
+          (resolve, reject) => {
+            const xhr = new XMLHttpRequest();
 
-          xhr.upload.addEventListener("progress", (event) => {
-            if (event.lengthComputable) {
-              const percentComplete = Math.round((event.loaded / event.total) * 100);
-              setProgress(percentComplete);
-            }
-          });
-
-          xhr.addEventListener("load", () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.errors?.length) {
-                  reject(new Error(response.errors[0].message));
-                  return;
-                }
-                const data = response.data?.uploadResume;
-                if (!data) {
-                  reject(new Error("No data returned from upload"));
-                  return;
-                }
-                // Check for validation error union type
-                if (data.__typename === "FileValidationError") {
-                  const validationErr = data as ValidationError;
-                  reject(new Error(validationErr.message));
-                  return;
-                }
-                resolve(data as ResumeUploadResult);
-              } catch (_parseError) {
-                reject(new Error("Failed to parse response"));
+            xhr.upload.addEventListener("progress", (event) => {
+              if (event.lengthComputable) {
+                const percentComplete = Math.round((event.loaded / event.total) * 100);
+                setProgress(percentComplete);
               }
-            } else {
-              reject(new Error(`Upload failed with status ${xhr.status}`));
-            }
-          });
+            });
 
-          xhr.addEventListener("error", () => {
-            reject(new Error("Network error during upload"));
-          });
+            xhr.addEventListener("load", () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const response = JSON.parse(xhr.responseText);
+                  if (response.errors?.length) {
+                    reject(new Error(response.errors[0].message));
+                    return;
+                  }
+                  const data = response.data?.uploadResume;
+                  if (!data) {
+                    reject(new Error("No data returned from upload"));
+                    return;
+                  }
+                  // Check for validation error union type
+                  if (data.__typename === "FileValidationError") {
+                    const validationErr = data as ValidationError;
+                    reject(new Error(validationErr.message));
+                    return;
+                  }
+                  // Handle both success and duplicate cases
+                  resolve(data as ResumeUploadResult | DuplicateFileDetected);
+                } catch (_parseError) {
+                  reject(new Error("Failed to parse response"));
+                }
+              } else {
+                reject(new Error(`Upload failed with status ${xhr.status}`));
+              }
+            });
 
-          xhr.addEventListener("abort", () => {
-            reject(new Error("Upload was cancelled"));
-          });
+            xhr.addEventListener("error", () => {
+              reject(new Error("Network error during upload"));
+            });
 
-          xhr.open("POST", GRAPHQL_ENDPOINT);
-          xhr.send(formData);
-        });
+            xhr.addEventListener("abort", () => {
+              reject(new Error("Upload was cancelled"));
+            });
+
+            xhr.open("POST", GRAPHQL_ENDPOINT);
+            xhr.send(formData);
+          }
+        );
+
+        // Handle duplicate detection
+        if (result.__typename === "DuplicateFileDetected") {
+          setStatus("duplicate");
+          setDuplicateInfo(result);
+          setPendingFile(file);
+          return;
+        }
 
         setStatus("processing");
         setUploadedResume(result);
@@ -226,6 +268,18 @@ export function ResumeUpload({
     },
     [userId, validateFile, onUploadComplete, onError]
   );
+
+  const handleForceReimport = useCallback(() => {
+    if (pendingFile) {
+      uploadFile(pendingFile, true);
+    }
+  }, [pendingFile, uploadFile]);
+
+  const handleViewExisting = useCallback(() => {
+    if (duplicateInfo?.existingResume) {
+      router.push(`/profile/${duplicateInfo.existingResume.id}`);
+    }
+  }, [duplicateInfo, router]);
 
   const handleDragOver = useCallback((e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
@@ -269,11 +323,66 @@ export function ResumeUpload({
     setProgress(0);
     setError(null);
     setUploadedResume(null);
+    setDuplicateInfo(null);
+    setPendingFile(null);
   }, []);
 
   return (
     <div className="w-full max-w-xl mx-auto">
-      {status === "processing" && uploadedResume ? (
+      {status === "duplicate" && duplicateInfo ? (
+        <div className="p-6 border-2 border-warning bg-warning/10 rounded-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <svg
+              role="img"
+              aria-label="Warning"
+              className="w-8 h-8 text-warning"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <h3 className="text-lg font-medium text-warning-foreground">Duplicate File Detected</h3>
+          </div>
+          <p className="text-sm text-warning-foreground/80 mb-4">{duplicateInfo.message}</p>
+          {duplicateInfo.existingResume && (
+            <p className="text-sm text-warning-foreground/80 mb-4">
+              Previous extraction status:{" "}
+              <span className="font-medium">{duplicateInfo.existingResume.status}</span>
+            </p>
+          )}
+          <div className="flex gap-3 mt-4">
+            {duplicateInfo.existingResume && (
+              <button
+                type="button"
+                onClick={handleViewExisting}
+                className="px-4 py-2 text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-md hover:bg-primary/20 transition-colors"
+              >
+                View Existing Profile
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleForceReimport}
+              className="px-4 py-2 text-sm font-medium text-warning-foreground bg-warning/20 border border-warning/50 rounded-md hover:bg-warning/30 transition-colors"
+            >
+              Re-import Anyway
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="px-4 py-2 text-sm font-medium text-muted-foreground bg-muted border border-border rounded-md hover:bg-muted/80 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : status === "processing" && uploadedResume ? (
         <div className="p-6 border-2 border-warning bg-warning/10 rounded-lg">
           <div className="flex items-center gap-3 mb-4">
             <svg

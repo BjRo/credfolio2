@@ -194,3 +194,139 @@ func TestFileRepository_Delete(t *testing.T) {
 		t.Error("expected file to be deleted")
 	}
 }
+
+func TestFileRepository_GetByUserIDAndContentHash(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	cleanupTestData(t, db)
+
+	userRepo := postgres.NewUserRepository(db)
+	fileRepo := postgres.NewFileRepository(db)
+	ctx := context.Background()
+
+	// Create user
+	user := &domain.User{
+		Email:        "filecontenthash@example.com",
+		PasswordHash: "hashed_password",
+	}
+	if err := userRepo.Create(ctx, user); err != nil {
+		t.Fatalf("Create user failed: %v", err)
+	}
+
+	// Create another user to test user isolation
+	otherUser := &domain.User{
+		Email:        "otheruser@example.com",
+		PasswordHash: "hashed_password",
+	}
+	if err := userRepo.Create(ctx, otherUser); err != nil {
+		t.Fatalf("Create other user failed: %v", err)
+	}
+
+	contentHash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+	// Create file with content hash
+	file := &domain.File{
+		UserID:      user.ID,
+		Filename:    "test.pdf",
+		ContentType: "application/pdf",
+		SizeBytes:   12345,
+		StorageKey:  "users/" + user.ID.String() + "/contenthash.pdf",
+		ContentHash: &contentHash,
+	}
+	if err := fileRepo.Create(ctx, file); err != nil {
+		t.Fatalf("Create file failed: %v", err)
+	}
+
+	// Test: Find file by user ID and content hash
+	found, err := fileRepo.GetByUserIDAndContentHash(ctx, user.ID, contentHash)
+	if err != nil {
+		t.Fatalf("GetByUserIDAndContentHash failed: %v", err)
+	}
+	if found == nil {
+		t.Fatal("expected to find file, got nil")
+	}
+	if found.ID != file.ID {
+		t.Errorf("ID mismatch: got %v, want %v", found.ID, file.ID)
+	}
+	if found.ContentHash == nil || *found.ContentHash != contentHash {
+		t.Errorf("ContentHash mismatch: got %v, want %v", found.ContentHash, contentHash)
+	}
+
+	// Test: Not found with different hash
+	notFound, err := fileRepo.GetByUserIDAndContentHash(ctx, user.ID, "differenthash123")
+	if err != nil {
+		t.Fatalf("GetByUserIDAndContentHash for different hash failed: %v", err)
+	}
+	if notFound != nil {
+		t.Error("expected nil for non-existent hash")
+	}
+
+	// Test: Not found for different user with same hash
+	notFoundOtherUser, err := fileRepo.GetByUserIDAndContentHash(ctx, otherUser.ID, contentHash)
+	if err != nil {
+		t.Fatalf("GetByUserIDAndContentHash for other user failed: %v", err)
+	}
+	if notFoundOtherUser != nil {
+		t.Error("expected nil for other user (user isolation)")
+	}
+
+	// Test: Not found for non-existent user
+	notFoundNoUser, err := fileRepo.GetByUserIDAndContentHash(ctx, uuid.New(), contentHash)
+	if err != nil {
+		t.Fatalf("GetByUserIDAndContentHash for non-existent user failed: %v", err)
+	}
+	if notFoundNoUser != nil {
+		t.Error("expected nil for non-existent user")
+	}
+}
+
+func TestFileRepository_Create_WithContentHash(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	cleanupTestData(t, db)
+
+	userRepo := postgres.NewUserRepository(db)
+	fileRepo := postgres.NewFileRepository(db)
+	ctx := context.Background()
+
+	// Create a user first
+	user := &domain.User{
+		Email:        "filecreatehash@example.com",
+		PasswordHash: "hashed_password",
+	}
+	if err := userRepo.Create(ctx, user); err != nil {
+		t.Fatalf("Create user failed: %v", err)
+	}
+
+	contentHash := "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
+
+	file := &domain.File{
+		UserID:      user.ID,
+		Filename:    "resume.pdf",
+		ContentType: "application/pdf",
+		SizeBytes:   54321,
+		StorageKey:  "users/" + user.ID.String() + "/resume.pdf",
+		ContentHash: &contentHash,
+	}
+
+	err := fileRepo.Create(ctx, file)
+	if err != nil {
+		t.Fatalf("Create file with content hash failed: %v", err)
+	}
+
+	if file.ID == uuid.Nil {
+		t.Error("expected file ID to be set after create")
+	}
+
+	// Verify the content hash was saved
+	found, err := fileRepo.GetByID(ctx, file.ID)
+	if err != nil {
+		t.Fatalf("GetByID failed: %v", err)
+	}
+	if found.ContentHash == nil {
+		t.Fatal("expected content hash to be set")
+	}
+	if *found.ContentHash != contentHash {
+		t.Errorf("content hash mismatch: got %q, want %q", *found.ContentHash, contentHash)
+	}
+}

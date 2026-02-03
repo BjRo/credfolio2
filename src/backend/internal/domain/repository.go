@@ -35,6 +35,10 @@ type FileRepository interface {
 	// GetByUserID retrieves all files belonging to a user.
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*File, error)
 
+	// GetByUserIDAndContentHash retrieves a file by user ID and content hash.
+	// Returns nil if no matching file exists.
+	GetByUserIDAndContentHash(ctx context.Context, userID uuid.UUID, contentHash string) (*File, error)
+
 	// Delete removes a file record by its ID.
 	Delete(ctx context.Context, id uuid.UUID) error
 }

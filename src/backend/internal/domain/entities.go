@@ -31,6 +31,7 @@ type File struct { //nolint:govet // Field ordering prioritizes readability over
 	ContentType string    `bun:"content_type,notnull"`
 	SizeBytes   int64     `bun:"size_bytes,notnull"`
 	StorageKey  string    `bun:"storage_key,notnull,unique"`
+	ContentHash *string   `bun:"content_hash"` // SHA-256 hash for duplicate detection
 	CreatedAt   time.Time `bun:"created_at,notnull,default:current_timestamp"`
 
 	// Relations

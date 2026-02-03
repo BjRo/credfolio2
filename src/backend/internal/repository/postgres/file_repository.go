@@ -50,6 +50,26 @@ func (r *FileRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*
 	return files, nil
 }
 
+// GetByUserIDAndContentHash retrieves a file by user ID and content hash.
+// Returns nil if no matching file exists.
+func (r *FileRepository) GetByUserIDAndContentHash(ctx context.Context, userID uuid.UUID, contentHash string) (*domain.File, error) {
+	file := new(domain.File)
+	err := r.db.NewSelect().
+		Model(file).
+		Where("user_id = ?", userID).
+		Where("content_hash = ?", contentHash).
+		Order("created_at DESC"). // Return the most recent if multiple exist
+		Limit(1).
+		Scan(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}
+
 // Delete removes a file record by its ID.
 func (r *FileRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.NewDelete().Model((*domain.File)(nil)).Where("id = ?", id).Exec(ctx)

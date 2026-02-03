@@ -98,6 +98,13 @@ type ComplexityRoot struct {
 		Skill   func(childComplexity int) int
 	}
 
+	DuplicateFileDetected struct {
+		ExistingFile            func(childComplexity int) int
+		ExistingReferenceLetter func(childComplexity int) int
+		ExistingResume          func(childComplexity int) int
+		Message                 func(childComplexity int) int
+	}
+
 	EducationResult struct {
 		Education func(childComplexity int) int
 	}
@@ -164,6 +171,7 @@ type ComplexityRoot struct {
 	}
 
 	File struct {
+		ContentHash func(childComplexity int) int
 		ContentType func(childComplexity int) int
 		CreatedAt   func(childComplexity int) int
 		Filename    func(childComplexity int) int
@@ -193,9 +201,9 @@ type ComplexityRoot struct {
 		UpdateExperience                func(childComplexity int, id string, input model.UpdateExperienceInput) int
 		UpdateProfileHeader             func(childComplexity int, userID string, input model.UpdateProfileHeaderInput) int
 		UpdateSkill                     func(childComplexity int, id string, input model.UpdateSkillInput) int
-		UploadFile                      func(childComplexity int, userID string, file graphql.Upload) int
+		UploadFile                      func(childComplexity int, userID string, file graphql.Upload, forceReimport *bool) int
 		UploadProfilePhoto              func(childComplexity int, userID string, file graphql.Upload) int
-		UploadResume                    func(childComplexity int, userID string, file graphql.Upload) int
+		UploadResume                    func(childComplexity int, userID string, file graphql.Upload, forceReimport *bool) int
 	}
 
 	Profile struct {
@@ -272,6 +280,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Author                func(childComplexity int, id string) int
 		Authors               func(childComplexity int, profileID string) int
+		CheckDuplicateFile    func(childComplexity int, userID string, contentHash string) int
 		ExperienceValidations func(childComplexity int, experienceID string) int
 		File                  func(childComplexity int, id string) int
 		Files                 func(childComplexity int, userID string) int
@@ -387,8 +396,8 @@ type FileResolver interface {
 	URL(ctx context.Context, obj *model.File) (string, error)
 }
 type MutationResolver interface {
-	UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error)
-	UploadResume(ctx context.Context, userID string, file graphql.Upload) (model.UploadResumeResponse, error)
+	UploadFile(ctx context.Context, userID string, file graphql.Upload, forceReimport *bool) (model.UploadFileResponse, error)
+	UploadResume(ctx context.Context, userID string, file graphql.Upload, forceReimport *bool) (model.UploadResumeResponse, error)
 	UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error)
 	UploadProfilePhoto(ctx context.Context, userID string, file graphql.Upload) (model.UploadProfilePhotoResponse, error)
 	DeleteProfilePhoto(ctx context.Context, userID string) (model.DeleteProfilePhotoResponse, error)
@@ -428,6 +437,7 @@ type QueryResolver interface {
 	Authors(ctx context.Context, profileID string) ([]*model.Author, error)
 	SkillValidations(ctx context.Context, skillID string) ([]*model.SkillValidation, error)
 	ExperienceValidations(ctx context.Context, experienceID string) ([]*model.ExperienceValidation, error)
+	CheckDuplicateFile(ctx context.Context, userID string, contentHash string) (*model.DuplicateFileDetected, error)
 }
 type SkillValidationResolver interface {
 	Skill(ctx context.Context, obj *model.SkillValidation) (*model.ProfileSkill, error)
@@ -605,6 +615,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DiscoveredSkill.Skill(childComplexity), true
+
+	case "DuplicateFileDetected.existingFile":
+		if e.complexity.DuplicateFileDetected.ExistingFile == nil {
+			break
+		}
+
+		return e.complexity.DuplicateFileDetected.ExistingFile(childComplexity), true
+	case "DuplicateFileDetected.existingReferenceLetter":
+		if e.complexity.DuplicateFileDetected.ExistingReferenceLetter == nil {
+			break
+		}
+
+		return e.complexity.DuplicateFileDetected.ExistingReferenceLetter(childComplexity), true
+	case "DuplicateFileDetected.existingResume":
+		if e.complexity.DuplicateFileDetected.ExistingResume == nil {
+			break
+		}
+
+		return e.complexity.DuplicateFileDetected.ExistingResume(childComplexity), true
+	case "DuplicateFileDetected.message":
+		if e.complexity.DuplicateFileDetected.Message == nil {
+			break
+		}
+
+		return e.complexity.DuplicateFileDetected.Message(childComplexity), true
 
 	case "EducationResult.education":
 		if e.complexity.EducationResult.Education == nil {
@@ -809,6 +844,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ExtractionMetadata.ProcessingTimeMs(childComplexity), true
 
+	case "File.contentHash":
+		if e.complexity.File.ContentHash == nil {
+			break
+		}
+
+		return e.complexity.File.ContentHash(childComplexity), true
 	case "File.contentType":
 		if e.complexity.File.ContentType == nil {
 			break
@@ -1024,7 +1065,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UploadFile(childComplexity, args["userId"].(string), args["file"].(graphql.Upload)), true
+		return e.complexity.Mutation.UploadFile(childComplexity, args["userId"].(string), args["file"].(graphql.Upload), args["forceReimport"].(*bool)), true
 	case "Mutation.uploadProfilePhoto":
 		if e.complexity.Mutation.UploadProfilePhoto == nil {
 			break
@@ -1046,7 +1087,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UploadResume(childComplexity, args["userId"].(string), args["file"].(graphql.Upload)), true
+		return e.complexity.Mutation.UploadResume(childComplexity, args["userId"].(string), args["file"].(graphql.Upload), args["forceReimport"].(*bool)), true
 
 	case "Profile.createdAt":
 		if e.complexity.Profile.CreatedAt == nil {
@@ -1394,6 +1435,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Authors(childComplexity, args["profileId"].(string)), true
+	case "Query.checkDuplicateFile":
+		if e.complexity.Query.CheckDuplicateFile == nil {
+			break
+		}
+
+		args, err := ec.field_Query_checkDuplicateFile_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.CheckDuplicateFile(childComplexity, args["userId"].(string), args["contentHash"].(string)), true
 	case "Query.experienceValidations":
 		if e.complexity.Query.ExperienceValidations == nil {
 			break
@@ -2046,6 +2098,8 @@ type File {
   contentType: String!
   sizeBytes: Int!
   storageKey: String!
+  """SHA-256 hash of the file content for duplicate detection."""
+  contentHash: String
   """Presigned URL for downloading the file. Expires after a short time."""
   url: String!
   createdAt: DateTime!
@@ -2942,6 +2996,13 @@ type Query {
   Get all validations for a specific experience.
   """
   experienceValidations(experienceId: ID!): [ExperienceValidation!]!
+
+  """
+  Check if a file with the given content hash already exists for the user.
+  Returns the existing file and associated resume/reference letter if found.
+  Used for pre-upload duplicate detection.
+  """
+  checkDuplicateFile(userId: ID!, contentHash: String!): DuplicateFileDetected
 }
 
 # ============================================================================
@@ -2969,9 +3030,23 @@ type FileValidationError {
 }
 
 """
-Union type for upload result - either success or validation error.
+Result when a duplicate file is detected during upload.
 """
-union UploadFileResponse = UploadFileResult | FileValidationError
+type DuplicateFileDetected {
+  """The existing file that matches the uploaded content."""
+  existingFile: File!
+  """The existing resume created from this file (if uploading a resume)."""
+  existingResume: Resume
+  """The existing reference letter created from this file (if uploading a reference letter)."""
+  existingReferenceLetter: ReferenceLetter
+  """Message describing the duplicate detection."""
+  message: String!
+}
+
+"""
+Union type for upload result - either success, validation error, or duplicate detected.
+"""
+union UploadFileResponse = UploadFileResult | FileValidationError | DuplicateFileDetected
 
 """
 Result of a resume upload operation.
@@ -2984,33 +3059,41 @@ type UploadResumeResult {
 }
 
 """
-Union type for resume upload result - either success or validation error.
+Union type for resume upload result - either success, validation error, or duplicate detected.
 """
-union UploadResumeResponse = UploadResumeResult | FileValidationError
+union UploadResumeResponse = UploadResumeResult | FileValidationError | DuplicateFileDetected
 
 type Mutation {
   """
   Upload a reference letter file for processing.
   Accepts PDF, DOCX, or TXT files.
   Creates a file record and queues the document for LLM extraction.
+  If a file with the same content hash already exists, returns DuplicateFileDetected
+  unless forceReimport is true.
   """
   uploadFile(
     """The user ID uploading the file."""
     userId: ID!
     """The file to upload (PDF, DOCX, or TXT only)."""
     file: Upload!
+    """If true, proceed with upload even if a duplicate is detected."""
+    forceReimport: Boolean
   ): UploadFileResponse!
 
   """
   Upload a resume file for processing.
   Accepts PDF, DOCX, or TXT files.
   Creates a file record and queues the resume for LLM extraction.
+  If a file with the same content hash already exists, returns DuplicateFileDetected
+  unless forceReimport is true.
   """
   uploadResume(
     """The user ID uploading the resume."""
     userId: ID!
     """The resume file to upload (PDF, DOCX, or TXT only)."""
     file: Upload!
+    """If true, proceed with upload even if a duplicate is detected."""
+    forceReimport: Boolean
   ): UploadResumeResponse!
 
   # ============================================================================
@@ -3392,6 +3475,11 @@ func (ec *executionContext) field_Mutation_uploadFile_args(ctx context.Context, 
 		return nil, err
 	}
 	args["file"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "forceReimport", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["forceReimport"] = arg2
 	return args, nil
 }
 
@@ -3424,6 +3512,11 @@ func (ec *executionContext) field_Mutation_uploadResume_args(ctx context.Context
 		return nil, err
 	}
 	args["file"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "forceReimport", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["forceReimport"] = arg2
 	return args, nil
 }
 
@@ -3457,6 +3550,22 @@ func (ec *executionContext) field_Query_authors_args(ctx context.Context, rawArg
 		return nil, err
 	}
 	args["profileId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_checkDuplicateFile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "contentHash", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["contentHash"] = arg1
 	return args, nil
 }
 
@@ -4411,6 +4520,188 @@ func (ec *executionContext) _DiscoveredSkill_context(ctx context.Context, field 
 func (ec *executionContext) fieldContext_DiscoveredSkill_context(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DiscoveredSkill",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DuplicateFileDetected_existingFile(ctx context.Context, field graphql.CollectedField, obj *model.DuplicateFileDetected) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DuplicateFileDetected_existingFile,
+		func(ctx context.Context) (any, error) {
+			return obj.ExistingFile, nil
+		},
+		nil,
+		ec.marshalNFile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐFile,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DuplicateFileDetected_existingFile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DuplicateFileDetected",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_File_id(ctx, field)
+			case "filename":
+				return ec.fieldContext_File_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_File_contentType(ctx, field)
+			case "sizeBytes":
+				return ec.fieldContext_File_sizeBytes(ctx, field)
+			case "storageKey":
+				return ec.fieldContext_File_storageKey(ctx, field)
+			case "contentHash":
+				return ec.fieldContext_File_contentHash(ctx, field)
+			case "url":
+				return ec.fieldContext_File_url(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_File_createdAt(ctx, field)
+			case "user":
+				return ec.fieldContext_File_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type File", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DuplicateFileDetected_existingResume(ctx context.Context, field graphql.CollectedField, obj *model.DuplicateFileDetected) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DuplicateFileDetected_existingResume,
+		func(ctx context.Context) (any, error) {
+			return obj.ExistingResume, nil
+		},
+		nil,
+		ec.marshalOResume2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResume,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_DuplicateFileDetected_existingResume(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DuplicateFileDetected",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Resume_id(ctx, field)
+			case "status":
+				return ec.fieldContext_Resume_status(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_Resume_extractedData(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_Resume_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Resume_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Resume_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_Resume_user(ctx, field)
+			case "file":
+				return ec.fieldContext_Resume_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Resume", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DuplicateFileDetected_existingReferenceLetter(ctx context.Context, field graphql.CollectedField, obj *model.DuplicateFileDetected) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DuplicateFileDetected_existingReferenceLetter,
+		func(ctx context.Context) (any, error) {
+			return obj.ExistingReferenceLetter, nil
+		},
+		nil,
+		ec.marshalOReferenceLetter2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐReferenceLetter,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_DuplicateFileDetected_existingReferenceLetter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DuplicateFileDetected",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ReferenceLetter_id(ctx, field)
+			case "title":
+				return ec.fieldContext_ReferenceLetter_title(ctx, field)
+			case "authorName":
+				return ec.fieldContext_ReferenceLetter_authorName(ctx, field)
+			case "authorTitle":
+				return ec.fieldContext_ReferenceLetter_authorTitle(ctx, field)
+			case "organization":
+				return ec.fieldContext_ReferenceLetter_organization(ctx, field)
+			case "dateWritten":
+				return ec.fieldContext_ReferenceLetter_dateWritten(ctx, field)
+			case "rawText":
+				return ec.fieldContext_ReferenceLetter_rawText(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_ReferenceLetter_extractedData(ctx, field)
+			case "status":
+				return ec.fieldContext_ReferenceLetter_status(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ReferenceLetter_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_ReferenceLetter_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_ReferenceLetter_user(ctx, field)
+			case "file":
+				return ec.fieldContext_ReferenceLetter_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReferenceLetter", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DuplicateFileDetected_message(ctx context.Context, field graphql.CollectedField, obj *model.DuplicateFileDetected) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DuplicateFileDetected_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DuplicateFileDetected_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DuplicateFileDetected",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -5658,6 +5949,35 @@ func (ec *executionContext) fieldContext_File_storageKey(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _File_contentHash(ctx context.Context, field graphql.CollectedField, obj *model.File) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_File_contentHash,
+		func(ctx context.Context) (any, error) {
+			return obj.ContentHash, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_File_contentHash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "File",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _File_url(ctx context.Context, field graphql.CollectedField, obj *model.File) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5823,7 +6143,7 @@ func (ec *executionContext) _Mutation_uploadFile(ctx context.Context, field grap
 		ec.fieldContext_Mutation_uploadFile,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UploadFile(ctx, fc.Args["userId"].(string), fc.Args["file"].(graphql.Upload))
+			return ec.resolvers.Mutation().UploadFile(ctx, fc.Args["userId"].(string), fc.Args["file"].(graphql.Upload), fc.Args["forceReimport"].(*bool))
 		},
 		nil,
 		ec.marshalNUploadFileResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadFileResponse,
@@ -5864,7 +6184,7 @@ func (ec *executionContext) _Mutation_uploadResume(ctx context.Context, field gr
 		ec.fieldContext_Mutation_uploadResume,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().UploadResume(ctx, fc.Args["userId"].(string), fc.Args["file"].(graphql.Upload))
+			return ec.resolvers.Mutation().UploadResume(ctx, fc.Args["userId"].(string), fc.Args["file"].(graphql.Upload), fc.Args["forceReimport"].(*bool))
 		},
 		nil,
 		ec.marshalNUploadResumeResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadResumeResponse,
@@ -8280,6 +8600,8 @@ func (ec *executionContext) fieldContext_Query_file(ctx context.Context, field g
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "contentHash":
+				return ec.fieldContext_File_contentHash(ctx, field)
 			case "url":
 				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
@@ -8339,6 +8661,8 @@ func (ec *executionContext) fieldContext_Query_files(ctx context.Context, field 
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "contentHash":
+				return ec.fieldContext_File_contentHash(ctx, field)
 			case "url":
 				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
@@ -9180,6 +9504,57 @@ func (ec *executionContext) fieldContext_Query_experienceValidations(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_checkDuplicateFile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_checkDuplicateFile,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().CheckDuplicateFile(ctx, fc.Args["userId"].(string), fc.Args["contentHash"].(string))
+		},
+		nil,
+		ec.marshalODuplicateFileDetected2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDuplicateFileDetected,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_checkDuplicateFile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "existingFile":
+				return ec.fieldContext_DuplicateFileDetected_existingFile(ctx, field)
+			case "existingResume":
+				return ec.fieldContext_DuplicateFileDetected_existingResume(ctx, field)
+			case "existingReferenceLetter":
+				return ec.fieldContext_DuplicateFileDetected_existingReferenceLetter(ctx, field)
+			case "message":
+				return ec.fieldContext_DuplicateFileDetected_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DuplicateFileDetected", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_checkDuplicateFile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9696,6 +10071,8 @@ func (ec *executionContext) fieldContext_ReferenceLetter_file(_ context.Context,
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "contentHash":
+				return ec.fieldContext_File_contentHash(ctx, field)
 			case "url":
 				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
@@ -9974,6 +10351,8 @@ func (ec *executionContext) fieldContext_Resume_file(_ context.Context, field gr
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "contentHash":
+				return ec.fieldContext_File_contentHash(ctx, field)
 			case "url":
 				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
@@ -10937,6 +11316,8 @@ func (ec *executionContext) fieldContext_UploadFileResult_file(_ context.Context
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "contentHash":
+				return ec.fieldContext_File_contentHash(ctx, field)
 			case "url":
 				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
@@ -11098,6 +11479,8 @@ func (ec *executionContext) fieldContext_UploadResumeResult_file(_ context.Conte
 				return ec.fieldContext_File_sizeBytes(ctx, field)
 			case "storageKey":
 				return ec.fieldContext_File_storageKey(ctx, field)
+			case "contentHash":
+				return ec.fieldContext_File_contentHash(ctx, field)
 			case "url":
 				return ec.fieldContext_File_url(ctx, field)
 			case "createdAt":
@@ -13606,6 +13989,13 @@ func (ec *executionContext) _UploadFileResponse(ctx context.Context, sel ast.Sel
 			return graphql.Null
 		}
 		return ec._FileValidationError(ctx, sel, obj)
+	case model.DuplicateFileDetected:
+		return ec._DuplicateFileDetected(ctx, sel, &obj)
+	case *model.DuplicateFileDetected:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DuplicateFileDetected(ctx, sel, obj)
 	default:
 		if typedObj, ok := obj.(graphql.Marshaler); ok {
 			return typedObj
@@ -13660,6 +14050,13 @@ func (ec *executionContext) _UploadResumeResponse(ctx context.Context, sel ast.S
 			return graphql.Null
 		}
 		return ec._FileValidationError(ctx, sel, obj)
+	case model.DuplicateFileDetected:
+		return ec._DuplicateFileDetected(ctx, sel, &obj)
+	case *model.DuplicateFileDetected:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DuplicateFileDetected(ctx, sel, obj)
 	default:
 		if typedObj, ok := obj.(graphql.Marshaler); ok {
 			return typedObj
@@ -13988,6 +14385,54 @@ func (ec *executionContext) _DiscoveredSkill(ctx context.Context, sel ast.Select
 			}
 		case "context":
 			out.Values[i] = ec._DiscoveredSkill_context(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var duplicateFileDetectedImplementors = []string{"DuplicateFileDetected", "UploadFileResponse", "UploadResumeResponse"}
+
+func (ec *executionContext) _DuplicateFileDetected(ctx context.Context, sel ast.SelectionSet, obj *model.DuplicateFileDetected) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, duplicateFileDetectedImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DuplicateFileDetected")
+		case "existingFile":
+			out.Values[i] = ec._DuplicateFileDetected_existingFile(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "existingResume":
+			out.Values[i] = ec._DuplicateFileDetected_existingResume(ctx, field, obj)
+		case "existingReferenceLetter":
+			out.Values[i] = ec._DuplicateFileDetected_existingReferenceLetter(ctx, field, obj)
+		case "message":
+			out.Values[i] = ec._DuplicateFileDetected_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14619,6 +15064,8 @@ func (ec *executionContext) _File(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "contentHash":
+			out.Values[i] = ec._File_contentHash(ctx, field, obj)
 		case "url":
 			field := field
 
@@ -15732,6 +16179,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "checkDuplicateFile":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_checkDuplicateFile(ctx, field)
 				return res
 			}
 
@@ -18459,6 +18925,13 @@ func (ec *executionContext) marshalODateTime2ᚖtimeᚐTime(ctx context.Context,
 	_ = ctx
 	res := graphql.MarshalTime(*v)
 	return res
+}
+
+func (ec *executionContext) marshalODuplicateFileDetected2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDuplicateFileDetected(ctx context.Context, sel ast.SelectionSet, v *model.DuplicateFileDetected) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._DuplicateFileDetected(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOExtractedLetterData2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedLetterData(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedLetterData) graphql.Marshaler {

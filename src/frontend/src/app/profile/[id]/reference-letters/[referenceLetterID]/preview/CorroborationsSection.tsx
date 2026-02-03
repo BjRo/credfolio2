@@ -57,10 +57,10 @@ export function CorroborationsSection({
 
           {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
           <div className="space-y-3" role="group" aria-label="Skills corroborations">
-            {skillCorroborations.map((corr) => (
+            {skillCorroborations.map((corr, index) => (
               // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
               <div
-                key={corr.profileSkillId}
+                key={`${corr.profileSkillId}-${index}`}
                 role="checkbox"
                 aria-checked={selectedSkillCorroborations.has(corr.profileSkillId)}
                 tabIndex={disabled ? -1 : 0}
@@ -116,10 +116,10 @@ export function CorroborationsSection({
 
           {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
           <div className="space-y-3" role="group" aria-label="Experience corroborations">
-            {experienceCorroborations.map((corr) => (
+            {experienceCorroborations.map((corr, index) => (
               // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
               <div
-                key={corr.profileExperienceId}
+                key={`${corr.profileExperienceId}-${index}`}
                 role="checkbox"
                 aria-checked={selectedExperienceCorroborations.has(corr.profileExperienceId)}
                 tabIndex={disabled ? -1 : 0}

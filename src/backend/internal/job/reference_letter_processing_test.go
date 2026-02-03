@@ -108,6 +108,15 @@ func (r *mockFileRepository) GetByUserID(_ context.Context, _ uuid.UUID) ([]*dom
 	return nil, nil
 }
 
+func (r *mockFileRepository) GetByUserIDAndContentHash(_ context.Context, userID uuid.UUID, contentHash string) (*domain.File, error) {
+	for _, file := range r.files {
+		if file.UserID == userID && file.ContentHash != nil && *file.ContentHash == contentHash {
+			return file, nil
+		}
+	}
+	return nil, nil
+}
+
 // mockStorage implements domain.Storage for testing.
 type mockStorage struct {
 	data map[string][]byte
