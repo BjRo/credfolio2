@@ -9,7 +9,6 @@ updated_at: 2026-01-23T16:29:50Z
 parent: credfolio2-09w1
 blocking:
     - credfolio2-ppen
-    - credfolio2-1twf
 ---
 
 Database and service layer for storing profile versions.

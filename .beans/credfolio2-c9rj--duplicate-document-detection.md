@@ -1,11 +1,12 @@
 ---
 # credfolio2-c9rj
 title: Duplicate Document Detection
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-01-29T13:43:34Z
-updated_at: 2026-01-29T13:43:34Z
-parent: abtx
+updated_at: 2026-02-03T10:53:15Z
+parent: credfolio2-2ex3
 ---
 
 Detect when a document (resume or reference letter) has already been uploaded by the same user to prevent accidental re-uploads and allow intentional re-imports.
