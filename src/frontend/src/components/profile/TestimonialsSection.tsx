@@ -2,11 +2,13 @@
 
 import {
   AlertCircle,
+  Camera,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   FileText,
   Linkedin,
+  Loader2,
   MessageSquareQuote,
   MoreVertical,
   Pencil,
@@ -14,7 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,8 +25,85 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { type GetTestimonialsQuery, TestimonialRelationship } from "@/graphql/generated/graphql";
+import { GRAPHQL_UPLOAD_ENDPOINT } from "@/lib/urql/client";
 import { AuthorEditModal } from "./AuthorEditModal";
 import { DeleteTestimonialDialog } from "./DeleteTestimonialDialog";
+
+// Upload author image using XHR following GraphQL multipart request spec
+async function uploadAuthorImageXhr(
+  authorId: string,
+  file: File
+): Promise<{ success: boolean; error?: string }> {
+  const operations = JSON.stringify({
+    query: `
+      mutation UploadAuthorImage($authorId: ID!, $file: Upload!) {
+        uploadAuthorImage(authorId: $authorId, file: $file) {
+          ... on UploadAuthorImageResult {
+            __typename
+            file {
+              id
+            }
+            author {
+              id
+              imageUrl
+            }
+          }
+          ... on FileValidationError {
+            __typename
+            message
+            field
+          }
+        }
+      }
+    `,
+    variables: {
+      authorId,
+      file: null,
+    },
+  });
+
+  const map = JSON.stringify({
+    "0": ["variables.file"],
+  });
+
+  const formData = new FormData();
+  formData.append("operations", operations);
+  formData.append("map", map);
+  formData.append("0", file);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const result = JSON.parse(xhr.responseText);
+          if (result.errors?.length) {
+            reject(new Error(result.errors[0].message));
+            return;
+          }
+          const data = result.data?.uploadAuthorImage;
+          if (data?.__typename === "FileValidationError") {
+            reject(new Error(data.message));
+            return;
+          }
+          resolve({ success: true });
+        } catch {
+          reject(new Error("Failed to parse response"));
+        }
+      } else {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Network error during upload"));
+    });
+
+    xhr.open("POST", GRAPHQL_UPLOAD_ENDPOINT);
+    xhr.send(formData);
+  });
+}
 
 const RELATIONSHIP_LABELS: Record<TestimonialRelationship, string> = {
   [TestimonialRelationship.Manager]: "Manager",
@@ -226,6 +305,7 @@ interface TestimonialGroupCardProps {
   onSkillClick?: (skillId: string) => void;
   onDeleteClick?: (testimonial: Testimonial) => void;
   onEditAuthor?: (author: AuthorInfo) => void;
+  onAvatarUploadSuccess?: () => void;
 }
 
 function TestimonialGroupCard({
@@ -233,9 +313,13 @@ function TestimonialGroupCard({
   onSkillClick,
   onDeleteClick,
   onEditAuthor,
+  onAvatarUploadSuccess,
 }: TestimonialGroupCardProps) {
   const { author, relationship, testimonials } = group;
   const [isExpanded, setIsExpanded] = useState(testimonials.length <= COLLAPSE_THRESHOLD);
+  const [isAvatarHovered, setIsAvatarHovered] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
   const visibleTestimonials = isExpanded ? testimonials : testimonials.slice(0, COLLAPSE_THRESHOLD);
   const hiddenCount = testimonials.length - COLLAPSE_THRESHOLD;
@@ -245,6 +329,7 @@ function TestimonialGroupCard({
 
   const unknown = isUnknownAuthor(author);
   const canEditAuthor = onEditAuthor && !author.isLegacy;
+  const canUploadAvatar = canEditAuthor && onAvatarUploadSuccess;
 
   // Get initials for avatar fallback
   const getInitials = (name: string): string => {
@@ -256,6 +341,33 @@ function TestimonialGroupCard({
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const handleAvatarFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || author.isLegacy) return;
+
+      // Reset input so the same file can be selected again
+      e.target.value = "";
+
+      setIsUploading(true);
+      try {
+        await uploadAuthorImageXhr(author.id, file);
+        onAvatarUploadSuccess?.();
+      } catch (err) {
+        console.error("Author image upload failed:", err);
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [author.id, author.isLegacy, onAvatarUploadSuccess]
+  );
+
+  const handleAvatarClick = useCallback(() => {
+    if (canUploadAvatar && !isUploading) {
+      avatarFileInputRef.current?.click();
+    }
+  }, [canUploadAvatar, isUploading]);
 
   return (
     <div
@@ -285,24 +397,85 @@ function TestimonialGroupCard({
       {/* Author header */}
       <div className="flex items-start gap-3 mb-4">
         {/* Avatar */}
-        <div
-          className={`flex-shrink-0 w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
-            author.imageUrl ? "bg-muted" : unknown ? "bg-warning/20" : "bg-primary/10"
-          }`}
-        >
-          {author.imageUrl ? (
-            <Image
-              src={author.imageUrl}
-              alt={`Photo of ${author.name}`}
-              width={40}
-              height={40}
-              className="w-full h-full object-cover"
-              unoptimized
-            />
+        <div className="relative flex-shrink-0">
+          {canUploadAvatar ? (
+            <button
+              type="button"
+              className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border-0 ${
+                author.imageUrl ? "bg-muted" : unknown ? "bg-warning/20" : "bg-primary/10"
+              } cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+              aria-label={`Change photo for ${author.name}`}
+              onClick={handleAvatarClick}
+              onMouseEnter={() => setIsAvatarHovered(true)}
+              onMouseLeave={() => setIsAvatarHovered(false)}
+              onFocus={() => setIsAvatarHovered(true)}
+              onBlur={() => setIsAvatarHovered(false)}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <Loader2 className="w-5 h-5 text-primary animate-spin" aria-hidden="true" />
+              ) : author.imageUrl ? (
+                <Image
+                  src={author.imageUrl}
+                  alt={`Photo of ${author.name}`}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <span
+                  className={`text-sm font-medium ${unknown ? "text-warning" : "text-primary"}`}
+                >
+                  {unknown ? "?" : getInitials(author.name)}
+                </span>
+              )}
+            </button>
           ) : (
-            <span className={`text-sm font-medium ${unknown ? "text-warning" : "text-primary"}`}>
-              {unknown ? "?" : getInitials(author.name)}
-            </span>
+            <div
+              className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
+                author.imageUrl ? "bg-muted" : unknown ? "bg-warning/20" : "bg-primary/10"
+              }`}
+            >
+              {author.imageUrl ? (
+                <Image
+                  src={author.imageUrl}
+                  alt={`Photo of ${author.name}`}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <span
+                  className={`text-sm font-medium ${unknown ? "text-warning" : "text-primary"}`}
+                >
+                  {unknown ? "?" : getInitials(author.name)}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Hover Overlay */}
+          {canUploadAvatar && isAvatarHovered && !isUploading && (
+            <div
+              className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center pointer-events-none"
+              aria-hidden="true"
+            >
+              <Camera className="w-4 h-4 text-white" />
+            </div>
+          )}
+
+          {/* Hidden File Input */}
+          {canUploadAvatar && (
+            <input
+              ref={avatarFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={handleAvatarFileChange}
+              aria-label={`Upload author photo for ${author.name}`}
+            />
           )}
         </div>
 
@@ -503,6 +676,7 @@ export function TestimonialsSection({
                 onSkillClick={onSkillClick}
                 onDeleteClick={isEditable ? handleDeleteClick : undefined}
                 onEditAuthor={isEditable ? handleEditAuthor : undefined}
+                onAvatarUploadSuccess={isEditable ? onAuthorUpdated : undefined}
               />
             ))}
           </div>

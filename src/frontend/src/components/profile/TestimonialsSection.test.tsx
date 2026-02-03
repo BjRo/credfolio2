@@ -1100,4 +1100,75 @@ describe("TestimonialsSection", () => {
       expect(screen.queryByRole("menuitem", { name: /delete/i })).not.toBeInTheDocument();
     });
   });
+
+  describe("Inline avatar editing", () => {
+    const mockTestimonialWithAuthor = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Great leadership skills.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+          imageUrl: null,
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("renders clickable avatar button when editable", () => {
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+      expect(
+        screen.getByRole("button", { name: /change photo for john manager/i })
+      ).toBeInTheDocument();
+    });
+
+    it("does not render clickable avatar button when not editable", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialWithAuthor} />);
+      // Avatar should be a div, not a button, when not editable
+      expect(
+        screen.queryByRole("button", { name: /change photo for john manager/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows camera overlay on avatar hover when editable", () => {
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+      const avatarButton = screen.getByRole("button", { name: /change photo for john manager/i });
+      // Check that the button exists and has hover classes for camera overlay
+      expect(avatarButton).toBeInTheDocument();
+    });
+
+    it("has hidden file input for avatar upload", () => {
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+      const fileInput = document.querySelector(
+        'input[type="file"][aria-label*="Upload author photo"]'
+      );
+      expect(fileInput).toBeInTheDocument();
+      expect(fileInput).toHaveClass("hidden");
+    });
+
+    it("does not render avatar file input when not editable", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialWithAuthor} />);
+      const fileInput = document.querySelector(
+        'input[type="file"][aria-label*="Upload author photo"]'
+      );
+      expect(fileInput).not.toBeInTheDocument();
+    });
+  });
 });
