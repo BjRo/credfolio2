@@ -1,11 +1,11 @@
 ---
 # credfolio2-cm02
 title: Edit testimonial author details (name, role, image, LinkedIn)
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-30T13:47:16Z
-updated_at: 2026-02-03T13:42:16Z
+updated_at: 2026-02-03T16:50:59Z
 parent: credfolio2-2ex3
 ---
 
