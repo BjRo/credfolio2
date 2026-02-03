@@ -279,3 +279,10 @@ mutation DeleteProfilePhoto($userId: ID!) {
     }
   }
 }
+
+mutation DeleteTestimonial($id: ID!) {
+  deleteTestimonial(id: $id) {
+    success
+    deletedId
+  }
+}

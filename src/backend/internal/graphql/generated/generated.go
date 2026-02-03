@@ -196,6 +196,7 @@ type ComplexityRoot struct {
 		DeleteExperience                func(childComplexity int, id string) int
 		DeleteProfilePhoto              func(childComplexity int, userID string) int
 		DeleteSkill                     func(childComplexity int, id string) int
+		DeleteTestimonial               func(childComplexity int, id string) int
 		UpdateAuthor                    func(childComplexity int, id string, input model.UpdateAuthorInput) int
 		UpdateEducation                 func(childComplexity int, id string, input model.UpdateEducationInput) int
 		UpdateExperience                func(childComplexity int, id string, input model.UpdateExperienceInput) int
@@ -412,6 +413,7 @@ type MutationResolver interface {
 	DeleteSkill(ctx context.Context, id string) (*model.DeleteResult, error)
 	ApplyReferenceLetterValidations(ctx context.Context, userID string, input model.ApplyValidationsInput) (model.ApplyValidationsResponse, error)
 	UpdateAuthor(ctx context.Context, id string, input model.UpdateAuthorInput) (*model.Author, error)
+	DeleteTestimonial(ctx context.Context, id string) (*model.DeleteResult, error)
 }
 type ProfileExperienceResolver interface {
 	ValidationCount(ctx context.Context, obj *model.ProfileExperience) (int, error)
@@ -1000,6 +1002,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeleteSkill(childComplexity, args["id"].(string)), true
+	case "Mutation.deleteTestimonial":
+		if e.complexity.Mutation.DeleteTestimonial == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteTestimonial_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteTestimonial(childComplexity, args["id"].(string)), true
 	case "Mutation.updateAuthor":
 		if e.complexity.Mutation.UpdateAuthor == nil {
 			break
@@ -3265,6 +3278,18 @@ type Mutation {
     """The fields to update."""
     input: UpdateAuthorInput!
   ): Author!
+
+  # ============================================================================
+  # Testimonial Mutations
+  # ============================================================================
+
+  """
+  Delete a testimonial.
+  """
+  deleteTestimonial(
+    """The testimonial ID to delete."""
+    id: ID!
+  ): DeleteResult!
 }
 `, BuiltIn: false},
 }
@@ -3372,6 +3397,17 @@ func (ec *executionContext) field_Mutation_deleteProfilePhoto_args(ctx context.C
 }
 
 func (ec *executionContext) field_Mutation_deleteSkill_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteTestimonial_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -6821,6 +6857,53 @@ func (ec *executionContext) fieldContext_Mutation_updateAuthor(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateAuthor_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteTestimonial(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteTestimonial,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DeleteTestimonial(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNDeleteResult2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDeleteResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteTestimonial(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_DeleteResult_success(ctx, field)
+			case "deletedId":
+				return ec.fieldContext_DeleteResult_deletedId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteTestimonial_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -15306,6 +15389,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateAuthor":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateAuthor(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteTestimonial":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteTestimonial(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

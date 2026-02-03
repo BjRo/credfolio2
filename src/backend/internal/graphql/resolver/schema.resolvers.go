@@ -2191,6 +2191,68 @@ func (r *mutationResolver) UpdateAuthor(ctx context.Context, id string, input mo
 	return toGraphQLAuthor(author), nil
 }
 
+// DeleteTestimonial is the resolver for the deleteTestimonial field.
+func (r *mutationResolver) DeleteTestimonial(ctx context.Context, id string) (*model.DeleteResult, error) {
+	r.log.Info("Deleting testimonial",
+		logger.Feature("profile"),
+		logger.String("testimonial_id", id),
+	)
+
+	// Parse and validate testimonial ID
+	testimonialID, err := uuid.Parse(id)
+	if err != nil {
+		r.log.Warning("Invalid testimonial ID format",
+			logger.Feature("profile"),
+			logger.String("testimonial_id", id),
+		)
+		return &model.DeleteResult{
+			Success:   false,
+			DeletedID: id,
+		}, nil
+	}
+
+	// Check if testimonial exists
+	testimonial, err := r.testimonialRepo.GetByID(ctx, testimonialID)
+	if err != nil {
+		r.log.Error("Failed to get testimonial",
+			logger.Feature("profile"),
+			logger.String("testimonial_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get testimonial: %w", err)
+	}
+	if testimonial == nil {
+		r.log.Warning("Testimonial not found",
+			logger.Feature("profile"),
+			logger.String("testimonial_id", id),
+		)
+		return &model.DeleteResult{
+			Success:   false,
+			DeletedID: id,
+		}, nil
+	}
+
+	// Delete testimonial
+	if err := r.testimonialRepo.Delete(ctx, testimonialID); err != nil {
+		r.log.Error("Failed to delete testimonial",
+			logger.Feature("profile"),
+			logger.String("testimonial_id", id),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to delete testimonial: %w", err)
+	}
+
+	r.log.Info("Testimonial deleted",
+		logger.Feature("profile"),
+		logger.String("testimonial_id", id),
+	)
+
+	return &model.DeleteResult{
+		Success:   true,
+		DeletedID: id,
+	}, nil
+}
+
 // ValidationCount is the resolver for the validationCount field.
 func (r *profileExperienceResolver) ValidationCount(ctx context.Context, obj *model.ProfileExperience) (int, error) {
 	expID, err := uuid.Parse(obj.ID)

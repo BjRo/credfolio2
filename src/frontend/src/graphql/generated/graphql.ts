@@ -183,6 +183,19 @@ export type DiscoveredSkill = {
   skill: Scalars['String']['output'];
 };
 
+/** Result when a duplicate file is detected during upload. */
+export type DuplicateFileDetected = {
+  __typename?: 'DuplicateFileDetected';
+  /** The existing file that matches the uploaded content. */
+  existingFile: File;
+  /** The existing reference letter created from this file (if uploading a reference letter). */
+  existingReferenceLetter?: Maybe<ReferenceLetter>;
+  /** The existing resume created from this file (if uploading a resume). */
+  existingResume?: Maybe<Resume>;
+  /** Message describing the duplicate detection. */
+  message: Scalars['String']['output'];
+};
+
 /** Union type for education create/update result. */
 export type EducationResponse = EducationResult | EducationValidationError;
 
@@ -327,6 +340,8 @@ export type ExtractionMetadata = {
 /** An uploaded file stored in object storage. */
 export type File = {
   __typename?: 'File';
+  /** SHA-256 hash of the file content for duplicate detection. */
+  contentHash?: Maybe<Scalars['String']['output']>;
   contentType: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   filename: Scalars['String']['output'];
@@ -378,6 +393,8 @@ export type Mutation = {
   deleteProfilePhoto: DeleteProfilePhotoResponse;
   /** Delete a skill. */
   deleteSkill: DeleteResult;
+  /** Delete a testimonial. */
+  deleteTestimonial: DeleteResult;
   /**
    * Update an author's information.
    * Allows correcting author details and adding LinkedIn profile links.
@@ -408,6 +425,8 @@ export type Mutation = {
    * Upload a reference letter file for processing.
    * Accepts PDF, DOCX, or TXT files.
    * Creates a file record and queues the document for LLM extraction.
+   * If a file with the same content hash already exists, returns DuplicateFileDetected
+   * unless forceReimport is true.
    */
   uploadFile: UploadFileResponse;
   /**
@@ -421,6 +440,8 @@ export type Mutation = {
    * Upload a resume file for processing.
    * Accepts PDF, DOCX, or TXT files.
    * Creates a file record and queues the resume for LLM extraction.
+   * If a file with the same content hash already exists, returns DuplicateFileDetected
+   * unless forceReimport is true.
    */
   uploadResume: UploadResumeResponse;
 };
@@ -470,6 +491,11 @@ export type MutationDeleteSkillArgs = {
 };
 
 
+export type MutationDeleteTestimonialArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateAuthorArgs = {
   id: Scalars['ID']['input'];
   input: UpdateAuthorInput;
@@ -502,6 +528,7 @@ export type MutationUpdateSkillArgs = {
 
 export type MutationUploadFileArgs = {
   file: Scalars['Upload']['input'];
+  forceReimport?: InputMaybe<Scalars['Boolean']['input']>;
   userId: Scalars['ID']['input'];
 };
 
@@ -514,6 +541,7 @@ export type MutationUploadProfilePhotoArgs = {
 
 export type MutationUploadResumeArgs = {
   file: Scalars['Upload']['input'];
+  forceReimport?: InputMaybe<Scalars['Boolean']['input']>;
   userId: Scalars['ID']['input'];
 };
 
@@ -663,6 +691,12 @@ export type Query = {
   author?: Maybe<Author>;
   /** Get all authors for a profile. */
   authors: Array<Author>;
+  /**
+   * Check if a file with the given content hash already exists for the user.
+   * Returns the existing file and associated resume/reference letter if found.
+   * Used for pre-upload duplicate detection.
+   */
+  checkDuplicateFile?: Maybe<DuplicateFileDetected>;
   /** Get all validations for a specific experience. */
   experienceValidations: Array<ExperienceValidation>;
   /** Get a file by ID. */
@@ -704,6 +738,12 @@ export type QueryAuthorArgs = {
 
 export type QueryAuthorsArgs = {
   profileId: Scalars['ID']['input'];
+};
+
+
+export type QueryCheckDuplicateFileArgs = {
+  contentHash: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -1018,8 +1058,8 @@ export type UpdateSkillInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** Union type for upload result - either success or validation error. */
-export type UploadFileResponse = FileValidationError | UploadFileResult;
+/** Union type for upload result - either success, validation error, or duplicate detected. */
+export type UploadFileResponse = DuplicateFileDetected | FileValidationError | UploadFileResult;
 
 /** Result of a file upload operation. */
 export type UploadFileResult = {
@@ -1040,8 +1080,8 @@ export type UploadProfilePhotoResult = {
   profile: Profile;
 };
 
-/** Union type for resume upload result - either success or validation error. */
-export type UploadResumeResponse = FileValidationError | UploadResumeResult;
+/** Union type for resume upload result - either success, validation error, or duplicate detected. */
+export type UploadResumeResponse = DuplicateFileDetected | FileValidationError | UploadResumeResult;
 
 /** Result of a resume upload operation. */
 export type UploadResumeResult = {
@@ -1156,6 +1196,7 @@ export type UploadReferenceLetterMutationVariables = Exact<{
 
 
 export type UploadReferenceLetterMutation = { __typename?: 'Mutation', uploadFile:
+    | { __typename?: 'DuplicateFileDetected' }
     | { __typename: 'FileValidationError', message: string, field: string }
     | { __typename: 'UploadFileResult', file: { __typename?: 'File', id: string, filename: string, contentType: string, sizeBytes: number }, referenceLetter: { __typename?: 'ReferenceLetter', id: string, status: ReferenceLetterStatus } }
    };
@@ -1202,6 +1243,13 @@ export type DeleteProfilePhotoMutation = { __typename?: 'Mutation', deleteProfil
     | { __typename: 'DeleteProfilePhotoResult', success: boolean }
     | { __typename: 'ProfileHeaderValidationError', message: string, field?: string | null }
    };
+
+export type DeleteTestimonialMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTestimonialMutation = { __typename?: 'Mutation', deleteTestimonial: { __typename?: 'DeleteResult', success: boolean, deletedId: string } };
 
 export type GetReferenceLetterQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1295,6 +1343,7 @@ export const ApplyReferenceLetterValidationsDocument = {"kind":"Document","defin
 export const UpdateProfileHeaderDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateProfileHeader"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateProfileHeaderInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateProfileHeader"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ProfileHeaderResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phone"}},{"kind":"Field","name":{"kind":"Name","value":"location"}},{"kind":"Field","name":{"kind":"Name","value":"summary"}},{"kind":"Field","name":{"kind":"Name","value":"profilePhotoUrl"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ProfileHeaderValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateProfileHeaderMutation, UpdateProfileHeaderMutationVariables>;
 export const UploadProfilePhotoDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UploadProfilePhoto"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"uploadProfilePhoto"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"UploadProfilePhotoResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"profilePhotoUrl"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FileValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<UploadProfilePhotoMutation, UploadProfilePhotoMutationVariables>;
 export const DeleteProfilePhotoDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteProfilePhoto"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteProfilePhoto"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"DeleteProfilePhotoResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"success"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ProfileHeaderValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<DeleteProfilePhotoMutation, DeleteProfilePhotoMutationVariables>;
+export const DeleteTestimonialDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteTestimonial"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteTestimonial"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"deletedId"}}]}}]}}]} as unknown as DocumentNode<DeleteTestimonialMutation, DeleteTestimonialMutationVariables>;
 export const GetReferenceLetterDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetter"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"dateWritten"}},{"kind":"Field","name":{"kind":"Name","value":"rawText"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"relationship"}}]}},{"kind":"Field","name":{"kind":"Name","value":"testimonials"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"skillsMentioned"}}]}},{"kind":"Field","name":{"kind":"Name","value":"skillMentions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skill"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"context"}}]}},{"kind":"Field","name":{"kind":"Name","value":"experienceMentions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}}]}},{"kind":"Field","name":{"kind":"Name","value":"discoveredSkills"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skill"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"context"}}]}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"extractedAt"}},{"kind":"Field","name":{"kind":"Name","value":"modelVersion"}},{"kind":"Field","name":{"kind":"Name","value":"processingTimeMs"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"sizeBytes"}}]}}]}}]}}]} as unknown as DocumentNode<GetReferenceLetterQuery, GetReferenceLetterQueryVariables>;
 export const GetReferenceLettersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetters"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetters"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetReferenceLettersQuery, GetReferenceLettersQueryVariables>;
 export const GetReferenceLetterStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetterStatus"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<GetReferenceLetterStatusQuery, GetReferenceLetterStatusQueryVariables>;

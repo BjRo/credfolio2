@@ -2985,3 +2985,88 @@ func TestCheckDuplicateFile(t *testing.T) {
 		}
 	})
 }
+
+func TestDeleteTestimonial(t *testing.T) {
+	userRepo := newMockUserRepository()
+	profileRepo := newMockProfileRepository()
+	testimonialRepo := newMockTestimonialRepository()
+
+	ctx := context.Background()
+
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "testimonial-delete@example.com",
+		PasswordHash: "hashed",
+	}
+	mustCreateUser(userRepo, user)
+
+	// Create a profile for the user
+	profile := &domain.Profile{
+		ID:     uuid.New(),
+		UserID: user.ID,
+	}
+	if err := profileRepo.Create(ctx, profile); err != nil {
+		t.Fatalf("failed to create profile: %v", err)
+	}
+
+	// Create a testimonial
+	testimonial := &domain.Testimonial{
+		ID:                uuid.New(),
+		ProfileID:         profile.ID,
+		ReferenceLetterID: uuid.New(),
+		Quote:             "This is a great testimonial quote.",
+		Relationship:      domain.TestimonialRelationshipManager,
+	}
+	if err := testimonialRepo.Create(ctx, testimonial); err != nil {
+		t.Fatalf("failed to create testimonial: %v", err)
+	}
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), testimonialRepo, newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	mutation := r.Mutation()
+
+	t.Run("deletes testimonial successfully", func(t *testing.T) {
+		result, err := mutation.DeleteTestimonial(ctx, testimonial.ID.String())
+		if err != nil {
+			t.Fatalf("DeleteTestimonial failed: %v", err)
+		}
+
+		if !result.Success {
+			t.Error("expected success to be true")
+		}
+		if result.DeletedID != testimonial.ID.String() {
+			t.Errorf("expected deletedId %s, got %s", testimonial.ID.String(), result.DeletedID)
+		}
+
+		// Verify testimonial was actually deleted
+		deleted, err := testimonialRepo.GetByID(ctx, testimonial.ID)
+		if err != nil {
+			t.Fatalf("failed to check testimonial: %v", err)
+		}
+		if deleted != nil {
+			t.Error("expected testimonial to be deleted")
+		}
+	})
+
+	t.Run("returns success false for invalid ID format", func(t *testing.T) {
+		result, err := mutation.DeleteTestimonial(ctx, "invalid-uuid")
+		if err != nil {
+			t.Fatalf("DeleteTestimonial failed unexpectedly: %v", err)
+		}
+
+		if result.Success {
+			t.Error("expected success to be false for invalid ID")
+		}
+	})
+
+	t.Run("returns success false for non-existent testimonial", func(t *testing.T) {
+		nonExistentID := uuid.New().String()
+		result, err := mutation.DeleteTestimonial(ctx, nonExistentID)
+		if err != nil {
+			t.Fatalf("DeleteTestimonial failed unexpectedly: %v", err)
+		}
+
+		if result.Success {
+			t.Error("expected success to be false for non-existent testimonial")
+		}
+	})
+}
