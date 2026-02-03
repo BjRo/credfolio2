@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UpdateAuthorDocument } from "@/graphql/generated/graphql";
+import { GRAPHQL_UPLOAD_ENDPOINT } from "@/lib/urql/client";
 
 interface AuthorEditModalProps {
   open: boolean;
@@ -47,6 +48,82 @@ function validateLinkedInUrl(url: string): string | null {
   return null;
 }
 
+// Upload author image using XHR following GraphQL multipart request spec
+async function uploadAuthorImageXhr(
+  authorId: string,
+  file: File
+): Promise<{ success: boolean; error?: string }> {
+  const operations = JSON.stringify({
+    query: `
+      mutation UploadAuthorImage($authorId: ID!, $file: Upload!) {
+        uploadAuthorImage(authorId: $authorId, file: $file) {
+          ... on UploadAuthorImageResult {
+            __typename
+            file {
+              id
+            }
+            author {
+              id
+              imageUrl
+            }
+          }
+          ... on FileValidationError {
+            __typename
+            message
+            field
+          }
+        }
+      }
+    `,
+    variables: {
+      authorId,
+      file: null,
+    },
+  });
+
+  const map = JSON.stringify({
+    "0": ["variables.file"],
+  });
+
+  const formData = new FormData();
+  formData.append("operations", operations);
+  formData.append("map", map);
+  formData.append("0", file);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const result = JSON.parse(xhr.responseText);
+          if (result.errors?.length) {
+            reject(new Error(result.errors[0].message));
+            return;
+          }
+          const data = result.data?.uploadAuthorImage;
+          if (data?.__typename === "FileValidationError") {
+            reject(new Error(data.message));
+            return;
+          }
+          resolve({ success: true });
+        } catch {
+          reject(new Error("Failed to parse response"));
+        }
+      } else {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Network error during upload"));
+    });
+
+    xhr.open("POST", GRAPHQL_UPLOAD_ENDPOINT);
+    xhr.send(formData);
+  });
+}
+
 export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: AuthorEditModalProps) {
   const isUnknownAuthor = author.name === "unknown" || !author.name;
 
@@ -58,11 +135,14 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(author.imageUrl ?? null);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [updateResult, updateAuthor] = useMutation(UpdateAuthorDocument);
 
-  const isSubmitting = updateResult.fetching;
+  const isSubmitting = updateResult.fetching || isUploading;
 
   const handleInputChange = useCallback(
     (field: keyof FormData, value: string) => {
@@ -79,23 +159,26 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
     [errors]
   );
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Reset input so the same file can be selected again
     e.target.value = "";
 
+    // Store the file for upload on submit
+    setPendingImageFile(file);
+    setImageRemoved(false);
+
     // Create a preview URL immediately
     const localPreviewUrl = URL.createObjectURL(file);
     setPreviewImageUrl(localPreviewUrl);
-
-    // Note: Full image upload will be implemented when we add a dedicated author image upload mutation
-    // For now, the preview shows what the user selected but won't persist
-  };
+  }, []);
 
   const handleRemoveImage = useCallback(() => {
     setPreviewImageUrl(null);
+    setPendingImageFile(null);
+    setImageRemoved(true);
   }, []);
 
   const validate = (): boolean => {
@@ -120,6 +203,21 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
     if (!validate()) return;
 
     try {
+      // Step 1: Upload image if there's a pending file
+      if (pendingImageFile) {
+        setIsUploading(true);
+        try {
+          await uploadAuthorImageXhr(author.id, pendingImageFile);
+        } catch (err) {
+          setErrors({ submit: err instanceof Error ? err.message : "Failed to upload image" });
+          setIsUploading(false);
+          return;
+        }
+        setIsUploading(false);
+      }
+
+      // Step 2: Update author details (name, title, company, linkedInUrl)
+      // If image was removed and no new image uploaded, clear the imageId
       const result = await updateAuthor({
         id: author.id,
         input: {
@@ -127,6 +225,8 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
           title: formData.title.trim() || null,
           company: formData.company.trim() || null,
           linkedInUrl: formData.linkedInUrl.trim() || null,
+          // Clear imageId if user removed the image and didn't upload a new one
+          ...(imageRemoved && !pendingImageFile ? { imageId: "" } : {}),
         },
       });
 
@@ -178,6 +278,7 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
                 } cursor-pointer hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
                 onClick={() => fileInputRef.current?.click()}
                 aria-label="Upload author photo"
+                disabled={isSubmitting}
               >
                 {previewImageUrl ? (
                   <Image
@@ -195,7 +296,7 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
                   </div>
                 )}
               </button>
-              {previewImageUrl && (
+              {previewImageUrl && !isSubmitting && (
                 <button
                   type="button"
                   onClick={handleRemoveImage}
@@ -213,6 +314,7 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
               className="hidden"
               onChange={handleFileChange}
               aria-label="Upload author photo"
+              disabled={isSubmitting}
             />
             <p className="text-xs text-muted-foreground">
               Click to upload a profile photo (optional)
@@ -230,6 +332,7 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
               onChange={(e) => handleInputChange("name", e.target.value)}
               placeholder="e.g., John Smith"
               className={errors.name ? "border-destructive" : ""}
+              disabled={isSubmitting}
             />
             {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
           </div>
@@ -242,6 +345,7 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
               value={formData.title}
               onChange={(e) => handleInputChange("title", e.target.value)}
               placeholder="e.g., Engineering Manager"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -253,6 +357,7 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
               value={formData.company}
               onChange={(e) => handleInputChange("company", e.target.value)}
               placeholder="e.g., Acme Corp"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -266,6 +371,7 @@ export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: Autho
               onChange={(e) => handleInputChange("linkedInUrl", e.target.value)}
               placeholder="https://linkedin.com/in/username"
               className={errors.linkedInUrl ? "border-destructive" : ""}
+              disabled={isSubmitting}
             />
             {errors.linkedInUrl && <p className="text-sm text-destructive">{errors.linkedInUrl}</p>}
           </div>

@@ -203,6 +203,7 @@ type ComplexityRoot struct {
 		UpdateExperience                func(childComplexity int, id string, input model.UpdateExperienceInput) int
 		UpdateProfileHeader             func(childComplexity int, userID string, input model.UpdateProfileHeaderInput) int
 		UpdateSkill                     func(childComplexity int, id string, input model.UpdateSkillInput) int
+		UploadAuthorImage               func(childComplexity int, authorID string, file graphql.Upload) int
 		UploadFile                      func(childComplexity int, userID string, file graphql.Upload, forceReimport *bool) int
 		UploadProfilePhoto              func(childComplexity int, userID string, file graphql.Upload) int
 		UploadResume                    func(childComplexity int, userID string, file graphql.Upload, forceReimport *bool) int
@@ -367,6 +368,11 @@ type ComplexityRoot struct {
 		ValidatedSkills func(childComplexity int) int
 	}
 
+	UploadAuthorImageResult struct {
+		Author func(childComplexity int) int
+		File   func(childComplexity int) int
+	}
+
 	UploadFileResult struct {
 		File            func(childComplexity int) int
 		ReferenceLetter func(childComplexity int) int
@@ -413,6 +419,7 @@ type MutationResolver interface {
 	UpdateSkill(ctx context.Context, id string, input model.UpdateSkillInput) (model.SkillResponse, error)
 	DeleteSkill(ctx context.Context, id string) (*model.DeleteResult, error)
 	ApplyReferenceLetterValidations(ctx context.Context, userID string, input model.ApplyValidationsInput) (model.ApplyValidationsResponse, error)
+	UploadAuthorImage(ctx context.Context, authorID string, file graphql.Upload) (model.UploadAuthorImageResponse, error)
 	UpdateAuthor(ctx context.Context, id string, input model.UpdateAuthorInput) (*model.Author, error)
 	DeleteTestimonial(ctx context.Context, id string) (*model.DeleteResult, error)
 }
@@ -1075,6 +1082,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateSkill(childComplexity, args["id"].(string), args["input"].(model.UpdateSkillInput)), true
+	case "Mutation.uploadAuthorImage":
+		if e.complexity.Mutation.UploadAuthorImage == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_uploadAuthorImage_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UploadAuthorImage(childComplexity, args["authorId"].(string), args["file"].(graphql.Upload)), true
 	case "Mutation.uploadFile":
 		if e.complexity.Mutation.UploadFile == nil {
 			break
@@ -1910,6 +1928,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Testimonial.ValidatedSkills(childComplexity), true
 
+	case "UploadAuthorImageResult.author":
+		if e.complexity.UploadAuthorImageResult.Author == nil {
+			break
+		}
+
+		return e.complexity.UploadAuthorImageResult.Author(childComplexity), true
+	case "UploadAuthorImageResult.file":
+		if e.complexity.UploadAuthorImageResult.File == nil {
+			break
+		}
+
+		return e.complexity.UploadAuthorImageResult.File(childComplexity), true
+
 	case "UploadFileResult.file":
 		if e.complexity.UploadFileResult.File == nil {
 			break
@@ -2703,6 +2734,21 @@ Union type for profile photo deletion result.
 union DeleteProfilePhotoResponse = DeleteProfilePhotoResult | ProfileHeaderValidationError
 
 """
+Result of a successful author image upload.
+"""
+type UploadAuthorImageResult {
+  """The uploaded file metadata."""
+  file: File!
+  """The updated author with image URL."""
+  author: Author!
+}
+
+"""
+Union type for author image upload result.
+"""
+union UploadAuthorImageResponse = UploadAuthorImageResult | FileValidationError
+
+"""
 Result of a delete operation.
 """
 type DeleteResult {
@@ -3280,6 +3326,19 @@ type Mutation {
   # ============================================================================
 
   """
+  Upload an author's profile image.
+  Accepts JPEG, PNG, GIF, or WebP images (max 5MB).
+  Updates the author record with the new image.
+  Returns the updated author with image URL.
+  """
+  uploadAuthorImage(
+    """The author ID to upload the image for."""
+    authorId: ID!
+    """The image file to upload (JPEG, PNG, GIF, or WebP only)."""
+    file: Upload!
+  ): UploadAuthorImageResponse!
+
+  """
   Update an author's information.
   Allows correcting author details and adding LinkedIn profile links.
   """
@@ -3506,6 +3565,22 @@ func (ec *executionContext) field_Mutation_updateSkill_args(ctx context.Context,
 		return nil, err
 	}
 	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_uploadAuthorImage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "authorId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["authorId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "file", ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload)
+	if err != nil {
+		return nil, err
+	}
+	args["file"] = arg1
 	return args, nil
 }
 
@@ -6838,6 +6913,47 @@ func (ec *executionContext) fieldContext_Mutation_applyReferenceLetterValidation
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_applyReferenceLetterValidations_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_uploadAuthorImage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_uploadAuthorImage,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UploadAuthorImage(ctx, fc.Args["authorId"].(string), fc.Args["file"].(graphql.Upload))
+		},
+		nil,
+		ec.marshalNUploadAuthorImageResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadAuthorImageResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_uploadAuthorImage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UploadAuthorImageResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_uploadAuthorImage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -11413,6 +11529,104 @@ func (ec *executionContext) fieldContext_Testimonial_validatedSkills(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _UploadAuthorImageResult_file(ctx context.Context, field graphql.CollectedField, obj *model.UploadAuthorImageResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UploadAuthorImageResult_file,
+		func(ctx context.Context) (any, error) {
+			return obj.File, nil
+		},
+		nil,
+		ec.marshalNFile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐFile,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UploadAuthorImageResult_file(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadAuthorImageResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_File_id(ctx, field)
+			case "filename":
+				return ec.fieldContext_File_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_File_contentType(ctx, field)
+			case "sizeBytes":
+				return ec.fieldContext_File_sizeBytes(ctx, field)
+			case "storageKey":
+				return ec.fieldContext_File_storageKey(ctx, field)
+			case "contentHash":
+				return ec.fieldContext_File_contentHash(ctx, field)
+			case "url":
+				return ec.fieldContext_File_url(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_File_createdAt(ctx, field)
+			case "user":
+				return ec.fieldContext_File_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type File", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadAuthorImageResult_author(ctx context.Context, field graphql.CollectedField, obj *model.UploadAuthorImageResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_UploadAuthorImageResult_author,
+		func(ctx context.Context) (any, error) {
+			return obj.Author, nil
+		},
+		nil,
+		ec.marshalNAuthor2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐAuthor,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_UploadAuthorImageResult_author(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadAuthorImageResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Author_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Author_name(ctx, field)
+			case "title":
+				return ec.fieldContext_Author_title(ctx, field)
+			case "company":
+				return ec.fieldContext_Author_company(ctx, field)
+			case "linkedInUrl":
+				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_Author_imageUrl(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Author_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Author_updatedAt(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Author_testimonials(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Author", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UploadFileResult_file(ctx context.Context, field graphql.CollectedField, obj *model.UploadFileResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -14109,6 +14323,33 @@ func (ec *executionContext) _SkillResponse(ctx context.Context, sel ast.Selectio
 	}
 }
 
+func (ec *executionContext) _UploadAuthorImageResponse(ctx context.Context, sel ast.SelectionSet, obj model.UploadAuthorImageResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UploadAuthorImageResult:
+		return ec._UploadAuthorImageResult(ctx, sel, &obj)
+	case *model.UploadAuthorImageResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UploadAuthorImageResult(ctx, sel, obj)
+	case model.FileValidationError:
+		return ec._FileValidationError(ctx, sel, &obj)
+	case *model.FileValidationError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._FileValidationError(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of UploadAuthorImageResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
 func (ec *executionContext) _UploadFileResponse(ctx context.Context, sel ast.SelectionSet, obj model.UploadFileResponse) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -15275,7 +15516,7 @@ func (ec *executionContext) _File(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
-var fileValidationErrorImplementors = []string{"FileValidationError", "UploadProfilePhotoResponse", "UploadFileResponse", "UploadResumeResponse"}
+var fileValidationErrorImplementors = []string{"FileValidationError", "UploadProfilePhotoResponse", "UploadAuthorImageResponse", "UploadFileResponse", "UploadResumeResponse"}
 
 func (ec *executionContext) _FileValidationError(ctx context.Context, sel ast.SelectionSet, obj *model.FileValidationError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, fileValidationErrorImplementors)
@@ -15439,6 +15680,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "applyReferenceLetterValidations":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_applyReferenceLetterValidations(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadAuthorImage":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_uploadAuthorImage(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -16958,6 +17206,50 @@ func (ec *executionContext) _Testimonial(ctx context.Context, sel ast.SelectionS
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var uploadAuthorImageResultImplementors = []string{"UploadAuthorImageResult", "UploadAuthorImageResponse"}
+
+func (ec *executionContext) _UploadAuthorImageResult(ctx context.Context, sel ast.SelectionSet, obj *model.UploadAuthorImageResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, uploadAuthorImageResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UploadAuthorImageResult")
+		case "file":
+			out.Values[i] = ec._UploadAuthorImageResult_file(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "author":
+			out.Values[i] = ec._UploadAuthorImageResult_author(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -18724,6 +19016,16 @@ func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋg
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNUploadAuthorImageResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadAuthorImageResponse(ctx context.Context, sel ast.SelectionSet, v model.UploadAuthorImageResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UploadAuthorImageResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNUploadFileResponse2backendᚋinternalᚋgraphqlᚋmodelᚐUploadFileResponse(ctx context.Context, sel ast.SelectionSet, v model.UploadFileResponse) graphql.Marshaler {

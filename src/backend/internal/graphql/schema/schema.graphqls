@@ -609,6 +609,21 @@ Union type for profile photo deletion result.
 union DeleteProfilePhotoResponse = DeleteProfilePhotoResult | ProfileHeaderValidationError
 
 """
+Result of a successful author image upload.
+"""
+type UploadAuthorImageResult {
+  """The uploaded file metadata."""
+  file: File!
+  """The updated author with image URL."""
+  author: Author!
+}
+
+"""
+Union type for author image upload result.
+"""
+union UploadAuthorImageResponse = UploadAuthorImageResult | FileValidationError
+
+"""
 Result of a delete operation.
 """
 type DeleteResult {
@@ -1184,6 +1199,19 @@ type Mutation {
   # ============================================================================
   # Author Mutations
   # ============================================================================
+
+  """
+  Upload an author's profile image.
+  Accepts JPEG, PNG, GIF, or WebP images (max 5MB).
+  Updates the author record with the new image.
+  Returns the updated author with image URL.
+  """
+  uploadAuthorImage(
+    """The author ID to upload the image for."""
+    authorId: ID!
+    """The image file to upload (JPEG, PNG, GIF, or WebP only)."""
+    file: Upload!
+  ): UploadAuthorImageResponse!
 
   """
   Update an author's information.

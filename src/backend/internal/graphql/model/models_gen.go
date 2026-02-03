@@ -41,6 +41,11 @@ type SkillResponse interface {
 	IsSkillResponse()
 }
 
+// Union type for author image upload result.
+type UploadAuthorImageResponse interface {
+	IsUploadAuthorImageResponse()
+}
+
 // Union type for upload result - either success, validation error, or duplicate detected.
 type UploadFileResponse interface {
 	IsUploadFileResponse()
@@ -289,6 +294,8 @@ type FileValidationError struct {
 }
 
 func (FileValidationError) IsUploadProfilePhotoResponse() {}
+
+func (FileValidationError) IsUploadAuthorImageResponse() {}
 
 func (FileValidationError) IsUploadFileResponse() {}
 
@@ -639,6 +646,16 @@ type UpdateSkillInput struct {
 	// Skill category.
 	Category *domain.SkillCategory `json:"category,omitempty"`
 }
+
+// Result of a successful author image upload.
+type UploadAuthorImageResult struct {
+	// The uploaded file metadata.
+	File *File `json:"file"`
+	// The updated author with image URL.
+	Author *Author `json:"author"`
+}
+
+func (UploadAuthorImageResult) IsUploadAuthorImageResponse() {}
 
 // Result of a file upload operation.
 type UploadFileResult struct {
