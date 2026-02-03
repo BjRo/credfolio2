@@ -1,11 +1,12 @@
 ---
 # credfolio2-z8v3
 title: Instrument LLM calls with Braintrust
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-02-03T10:33:23Z
-updated_at: 2026-02-03T10:33:23Z
-parent: 2ex3
+updated_at: 2026-02-03T10:54:10Z
+parent: credfolio2-2ex3
 ---
 
 ## Summary
@@ -20,10 +21,11 @@ Braintrust provides LLM observability, allowing inspection of prompts, responses
 - Ensure traces are visible in Braintrust dashboard
 
 ## Technical Decisions
-- **API Key**: Available via `BRAINTRUST_API_KEY` environment variable (already configured)
+- **API Key**: Will be provided via `BRAINTRUST_API_KEY` environment variable (needs to be configured)
 - Instrumentation should be transparent - wrap existing LLM client without changing call sites
 
 ## Checklist
+- [ ] Configure `BRAINTRUST_API_KEY` in environment (docker-compose, devcontainer, etc.)
 - [ ] Add braintrust-sdk-go dependency to go.mod
 - [ ] Review braintrust-sdk-go documentation for integration pattern
 - [ ] Create Braintrust client wrapper in backend
@@ -32,9 +34,6 @@ Braintrust provides LLM observability, allowing inspection of prompts, responses
 - [ ] Add project/experiment naming for organized traces
 - [ ] Verify traces appear in Braintrust dashboard
 - [ ] Document how to view traces in Braintrust
-
-## Note
-This ticket is infrastructure/observability work that benefits the whole app, not just testimonials. Consider moving to a separate epic if one exists for infrastructure.
 
 ## Definition of Done
 - [ ] Tests written (TDD: write tests before implementation)

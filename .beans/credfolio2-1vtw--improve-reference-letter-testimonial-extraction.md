@@ -1,45 +1,40 @@
 ---
 # credfolio2-1vtw
 title: Improve reference letter testimonial extraction
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-02-03T10:33:18Z
-updated_at: 2026-02-03T10:33:18Z
-parent: 2ex3
+updated_at: 2026-02-03T10:49:38Z
+parent: credfolio2-2ex3
 ---
 
 ## Summary
 Enhance the LLM prompt for extracting testimonials from reference letters to produce higher quality, performance-focused testimonials.
 
 ## Requirements
-- Extract 3-5 testimonials per reference letter (instead of current behavior)
+- Extract 3-5 testimonials per reference letter (currently 2-4)
 - Focus testimonials on the person's performance and achievements
-- Order testimonials with strongest positive statements first (by sentiment strength)
+- Order testimonials with strongest positive statements first
 - Ensure extracted quotes are impactful and meaningful
 
 ## Technical Decisions
-- **Ranking method**: Sentiment strength - most positive/enthusiastic language ranks higher
+- **Ranking method**: LLM returns testimonials pre-sorted by sentiment strength (no DB field needed)
 - **Scope**: New uploads only - existing testimonials remain unchanged
-- The LLM should score each testimonial's sentiment during extraction
-- Store sentiment score to enable sorting on the frontend
+- **No schema changes**: The LLM simply returns them in order; frontend displays in API order
 
 ## Changes Needed
-- Update the reference letter extraction prompt in the backend to:
-  - Request 3-5 testimonials (not fewer)
+- Update the reference letter extraction prompt (`src/backend/internal/infrastructure/llm/prompts/reference_letter_extraction_system.txt`) to:
+  - Request 3-5 testimonials (change from "2-4")
   - Focus on performance-related quotes
-  - Include a sentiment/strength score (1-10) for each
-- Add `sentimentScore` field to Testimonial model/schema
-- Order testimonials by sentiment score (descending) when returning from API
+  - Return testimonials ordered by sentiment strength (strongest first)
 
 ## Checklist
-- [ ] Review current extraction prompt (locate in codebase)
-- [ ] Update prompt to request 3-5 performance-focused testimonials
-- [ ] Add sentiment scoring instruction to prompt
-- [ ] Add `sentimentScore` field to Testimonial in GraphQL schema
-- [ ] Add database migration for sentiment_score column
-- [ ] Update extraction response parsing to capture score
-- [ ] Sort testimonials by sentiment score in resolver
-- [ ] Update frontend to display in sorted order (or rely on API order)
+- [ ] Update prompt to request 3-5 testimonials (change "2-4" to "3-5")
+- [ ] Add instruction to focus on performance/achievement quotes
+- [ ] Add instruction to order by sentiment strength (strongest first)
+- [ ] Verify extraction still works correctly with updated prompt
+- [ ] Test with a sample reference letter upload
 
 ## Definition of Done
 - [ ] Tests written (TDD: write tests before implementation)

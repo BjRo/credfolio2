@@ -1,11 +1,12 @@
 ---
 # credfolio2-1m2j
 title: Allow deleting a testimonial
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-02-03T10:33:12Z
-updated_at: 2026-02-03T10:33:12Z
-parent: 2ex3
+updated_at: 2026-02-03T10:53:13Z
+parent: credfolio2-2ex3
 ---
 
 ## Summary
@@ -15,7 +16,7 @@ Add the ability to delete testimonials from the profile page.
 Users need to be able to remove testimonials that are inaccurate, outdated, or that they don't want displayed on their profile.
 
 ## Requirements
-- Add delete option to testimonial kebab menu (already exists per credfolio2-9qfq)
+- Add delete option to existing kebab menu (kebab menu exists in TestimonialsSection.tsx:184-206)
 - Implement GraphQL mutation for deleting testimonials
 - Add confirmation dialog before deletion
 - Handle UI state update after deletion (remove from list)
