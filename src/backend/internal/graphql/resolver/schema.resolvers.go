@@ -2153,6 +2153,192 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 	}, nil
 }
 
+// UploadAuthorImage is the resolver for the uploadAuthorImage field.
+func (r *mutationResolver) UploadAuthorImage(ctx context.Context, authorID string, file graphql.Upload) (model.UploadAuthorImageResponse, error) {
+	r.log.Info("Author image upload started",
+		logger.Feature("profile"),
+		logger.String("author_id", authorID),
+		logger.String("filename", file.Filename),
+		logger.String("content_type", file.ContentType),
+		logger.Int64("size_bytes", file.Size),
+	)
+
+	// Parse and validate author ID
+	aid, err := uuid.Parse(authorID)
+	if err != nil {
+		r.log.Warning("Invalid author ID format",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+		)
+		return &model.FileValidationError{
+			Message: "invalid author ID format",
+			Field:   "authorId",
+		}, nil
+	}
+
+	// Get existing author to verify it exists
+	author, err := r.authorRepo.GetByID(ctx, aid)
+	if err != nil {
+		r.log.Error("Failed to get author",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get author: %w", err)
+	}
+	if author == nil {
+		r.log.Warning("Author not found",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+		)
+		return &model.FileValidationError{
+			Message: "author not found",
+			Field:   "authorId",
+		}, nil
+	}
+
+	// Validate file type (images only)
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
+
+	if !allowedTypes[file.ContentType] {
+		r.log.Warning("File type not allowed for author image",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+			logger.String("content_type", file.ContentType),
+		)
+		return &model.FileValidationError{
+			Message: "file type not allowed: must be JPEG, PNG, GIF, or WebP",
+			Field:   "contentType",
+		}, nil
+	}
+
+	// Validate file size (max 5MB for photos)
+	const maxSize = 5 * 1024 * 1024
+	if file.Size > maxSize {
+		r.log.Warning("File too large for author image",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+			logger.Int64("size_bytes", file.Size),
+			logger.Int("max_bytes", maxSize),
+		)
+		return &model.FileValidationError{
+			Message: "file too large: maximum size is 5MB",
+			Field:   "size",
+		}, nil
+	}
+
+	// Delete old image file if exists
+	if author.ImageID != nil {
+		oldFile, err := r.fileRepo.GetByID(ctx, *author.ImageID)
+		if err == nil && oldFile != nil {
+			// Delete from storage (best effort)
+			_ = r.storage.Delete(ctx, oldFile.StorageKey)
+			// Delete file record (best effort)
+			_ = r.fileRepo.Delete(ctx, *author.ImageID)
+		}
+	}
+
+	// Generate storage key - use profile ID for organization
+	fileID := uuid.New()
+	storageKey := fmt.Sprintf("author-images/%s/%s/%s", author.ProfileID.String(), fileID.String(), file.Filename)
+
+	// Upload to storage
+	_, err = r.storage.Upload(ctx, storageKey, file.File, file.Size, file.ContentType)
+	if err != nil {
+		r.log.Error("Failed to upload author image to storage",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+			logger.String("storage_key", storageKey),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to upload author image to storage: %w", err)
+	}
+
+	// Get the profile's user ID for file record
+	profile, err := r.profileRepo.GetByID(ctx, author.ProfileID)
+	if err != nil {
+		r.log.Error("Failed to get profile for author",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+			logger.String("profile_id", author.ProfileID.String()),
+			logger.Err(err),
+		)
+		// Clean up uploaded file
+		_ = r.storage.Delete(ctx, storageKey)
+		return nil, fmt.Errorf("failed to get profile: %w", err)
+	}
+
+	// Create file record
+	domainFile := &domain.File{
+		ID:          fileID,
+		UserID:      profile.UserID,
+		Filename:    file.Filename,
+		ContentType: file.ContentType,
+		SizeBytes:   file.Size,
+		StorageKey:  storageKey,
+	}
+
+	if err := r.fileRepo.Create(ctx, domainFile); err != nil {
+		r.log.Error("Failed to create file record",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
+		// Attempt to clean up uploaded file
+		_ = r.storage.Delete(ctx, storageKey)
+		return nil, fmt.Errorf("failed to create file record: %w", err)
+	}
+
+	// Update author with new image ID
+	author.ImageID = &fileID
+	if err := r.authorRepo.Update(ctx, author); err != nil {
+		r.log.Error("Failed to update author with image",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to update author: %w", err)
+	}
+
+	// Generate presigned URL for the response
+	imageURL, err := r.storage.GetPresignedURL(ctx, storageKey, time.Hour)
+	if err != nil {
+		r.log.Warning("Failed to generate presigned URL for author image",
+			logger.Feature("profile"),
+			logger.String("author_id", authorID),
+			logger.Err(err),
+		)
+		// Continue without URL - not a fatal error
+	}
+
+	// Get user for file response
+	user, err := r.userRepo.GetByID(ctx, profile.UserID)
+	if err != nil {
+		r.log.Warning("Failed to get user for file response",
+			logger.Feature("profile"),
+			logger.String("user_id", profile.UserID.String()),
+			logger.Err(err),
+		)
+	}
+
+	r.log.Info("Author image uploaded successfully",
+		logger.Feature("profile"),
+		logger.String("author_id", authorID),
+		logger.String("file_id", fileID.String()),
+	)
+
+	return &model.UploadAuthorImageResult{
+		File:   toGraphQLFile(domainFile, toGraphQLUser(user)),
+		Author: toGraphQLAuthorWithImage(author, &imageURL),
+	}, nil
+}
+
 // UpdateAuthor is the resolver for the updateAuthor field.
 func (r *mutationResolver) UpdateAuthor(ctx context.Context, id string, input model.UpdateAuthorInput) (*model.Author, error) {
 	authorID, err := uuid.Parse(id)
@@ -2174,13 +2360,37 @@ func (r *mutationResolver) UpdateAuthor(ctx context.Context, id string, input mo
 		author.Name = *input.Name
 	}
 	if input.Title != nil {
-		author.Title = input.Title
+		if *input.Title == "" {
+			author.Title = nil
+		} else {
+			author.Title = input.Title
+		}
 	}
 	if input.Company != nil {
-		author.Company = input.Company
+		if *input.Company == "" {
+			author.Company = nil
+		} else {
+			author.Company = input.Company
+		}
 	}
 	if input.LinkedInURL != nil {
-		author.LinkedInURL = input.LinkedInURL
+		if *input.LinkedInURL == "" {
+			author.LinkedInURL = nil
+		} else {
+			author.LinkedInURL = input.LinkedInURL
+		}
+	}
+	if input.ImageID != nil {
+		if *input.ImageID == "" {
+			// Clear the image
+			author.ImageID = nil
+		} else {
+			imageUUID, err := uuid.Parse(*input.ImageID)
+			if err != nil {
+				return nil, fmt.Errorf("invalid image ID: %w", err)
+			}
+			author.ImageID = &imageUUID
+		}
 	}
 
 	// Save updates
@@ -2188,7 +2398,19 @@ func (r *mutationResolver) UpdateAuthor(ctx context.Context, id string, input mo
 		return nil, fmt.Errorf("failed to update author: %w", err)
 	}
 
-	return toGraphQLAuthor(author), nil
+	// Get image URL if author has an image
+	var imageURL *string
+	if author.ImageID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *author.ImageID)
+		if err == nil && file != nil {
+			url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, time.Hour)
+			if err == nil {
+				imageURL = &url
+			}
+		}
+	}
+
+	return toGraphQLAuthorWithImage(author, imageURL), nil
 }
 
 // DeleteTestimonial is the resolver for the deleteTestimonial field.
@@ -2759,7 +2981,19 @@ func (r *queryResolver) Author(ctx context.Context, id string) (*model.Author, e
 		return nil, nil
 	}
 
-	return toGraphQLAuthor(author), nil
+	// Get image URL if author has an image
+	var imageURL *string
+	if author.ImageID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *author.ImageID)
+		if err == nil && file != nil {
+			url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, time.Hour)
+			if err == nil {
+				imageURL = &url
+			}
+		}
+	}
+
+	return toGraphQLAuthorWithImage(author, imageURL), nil
 }
 
 // Authors is the resolver for the authors field.
@@ -2774,9 +3008,37 @@ func (r *queryResolver) Authors(ctx context.Context, profileID string) ([]*model
 		return nil, fmt.Errorf("failed to get authors: %w", err)
 	}
 
+	// Collect image IDs for batch fetching
+	var imageIDs []uuid.UUID
+	for _, a := range authors {
+		if a.ImageID != nil {
+			imageIDs = append(imageIDs, *a.ImageID)
+		}
+	}
+
+	// Fetch image files and generate URLs
+	imageURLs := make(map[uuid.UUID]string)
+	if len(imageIDs) > 0 {
+		for _, imageID := range imageIDs {
+			file, err := r.fileRepo.GetByID(ctx, imageID)
+			if err == nil && file != nil {
+				url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, time.Hour)
+				if err == nil {
+					imageURLs[imageID] = url
+				}
+			}
+		}
+	}
+
 	result := make([]*model.Author, len(authors))
 	for i, a := range authors {
-		result[i] = toGraphQLAuthor(a)
+		var imageURL *string
+		if a.ImageID != nil {
+			if url, ok := imageURLs[*a.ImageID]; ok {
+				imageURL = &url
+			}
+		}
+		result[i] = toGraphQLAuthorWithImage(a, imageURL)
 	}
 	return result, nil
 }
@@ -3067,7 +3329,19 @@ func (r *testimonialResolver) Author(ctx context.Context, obj *model.Testimonial
 		return nil, nil
 	}
 
-	return toGraphQLAuthor(author), nil
+	// Get image URL if author has an image
+	var imageURL *string
+	if author.ImageID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *author.ImageID)
+		if err == nil && file != nil {
+			url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, time.Hour)
+			if err == nil {
+				imageURL = &url
+			}
+		}
+	}
+
+	return toGraphQLAuthorWithImage(author, imageURL), nil
 }
 
 // ReferenceLetter is the resolver for the referenceLetter field.

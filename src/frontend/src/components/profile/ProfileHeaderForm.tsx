@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Camera, X } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +15,13 @@ export interface ProfileHeaderFormData {
   phone: string;
   location: string;
   summary: string;
+  pendingImageFile?: File | null;
+  imageRemoved?: boolean;
 }
 
 interface ProfileHeaderFormProps {
   initialData?: Partial<ProfileHeaderFormData>;
+  photoUrl?: string | null;
   onSubmit: (data: ProfileHeaderFormData) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
@@ -33,6 +38,7 @@ const PHONE_REGEX = /^[\d\s\-().+]+$/;
 
 export function ProfileHeaderForm({
   initialData,
+  photoUrl,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -43,6 +49,34 @@ export function ProfileHeaderForm({
   const [location, setLocation] = useState(initialData?.location ?? "");
   const [summary, setSummary] = useState(initialData?.summary ?? "");
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Image state
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(photoUrl ?? null);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input so the same file can be selected again
+    e.target.value = "";
+
+    // Store the file for upload on submit
+    setPendingImageFile(file);
+    setImageRemoved(false);
+
+    // Create a preview URL immediately
+    const localPreviewUrl = URL.createObjectURL(file);
+    setPreviewImageUrl(localPreviewUrl);
+  }, []);
+
+  const handleRemoveImage = useCallback(() => {
+    setPreviewImageUrl(null);
+    setPendingImageFile(null);
+    setImageRemoved(true);
+  }, []);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -77,11 +111,64 @@ export function ProfileHeaderForm({
       phone: phone.trim(),
       location: location.trim(),
       summary: summary.trim(),
+      pendingImageFile: pendingImageFile ?? undefined,
+      imageRemoved: imageRemoved || undefined,
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Profile Photo */}
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative w-20 h-20">
+          <button
+            type="button"
+            className={`w-20 h-20 rounded-full overflow-hidden flex items-center justify-center border-2 border-dashed border-muted-foreground/30 ${
+              previewImageUrl ? "bg-muted" : "bg-muted/50"
+            } cursor-pointer hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Upload profile photo"
+            disabled={isSubmitting}
+          >
+            {previewImageUrl ? (
+              <Image
+                src={previewImageUrl}
+                alt="Profile photo"
+                width={80}
+                height={80}
+                className="w-full h-full object-cover"
+                unoptimized
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                <Camera className="w-6 h-6" />
+                <span className="text-xs">Add photo</span>
+              </div>
+            )}
+          </button>
+          {previewImageUrl && !isSubmitting && (
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
+              aria-label="Remove photo"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          className="hidden"
+          onChange={handleFileChange}
+          aria-label="Upload profile photo"
+          disabled={isSubmitting}
+        />
+        <p className="text-xs text-muted-foreground">Click to upload a profile photo (optional)</p>
+      </div>
+
       {/* Name */}
       <div className="space-y-2">
         <Label htmlFor="header-name">

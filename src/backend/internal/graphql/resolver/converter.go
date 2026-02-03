@@ -74,6 +74,24 @@ func toGraphQLAuthor(a *domain.Author) *model.Author {
 	}
 }
 
+// toGraphQLAuthorWithImage converts a domain Author to a GraphQL Author model
+// with an optional image URL for the author's profile picture.
+func toGraphQLAuthorWithImage(a *domain.Author, imageURL *string) *model.Author {
+	if a == nil {
+		return nil
+	}
+	return &model.Author{
+		ID:          a.ID.String(),
+		Name:        a.Name,
+		Title:       a.Title,
+		Company:     a.Company,
+		LinkedInURL: a.LinkedInURL,
+		ImageURL:    imageURL,
+		CreatedAt:   a.CreatedAt,
+		UpdatedAt:   a.UpdatedAt,
+	}
+}
+
 // toGraphQLFile converts a domain File to a GraphQL File model.
 // If user is provided, it will be set on the result.
 func toGraphQLFile(f *domain.File, user *model.User) *model.File {

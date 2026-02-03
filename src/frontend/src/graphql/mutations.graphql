@@ -286,3 +286,43 @@ mutation DeleteTestimonial($id: ID!) {
     deletedId
   }
 }
+
+mutation UpdateAuthor($id: ID!, $input: UpdateAuthorInput!) {
+  updateAuthor(id: $id, input: $input) {
+    id
+    name
+    title
+    company
+    linkedInUrl
+    imageUrl
+    updatedAt
+  }
+}
+
+mutation UploadAuthorImage($authorId: ID!, $file: Upload!) {
+  uploadAuthorImage(authorId: $authorId, file: $file) {
+    ... on UploadAuthorImageResult {
+      __typename
+      file {
+        id
+        filename
+        contentType
+        sizeBytes
+      }
+      author {
+        id
+        name
+        title
+        company
+        linkedInUrl
+        imageUrl
+        updatedAt
+      }
+    }
+    ... on FileValidationError {
+      __typename
+      message
+      field
+    }
+  }
+}

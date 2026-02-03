@@ -10,8 +10,84 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { UpdateProfileHeaderDocument } from "@/graphql/generated/graphql";
+import {
+  DeleteProfilePhotoDocument,
+  UpdateProfileHeaderDocument,
+} from "@/graphql/generated/graphql";
+import { GRAPHQL_UPLOAD_ENDPOINT } from "@/lib/urql/client";
 import { ProfileHeaderForm, type ProfileHeaderFormData } from "./ProfileHeaderForm";
+
+// Upload profile photo using XHR following GraphQL multipart request spec
+async function uploadProfilePhotoXhr(
+  userId: string,
+  file: File
+): Promise<{ success: boolean; error?: string }> {
+  const operations = JSON.stringify({
+    query: `
+      mutation UploadProfilePhoto($userId: ID!, $file: Upload!) {
+        uploadProfilePhoto(userId: $userId, file: $file) {
+          ... on UploadProfilePhotoResult {
+            __typename
+            profile {
+              profilePhotoUrl
+            }
+          }
+          ... on FileValidationError {
+            __typename
+            message
+            field
+          }
+        }
+      }
+    `,
+    variables: {
+      userId,
+      file: null,
+    },
+  });
+
+  const map = JSON.stringify({
+    "0": ["variables.file"],
+  });
+
+  const formData = new FormData();
+  formData.append("operations", operations);
+  formData.append("map", map);
+  formData.append("0", file);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const result = JSON.parse(xhr.responseText);
+          if (result.errors?.length) {
+            reject(new Error(result.errors[0].message));
+            return;
+          }
+          const data = result.data?.uploadProfilePhoto;
+          if (data?.__typename === "FileValidationError") {
+            reject(new Error(data.message));
+            return;
+          }
+          resolve({ success: true });
+        } catch {
+          reject(new Error("Failed to parse response"));
+        }
+      } else {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Network error during upload"));
+    });
+
+    xhr.open("POST", GRAPHQL_UPLOAD_ENDPOINT);
+    xhr.send(formData);
+  });
+}
 
 interface ProfileHeaderFormDialogProps {
   open: boolean;
@@ -24,6 +100,7 @@ interface ProfileHeaderFormDialogProps {
     location?: string | null;
     summary?: string | null;
   };
+  photoUrl?: string | null;
   onSuccess?: () => void;
 }
 
@@ -32,18 +109,44 @@ export function ProfileHeaderFormDialog({
   onOpenChange,
   userId,
   headerData,
+  photoUrl,
   onSuccess,
 }: ProfileHeaderFormDialogProps) {
   const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [updateResult, updateProfileHeader] = useMutation(UpdateProfileHeaderDocument);
+  const [, deletePhoto] = useMutation(DeleteProfilePhotoDocument);
 
-  const isSubmitting = updateResult.fetching;
+  const isSubmitting = updateResult.fetching || isUploading;
 
   const handleSubmit = async (data: ProfileHeaderFormData) => {
     setError(null);
 
     try {
+      // Step 1: Handle image upload if there's a pending file
+      if (data.pendingImageFile) {
+        setIsUploading(true);
+        try {
+          await uploadProfilePhotoXhr(userId, data.pendingImageFile);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Failed to upload image");
+          setIsUploading(false);
+          return;
+        }
+        setIsUploading(false);
+      }
+
+      // Step 2: Handle image deletion if image was removed
+      if (data.imageRemoved && !data.pendingImageFile) {
+        const deleteResult = await deletePhoto({ userId });
+        if (deleteResult.error) {
+          setError(deleteResult.error.message);
+          return;
+        }
+      }
+
+      // Step 3: Update profile header data
       const result = await updateProfileHeader({
         userId,
         input: {
@@ -104,6 +207,7 @@ export function ProfileHeaderFormDialog({
                 }
               : undefined
           }
+          photoUrl={photoUrl}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           isSubmitting={isSubmitting}

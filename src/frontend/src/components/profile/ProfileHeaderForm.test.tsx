@@ -193,4 +193,133 @@ describe("ProfileHeaderForm", () => {
       expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled();
     });
   });
+
+  describe("Profile Photo", () => {
+    // Mock URL.createObjectURL
+    const mockCreateObjectURL = vi.fn(() => "blob:http://localhost/mock-image");
+    beforeAll(() => {
+      global.URL.createObjectURL = mockCreateObjectURL;
+    });
+
+    it("renders photo upload button", () => {
+      render(<ProfileHeaderForm {...defaultProps} />);
+
+      expect(screen.getByRole("button", { name: /upload profile photo/i })).toBeInTheDocument();
+      expect(screen.getByText(/add photo/i)).toBeInTheDocument();
+    });
+
+    it("shows existing photo when photoUrl is provided", () => {
+      render(<ProfileHeaderForm {...defaultProps} photoUrl="https://example.com/photo.jpg" />);
+
+      const image = screen.getByAltText(/profile photo/i);
+      expect(image).toHaveAttribute("src", "https://example.com/photo.jpg");
+    });
+
+    it("shows remove button when photo is present", () => {
+      render(<ProfileHeaderForm {...defaultProps} photoUrl="https://example.com/photo.jpg" />);
+
+      expect(screen.getByRole("button", { name: /remove photo/i })).toBeInTheDocument();
+    });
+
+    it("previews selected image file", async () => {
+      const user = userEvent.setup();
+      render(<ProfileHeaderForm {...defaultProps} />);
+
+      const file = new File(["test"], "photo.jpg", { type: "image/jpeg" });
+      const fileInput = screen.getByLabelText(/upload profile photo/i, {
+        selector: 'input[type="file"]',
+      });
+
+      await user.upload(fileInput, file);
+
+      // Should show the blob URL created by URL.createObjectURL
+      const image = screen.getByAltText(/profile photo/i);
+      expect(image).toHaveAttribute("src", "blob:http://localhost/mock-image");
+    });
+
+    it("removes photo preview when remove button is clicked", async () => {
+      const user = userEvent.setup();
+      render(<ProfileHeaderForm {...defaultProps} photoUrl="https://example.com/photo.jpg" />);
+
+      // Verify image is shown
+      expect(screen.getByAltText(/profile photo/i)).toBeInTheDocument();
+
+      // Click remove button
+      const removeButton = screen.getByRole("button", { name: /remove photo/i });
+      await user.click(removeButton);
+
+      // Image should be replaced with "Add photo" text
+      expect(screen.queryByAltText(/profile photo/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/add photo/i)).toBeInTheDocument();
+    });
+
+    it("calls onSubmit with image data when file is selected", async () => {
+      const user = userEvent.setup();
+      render(<ProfileHeaderForm {...defaultProps} />);
+
+      // Fill required field
+      await user.type(screen.getByLabelText(/name/i), "John Doe");
+
+      // Upload photo
+      const file = new File(["test"], "photo.jpg", { type: "image/jpeg" });
+      const fileInput = screen.getByLabelText(/upload profile photo/i, {
+        selector: 'input[type="file"]',
+      });
+      await user.upload(fileInput, file);
+
+      // Submit form
+      const submitButton = screen.getByRole("button", { name: /save changes/i });
+      await user.click(submitButton);
+
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "John Doe",
+          pendingImageFile: file,
+        })
+      );
+    });
+
+    it("calls onSubmit with imageRemoved flag when photo is removed", async () => {
+      const user = userEvent.setup();
+      render(
+        <ProfileHeaderForm
+          {...defaultProps}
+          photoUrl="https://example.com/photo.jpg"
+          initialData={{ name: "John Doe" }}
+        />
+      );
+
+      // Remove photo
+      const removeButton = screen.getByRole("button", { name: /remove photo/i });
+      await user.click(removeButton);
+
+      // Submit form
+      const submitButton = screen.getByRole("button", { name: /save changes/i });
+      await user.click(submitButton);
+
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          imageRemoved: true,
+        })
+      );
+    });
+
+    it("hides remove button when submitting", () => {
+      render(
+        <ProfileHeaderForm
+          {...defaultProps}
+          photoUrl="https://example.com/photo.jpg"
+          isSubmitting={true}
+        />
+      );
+
+      expect(screen.queryByRole("button", { name: /remove photo/i })).not.toBeInTheDocument();
+    });
+
+    it("disables photo upload when submitting", () => {
+      render(<ProfileHeaderForm {...defaultProps} isSubmitting={true} />);
+
+      expect(screen.getByRole("button", { name: /upload profile photo/i })).toBeDisabled();
+    });
+  });
 });

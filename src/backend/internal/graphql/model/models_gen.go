@@ -41,6 +41,11 @@ type SkillResponse interface {
 	IsSkillResponse()
 }
 
+// Union type for author image upload result.
+type UploadAuthorImageResponse interface {
+	IsUploadAuthorImageResponse()
+}
+
 // Union type for upload result - either success, validation error, or duplicate detected.
 type UploadFileResponse interface {
 	IsUploadFileResponse()
@@ -117,6 +122,8 @@ type Author struct {
 	Company *string `json:"company,omitempty"`
 	// LinkedIn profile URL of the author.
 	LinkedInURL *string `json:"linkedInUrl,omitempty"`
+	// Presigned URL for the author's profile image.
+	ImageURL *string `json:"imageUrl,omitempty"`
 	// When the author record was created.
 	CreatedAt time.Time `json:"createdAt"`
 	// When the author record was last updated.
@@ -287,6 +294,8 @@ type FileValidationError struct {
 }
 
 func (FileValidationError) IsUploadProfilePhotoResponse() {}
+
+func (FileValidationError) IsUploadAuthorImageResponse() {}
 
 func (FileValidationError) IsUploadFileResponse() {}
 
@@ -572,6 +581,8 @@ type UpdateAuthorInput struct {
 	Company *string `json:"company,omitempty"`
 	// Updated LinkedIn profile URL of the author.
 	LinkedInURL *string `json:"linkedInUrl,omitempty"`
+	// ID of the uploaded image file for the author's profile picture.
+	ImageID *string `json:"imageId,omitempty"`
 }
 
 // Input for updating an existing education entry.
@@ -635,6 +646,16 @@ type UpdateSkillInput struct {
 	// Skill category.
 	Category *domain.SkillCategory `json:"category,omitempty"`
 }
+
+// Result of a successful author image upload.
+type UploadAuthorImageResult struct {
+	// The uploaded file metadata.
+	File *File `json:"file"`
+	// The updated author with image URL.
+	Author *Author `json:"author"`
+}
+
+func (UploadAuthorImageResult) IsUploadAuthorImageResponse() {}
 
 // Result of a file upload operation.
 type UploadFileResult struct {

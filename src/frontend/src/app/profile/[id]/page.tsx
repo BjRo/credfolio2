@@ -200,6 +200,7 @@ export default function ProfilePage() {
           isLoading={testimonialsLoading}
           onAddReference={handleAddReference}
           onTestimonialDeleted={handleMutationSuccess}
+          onAuthorUpdated={handleMutationSuccess}
         />
 
         <ProfileActions

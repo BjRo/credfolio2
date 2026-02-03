@@ -1,11 +1,11 @@
 ---
 # credfolio2-cm02
 title: Edit testimonial author details (name, role, image, LinkedIn)
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-30T13:47:16Z
-updated_at: 2026-02-03T12:53:37Z
+updated_at: 2026-02-03T13:42:16Z
 parent: credfolio2-2ex3
 ---
 
@@ -91,29 +91,29 @@ Reference letters sometimes don't explicitly name the author, causing the LLM ex
 ## Checklist
 
 ### Backend
-- [ ] Update LLM prompt to return `"unknown"` for unidentifiable authors
-- [ ] Create migration: add `image_id` column to `authors` table
-- [ ] Update `Author` entity in Go with `ImageID` field
-- [ ] Update GraphQL schema: add `imageUrl` to `Author` type
-- [ ] Update `UpdateAuthorInput` to accept `imageId`
-- [ ] Update resolver to handle image URL resolution
+- [x] Update LLM prompt to return `"unknown"` for unidentifiable authors
+- [x] Create migration: add `image_id` column to `authors` table
+- [x] Update `Author` entity in Go with `ImageID` field
+- [x] Update GraphQL schema: add `imageUrl` to `Author` type
+- [x] Update `UpdateAuthorInput` to accept `imageId`
+- [x] Update resolver to handle image URL resolution
 
 ### Frontend
-- [ ] Add kebab menu to author header in `TestimonialGroupCard`
-- [ ] Create `AuthorEditModal` component with all fields
-- [ ] Add image upload component (reuse existing file upload pattern)
-- [ ] Wire up `updateAuthor` mutation in modal
-- [ ] Add LinkedIn URL validation
-- [ ] Add unknown author detection logic
-- [ ] Style unknown author cards (dashed border, muted bg, banner)
-- [ ] Replace initials avatar with uploaded image when present
-- [ ] Update UI optimistically on successful edit
+- [x] Add kebab menu to author header in `TestimonialGroupCard`
+- [x] Create `AuthorEditModal` component with all fields
+- [x] Add image upload component (reuse existing file upload pattern)
+- [x] Wire up `updateAuthor` mutation in modal
+- [x] Add LinkedIn URL validation
+- [x] Add unknown author detection logic
+- [x] Style unknown author cards (dashed border, muted bg, banner)
+- [x] Replace initials avatar with uploaded image when present
+- [x] Update UI on successful edit (via onSuccess callback triggering refetch)
 
 ## Definition of Done
 
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (for UI changes)
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review - https://github.com/BjRo/credfolio2/pull/66

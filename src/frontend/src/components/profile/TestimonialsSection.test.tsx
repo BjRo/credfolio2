@@ -4,6 +4,22 @@ import { describe, expect, it, vi } from "vitest";
 import { TestimonialRelationship } from "@/graphql/generated/graphql";
 import { TestimonialsSection } from "./TestimonialsSection";
 
+// Mock dialog components to avoid urql provider requirement in tests
+vi.mock("./AuthorEditModal", () => ({
+  AuthorEditModal: () => null,
+}));
+vi.mock("./DeleteTestimonialDialog", () => ({
+  DeleteTestimonialDialog: () => null,
+}));
+
+// Mock next/image
+vi.mock("next/image", () => ({
+  default: ({ src, alt, ...props }: { src: string; alt: string }) => (
+    // biome-ignore lint/performance/noImgElement: this is a mock for testing
+    <img src={src} alt={alt} {...props} />
+  ),
+}));
+
 const mockTestimonials = [
   {
     __typename: "Testimonial" as const,
@@ -16,6 +32,7 @@ const mockTestimonials = [
       title: "Engineering Manager",
       company: "Acme Corp",
       linkedInUrl: null,
+      imageUrl: null,
     },
     authorName: "John Manager",
     authorTitle: "Engineering Manager",
@@ -36,6 +53,7 @@ const mockTestimonials = [
       title: "Senior Engineer",
       company: "Acme Corp",
       linkedInUrl: null,
+      imageUrl: null,
     },
     authorName: "Sarah Peer",
     authorTitle: "Senior Engineer",
@@ -59,6 +77,7 @@ const mockTestimonialsWithSkills = [
       title: "Engineering Manager",
       company: "Acme Corp",
       linkedInUrl: null,
+      imageUrl: null,
     },
     authorName: "John Manager",
     authorTitle: "Engineering Manager",
@@ -85,6 +104,7 @@ const mockTestimonialsWithSourceBadge = [
       title: "Engineering Manager",
       company: "Acme Corp",
       linkedInUrl: null,
+      imageUrl: null,
     },
     authorName: "John Manager",
     authorTitle: "Engineering Manager",
@@ -113,6 +133,7 @@ const mockTestimonialsWithSourceBadge = [
       title: "Senior Engineer",
       company: "Acme Corp",
       linkedInUrl: null,
+      imageUrl: null,
     },
     authorName: "Sarah Peer",
     authorTitle: "Senior Engineer",
@@ -334,6 +355,7 @@ describe("TestimonialsSection", () => {
           title: "Engineering Manager",
           company: "Acme Corp",
           linkedInUrl: "https://linkedin.com/in/johnmanager",
+          imageUrl: null,
         },
         authorName: "John Manager",
         authorTitle: "Engineering Manager",
@@ -362,6 +384,7 @@ describe("TestimonialsSection", () => {
           title: "Engineering Manager",
           company: "Acme Corp",
           linkedInUrl: "https://linkedin.com/in/johnmanager",
+          imageUrl: null,
         },
         authorName: "John Manager",
         authorTitle: "Engineering Manager",
@@ -390,6 +413,7 @@ describe("TestimonialsSection", () => {
           title: "Senior Engineer",
           company: "Tech Inc",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "Sarah Peer",
         authorTitle: "Senior Engineer",
@@ -469,6 +493,7 @@ describe("TestimonialsSection", () => {
           title: "CEO",
           company: "Big Corp",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "Prolific Author",
         authorTitle: "CEO",
@@ -489,6 +514,7 @@ describe("TestimonialsSection", () => {
           title: "CEO",
           company: "Big Corp",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "Prolific Author",
         authorTitle: "CEO",
@@ -509,6 +535,7 @@ describe("TestimonialsSection", () => {
           title: "CEO",
           company: "Big Corp",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "Prolific Author",
         authorTitle: "CEO",
@@ -529,6 +556,7 @@ describe("TestimonialsSection", () => {
           title: "CEO",
           company: "Big Corp",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "Prolific Author",
         authorTitle: "CEO",
@@ -617,6 +645,7 @@ describe("TestimonialsSection", () => {
           title: "Engineering Manager",
           company: "Acme Corp",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "John Manager",
         authorTitle: "Engineering Manager",
@@ -639,6 +668,7 @@ describe("TestimonialsSection", () => {
           title: "Engineering Manager",
           company: "Acme Corp",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "John Manager",
         authorTitle: "Engineering Manager",
@@ -708,6 +738,7 @@ describe("TestimonialsSection", () => {
           title: "Engineering Manager",
           company: "Acme Corp",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "John Manager",
         authorTitle: "Engineering Manager",
@@ -728,6 +759,7 @@ describe("TestimonialsSection", () => {
           title: "Engineering Manager",
           company: "Acme Corp",
           linkedInUrl: null,
+          imageUrl: null,
         },
         authorName: "John Manager",
         authorTitle: "Engineering Manager",
@@ -765,6 +797,378 @@ describe("TestimonialsSection", () => {
       quoteMarks.forEach((mark) => {
         expect(mark).not.toHaveClass("pl-4");
       });
+    });
+  });
+
+  describe("Unknown author handling", () => {
+    const mockUnknownAuthorTestimonial = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Quote from an unknown author.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "unknown",
+          title: null,
+          company: null,
+          linkedInUrl: null,
+          imageUrl: null,
+        },
+        authorName: "unknown",
+        authorTitle: null,
+        authorCompany: null,
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    const mockEmptyNameAuthorTestimonial = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Quote from author with empty name.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "",
+          title: null,
+          company: null,
+          linkedInUrl: null,
+          imageUrl: null,
+        },
+        authorName: "",
+        authorTitle: null,
+        authorCompany: null,
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("shows 'Unknown Author' when author name is 'unknown'", () => {
+      render(<TestimonialsSection testimonials={mockUnknownAuthorTestimonial} />);
+      expect(screen.getByText("Unknown Author")).toBeInTheDocument();
+    });
+
+    it("shows 'Unknown Author' when author name is empty", () => {
+      render(<TestimonialsSection testimonials={mockEmptyNameAuthorTestimonial} />);
+      expect(screen.getByText("Unknown Author")).toBeInTheDocument();
+    });
+
+    it("shows 'Author not detected' banner for unknown authors", () => {
+      render(<TestimonialsSection testimonials={mockUnknownAuthorTestimonial} />);
+      expect(screen.getByText("Author not detected")).toBeInTheDocument();
+    });
+
+    it("applies dashed border styling to unknown author cards", () => {
+      render(<TestimonialsSection testimonials={mockUnknownAuthorTestimonial} />);
+      const card = screen.getByText("Unknown Author").closest("[class*='rounded-lg']");
+      expect(card).toHaveClass("border-dashed");
+    });
+
+    it("shows 'Add details' button when editable and author is unknown", () => {
+      render(
+        <TestimonialsSection
+          testimonials={mockUnknownAuthorTestimonial}
+          onAuthorUpdated={() => {}}
+        />
+      );
+      expect(screen.getByRole("button", { name: "Add details" })).toBeInTheDocument();
+    });
+
+    it("does not show 'Add details' button when not editable", () => {
+      render(<TestimonialsSection testimonials={mockUnknownAuthorTestimonial} />);
+      expect(screen.queryByRole("button", { name: "Add details" })).not.toBeInTheDocument();
+    });
+
+    it("shows question mark avatar for unknown authors", () => {
+      render(<TestimonialsSection testimonials={mockUnknownAuthorTestimonial} />);
+      expect(screen.getByText("?")).toBeInTheDocument();
+    });
+  });
+
+  describe("Edit author functionality", () => {
+    const mockTestimonialWithAuthor = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Great leadership skills.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+          imageUrl: null,
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("shows edit author menu button when editable", () => {
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+      // The edit author button has aria-label "Edit author"
+      expect(screen.getByRole("button", { name: "Edit author" })).toBeInTheDocument();
+    });
+
+    it("hides edit author menu button when not editable", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialWithAuthor} />);
+      expect(screen.queryByRole("button", { name: "Edit author" })).not.toBeInTheDocument();
+    });
+
+    it("edit author menu is hidden by default and visible on hover", () => {
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+      const menuButton = screen.getByRole("button", { name: "Edit author" });
+      const menuContainer = menuButton.parentElement;
+      expect(menuContainer).toHaveClass("opacity-0");
+      expect(menuContainer).toHaveClass("group-hover/card:opacity-100");
+    });
+
+    it("edit author menu contains 'Edit author' option", async () => {
+      const user = userEvent.setup();
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+
+      const menuButton = screen.getByRole("button", { name: "Edit author" });
+      await user.click(menuButton);
+
+      expect(screen.getByRole("menuitem", { name: /edit author/i })).toBeInTheDocument();
+    });
+
+    it("does not show edit author menu for legacy testimonials without author entity", () => {
+      const legacyTestimonial = [
+        {
+          __typename: "Testimonial" as const,
+          id: "1",
+          quote: "Legacy testimonial.",
+          author: null,
+          authorName: "Legacy Author",
+          authorTitle: "Old Title",
+          authorCompany: "Old Company",
+          relationship: TestimonialRelationship.Manager,
+          createdAt: "2024-01-01T00:00:00Z",
+          validatedSkills: [],
+          referenceLetter: null,
+        },
+      ];
+      render(<TestimonialsSection testimonials={legacyTestimonial} onAuthorUpdated={() => {}} />);
+      expect(screen.queryByRole("button", { name: "Edit author" })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Author image display", () => {
+    const mockTestimonialWithImage = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Quote from author with image.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "Jane Doe",
+          title: "CTO",
+          company: "Tech Corp",
+          linkedInUrl: null,
+          imageUrl: "https://example.com/jane.jpg",
+        },
+        authorName: "Jane Doe",
+        authorTitle: "CTO",
+        authorCompany: "Tech Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    const mockTestimonialWithoutImage = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Quote from author without image.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Smith",
+          title: "Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+          imageUrl: null,
+        },
+        authorName: "John Smith",
+        authorTitle: "Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("displays author image when imageUrl is provided", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialWithImage} />);
+      const image = screen.getByAltText(/photo of jane doe/i);
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute("src", expect.stringContaining("jane.jpg"));
+    });
+
+    it("displays initials avatar when author has no image", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialWithoutImage} />);
+      // Should show initials "JS" for "John Smith"
+      expect(screen.getByText("JS")).toBeInTheDocument();
+    });
+
+    it("does not show initials when author has image", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialWithImage} />);
+      // Should not show initials "JD" when image is present
+      expect(screen.queryByText("JD")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Delete testimonial functionality", () => {
+    const mockTestimonialForDelete = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Quote to delete.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+          imageUrl: null,
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: {
+          __typename: "ReferenceLetter" as const,
+          id: "ref-1",
+          file: {
+            __typename: "File" as const,
+            id: "file-1",
+            url: "https://example.com/letter.pdf",
+          },
+        },
+      },
+    ];
+
+    it("shows delete option in quote menu when editable", async () => {
+      const user = userEvent.setup();
+      render(
+        <TestimonialsSection
+          testimonials={mockTestimonialForDelete}
+          onTestimonialDeleted={() => {}}
+        />
+      );
+
+      const menuButton = screen.getByRole("button", { name: /more actions/i });
+      await user.click(menuButton);
+
+      expect(screen.getByRole("menuitem", { name: /delete/i })).toBeInTheDocument();
+    });
+
+    it("does not show delete option when not editable", async () => {
+      const user = userEvent.setup();
+      render(<TestimonialsSection testimonials={mockTestimonialForDelete} />);
+
+      const menuButton = screen.getByRole("button", { name: /more actions/i });
+      await user.click(menuButton);
+
+      // Should only have "View source document", not delete
+      expect(screen.queryByRole("menuitem", { name: /delete/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Inline avatar editing", () => {
+    const mockTestimonialWithAuthor = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "Great leadership skills.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+          imageUrl: null,
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("renders clickable avatar button when editable", () => {
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+      expect(
+        screen.getByRole("button", { name: /change photo for john manager/i })
+      ).toBeInTheDocument();
+    });
+
+    it("does not render clickable avatar button when not editable", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialWithAuthor} />);
+      // Avatar should be a div, not a button, when not editable
+      expect(
+        screen.queryByRole("button", { name: /change photo for john manager/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows camera overlay on avatar hover when editable", () => {
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+      const avatarButton = screen.getByRole("button", { name: /change photo for john manager/i });
+      // Check that the button exists and has hover classes for camera overlay
+      expect(avatarButton).toBeInTheDocument();
+    });
+
+    it("has hidden file input for avatar upload", () => {
+      render(
+        <TestimonialsSection testimonials={mockTestimonialWithAuthor} onAuthorUpdated={() => {}} />
+      );
+      const fileInput = document.querySelector(
+        'input[type="file"][aria-label*="Upload author photo"]'
+      );
+      expect(fileInput).toBeInTheDocument();
+      expect(fileInput).toHaveClass("hidden");
+    });
+
+    it("does not render avatar file input when not editable", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialWithAuthor} />);
+      const fileInput = document.querySelector(
+        'input[type="file"][aria-label*="Upload author photo"]'
+      );
+      expect(fileInput).not.toBeInTheDocument();
     });
   });
 });

@@ -78,14 +78,18 @@ type ReferenceLetter struct { //nolint:govet // Field ordering prioritizes reada
 type Author struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
 	bun.BaseModel `bun:"table:authors,alias:a"`
 
-	ID          uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
-	ProfileID   uuid.UUID `bun:"profile_id,notnull,type:uuid"`
-	Name        string    `bun:"name,notnull"`
-	Title       *string   `bun:"title"`
-	Company     *string   `bun:"company"`
-	LinkedInURL *string   `bun:"linkedin_url"`
-	CreatedAt   time.Time `bun:"created_at,notnull,default:current_timestamp"`
-	UpdatedAt   time.Time `bun:"updated_at,notnull,default:current_timestamp"`
+	ID          uuid.UUID  `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	ProfileID   uuid.UUID  `bun:"profile_id,notnull,type:uuid"`
+	Name        string     `bun:"name,notnull"`
+	Title       *string    `bun:"title"`
+	Company     *string    `bun:"company"`
+	LinkedInURL *string    `bun:"linkedin_url"`
+	ImageID     *uuid.UUID `bun:"image_id,type:uuid"`
+	CreatedAt   time.Time  `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt   time.Time  `bun:"updated_at,notnull,default:current_timestamp"`
+
+	// Relations
+	Image *File `bun:"rel:belongs-to,join:image_id=id"`
 }
 
 // TestimonialRelationship represents the relationship between the author and the candidate.

@@ -400,6 +400,7 @@ export function ProfileHeader({
             location: displayLocation,
             summary: displaySummary,
           }}
+          photoUrl={displayPhotoUrl}
           onSuccess={handleEditSuccess}
         />
       )}
