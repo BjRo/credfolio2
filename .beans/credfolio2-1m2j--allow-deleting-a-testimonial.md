@@ -40,4 +40,4 @@ Users need to be able to remove testimonials that are inaccurate, outdated, or t
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review: https://github.com/BjRo/credfolio2/pull/65
