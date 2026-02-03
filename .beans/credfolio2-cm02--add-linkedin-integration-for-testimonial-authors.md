@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-01-30T13:47:16Z
-updated_at: 2026-02-03T12:55:55Z
+updated_at: 2026-02-03T13:42:16Z
 parent: credfolio2-2ex3
 ---
 
@@ -111,7 +111,7 @@ Reference letters sometimes don't explicitly name the author, causing the LLM ex
 
 ## Definition of Done
 
-- [ ] Tests written (TDD: write tests before implementation)
+- [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
