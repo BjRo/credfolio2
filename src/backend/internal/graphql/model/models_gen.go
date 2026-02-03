@@ -41,7 +41,7 @@ type SkillResponse interface {
 	IsSkillResponse()
 }
 
-// Union type for upload result - either success or validation error.
+// Union type for upload result - either success, validation error, or duplicate detected.
 type UploadFileResponse interface {
 	IsUploadFileResponse()
 }
@@ -51,7 +51,7 @@ type UploadProfilePhotoResponse interface {
 	IsUploadProfilePhotoResponse()
 }
 
-// Union type for resume upload result - either success or validation error.
+// Union type for resume upload result - either success, validation error, or duplicate detected.
 type UploadResumeResponse interface {
 	IsUploadResumeResponse()
 }
@@ -189,6 +189,22 @@ type DeleteResult struct {
 	DeletedID string `json:"deletedId"`
 }
 
+// Result when a duplicate file is detected during upload.
+type DuplicateFileDetected struct {
+	// The existing file that matches the uploaded content.
+	ExistingFile *File `json:"existingFile"`
+	// The existing resume created from this file (if uploading a resume).
+	ExistingResume *Resume `json:"existingResume,omitempty"`
+	// The existing reference letter created from this file (if uploading a reference letter).
+	ExistingReferenceLetter *ReferenceLetter `json:"existingReferenceLetter,omitempty"`
+	// Message describing the duplicate detection.
+	Message string `json:"message"`
+}
+
+func (DuplicateFileDetected) IsUploadFileResponse() {}
+
+func (DuplicateFileDetected) IsUploadResumeResponse() {}
+
 // Result of a successful education operation.
 type EducationResult struct {
 	// The created or updated education entry.
@@ -254,6 +270,8 @@ type File struct {
 	ContentType string `json:"contentType"`
 	SizeBytes   int    `json:"sizeBytes"`
 	StorageKey  string `json:"storageKey"`
+	// SHA-256 hash of the file content for duplicate detection.
+	ContentHash *string `json:"contentHash,omitempty"`
 	// Presigned URL for downloading the file. Expires after a short time.
 	URL       string    `json:"url"`
 	CreatedAt time.Time `json:"createdAt"`

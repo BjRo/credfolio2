@@ -52,6 +52,14 @@ func mustCreateReferenceLetter(repo *mockReferenceLetterRepository, letter *doma
 	}
 }
 
+// mustCreateResume creates a resume in the mock repository.
+// Panics on error (should never happen with mocks).
+func mustCreateResume(repo *mockResumeRepository, resume *domain.Resume) {
+	if err := repo.Create(context.Background(), resume); err != nil {
+		panic("unexpected error creating resume: " + err.Error())
+	}
+}
+
 // mockUserRepository is a mock implementation of domain.UserRepository.
 type mockUserRepository struct {
 	users map[uuid.UUID]*domain.User
@@ -134,6 +142,15 @@ func (r *mockFileRepository) GetByUserID(_ context.Context, userID uuid.UUID) ([
 func (r *mockFileRepository) Delete(_ context.Context, id uuid.UUID) error {
 	delete(r.files, id)
 	return nil
+}
+
+func (r *mockFileRepository) GetByUserIDAndContentHash(_ context.Context, userID uuid.UUID, contentHash string) (*domain.File, error) {
+	for _, file := range r.files {
+		if file.UserID == userID && file.ContentHash != nil && *file.ContentHash == contentHash {
+			return file, nil
+		}
+	}
+	return nil, nil
 }
 
 // mockReferenceLetterRepository is a mock implementation of domain.ReferenceLetterRepository.
@@ -2858,6 +2875,113 @@ func TestFileResolver_URL(t *testing.T) {
 		_, err := fileResolver.URL(ctx, file)
 		if err == nil {
 			t.Error("expected error for non-existent file, got nil")
+		}
+	})
+}
+
+func TestCheckDuplicateFile(t *testing.T) {
+	userRepo := newMockUserRepository()
+	fileRepo := newMockFileRepository()
+	refLetterRepo := newMockReferenceLetterRepository()
+	resumeRepo := newMockResumeRepository()
+
+	ctx := context.Background()
+
+	// Create test user
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "duplicate-test@example.com",
+		PasswordHash: "hashed",
+	}
+	mustCreateUser(userRepo, user)
+
+	// Create a file with content hash
+	contentHash := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	file := &domain.File{
+		ID:          uuid.New(),
+		UserID:      user.ID,
+		Filename:    "test.pdf",
+		ContentType: "application/pdf",
+		SizeBytes:   1024,
+		StorageKey:  "uploads/test.pdf",
+		ContentHash: &contentHash,
+	}
+	mustCreateFile(fileRepo, file)
+
+	// Create associated resume
+	resume := &domain.Resume{
+		ID:     uuid.New(),
+		UserID: user.ID,
+		FileID: file.ID,
+		Status: domain.ResumeStatusCompleted,
+	}
+	mustCreateResume(resumeRepo, resume)
+
+	r := resolver.NewResolver(
+		userRepo, fileRepo, refLetterRepo, resumeRepo,
+		newMockProfileRepository(), newMockProfileExperienceRepository(),
+		newMockProfileEducationRepository(), newMockProfileSkillRepository(),
+		newMockAuthorRepository(), newMockTestimonialRepository(),
+		newMockSkillValidationRepository(), newMockExperienceValidationRepository(),
+		storage.NewMockStorage(), newMockJobEnqueuer(), testLogger(),
+	)
+	query := r.Query()
+
+	t.Run("returns duplicate info when file exists", func(t *testing.T) {
+		result, err := query.CheckDuplicateFile(ctx, user.ID.String(), contentHash)
+		if err != nil {
+			t.Fatalf("CheckDuplicateFile failed: %v", err)
+		}
+
+		if result == nil {
+			t.Fatal("expected duplicate result, got nil")
+		}
+
+		if result.ExistingFile == nil {
+			t.Fatal("expected existing file in result")
+		}
+
+		if result.ExistingFile.ID != file.ID.String() {
+			t.Errorf("file ID mismatch: got %s, want %s", result.ExistingFile.ID, file.ID.String())
+		}
+
+		if result.ExistingResume == nil {
+			t.Fatal("expected existing resume in result")
+		}
+
+		if result.ExistingResume.ID != resume.ID.String() {
+			t.Errorf("resume ID mismatch: got %s, want %s", result.ExistingResume.ID, resume.ID.String())
+		}
+
+		if result.Message == "" {
+			t.Error("expected non-empty message")
+		}
+	})
+
+	t.Run("returns nil when no duplicate found", func(t *testing.T) {
+		differentHash := "different_hash_that_does_not_exist"
+		result, err := query.CheckDuplicateFile(ctx, user.ID.String(), differentHash)
+		if err != nil {
+			t.Fatalf("CheckDuplicateFile failed: %v", err)
+		}
+
+		if result != nil {
+			t.Errorf("expected nil for non-duplicate hash, got %+v", result)
+		}
+	})
+
+	t.Run("returns error for invalid user ID", func(t *testing.T) {
+		_, err := query.CheckDuplicateFile(ctx, "invalid-uuid", contentHash)
+		if err == nil {
+			t.Error("expected error for invalid user ID")
+		}
+	})
+
+	t.Run("returns error for non-existent user", func(t *testing.T) {
+		nonExistentUserID := uuid.New().String()
+		_, err := query.CheckDuplicateFile(ctx, nonExistentUserID, contentHash)
+		if err == nil {
+			t.Error("expected error for non-existent user")
 		}
 	})
 }

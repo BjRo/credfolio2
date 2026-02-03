@@ -24,6 +24,8 @@ type File {
   contentType: String!
   sizeBytes: Int!
   storageKey: String!
+  """SHA-256 hash of the file content for duplicate detection."""
+  contentHash: String
   """Presigned URL for downloading the file. Expires after a short time."""
   url: String!
   createdAt: DateTime!
@@ -920,6 +922,13 @@ type Query {
   Get all validations for a specific experience.
   """
   experienceValidations(experienceId: ID!): [ExperienceValidation!]!
+
+  """
+  Check if a file with the given content hash already exists for the user.
+  Returns the existing file and associated resume/reference letter if found.
+  Used for pre-upload duplicate detection.
+  """
+  checkDuplicateFile(userId: ID!, contentHash: String!): DuplicateFileDetected
 }
 
 # ============================================================================
@@ -947,9 +956,23 @@ type FileValidationError {
 }
 
 """
-Union type for upload result - either success or validation error.
+Result when a duplicate file is detected during upload.
 """
-union UploadFileResponse = UploadFileResult | FileValidationError
+type DuplicateFileDetected {
+  """The existing file that matches the uploaded content."""
+  existingFile: File!
+  """The existing resume created from this file (if uploading a resume)."""
+  existingResume: Resume
+  """The existing reference letter created from this file (if uploading a reference letter)."""
+  existingReferenceLetter: ReferenceLetter
+  """Message describing the duplicate detection."""
+  message: String!
+}
+
+"""
+Union type for upload result - either success, validation error, or duplicate detected.
+"""
+union UploadFileResponse = UploadFileResult | FileValidationError | DuplicateFileDetected
 
 """
 Result of a resume upload operation.
@@ -962,33 +985,41 @@ type UploadResumeResult {
 }
 
 """
-Union type for resume upload result - either success or validation error.
+Union type for resume upload result - either success, validation error, or duplicate detected.
 """
-union UploadResumeResponse = UploadResumeResult | FileValidationError
+union UploadResumeResponse = UploadResumeResult | FileValidationError | DuplicateFileDetected
 
 type Mutation {
   """
   Upload a reference letter file for processing.
   Accepts PDF, DOCX, or TXT files.
   Creates a file record and queues the document for LLM extraction.
+  If a file with the same content hash already exists, returns DuplicateFileDetected
+  unless forceReimport is true.
   """
   uploadFile(
     """The user ID uploading the file."""
     userId: ID!
     """The file to upload (PDF, DOCX, or TXT only)."""
     file: Upload!
+    """If true, proceed with upload even if a duplicate is detected."""
+    forceReimport: Boolean
   ): UploadFileResponse!
 
   """
   Upload a resume file for processing.
   Accepts PDF, DOCX, or TXT files.
   Creates a file record and queues the resume for LLM extraction.
+  If a file with the same content hash already exists, returns DuplicateFileDetected
+  unless forceReimport is true.
   """
   uploadResume(
     """The user ID uploading the resume."""
     userId: ID!
     """The resume file to upload (PDF, DOCX, or TXT only)."""
     file: Upload!
+    """If true, proceed with upload even if a duplicate is detected."""
+    forceReimport: Boolean
   ): UploadResumeResponse!
 
   # ============================================================================

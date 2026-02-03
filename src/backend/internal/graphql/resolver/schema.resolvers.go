@@ -10,6 +10,7 @@ import (
 	"backend/internal/graphql/generated"
 	"backend/internal/graphql/model"
 	"backend/internal/logger"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -107,7 +108,7 @@ func (r *fileResolver) URL(ctx context.Context, obj *model.File) (string, error)
 }
 
 // UploadFile is the resolver for the uploadFile field.
-func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file graphql.Upload) (model.UploadFileResponse, error) {
+func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file graphql.Upload, forceReimport *bool) (model.UploadFileResponse, error) {
 	r.log.Info("File upload started",
 		logger.Feature("upload"),
 		logger.String("user_id", userID),
@@ -184,12 +185,84 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 		}, nil
 	}
 
+	// Read file content and calculate hash for duplicate detection
+	contentHash, fileContent, err := calculateContentHashFromReader(file.File)
+	if err != nil {
+		r.log.Error("Failed to read file content",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to read file content: %w", err)
+	}
+
+	r.log.Info("File content hash calculated",
+		logger.Feature("upload"),
+		logger.String("user_id", userID),
+		logger.String("content_hash", contentHash),
+	)
+
+	// Check for duplicate file (unless forceReimport is true)
+	if forceReimport == nil || !*forceReimport {
+		existingFile, err := r.fileRepo.GetByUserIDAndContentHash(ctx, uid, contentHash)
+		if err != nil {
+			r.log.Error("Failed to check for duplicate file",
+				logger.Feature("upload"),
+				logger.String("user_id", userID),
+				logger.String("content_hash", contentHash),
+				logger.Err(err),
+			)
+			return nil, fmt.Errorf("failed to check for duplicate file: %w", err)
+		}
+
+		if existingFile != nil {
+			r.log.Info("Duplicate file detected",
+				logger.Feature("upload"),
+				logger.String("user_id", userID),
+				logger.String("content_hash", contentHash),
+				logger.String("existing_file_id", existingFile.ID.String()),
+			)
+
+			// Find associated reference letter
+			refLetters, err := r.refLetterRepo.GetByUserID(ctx, uid)
+			if err != nil {
+				r.log.Error("Failed to get reference letters",
+					logger.Feature("upload"),
+					logger.String("user_id", userID),
+					logger.Err(err),
+				)
+				return nil, fmt.Errorf("failed to get reference letters: %w", err)
+			}
+
+			var existingRefLetter *domain.ReferenceLetter
+			for _, rl := range refLetters {
+				if rl.FileID != nil && *rl.FileID == existingFile.ID {
+					existingRefLetter = rl
+					break
+				}
+			}
+
+			gqlUser := toGraphQLUser(user)
+			gqlExistingFile := toGraphQLFile(existingFile, gqlUser)
+			var gqlExistingRefLetter *model.ReferenceLetter
+			if existingRefLetter != nil {
+				gqlExistingRefLetter = toGraphQLReferenceLetter(existingRefLetter, gqlUser, gqlExistingFile)
+			}
+
+			return &model.DuplicateFileDetected{
+				ExistingFile:            gqlExistingFile,
+				ExistingReferenceLetter: gqlExistingRefLetter,
+				Message:                 fmt.Sprintf("This document was already uploaded on %s.", existingFile.CreatedAt.Format("Jan 2, 2006")),
+			}, nil
+		}
+	}
+
 	// Generate storage key
 	fileID := uuid.New()
 	storageKey := fmt.Sprintf("uploads/%s/%s/%s", uid.String(), fileID.String(), file.Filename)
 
-	// Upload to storage
-	_, err = r.storage.Upload(ctx, storageKey, file.File, file.Size, file.ContentType)
+	// Upload to storage (using bytes.Reader since we already read the content)
+	_, err = r.storage.Upload(ctx, storageKey, bytes.NewReader(fileContent), int64(len(fileContent)), file.ContentType)
 	if err != nil {
 		r.log.Error("Failed to upload file to storage",
 			logger.Feature("upload"),
@@ -200,7 +273,7 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 		return nil, fmt.Errorf("failed to upload file to storage: %w", err)
 	}
 
-	// Create file record
+	// Create file record with content hash
 	domainFile := &domain.File{
 		ID:          fileID,
 		UserID:      uid,
@@ -208,6 +281,7 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 		ContentType: file.ContentType,
 		SizeBytes:   file.Size,
 		StorageKey:  storageKey,
+		ContentHash: &contentHash,
 	}
 
 	if err := r.fileRepo.Create(ctx, domainFile); err != nil {
@@ -265,6 +339,7 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 		logger.String("file_id", fileID.String()),
 		logger.String("reference_letter_id", refLetter.ID.String()),
 		logger.String("storage_key", storageKey),
+		logger.String("content_hash", contentHash),
 	)
 
 	// Build response
@@ -279,7 +354,7 @@ func (r *mutationResolver) UploadFile(ctx context.Context, userID string, file g
 }
 
 // UploadResume is the resolver for the uploadResume field.
-func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file graphql.Upload) (model.UploadResumeResponse, error) {
+func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file graphql.Upload, forceReimport *bool) (model.UploadResumeResponse, error) {
 	r.log.Info("Resume upload started",
 		logger.Feature("upload"),
 		logger.String("user_id", userID),
@@ -356,12 +431,84 @@ func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file
 		}, nil
 	}
 
+	// Read file content and calculate hash for duplicate detection
+	contentHash, fileContent, err := calculateContentHashFromReader(file.File)
+	if err != nil {
+		r.log.Error("Failed to read file content",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to read file content: %w", err)
+	}
+
+	r.log.Info("Resume content hash calculated",
+		logger.Feature("upload"),
+		logger.String("user_id", userID),
+		logger.String("content_hash", contentHash),
+	)
+
+	// Check for duplicate file (unless forceReimport is true)
+	if forceReimport == nil || !*forceReimport {
+		existingFile, err := r.fileRepo.GetByUserIDAndContentHash(ctx, uid, contentHash)
+		if err != nil {
+			r.log.Error("Failed to check for duplicate file",
+				logger.Feature("upload"),
+				logger.String("user_id", userID),
+				logger.String("content_hash", contentHash),
+				logger.Err(err),
+			)
+			return nil, fmt.Errorf("failed to check for duplicate file: %w", err)
+		}
+
+		if existingFile != nil {
+			r.log.Info("Duplicate file detected for resume",
+				logger.Feature("upload"),
+				logger.String("user_id", userID),
+				logger.String("content_hash", contentHash),
+				logger.String("existing_file_id", existingFile.ID.String()),
+			)
+
+			// Find associated resume
+			resumes, err := r.resumeRepo.GetByUserID(ctx, uid)
+			if err != nil {
+				r.log.Error("Failed to get resumes",
+					logger.Feature("upload"),
+					logger.String("user_id", userID),
+					logger.Err(err),
+				)
+				return nil, fmt.Errorf("failed to get resumes: %w", err)
+			}
+
+			var existingResume *domain.Resume
+			for _, res := range resumes {
+				if res.FileID == existingFile.ID {
+					existingResume = res
+					break
+				}
+			}
+
+			gqlUser := toGraphQLUser(user)
+			gqlExistingFile := toGraphQLFile(existingFile, gqlUser)
+			var gqlExistingResume *model.Resume
+			if existingResume != nil {
+				gqlExistingResume = toGraphQLResume(existingResume, gqlUser, gqlExistingFile)
+			}
+
+			return &model.DuplicateFileDetected{
+				ExistingFile:   gqlExistingFile,
+				ExistingResume: gqlExistingResume,
+				Message:        fmt.Sprintf("This resume was already uploaded on %s.", existingFile.CreatedAt.Format("Jan 2, 2006")),
+			}, nil
+		}
+	}
+
 	// Generate storage key
 	fileID := uuid.New()
 	storageKey := fmt.Sprintf("uploads/%s/%s/%s", uid.String(), fileID.String(), file.Filename)
 
-	// Upload to storage
-	_, err = r.storage.Upload(ctx, storageKey, file.File, file.Size, file.ContentType)
+	// Upload to storage (using bytes.Reader since we already read the content)
+	_, err = r.storage.Upload(ctx, storageKey, bytes.NewReader(fileContent), int64(len(fileContent)), file.ContentType)
 	if err != nil {
 		r.log.Error("Failed to upload file to storage",
 			logger.Feature("upload"),
@@ -372,7 +519,7 @@ func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file
 		return nil, fmt.Errorf("failed to upload file to storage: %w", err)
 	}
 
-	// Create file record
+	// Create file record with content hash
 	domainFile := &domain.File{
 		ID:          fileID,
 		UserID:      uid,
@@ -380,6 +527,7 @@ func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file
 		ContentType: file.ContentType,
 		SizeBytes:   file.Size,
 		StorageKey:  storageKey,
+		ContentHash: &contentHash,
 	}
 
 	if err := r.fileRepo.Create(ctx, domainFile); err != nil {
@@ -437,6 +585,7 @@ func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file
 		logger.String("file_id", fileID.String()),
 		logger.String("resume_id", resume.ID.String()),
 		logger.String("storage_key", storageKey),
+		logger.String("content_hash", contentHash),
 	)
 
 	// Build response
@@ -2616,6 +2765,121 @@ func (r *queryResolver) ExperienceValidations(ctx context.Context, experienceID 
 	}
 
 	return result, nil
+}
+
+// CheckDuplicateFile is the resolver for the checkDuplicateFile field.
+func (r *queryResolver) CheckDuplicateFile(ctx context.Context, userID string, contentHash string) (*model.DuplicateFileDetected, error) {
+	r.log.Info("Checking for duplicate file",
+		logger.Feature("upload"),
+		logger.String("user_id", userID),
+		logger.String("content_hash", contentHash),
+	)
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		r.log.Warning("Invalid user ID format",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+		)
+		return nil, fmt.Errorf("invalid user ID format")
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to verify user",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	// Check for existing file with same hash
+	existingFile, err := r.fileRepo.GetByUserIDAndContentHash(ctx, uid, contentHash)
+	if err != nil {
+		r.log.Error("Failed to check for duplicate file",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.String("content_hash", contentHash),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to check for duplicate file: %w", err)
+	}
+
+	if existingFile == nil {
+		// No duplicate found
+		return nil, nil
+	}
+
+	r.log.Info("Duplicate file found",
+		logger.Feature("upload"),
+		logger.String("user_id", userID),
+		logger.String("content_hash", contentHash),
+		logger.String("existing_file_id", existingFile.ID.String()),
+	)
+
+	// Find associated resume
+	resumes, err := r.resumeRepo.GetByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get resumes",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get resumes: %w", err)
+	}
+
+	var existingResume *domain.Resume
+	for _, res := range resumes {
+		if res.FileID == existingFile.ID {
+			existingResume = res
+			break
+		}
+	}
+
+	// Find associated reference letter
+	refLetters, err := r.refLetterRepo.GetByUserID(ctx, uid)
+	if err != nil {
+		r.log.Error("Failed to get reference letters",
+			logger.Feature("upload"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to get reference letters: %w", err)
+	}
+
+	var existingRefLetter *domain.ReferenceLetter
+	for _, rl := range refLetters {
+		if rl.FileID != nil && *rl.FileID == existingFile.ID {
+			existingRefLetter = rl
+			break
+		}
+	}
+
+	gqlUser := toGraphQLUser(user)
+	gqlExistingFile := toGraphQLFile(existingFile, gqlUser)
+
+	var gqlExistingResume *model.Resume
+	if existingResume != nil {
+		gqlExistingResume = toGraphQLResume(existingResume, gqlUser, gqlExistingFile)
+	}
+
+	var gqlExistingRefLetter *model.ReferenceLetter
+	if existingRefLetter != nil {
+		gqlExistingRefLetter = toGraphQLReferenceLetter(existingRefLetter, gqlUser, gqlExistingFile)
+	}
+
+	return &model.DuplicateFileDetected{
+		ExistingFile:            gqlExistingFile,
+		ExistingResume:          gqlExistingResume,
+		ExistingReferenceLetter: gqlExistingRefLetter,
+		Message:                 fmt.Sprintf("This document was already uploaded on %s.", existingFile.CreatedAt.Format("Jan 2, 2006")),
+	}, nil
 }
 
 // Skill is the resolver for the skill field.

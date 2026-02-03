@@ -86,6 +86,7 @@ func toGraphQLFile(f *domain.File, user *model.User) *model.File {
 		ContentType: f.ContentType,
 		SizeBytes:   int(f.SizeBytes),
 		StorageKey:  f.StorageKey,
+		ContentHash: f.ContentHash,
 		CreatedAt:   f.CreatedAt,
 		User:        user,
 	}
