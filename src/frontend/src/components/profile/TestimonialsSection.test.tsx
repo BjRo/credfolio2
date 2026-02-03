@@ -695,4 +695,85 @@ describe("TestimonialsSection", () => {
       expect(screen.getByText("Old Title at Old Company")).toBeInTheDocument();
     });
   });
+
+  describe("Quote styling", () => {
+    const mockTestimonialsFromSameAuthor = [
+      {
+        __typename: "Testimonial" as const,
+        id: "1",
+        quote: "First quote from John.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-01T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+      {
+        __typename: "Testimonial" as const,
+        id: "2",
+        quote: "Second quote from John.",
+        author: {
+          __typename: "Author" as const,
+          id: "author-1",
+          name: "John Manager",
+          title: "Engineering Manager",
+          company: "Acme Corp",
+          linkedInUrl: null,
+        },
+        authorName: "John Manager",
+        authorTitle: "Engineering Manager",
+        authorCompany: "Acme Corp",
+        relationship: TestimonialRelationship.Manager,
+        createdAt: "2024-01-02T00:00:00Z",
+        validatedSkills: [],
+        referenceLetter: null,
+      },
+    ];
+
+    it("renders continuous left border on quotes wrapper, not individual quotes", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
+
+      // Find the quotes wrapper with the continuous border
+      const quotesWrapper = document.querySelector("[data-testid='quotes-wrapper']");
+      expect(quotesWrapper).toBeInTheDocument();
+      expect(quotesWrapper).toHaveClass("border-l-2");
+
+      // Individual quote items should NOT have the border class
+      const quoteItems = document.querySelectorAll("[data-testid='quote-item']");
+      expect(quoteItems.length).toBe(2);
+      quoteItems.forEach((item) => {
+        expect(item).not.toHaveClass("border-l-2");
+      });
+    });
+
+    it("renders triangle bullet icon before each quote", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
+
+      // Each quote should have a triangle bullet icon
+      const bulletIcons = document.querySelectorAll("[data-testid='quote-bullet']");
+      expect(bulletIcons.length).toBe(2);
+    });
+
+    it("renders quote text with minimal spacing from opening quote mark", () => {
+      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
+
+      // The opening quote mark should be positioned close to the text
+      const quoteMarks = document.querySelectorAll("[data-testid='opening-quote-mark']");
+      expect(quoteMarks.length).toBe(2);
+      // Quote mark should not have excessive left padding
+      quoteMarks.forEach((mark) => {
+        expect(mark).not.toHaveClass("pl-4");
+      });
+    });
+  });
 });

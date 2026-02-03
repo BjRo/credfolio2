@@ -3,6 +3,7 @@
 import {
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   FileText,
   Linkedin,
@@ -119,21 +120,32 @@ function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
   );
 
   return (
-    <div className="pl-4 border-l-2 border-primary/20">
-      {/* Quote */}
-      <blockquote className="relative">
-        <span className="absolute -top-1 -left-1 text-2xl text-primary/20 font-serif">&ldquo;</span>
-        <p className="text-foreground pl-4 pr-2 italic leading-relaxed text-sm">
-          {testimonial.quote}
-          <span className="text-2xl text-primary/20 font-serif leading-none align-bottom">
-            &rdquo;
-          </span>
-        </p>
+    <div className="pl-3" data-testid="quote-item">
+      {/* Quote with bullet */}
+      <blockquote className="relative flex items-start gap-1.5">
+        <ChevronRight
+          className="h-4 w-4 text-primary/40 flex-shrink-0 mt-0.5"
+          data-testid="quote-bullet"
+        />
+        <div className="flex-1">
+          <p className="text-foreground italic leading-relaxed text-sm">
+            <span
+              className="text-2xl text-primary/20 font-serif leading-none align-text-top mr-0.5"
+              data-testid="opening-quote-mark"
+            >
+              &ldquo;
+            </span>
+            {testimonial.quote}
+            <span className="text-2xl text-primary/20 font-serif leading-none align-bottom">
+              &rdquo;
+            </span>
+          </p>
+        </div>
       </blockquote>
 
       {/* Validated Skills */}
       {testimonial.validatedSkills && testimonial.validatedSkills.length > 0 && (
-        <div className="mt-2 flex items-center gap-2 flex-wrap">
+        <div className="mt-2 ml-5 flex items-center gap-2 flex-wrap">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" />
             Validates:
@@ -235,7 +247,7 @@ function TestimonialGroupCard({ group, onSkillClick }: TestimonialGroupCardProps
       </div>
 
       {/* Quotes */}
-      <div className="space-y-4">
+      <div className="border-l-2 border-primary/20 space-y-4" data-testid="quotes-wrapper">
         {visibleTestimonials.map((testimonial) => (
           <QuoteItem key={testimonial.id} testimonial={testimonial} onSkillClick={onSkillClick} />
         ))}
