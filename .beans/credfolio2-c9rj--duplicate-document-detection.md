@@ -1,11 +1,11 @@
 ---
 # credfolio2-c9rj
 title: Duplicate Document Detection
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-29T13:43:34Z
-updated_at: 2026-02-03T10:57:35Z
+updated_at: 2026-02-03T11:49:42Z
 parent: credfolio2-2ex3
 ---
 
