@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, FileText, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useQuery } from "urql";
 
@@ -127,15 +127,6 @@ function ValidationPopoverContent({
       {/* Validations list */}
       {!isLoading && !error && validations && (
         <div className="space-y-3">
-          {/* Resume source indicator */}
-          <div className="flex items-start gap-2 text-sm">
-            <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            <div>
-              <div className="font-medium text-foreground/80">Resume</div>
-              <div className="text-xs text-muted-foreground">Listed in your profile</div>
-            </div>
-          </div>
-
           {/* Reference letter validations */}
           {validations.map((validation) => {
             const author = validation.referenceLetter?.extractedData?.author;
