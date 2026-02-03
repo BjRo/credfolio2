@@ -740,6 +740,8 @@ type Author {
   company: String
   """LinkedIn profile URL of the author."""
   linkedInUrl: String
+  """Presigned URL for the author's profile image."""
+  imageUrl: String
   """When the author record was created."""
   createdAt: DateTime!
   """When the author record was last updated."""
@@ -760,6 +762,8 @@ input UpdateAuthorInput {
   company: String
   """Updated LinkedIn profile URL of the author."""
   linkedInUrl: String
+  """ID of the uploaded image file for the author's profile picture."""
+  imageId: ID
 }
 
 # ============================================================================

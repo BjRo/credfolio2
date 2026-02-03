@@ -76,6 +76,7 @@ type ComplexityRoot struct {
 		Company      func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
+		ImageURL     func(childComplexity int) int
 		LinkedInURL  func(childComplexity int) int
 		Name         func(childComplexity int) int
 		Testimonials func(childComplexity int) int
@@ -548,6 +549,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Author.ID(childComplexity), true
+	case "Author.imageUrl":
+		if e.complexity.Author.ImageURL == nil {
+			break
+		}
+
+		return e.complexity.Author.ImageURL(childComplexity), true
 	case "Author.linkedInUrl":
 		if e.complexity.Author.LinkedInURL == nil {
 			break
@@ -2827,6 +2834,8 @@ type Author {
   company: String
   """LinkedIn profile URL of the author."""
   linkedInUrl: String
+  """Presigned URL for the author's profile image."""
+  imageUrl: String
   """When the author record was created."""
   createdAt: DateTime!
   """When the author record was last updated."""
@@ -2847,6 +2856,8 @@ input UpdateAuthorInput {
   company: String
   """Updated LinkedIn profile URL of the author."""
   linkedInUrl: String
+  """ID of the uploaded image file for the author's profile picture."""
+  imageId: ID
 }
 
 # ============================================================================
@@ -4271,6 +4282,35 @@ func (ec *executionContext) _Author_linkedInUrl(ctx context.Context, field graph
 }
 
 func (ec *executionContext) fieldContext_Author_linkedInUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Author",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Author_imageUrl(ctx context.Context, field graphql.CollectedField, obj *model.Author) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Author_imageUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.ImageURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Author_imageUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Author",
 		Field:      field,
@@ -6839,6 +6879,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAuthor(ctx context.Conte
 				return ec.fieldContext_Author_company(ctx, field)
 			case "linkedInUrl":
 				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_Author_imageUrl(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Author_createdAt(ctx, field)
 			case "updatedAt":
@@ -9396,6 +9438,8 @@ func (ec *executionContext) fieldContext_Query_author(ctx context.Context, field
 				return ec.fieldContext_Author_company(ctx, field)
 			case "linkedInUrl":
 				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_Author_imageUrl(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Author_createdAt(ctx, field)
 			case "updatedAt":
@@ -9455,6 +9499,8 @@ func (ec *executionContext) fieldContext_Query_authors(ctx context.Context, fiel
 				return ec.fieldContext_Author_company(ctx, field)
 			case "linkedInUrl":
 				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_Author_imageUrl(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Author_createdAt(ctx, field)
 			case "updatedAt":
@@ -11099,6 +11145,8 @@ func (ec *executionContext) fieldContext_Testimonial_author(_ context.Context, f
 				return ec.fieldContext_Author_company(ctx, field)
 			case "linkedInUrl":
 				return ec.fieldContext_Author_linkedInUrl(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_Author_imageUrl(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Author_createdAt(ctx, field)
 			case "updatedAt":
@@ -13606,7 +13654,7 @@ func (ec *executionContext) unmarshalInputUpdateAuthorInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "title", "company", "linkedInUrl"}
+	fieldsInOrder := [...]string{"name", "title", "company", "linkedInUrl", "imageId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13641,6 +13689,13 @@ func (ec *executionContext) unmarshalInputUpdateAuthorInput(ctx context.Context,
 				return it, err
 			}
 			it.LinkedInURL = data
+		case "imageId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageID = data
 		}
 	}
 
@@ -14324,6 +14379,8 @@ func (ec *executionContext) _Author(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Author_company(ctx, field, obj)
 		case "linkedInUrl":
 			out.Values[i] = ec._Author_linkedInUrl(ctx, field, obj)
+		case "imageUrl":
+			out.Values[i] = ec._Author_imageUrl(ctx, field, obj)
 		case "createdAt":
 			out.Values[i] = ec._Author_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -19036,6 +19093,24 @@ func (ec *executionContext) marshalOFile2ᚖbackendᚋinternalᚋgraphqlᚋmodel
 		return graphql.Null
 	}
 	return ec._File(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalID(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalID(*v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v any) (*int, error) {

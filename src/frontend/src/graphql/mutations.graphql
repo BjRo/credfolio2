@@ -286,3 +286,15 @@ mutation DeleteTestimonial($id: ID!) {
     deletedId
   }
 }
+
+mutation UpdateAuthor($id: ID!, $input: UpdateAuthorInput!) {
+  updateAuthor(id: $id, input: $input) {
+    id
+    name
+    title
+    company
+    linkedInUrl
+    imageUrl
+    updatedAt
+  }
+}

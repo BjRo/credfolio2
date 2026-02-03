@@ -2182,13 +2182,37 @@ func (r *mutationResolver) UpdateAuthor(ctx context.Context, id string, input mo
 	if input.LinkedInURL != nil {
 		author.LinkedInURL = input.LinkedInURL
 	}
+	if input.ImageID != nil {
+		if *input.ImageID == "" {
+			// Clear the image
+			author.ImageID = nil
+		} else {
+			imageUUID, err := uuid.Parse(*input.ImageID)
+			if err != nil {
+				return nil, fmt.Errorf("invalid image ID: %w", err)
+			}
+			author.ImageID = &imageUUID
+		}
+	}
 
 	// Save updates
 	if err := r.authorRepo.Update(ctx, author); err != nil {
 		return nil, fmt.Errorf("failed to update author: %w", err)
 	}
 
-	return toGraphQLAuthor(author), nil
+	// Get image URL if author has an image
+	var imageURL *string
+	if author.ImageID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *author.ImageID)
+		if err == nil && file != nil {
+			url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, time.Hour)
+			if err == nil {
+				imageURL = &url
+			}
+		}
+	}
+
+	return toGraphQLAuthorWithImage(author, imageURL), nil
 }
 
 // DeleteTestimonial is the resolver for the deleteTestimonial field.
@@ -2759,7 +2783,19 @@ func (r *queryResolver) Author(ctx context.Context, id string) (*model.Author, e
 		return nil, nil
 	}
 
-	return toGraphQLAuthor(author), nil
+	// Get image URL if author has an image
+	var imageURL *string
+	if author.ImageID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *author.ImageID)
+		if err == nil && file != nil {
+			url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, time.Hour)
+			if err == nil {
+				imageURL = &url
+			}
+		}
+	}
+
+	return toGraphQLAuthorWithImage(author, imageURL), nil
 }
 
 // Authors is the resolver for the authors field.
@@ -2774,9 +2810,37 @@ func (r *queryResolver) Authors(ctx context.Context, profileID string) ([]*model
 		return nil, fmt.Errorf("failed to get authors: %w", err)
 	}
 
+	// Collect image IDs for batch fetching
+	var imageIDs []uuid.UUID
+	for _, a := range authors {
+		if a.ImageID != nil {
+			imageIDs = append(imageIDs, *a.ImageID)
+		}
+	}
+
+	// Fetch image files and generate URLs
+	imageURLs := make(map[uuid.UUID]string)
+	if len(imageIDs) > 0 {
+		for _, imageID := range imageIDs {
+			file, err := r.fileRepo.GetByID(ctx, imageID)
+			if err == nil && file != nil {
+				url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, time.Hour)
+				if err == nil {
+					imageURLs[imageID] = url
+				}
+			}
+		}
+	}
+
 	result := make([]*model.Author, len(authors))
 	for i, a := range authors {
-		result[i] = toGraphQLAuthor(a)
+		var imageURL *string
+		if a.ImageID != nil {
+			if url, ok := imageURLs[*a.ImageID]; ok {
+				imageURL = &url
+			}
+		}
+		result[i] = toGraphQLAuthorWithImage(a, imageURL)
 	}
 	return result, nil
 }
@@ -3067,7 +3131,19 @@ func (r *testimonialResolver) Author(ctx context.Context, obj *model.Testimonial
 		return nil, nil
 	}
 
-	return toGraphQLAuthor(author), nil
+	// Get image URL if author has an image
+	var imageURL *string
+	if author.ImageID != nil {
+		file, err := r.fileRepo.GetByID(ctx, *author.ImageID)
+		if err == nil && file != nil {
+			url, err := r.storage.GetPresignedURL(ctx, file.StorageKey, time.Hour)
+			if err == nil {
+				imageURL = &url
+			}
+		}
+	}
+
+	return toGraphQLAuthorWithImage(author, imageURL), nil
 }
 
 // ReferenceLetter is the resolver for the referenceLetter field.

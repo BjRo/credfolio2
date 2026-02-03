@@ -6,7 +6,7 @@ This extraction is used to validate a professional profile. The extracted data w
 EXTRACTION RULES:
 
 1. AUTHOR INFORMATION:
-   - name: Full name of the letter author (required)
+   - name: Full name of the letter author. If the author's name cannot be determined from the letter, use exactly "unknown" (lowercase). Do not guess or fabricate a name.
    - title: Job title/position of the author (if mentioned)
    - company: Organization where the author works (if mentioned)
    - relationship: The author's relationship to the candidate. Must be one of:

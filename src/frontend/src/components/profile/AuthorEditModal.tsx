@@ -1,0 +1,293 @@
+"use client";
+
+import { Camera, Loader2, X } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useRef, useState } from "react";
+import { useMutation } from "urql";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { UpdateAuthorDocument } from "@/graphql/generated/graphql";
+
+interface AuthorEditModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  author: {
+    id: string;
+    name: string;
+    title?: string | null;
+    company?: string | null;
+    linkedInUrl?: string | null;
+    imageUrl?: string | null;
+  };
+  onSuccess?: () => void;
+}
+
+interface FormData {
+  name: string;
+  title: string;
+  company: string;
+  linkedInUrl: string;
+}
+
+const LINKEDIN_URL_PATTERN = /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i;
+
+function validateLinkedInUrl(url: string): string | null {
+  if (!url) return null;
+  if (!LINKEDIN_URL_PATTERN.test(url)) {
+    return "LinkedIn URL must be in the format: https://linkedin.com/in/username";
+  }
+  return null;
+}
+
+export function AuthorEditModal({ open, onOpenChange, author, onSuccess }: AuthorEditModalProps) {
+  const isUnknownAuthor = author.name === "unknown" || !author.name;
+
+  const [formData, setFormData] = useState<FormData>({
+    name: isUnknownAuthor ? "" : author.name,
+    title: author.title ?? "",
+    company: author.company ?? "",
+    linkedInUrl: author.linkedInUrl ?? "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(author.imageUrl ?? null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [updateResult, updateAuthor] = useMutation(UpdateAuthorDocument);
+
+  const isSubmitting = updateResult.fetching;
+
+  const handleInputChange = useCallback(
+    (field: keyof FormData, value: string) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      // Clear error when user types
+      if (errors[field]) {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        });
+      }
+    },
+    [errors]
+  );
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input so the same file can be selected again
+    e.target.value = "";
+
+    // Create a preview URL immediately
+    const localPreviewUrl = URL.createObjectURL(file);
+    setPreviewImageUrl(localPreviewUrl);
+
+    // Note: Full image upload will be implemented when we add a dedicated author image upload mutation
+    // For now, the preview shows what the user selected but won't persist
+  };
+
+  const handleRemoveImage = useCallback(() => {
+    setPreviewImageUrl(null);
+  }, []);
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    const linkedInError = validateLinkedInUrl(formData.linkedInUrl);
+    if (linkedInError) {
+      newErrors.linkedInUrl = linkedInError;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validate()) return;
+
+    try {
+      const result = await updateAuthor({
+        id: author.id,
+        input: {
+          name: formData.name.trim(),
+          title: formData.title.trim() || null,
+          company: formData.company.trim() || null,
+          linkedInUrl: formData.linkedInUrl.trim() || null,
+        },
+      });
+
+      if (result.error) {
+        setErrors({ submit: result.error.message });
+        return;
+      }
+
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (err) {
+      setErrors({
+        submit: err instanceof Error ? err.message : "An error occurred",
+      });
+    }
+  };
+
+  const handleCancel = () => {
+    setErrors({});
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{isUnknownAuthor ? "Add Author Details" : "Edit Author"}</DialogTitle>
+          <DialogDescription>
+            {isUnknownAuthor
+              ? "The author of this testimonial wasn't detected. Add their details below."
+              : "Update the author's information."}
+          </DialogDescription>
+        </DialogHeader>
+
+        {errors.submit && (
+          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            {errors.submit}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Author Image */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative w-20 h-20">
+              <button
+                type="button"
+                className={`w-20 h-20 rounded-full overflow-hidden flex items-center justify-center border-2 border-dashed border-muted-foreground/30 ${
+                  previewImageUrl ? "bg-muted" : "bg-muted/50"
+                } cursor-pointer hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Upload author photo"
+              >
+                {previewImageUrl ? (
+                  <Image
+                    src={previewImageUrl}
+                    alt={`Photo of ${formData.name || "author"}`}
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                    <Camera className="w-6 h-6" />
+                    <span className="text-xs">Add photo</span>
+                  </div>
+                )}
+              </button>
+              {previewImageUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
+                  aria-label="Remove photo"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+              aria-label="Upload author photo"
+            />
+            <p className="text-xs text-muted-foreground">
+              Click to upload a profile photo (optional)
+            </p>
+          </div>
+
+          {/* Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              placeholder="e.g., John Smith"
+              className={errors.name ? "border-destructive" : ""}
+            />
+            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+          </div>
+
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">Title / Position</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleInputChange("title", e.target.value)}
+              placeholder="e.g., Engineering Manager"
+            />
+          </div>
+
+          {/* Company */}
+          <div className="space-y-2">
+            <Label htmlFor="company">Company / Organization</Label>
+            <Input
+              id="company"
+              value={formData.company}
+              onChange={(e) => handleInputChange("company", e.target.value)}
+              placeholder="e.g., Acme Corp"
+            />
+          </div>
+
+          {/* LinkedIn URL */}
+          <div className="space-y-2">
+            <Label htmlFor="linkedInUrl">LinkedIn Profile</Label>
+            <Input
+              id="linkedInUrl"
+              type="url"
+              value={formData.linkedInUrl}
+              onChange={(e) => handleInputChange("linkedInUrl", e.target.value)}
+              placeholder="https://linkedin.com/in/username"
+              className={errors.linkedInUrl ? "border-destructive" : ""}
+            />
+            {errors.linkedInUrl && <p className="text-sm text-destructive">{errors.linkedInUrl}</p>}
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save"
+              )}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

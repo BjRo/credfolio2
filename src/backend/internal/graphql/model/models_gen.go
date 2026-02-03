@@ -117,6 +117,8 @@ type Author struct {
 	Company *string `json:"company,omitempty"`
 	// LinkedIn profile URL of the author.
 	LinkedInURL *string `json:"linkedInUrl,omitempty"`
+	// Presigned URL for the author's profile image.
+	ImageURL *string `json:"imageUrl,omitempty"`
 	// When the author record was created.
 	CreatedAt time.Time `json:"createdAt"`
 	// When the author record was last updated.
@@ -572,6 +574,8 @@ type UpdateAuthorInput struct {
 	Company *string `json:"company,omitempty"`
 	// Updated LinkedIn profile URL of the author.
 	LinkedInURL *string `json:"linkedInUrl,omitempty"`
+	// ID of the uploaded image file for the author's profile picture.
+	ImageID *string `json:"imageId,omitempty"`
 }
 
 // Input for updating an existing education entry.

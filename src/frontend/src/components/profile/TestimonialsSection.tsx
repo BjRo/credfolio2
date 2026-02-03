@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertCircle,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -8,10 +9,11 @@ import {
   Linkedin,
   MessageSquareQuote,
   MoreVertical,
+  Pencil,
   Plus,
   Trash2,
-  User,
 } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
 import {
   DropdownMenu,
@@ -21,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { type GetTestimonialsQuery, TestimonialRelationship } from "@/graphql/generated/graphql";
+import { AuthorEditModal } from "./AuthorEditModal";
 import { DeleteTestimonialDialog } from "./DeleteTestimonialDialog";
 
 const RELATIONSHIP_LABELS: Record<TestimonialRelationship, string> = {
@@ -43,6 +46,8 @@ interface AuthorInfo {
   title: string | null | undefined;
   company: string | null | undefined;
   linkedInUrl: string | null | undefined;
+  imageUrl: string | null | undefined;
+  isLegacy: boolean;
 }
 
 // A group of testimonials from the same author
@@ -50,6 +55,11 @@ interface TestimonialGroup {
   author: AuthorInfo;
   relationship: TestimonialRelationship;
   testimonials: Testimonial[];
+}
+
+// Check if an author is unknown (needs details added)
+function isUnknownAuthor(author: AuthorInfo): boolean {
+  return !author.name || author.name.toLowerCase() === "unknown";
 }
 
 // Get author info from testimonial, preferring author entity over legacy fields
@@ -61,6 +71,8 @@ function getAuthorInfo(testimonial: Testimonial): AuthorInfo {
       title: testimonial.author.title,
       company: testimonial.author.company,
       linkedInUrl: testimonial.author.linkedInUrl,
+      imageUrl: testimonial.author.imageUrl,
+      isLegacy: false,
     };
   }
   // Fallback to legacy fields
@@ -70,6 +82,8 @@ function getAuthorInfo(testimonial: Testimonial): AuthorInfo {
     title: testimonial.authorTitle,
     company: testimonial.authorCompany,
     linkedInUrl: null,
+    imageUrl: null,
+    isLegacy: true,
   };
 }
 
@@ -211,9 +225,15 @@ interface TestimonialGroupCardProps {
   group: TestimonialGroup;
   onSkillClick?: (skillId: string) => void;
   onDeleteClick?: (testimonial: Testimonial) => void;
+  onEditAuthor?: (author: AuthorInfo) => void;
 }
 
-function TestimonialGroupCard({ group, onSkillClick, onDeleteClick }: TestimonialGroupCardProps) {
+function TestimonialGroupCard({
+  group,
+  onSkillClick,
+  onDeleteClick,
+  onEditAuthor,
+}: TestimonialGroupCardProps) {
   const { author, relationship, testimonials } = group;
   const [isExpanded, setIsExpanded] = useState(testimonials.length <= COLLAPSE_THRESHOLD);
 
@@ -223,16 +243,76 @@ function TestimonialGroupCard({ group, onSkillClick, onDeleteClick }: Testimonia
   // Get source URL for each testimonial (for the per-quote kebab menu)
   const getSourceUrl = (testimonial: Testimonial) => testimonial.referenceLetter?.file?.url;
 
+  const unknown = isUnknownAuthor(author);
+  const canEditAuthor = onEditAuthor && !author.isLegacy;
+
+  // Get initials for avatar fallback
+  const getInitials = (name: string): string => {
+    if (!name || name.toLowerCase() === "unknown") return "?";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
-    <div className="group/card relative bg-muted/30 rounded-lg p-6 border border-border/50">
+    <div
+      className={`group/card relative rounded-lg p-6 ${
+        unknown
+          ? "bg-muted/20 border-2 border-dashed border-warning/50"
+          : "bg-muted/30 border border-border/50"
+      }`}
+    >
+      {/* Unknown author banner */}
+      {unknown && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-warning bg-warning/10 px-3 py-2 rounded-md">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>Author not detected</span>
+          {canEditAuthor && (
+            <button
+              type="button"
+              onClick={() => onEditAuthor(author)}
+              className="ml-auto text-primary hover:text-primary/80 font-medium"
+            >
+              Add details
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Author header */}
       <div className="flex items-start gap-3 mb-4">
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-          <User className="h-5 w-5 text-primary" />
+        {/* Avatar */}
+        <div
+          className={`flex-shrink-0 w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
+            author.imageUrl ? "bg-muted" : unknown ? "bg-warning/20" : "bg-primary/10"
+          }`}
+        >
+          {author.imageUrl ? (
+            <Image
+              src={author.imageUrl}
+              alt={`Photo of ${author.name}`}
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+              unoptimized
+            />
+          ) : (
+            <span className={`text-sm font-medium ${unknown ? "text-warning" : "text-primary"}`}>
+              {unknown ? "?" : getInitials(author.name)}
+            </span>
+          )}
         </div>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-foreground">{author.name}</p>
+            <p
+              className={`font-semibold ${unknown ? "text-muted-foreground italic" : "text-foreground"}`}
+            >
+              {unknown ? "Unknown Author" : author.name}
+            </p>
             {author.linkedInUrl && (
               <a
                 href={author.linkedInUrl}
@@ -256,6 +336,29 @@ function TestimonialGroupCard({ group, onSkillClick, onDeleteClick }: Testimonia
             {RELATIONSHIP_LABELS[relationship]}
           </span>
         </div>
+
+        {/* Kebab menu for author */}
+        {canEditAuthor && (
+          <div className="opacity-0 group-hover/card:opacity-100 transition-opacity">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                  aria-label="Edit author"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEditAuthor(author)}>
+                  <Pencil className="h-4 w-4" />
+                  Edit author
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       {/* Quotes */}
@@ -301,6 +404,7 @@ interface TestimonialsSectionProps {
   onAddReference?: () => void;
   onSkillClick?: (skillId: string) => void;
   onTestimonialDeleted?: () => void;
+  onAuthorUpdated?: () => void;
 }
 
 export function TestimonialsSection({
@@ -309,10 +413,15 @@ export function TestimonialsSection({
   onAddReference,
   onSkillClick,
   onTestimonialDeleted,
+  onAuthorUpdated,
 }: TestimonialsSectionProps) {
   // State for delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [testimonialToDelete, setTestimonialToDelete] = useState<Testimonial | null>(null);
+
+  // State for edit author modal
+  const [editAuthorModalOpen, setEditAuthorModalOpen] = useState(false);
+  const [authorToEdit, setAuthorToEdit] = useState<AuthorInfo | null>(null);
 
   // Group testimonials by author (must be called before any early returns)
   const groups = useMemo(() => groupTestimonialsByAuthor(testimonials), [testimonials]);
@@ -326,6 +435,19 @@ export function TestimonialsSection({
     setTestimonialToDelete(null);
     onTestimonialDeleted?.();
   }, [onTestimonialDeleted]);
+
+  const handleEditAuthor = useCallback((author: AuthorInfo) => {
+    setAuthorToEdit(author);
+    setEditAuthorModalOpen(true);
+  }, []);
+
+  const handleEditAuthorSuccess = useCallback(() => {
+    setAuthorToEdit(null);
+    onAuthorUpdated?.();
+  }, [onAuthorUpdated]);
+
+  // Check if editing is enabled (we have callbacks for mutations)
+  const isEditable = !!onTestimonialDeleted || !!onAuthorUpdated;
 
   // Don't render if no testimonials and no way to add one
   if (testimonials.length === 0 && !onAddReference) {
@@ -379,7 +501,8 @@ export function TestimonialsSection({
                 key={group.author.id}
                 group={group}
                 onSkillClick={onSkillClick}
-                onDeleteClick={onTestimonialDeleted ? handleDeleteClick : undefined}
+                onDeleteClick={isEditable ? handleDeleteClick : undefined}
+                onEditAuthor={isEditable ? handleEditAuthor : undefined}
               />
             ))}
           </div>
@@ -414,6 +537,23 @@ export function TestimonialsSection({
           quote={testimonialToDelete.quote}
           authorName={getAuthorInfo(testimonialToDelete).name}
           onSuccess={handleDeleteSuccess}
+        />
+      )}
+
+      {/* Edit author modal */}
+      {authorToEdit && (
+        <AuthorEditModal
+          open={editAuthorModalOpen}
+          onOpenChange={setEditAuthorModalOpen}
+          author={{
+            id: authorToEdit.id,
+            name: authorToEdit.name,
+            title: authorToEdit.title,
+            company: authorToEdit.company,
+            linkedInUrl: authorToEdit.linkedInUrl,
+            imageUrl: authorToEdit.imageUrl,
+          }}
+          onSuccess={handleEditAuthorSuccess}
         />
       )}
     </>

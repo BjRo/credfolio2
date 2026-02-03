@@ -198,6 +198,7 @@ query GetTestimonials($profileId: ID!) {
       title
       company
       linkedInUrl
+      imageUrl
     }
     authorName
     authorTitle
