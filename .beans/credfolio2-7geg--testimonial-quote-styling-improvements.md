@@ -36,7 +36,7 @@ Reduce the gap between the decorative opening quote (`"`) and the first word. Cu
 ## Checklist
 
 - [x] Move border-l-2 to wrapper div for continuous line
-- [x] Add triangle bullet icon before each quote
+- [x] ~~Add triangle bullet icon before each quote~~ (removed - visual redundancy with quote marks)
 - [x] Tighten spacing between opening quote mark and text
 - [x] Verify visual appearance matches expectations
 

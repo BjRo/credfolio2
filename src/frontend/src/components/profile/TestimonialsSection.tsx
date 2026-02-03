@@ -3,7 +3,6 @@
 import {
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
   ChevronUp,
   FileText,
   Linkedin,
@@ -120,32 +119,26 @@ function QuoteItem({ testimonial, onSkillClick }: QuoteItemProps) {
   );
 
   return (
-    <div className="pl-3" data-testid="quote-item">
-      {/* Quote with bullet */}
-      <blockquote className="relative flex items-start gap-1.5">
-        <ChevronRight
-          className="h-4 w-4 text-primary/40 flex-shrink-0 mt-0.5"
-          data-testid="quote-bullet"
-        />
-        <div className="flex-1">
-          <p className="text-foreground italic leading-relaxed text-sm">
-            <span
-              className="text-2xl text-primary/20 font-serif leading-none align-text-top mr-0.5"
-              data-testid="opening-quote-mark"
-            >
-              &ldquo;
-            </span>
-            {testimonial.quote}
-            <span className="text-2xl text-primary/20 font-serif leading-none align-bottom">
-              &rdquo;
-            </span>
-          </p>
-        </div>
+    <div className="pl-4" data-testid="quote-item">
+      {/* Quote */}
+      <blockquote>
+        <p className="text-foreground italic leading-relaxed text-sm">
+          <span
+            className="text-2xl text-primary/20 font-serif leading-none align-text-top mr-0.5"
+            data-testid="opening-quote-mark"
+          >
+            &ldquo;
+          </span>
+          {testimonial.quote}
+          <span className="text-2xl text-primary/20 font-serif leading-none align-bottom">
+            &rdquo;
+          </span>
+        </p>
       </blockquote>
 
       {/* Validated Skills */}
       {testimonial.validatedSkills && testimonial.validatedSkills.length > 0 && (
-        <div className="mt-2 ml-5 flex items-center gap-2 flex-wrap">
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" />
             Validates:

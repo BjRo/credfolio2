@@ -756,14 +756,6 @@ describe("TestimonialsSection", () => {
       });
     });
 
-    it("renders triangle bullet icon before each quote", () => {
-      render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
-
-      // Each quote should have a triangle bullet icon
-      const bulletIcons = document.querySelectorAll("[data-testid='quote-bullet']");
-      expect(bulletIcons.length).toBe(2);
-    });
-
     it("renders quote text with minimal spacing from opening quote mark", () => {
       render(<TestimonialsSection testimonials={mockTestimonialsFromSameAuthor} />);
 
