@@ -49,6 +49,7 @@
             "path": "zsh"
           }
         },
+        "claude-code.permissions.defaultMode": "bypassPermissions",
         "claude-code.dangerouslySkipPermissions": true
       }
     }
