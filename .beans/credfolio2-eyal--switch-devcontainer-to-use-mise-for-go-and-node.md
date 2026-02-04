@@ -1,10 +1,11 @@
 ---
 # credfolio2-eyal
 title: Switch devcontainer to use mise for Go and Node
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-02-04T11:42:53Z
-updated_at: 2026-02-04T11:42:53Z
+updated_at: 2026-02-04T12:01:43Z
 ---
 
 Replace manual Go/Node installation in Dockerfile with mise for version consistency between local dev and devcontainer.
@@ -38,9 +39,9 @@ Replace manual Go/Node installation in Dockerfile with mise for version consiste
 - [x] Update CLAUDE.md with mise details
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Tests written (TDD: write tests before implementation) - N/A for infrastructure change
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures (246 frontend tests, 15 backend packages)
+- [x] Visual verification with agent-browser (for UI changes) - N/A for infrastructure change
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review
