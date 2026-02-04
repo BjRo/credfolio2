@@ -51,22 +51,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libcairo2 \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install mise from official apt repository
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends gpg wget ca-certificates && \
+  wget -qO - https://mise.jdx.dev/gpg-key.pub | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mise-archive-keyring.gpg 1> /dev/null && \
+  echo "deb [signed-by=/etc/apt/trusted.gpg.d/mise-archive-keyring.gpg arch=amd64,arm64] https://mise.jdx.dev/deb stable main" | tee /etc/apt/sources.list.d/mise.list && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends mise && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Create node user (for consistency with previous node:20 base)
 RUN useradd -m -s /bin/bash -u 1000 node && \
   usermod -aG sudo node && \
   echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node && \
   chmod 0440 /etc/sudoers.d/node
 
-# Install mise as node user
-USER node
-RUN curl https://mise.run | sh
-ENV PATH="/home/node/.local/bin:/home/node/.local/share/mise/shims:${PATH}"
-
 # Copy mise.toml and install Go and Node via mise
+USER node
 COPY --chown=node:node mise.toml /home/node/mise.toml
 RUN cd /home/node && mise trust ~/mise.toml && mise install
 # Tell mise where to find the config file regardless of working directory
 ENV MISE_GLOBAL_CONFIG_FILE=/home/node/mise.toml
+# Add mise shims to PATH (mise installed system-wide via apt)
+ENV PATH="/home/node/.local/share/mise/shims:${PATH}"
 
 # Set up Go environment (mise installs to ~/.local/share/mise/installs/)
 ENV GOPATH=/home/node/go
