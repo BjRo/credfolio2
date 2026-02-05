@@ -1162,3 +1162,19 @@ func TestExtractLetterData_CreatesParentSpan(t *testing.T) {
 		t.Errorf("expected span named 'reference_letter_extraction', got spans: %v", names)
 	}
 }
+
+func TestReferenceLetterProcessingWorker_Timeout_TenMinutes(t *testing.T) {
+	worker := &ReferenceLetterProcessingWorker{}
+	timeout := worker.Timeout(nil)
+	if timeout != 10*time.Minute {
+		t.Errorf("Timeout = %v, want 10m (safety net)", timeout)
+	}
+}
+
+func TestReferenceLetterProcessingArgs_InsertOpts_MaxAttempts(t *testing.T) {
+	args := ReferenceLetterProcessingArgs{}
+	opts := args.InsertOpts()
+	if opts.MaxAttempts != 2 {
+		t.Errorf("MaxAttempts = %d, want 2", opts.MaxAttempts)
+	}
+}

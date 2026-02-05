@@ -1,11 +1,11 @@
 ---
 # credfolio2-1vtw
 title: Improve reference letter testimonial extraction
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-02-03T10:33:18Z
-updated_at: 2026-02-05T14:08:13Z
+updated_at: 2026-02-05T17:47:44Z
 parent: credfolio2-2ex3
 ---
 

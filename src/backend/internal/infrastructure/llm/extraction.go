@@ -75,6 +75,10 @@ type DocumentExtractorConfig struct { //nolint:govet // Field order prioritizes 
 	// If nil or empty, uses the default provider.
 	ResumeExtractionChain ProviderChain
 
+	// ReferenceExtractionChain specifies the provider chain for reference letter data extraction.
+	// If nil or empty, falls back to ResumeExtractionChain, then the default provider.
+	ReferenceExtractionChain ProviderChain
+
 	// Logger for logging chain fallback events. If nil, fallbacks are silent.
 	Logger logger.Logger
 }
@@ -588,8 +592,12 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 	)
 	defer span.End()
 
-	// Get the appropriate provider for resume extraction (reusing same chain for letters)
-	provider := e.getProviderForChain(e.config.ResumeExtractionChain)
+	// Get the appropriate provider for reference letter extraction
+	chain := e.config.ReferenceExtractionChain
+	if len(chain) == 0 {
+		chain = e.config.ResumeExtractionChain // Fall back to resume chain for backwards compatibility
+	}
+	provider := e.getProviderForChain(chain)
 
 	// Render the user prompt template with the letter text and profile skills context
 	var userPromptBuf bytes.Buffer

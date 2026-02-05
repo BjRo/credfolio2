@@ -308,3 +308,11 @@ func TestDocumentProcessingWorker_Work(t *testing.T) {
 		}
 	})
 }
+
+func TestDocumentProcessingArgs_InsertOpts_MaxAttempts(t *testing.T) {
+	args := job.DocumentProcessingArgs{}
+	opts := args.InsertOpts()
+	if opts.MaxAttempts != 2 {
+		t.Errorf("MaxAttempts = %d, want 2", opts.MaxAttempts)
+	}
+}

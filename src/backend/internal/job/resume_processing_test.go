@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -925,5 +926,21 @@ func TestExtractResumeData_CreatesParentSpan(t *testing.T) {
 			names[i] = s.Name
 		}
 		t.Errorf("expected span named 'resume_extraction', got spans: %v", names)
+	}
+}
+
+func TestResumeProcessingWorker_Timeout_TenMinutes(t *testing.T) {
+	worker := &ResumeProcessingWorker{}
+	timeout := worker.Timeout(nil)
+	if timeout != 10*time.Minute {
+		t.Errorf("Timeout = %v, want 10m (safety net)", timeout)
+	}
+}
+
+func TestResumeProcessingArgs_InsertOpts_MaxAttempts(t *testing.T) {
+	args := ResumeProcessingArgs{}
+	opts := args.InsertOpts()
+	if opts.MaxAttempts != 2 {
+		t.Errorf("MaxAttempts = %d, want 2", opts.MaxAttempts)
 	}
 }

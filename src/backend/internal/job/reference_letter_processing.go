@@ -30,6 +30,12 @@ func (ReferenceLetterProcessingArgs) Kind() string {
 	return "reference_letter_processing"
 }
 
+// InsertOpts returns default insert options — limits retries to avoid
+// repeatedly hammering LLM providers on persistent failures.
+func (ReferenceLetterProcessingArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{MaxAttempts: 2}
+}
+
 // ReferenceLetterProcessingWorker processes uploaded reference letters to extract credibility data.
 type ReferenceLetterProcessingWorker struct {
 	river.WorkerDefaults[ReferenceLetterProcessingArgs]
@@ -72,6 +78,14 @@ func NewReferenceLetterProcessingWorker(
 	}
 }
 
+// Timeout overrides River's default 60s job timeout with a 10-minute safety net.
+// LLM extraction can take several minutes for structured output; the primary
+// timeout is handled by the resilient provider layer (300s). This River timeout
+// serves as an outer safety net to prevent worker pool exhaustion.
+func (w *ReferenceLetterProcessingWorker) Timeout(*river.Job[ReferenceLetterProcessingArgs]) time.Duration {
+	return 10 * time.Minute
+}
+
 // Work processes a reference letter and extracts credibility data using LLM.
 func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.Job[ReferenceLetterProcessingArgs]) error {
 	args := job.Args
@@ -99,12 +113,12 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 				logger.String("file_id", args.FileID.String()),
 				logger.Err(err),
 			)
-			_ = w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg) //nolint:errcheck
+			w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg)
 			return fmt.Errorf("failed to get file record: %w", err)
 		}
 		if file == nil {
 			errMsg := "file record not found"
-			_ = w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg) //nolint:errcheck
+			w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg)
 			return fmt.Errorf("file record not found: %s", args.FileID)
 		}
 		contentType = file.ContentType
@@ -120,7 +134,7 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 			logger.String("storage_key", args.StorageKey),
 			logger.Err(err),
 		)
-		_ = w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg)
 		return fmt.Errorf("failed to download file: %w", err)
 	}
 	defer reader.Close() //nolint:errcheck // Best effort cleanup
@@ -134,7 +148,7 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 			logger.String("reference_letter_id", args.ReferenceLetterID.String()),
 			logger.Err(err),
 		)
-		_ = w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg)
 		return fmt.Errorf("failed to read file data: %w", err)
 	}
 
@@ -145,7 +159,7 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 		if err != nil {
 			errMsg = fmt.Sprintf("failed to get reference letter: %v", err)
 		}
-		_ = w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg)
 		return fmt.Errorf("reference letter not found: %s", args.ReferenceLetterID)
 	}
 
@@ -162,7 +176,7 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 			logger.String("reference_letter_id", args.ReferenceLetterID.String()),
 			logger.Err(err),
 		)
-		_ = w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg)
 		return fmt.Errorf("failed to extract letter data: %w", err)
 	}
 
@@ -174,7 +188,7 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 			logger.String("reference_letter_id", args.ReferenceLetterID.String()),
 			logger.Err(saveErr),
 		)
-		_ = w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ReferenceLetterID, errMsg)
 		return fmt.Errorf("failed to save extracted data: %w", saveErr)
 	}
 
@@ -287,9 +301,17 @@ func (w *ReferenceLetterProcessingWorker) updateStatus(ctx context.Context, id u
 	return nil
 }
 
-// updateStatusFailed is a helper to update status to failed with an error message.
-func (w *ReferenceLetterProcessingWorker) updateStatusFailed(ctx context.Context, id uuid.UUID, errMsg string) error {
-	return w.updateStatus(ctx, id, domain.ReferenceLetterStatusFailed, &errMsg)
+// updateStatusFailed updates reference letter status to failed and logs any DB errors.
+// This is best-effort — if the DB update fails, we log it but don't propagate
+// since the caller is already returning the original error.
+func (w *ReferenceLetterProcessingWorker) updateStatusFailed(ctx context.Context, id uuid.UUID, errMsg string) {
+	if err := w.updateStatus(ctx, id, domain.ReferenceLetterStatusFailed, &errMsg); err != nil {
+		w.log.Error("Failed to update reference letter status to failed",
+			logger.Feature("jobs"),
+			logger.String("reference_letter_id", id.String()),
+			logger.Err(err),
+		)
+	}
 }
 
 // normalizeSkillName produces a lowercase, trimmed version of a skill name for matching.
