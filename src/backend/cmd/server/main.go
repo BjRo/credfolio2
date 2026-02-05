@@ -223,9 +223,10 @@ func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.Provide
 	}
 
 	// Resilience config applied to all registered providers.
-	// Extraction can be slow for large documents, so allow a generous timeout.
+	// Extraction can be slow for large documents with structured output,
+	// especially on smaller models (e.g. gpt-5-nano). Allow a generous timeout.
 	resilientCfg := llm.ResilientConfig{
-		RequestTimeout: 120 * time.Second,
+		RequestTimeout: 300 * time.Second,
 	}
 
 	// Register Anthropic if API key is available

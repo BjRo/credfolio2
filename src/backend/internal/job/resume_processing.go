@@ -102,12 +102,12 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 				logger.String("file_id", args.FileID.String()),
 				logger.Err(err),
 			)
-			_ = w.updateStatusFailed(ctx, args.ResumeID, errMsg) //nolint:errcheck
+			w.updateStatusFailed(ctx, args.ResumeID, errMsg)
 			return fmt.Errorf("failed to get file record: %w", err)
 		}
 		if file == nil {
 			errMsg := "file record not found"
-			_ = w.updateStatusFailed(ctx, args.ResumeID, errMsg) //nolint:errcheck
+			w.updateStatusFailed(ctx, args.ResumeID, errMsg)
 			return fmt.Errorf("file record not found: %s", args.FileID)
 		}
 		contentType = file.ContentType
@@ -123,7 +123,7 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 			logger.String("storage_key", args.StorageKey),
 			logger.Err(err),
 		)
-		_ = w.updateStatusFailed(ctx, args.ResumeID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ResumeID, errMsg)
 		return fmt.Errorf("failed to download file: %w", err)
 	}
 	defer reader.Close() //nolint:errcheck // Best effort cleanup
@@ -137,7 +137,7 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 			logger.String("resume_id", args.ResumeID.String()),
 			logger.Err(err),
 		)
-		_ = w.updateStatusFailed(ctx, args.ResumeID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ResumeID, errMsg)
 		return fmt.Errorf("failed to read file data: %w", err)
 	}
 
@@ -150,7 +150,7 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 			logger.String("resume_id", args.ResumeID.String()),
 			logger.Err(err),
 		)
-		_ = w.updateStatusFailed(ctx, args.ResumeID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ResumeID, errMsg)
 		return fmt.Errorf("failed to extract resume data: %w", err)
 	}
 
@@ -162,7 +162,7 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 			logger.String("resume_id", args.ResumeID.String()),
 			logger.Err(saveErr),
 		)
-		_ = w.updateStatusFailed(ctx, args.ResumeID, errMsg) //nolint:errcheck
+		w.updateStatusFailed(ctx, args.ResumeID, errMsg)
 		return fmt.Errorf("failed to save extracted data: %w", saveErr)
 	}
 
@@ -288,9 +288,17 @@ func (w *ResumeProcessingWorker) updateStatus(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
-// updateStatusFailed is a helper to update status to failed with an error message.
-func (w *ResumeProcessingWorker) updateStatusFailed(ctx context.Context, id uuid.UUID, errMsg string) error {
-	return w.updateStatus(ctx, id, domain.ResumeStatusFailed, &errMsg)
+// updateStatusFailed updates resume status to failed and logs any DB errors.
+// This is best-effort — if the DB update fails, we log it but don't propagate
+// since the caller is already returning the original error.
+func (w *ResumeProcessingWorker) updateStatusFailed(ctx context.Context, id uuid.UUID, errMsg string) {
+	if err := w.updateStatus(ctx, id, domain.ResumeStatusFailed, &errMsg); err != nil {
+		w.log.Error("Failed to update resume status to failed",
+			logger.Feature("jobs"),
+			logger.String("resume_id", id.String()),
+			logger.Err(err),
+		)
+	}
 }
 
 // materializeExtractedData creates profile education, experience, and skill rows from extracted resume data.
