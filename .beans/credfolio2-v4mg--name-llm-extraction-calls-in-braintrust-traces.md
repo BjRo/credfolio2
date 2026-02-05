@@ -1,11 +1,11 @@
 ---
 # credfolio2-v4mg
 title: Name LLM extraction calls in Braintrust traces
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-05T14:28:32Z
-updated_at: 2026-02-05T14:57:42Z
+updated_at: 2026-02-05T15:30:00Z
 parent: credfolio2-2ex3
 ---
 
