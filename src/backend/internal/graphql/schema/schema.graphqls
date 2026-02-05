@@ -161,6 +161,54 @@ type ExtractedLetterData {
 }
 
 # ============================================================================
+# Document Content Detection Schema
+# ============================================================================
+
+"""
+Hint about the document type from lightweight detection.
+"""
+enum DocumentTypeHint {
+  RESUME
+  REFERENCE_LETTER
+  HYBRID
+  UNKNOWN
+}
+
+"""
+Result of lightweight document content detection.
+Used to quickly classify a document before running full extraction.
+"""
+type DocumentDetectionResult {
+  """Whether the document contains career information (resume/CV content)."""
+  hasCareerInfo: Boolean!
+  """Whether the document contains testimonial/recommendation content."""
+  hasTestimonial: Boolean!
+  """Name of the testimonial author (person who wrote the recommendation), if detected."""
+  testimonialAuthor: String
+  """Confidence in the detection (0.0 to 1.0)."""
+  confidence: Float!
+  """Brief summary of what was found in the document."""
+  summary: String!
+  """Hint about the document type."""
+  documentTypeHint: DocumentTypeHint!
+  """ID of the stored file for subsequent processing."""
+  fileId: ID!
+}
+
+"""
+Result of a successful document detection.
+"""
+type DetectDocumentContentResult {
+  """The detection results."""
+  detection: DocumentDetectionResult!
+}
+
+"""
+Union type for detect document content result.
+"""
+union DetectDocumentContentResponse = DetectDocumentContentResult | FileValidationError
+
+# ============================================================================
 # Main Types
 # ============================================================================
 
@@ -1040,6 +1088,23 @@ type Mutation {
     """If true, proceed with upload even if a duplicate is detected."""
     forceReimport: Boolean
   ): UploadResumeResponse!
+
+  # ============================================================================
+  # Document Content Detection
+  # ============================================================================
+
+  """
+  Upload a document and run lightweight content detection.
+  Quickly classifies the document content (career info, testimonials, or both)
+  without running full extraction. The file is stored for subsequent processing.
+  Returns detection results synchronously.
+  """
+  detectDocumentContent(
+    """The user ID uploading the document."""
+    userId: ID!
+    """The document file to analyze (PDF, DOCX, or TXT only)."""
+    file: Upload!
+  ): DetectDocumentContentResponse!
 
   # ============================================================================
   # Profile Header Mutations

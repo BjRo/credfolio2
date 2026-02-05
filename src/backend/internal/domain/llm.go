@@ -183,4 +183,9 @@ type DocumentExtractor interface {
 	// The profileSkills parameter provides existing skills for context, enabling the LLM to
 	// distinguish between mentions of existing skills (for validation) and newly discovered skills.
 	ExtractLetterData(ctx context.Context, text string, profileSkills []ProfileSkillContext) (*ExtractedLetterData, error)
+
+	// DetectDocumentContent performs lightweight classification of a document's content.
+	// It quickly identifies whether the document contains career information, testimonials, or both,
+	// without running full extraction. This is significantly faster and cheaper than full extraction.
+	DetectDocumentContent(ctx context.Context, text string) (*DocumentDetectionResult, error)
 }

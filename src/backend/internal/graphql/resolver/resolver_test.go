@@ -15,9 +15,35 @@ import (
 	"backend/internal/graphql/resolver"
 	"backend/internal/infrastructure/storage"
 	"backend/internal/logger"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 const testUserName = "Test User"
+
+// mockDocumentExtractor implements domain.DocumentExtractor for testing.
+type mockDocumentExtractor struct {
+	extractTextResult    string
+	extractTextError     error
+	detectResult         *domain.DocumentDetectionResult
+	detectError          error
+}
+
+func (e *mockDocumentExtractor) ExtractText(_ context.Context, _ []byte, _ string) (string, error) {
+	return e.extractTextResult, e.extractTextError
+}
+
+func (e *mockDocumentExtractor) ExtractResumeData(_ context.Context, _ string) (*domain.ResumeExtractedData, error) {
+	return nil, nil
+}
+
+func (e *mockDocumentExtractor) ExtractLetterData(_ context.Context, _ string, _ []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
+	return nil, nil
+}
+
+func (e *mockDocumentExtractor) DetectDocumentContent(_ context.Context, _ string) (*domain.DocumentDetectionResult, error) {
+	return e.detectResult, e.detectError
+}
 
 // Error message constants for test assertions.
 const (
@@ -57,6 +83,16 @@ func mustCreateReferenceLetter(repo *mockReferenceLetterRepository, letter *doma
 func mustCreateResume(repo *mockResumeRepository, resume *domain.Resume) {
 	if err := repo.Create(context.Background(), resume); err != nil {
 		panic("unexpected error creating resume: " + err.Error())
+	}
+}
+
+// createTestUpload builds a graphql.Upload for testing.
+func createTestUpload(filename, contentType, content string) graphql.Upload {
+	return graphql.Upload{
+		File:        bytes.NewReader([]byte(content)),
+		Filename:    filename,
+		Size:        int64(len(content)),
+		ContentType: contentType,
 	}
 }
 
@@ -822,7 +858,7 @@ func TestUserQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	query := r.Query()
 
 	t.Run("returns user when found", func(t *testing.T) {
@@ -868,7 +904,7 @@ func TestUserQuery(t *testing.T) {
 	})
 
 	t.Run("returns error when repository fails", func(t *testing.T) {
-		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+		errorR := resolver.NewResolver(&errorUserRepository{}, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 		errorQuery := errorR.Query()
 
 		_, err := errorQuery.User(ctx, uuid.New().String())
@@ -903,7 +939,7 @@ func TestFileQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, file)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	query := r.Query()
 
 	t.Run("returns file when found", func(t *testing.T) {
@@ -1007,7 +1043,7 @@ func TestFilesQuery(t *testing.T) {
 	}
 	mustCreateFile(fileRepo, otherFile)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	query := r.Query()
 
 	t.Run("returns files for user", func(t *testing.T) {
@@ -1103,7 +1139,7 @@ func TestReferenceLetterQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, letter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letter when found", func(t *testing.T) {
@@ -1251,7 +1287,7 @@ func TestReferenceLettersQuery(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, otherLetter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	query := r.Query()
 
 	t.Run("returns reference letters for user", func(t *testing.T) {
@@ -1325,7 +1361,7 @@ func TestCreateEducation(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 
 	t.Run("creates education entry", func(t *testing.T) {
@@ -1408,7 +1444,7 @@ func TestUpdateEducation(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 
 	// Create an education entry first
@@ -1499,7 +1535,7 @@ func TestDeleteEducation(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 
 	// Create an education entry first
@@ -1568,7 +1604,7 @@ func TestProfileEducationQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), eduRepo, newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 	query := r.Query()
 
@@ -1649,7 +1685,7 @@ func TestCreateSkill(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 
 	t.Run("creates skill successfully", func(t *testing.T) {
@@ -1751,7 +1787,7 @@ func TestUpdateSkill(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 
 	// Create a skill first
@@ -1828,7 +1864,7 @@ func TestDeleteSkill(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 
 	// Create a skill first
@@ -1900,7 +1936,7 @@ func TestProfileSkillQuery(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 	query := r.Query()
 
@@ -2018,7 +2054,7 @@ func TestTestimonialsQuery(t *testing.T) {
 		t.Fatalf("setup: failed to create testimonial: %v", err)
 	}
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), refLetterRepo, newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), testimonialRepo, newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), refLetterRepo, newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), testimonialRepo, newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	query := r.Query()
 
 	t.Run("returns testimonials for profile", func(t *testing.T) {
@@ -2193,7 +2229,7 @@ func TestTestimonialsWithValidatedSkills(t *testing.T) {
 		t.Fatalf("setup: failed to create testimonial: %v", err)
 	}
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), refLetterRepo, newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), profileSkillRepo, newMockAuthorRepository(), testimonialRepo, skillValidationRepo, newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), refLetterRepo, newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), profileSkillRepo, newMockAuthorRepository(), testimonialRepo, skillValidationRepo, newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	query := r.Query()
 
 	t.Run("returns validatedSkills for testimonial", func(t *testing.T) {
@@ -2527,7 +2563,7 @@ func TestApplyReferenceLetterValidations(t *testing.T) {
 	}
 	mustCreateReferenceLetter(refLetterRepo, refLetter)
 
-	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), testimonialRepo, skillValidationRepo, expValidationRepo, storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, fileRepo, refLetterRepo, newMockResumeRepository(), profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), testimonialRepo, skillValidationRepo, expValidationRepo, storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 
 	t.Run("applies skill validations successfully", func(t *testing.T) {
@@ -2843,6 +2879,7 @@ func TestFileResolver_URL(t *testing.T) {
 		newMockExperienceValidationRepository(),
 		mockStorage,
 		newMockJobEnqueuer(),
+		nil,
 		testLogger(),
 	)
 
@@ -2923,7 +2960,7 @@ func TestCheckDuplicateFile(t *testing.T) {
 		newMockProfileEducationRepository(), newMockProfileSkillRepository(),
 		newMockAuthorRepository(), newMockTestimonialRepository(),
 		newMockSkillValidationRepository(), newMockExperienceValidationRepository(),
-		storage.NewMockStorage(), newMockJobEnqueuer(), testLogger(),
+		storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger(),
 	)
 	query := r.Query()
 
@@ -3021,7 +3058,7 @@ func TestDeleteTestimonial(t *testing.T) {
 		t.Fatalf("failed to create testimonial: %v", err)
 	}
 
-	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), testimonialRepo, newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), testLogger())
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), testimonialRepo, newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
 	mutation := r.Mutation()
 
 	t.Run("deletes testimonial successfully", func(t *testing.T) {
@@ -3067,6 +3104,151 @@ func TestDeleteTestimonial(t *testing.T) {
 
 		if result.Success {
 			t.Error("expected success to be false for non-existent testimonial")
+		}
+	})
+}
+
+func TestMutation_DetectDocumentContent(t *testing.T) {
+	ctx := context.Background()
+
+	userRepo := newMockUserRepository()
+	name := "Detection Test User"
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "detect-test@example.com",
+		PasswordHash: "hashed",
+		Name:         &name,
+	}
+	mustCreateUser(userRepo, user)
+
+	author := "Jane Smith"
+	extractor := &mockDocumentExtractor{
+		extractTextResult: "Extracted document text here",
+		detectResult: &domain.DocumentDetectionResult{
+			HasCareerInfo:     true,
+			HasTestimonial:    true,
+			TestimonialAuthor: &author,
+			Confidence:        0.92,
+			Summary:           "A reference letter with career details.",
+			DocumentTypeHint:  domain.DocumentTypeHybrid,
+		},
+	}
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), extractor, testLogger())
+	mutation := r.Mutation()
+
+	t.Run("detects hybrid document successfully", func(t *testing.T) {
+		file := createTestUpload("test.pdf", "application/pdf", "fake pdf content")
+		result, err := mutation.DetectDocumentContent(ctx, user.ID.String(), file)
+		if err != nil {
+			t.Fatalf("DetectDocumentContent() error = %v", err)
+		}
+
+		detectResult, ok := result.(*model.DetectDocumentContentResult)
+		if !ok {
+			t.Fatalf("expected DetectDocumentContentResult, got %T", result)
+		}
+
+		if !detectResult.Detection.HasCareerInfo {
+			t.Error("HasCareerInfo = false, want true")
+		}
+		if !detectResult.Detection.HasTestimonial {
+			t.Error("HasTestimonial = false, want true")
+		}
+		if detectResult.Detection.TestimonialAuthor == nil || *detectResult.Detection.TestimonialAuthor != "Jane Smith" {
+			t.Errorf("TestimonialAuthor = %v, want %q", detectResult.Detection.TestimonialAuthor, "Jane Smith")
+		}
+		if detectResult.Detection.Confidence != 0.92 {
+			t.Errorf("Confidence = %v, want 0.92", detectResult.Detection.Confidence)
+		}
+		if detectResult.Detection.DocumentTypeHint != model.DocumentTypeHintHybrid {
+			t.Errorf("DocumentTypeHint = %q, want %q", detectResult.Detection.DocumentTypeHint, model.DocumentTypeHintHybrid)
+		}
+		if detectResult.Detection.FileID == "" {
+			t.Error("FileID should not be empty")
+		}
+	})
+
+	t.Run("rejects invalid file type", func(t *testing.T) {
+		file := createTestUpload("test.exe", "application/octet-stream", "not a document")
+		result, err := mutation.DetectDocumentContent(ctx, user.ID.String(), file)
+		if err != nil {
+			t.Fatalf("DetectDocumentContent() error = %v", err)
+		}
+
+		validationErr, ok := result.(*model.FileValidationError)
+		if !ok {
+			t.Fatalf("expected FileValidationError, got %T", result)
+		}
+		if validationErr.Field != "contentType" {
+			t.Errorf("Field = %q, want %q", validationErr.Field, "contentType")
+		}
+	})
+
+	t.Run("rejects file too large", func(t *testing.T) {
+		file := createTestUpload("large.pdf", "application/pdf", "x")
+		file.Size = 11 * 1024 * 1024 // 11MB
+		result, err := mutation.DetectDocumentContent(ctx, user.ID.String(), file)
+		if err != nil {
+			t.Fatalf("DetectDocumentContent() error = %v", err)
+		}
+
+		validationErr, ok := result.(*model.FileValidationError)
+		if !ok {
+			t.Fatalf("expected FileValidationError, got %T", result)
+		}
+		if validationErr.Field != "size" {
+			t.Errorf("Field = %q, want %q", validationErr.Field, "size")
+		}
+	})
+
+	t.Run("returns error for invalid user ID", func(t *testing.T) {
+		file := createTestUpload("test.pdf", "application/pdf", "content")
+		_, err := mutation.DetectDocumentContent(ctx, "not-a-uuid", file)
+		if err == nil {
+			t.Error("expected error for invalid user ID")
+		}
+	})
+
+	t.Run("returns error for non-existent user", func(t *testing.T) {
+		file := createTestUpload("test.pdf", "application/pdf", "content")
+		_, err := mutation.DetectDocumentContent(ctx, uuid.New().String(), file)
+		if err == nil {
+			t.Error("expected error for non-existent user")
+		}
+	})
+
+	t.Run("returns error when extractor is nil", func(t *testing.T) {
+		rNoExtractor := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, testLogger())
+		file := createTestUpload("test.pdf", "application/pdf", "content")
+		_, err := rNoExtractor.Mutation().DetectDocumentContent(ctx, user.ID.String(), file)
+		if err == nil {
+			t.Error("expected error when extractor is nil")
+		}
+	})
+
+	t.Run("returns error when text extraction fails", func(t *testing.T) {
+		failExtractor := &mockDocumentExtractor{
+			extractTextError: errors.New("text extraction failed"),
+		}
+		rFail := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), failExtractor, testLogger())
+		file := createTestUpload("test.pdf", "application/pdf", "content")
+		_, err := rFail.Mutation().DetectDocumentContent(ctx, user.ID.String(), file)
+		if err == nil {
+			t.Error("expected error when text extraction fails")
+		}
+	})
+
+	t.Run("returns error when detection fails", func(t *testing.T) {
+		failExtractor := &mockDocumentExtractor{
+			extractTextResult: "some text",
+			detectError:       errors.New("detection failed"),
+		}
+		rFail := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), failExtractor, testLogger())
+		file := createTestUpload("test.pdf", "application/pdf", "content")
+		_, err := rFail.Mutation().DetectDocumentContent(ctx, user.ID.String(), file)
+		if err == nil {
+			t.Error("expected error when detection fails")
 		}
 	})
 }

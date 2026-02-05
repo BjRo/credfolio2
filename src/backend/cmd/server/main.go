@@ -147,7 +147,7 @@ func run(log logger.Logger) error {
 	r.Post("/api/extract", extractHandler.ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, fileStorage, queueClient, log))
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, fileStorage, queueClient, extractor, log))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
@@ -271,6 +271,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 	docProvider, docModel := cfg.LLM.ParseDocumentExtractionModel()
 	resumeProvider, resumeModel := cfg.LLM.ParseResumeExtractionModel()
 	refProvider, refModel := cfg.LLM.ParseReferenceExtractionModel()
+	detProvider, detModel := cfg.LLM.ParseDetectionModel()
 
 	// Determine a default provider from the document extraction chain config.
 	// This serves as the fallback when a chain references an unregistered provider.
@@ -294,6 +295,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 	docChain := llm.ProviderChain{{Provider: docProvider, Model: docModel}}
 	resumeChain := llm.ProviderChain{{Provider: resumeProvider, Model: resumeModel}}
 	refChain := llm.ProviderChain{{Provider: refProvider, Model: refModel}}
+	detChain := llm.ProviderChain{{Provider: detProvider, Model: detModel}}
 
 	// Validate that configured chains reference registered providers
 	for _, check := range []struct {
@@ -303,6 +305,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 		{"Document extraction", docProvider},
 		{"Resume extraction", resumeProvider},
 		{"Reference extraction", refProvider},
+		{"Detection", detProvider},
 	} {
 		if _, ok := registry.Get(check.provider); !ok {
 			log.Warning(check.name+" chain references unregistered provider — will fall back to default",
@@ -319,6 +322,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 		logger.String("document_extraction", fmt.Sprintf("%s/%s", docProvider, docModel)),
 		logger.String("resume_extraction", fmt.Sprintf("%s/%s", resumeProvider, resumeModel)),
 		logger.String("reference_extraction", fmt.Sprintf("%s/%s", refProvider, refModel)),
+		logger.String("detection", fmt.Sprintf("%s/%s", detProvider, detModel)),
 	)
 
 	extractor := llm.NewDocumentExtractor(defaultProvider, llm.DocumentExtractorConfig{
@@ -326,6 +330,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 		DocumentExtractionChain:  docChain,
 		ResumeExtractionChain:    resumeChain,
 		ReferenceExtractionChain: refChain,
+		DetectionChain:           detChain,
 		Logger:                   log,
 	})
 	extractHandler := handler.NewExtractHandler(extractor, log)

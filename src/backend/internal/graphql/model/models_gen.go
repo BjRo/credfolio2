@@ -21,6 +21,11 @@ type DeleteProfilePhotoResponse interface {
 	IsDeleteProfilePhotoResponse()
 }
 
+// Union type for detect document content result.
+type DetectDocumentContentResponse interface {
+	IsDetectDocumentContentResponse()
+}
+
 // Union type for education create/update result.
 type EducationResponse interface {
 	IsEducationResponse()
@@ -196,6 +201,33 @@ type DeleteResult struct {
 	DeletedID string `json:"deletedId"`
 }
 
+// Result of a successful document detection.
+type DetectDocumentContentResult struct {
+	// The detection results.
+	Detection *DocumentDetectionResult `json:"detection"`
+}
+
+func (DetectDocumentContentResult) IsDetectDocumentContentResponse() {}
+
+// Result of lightweight document content detection.
+// Used to quickly classify a document before running full extraction.
+type DocumentDetectionResult struct {
+	// Whether the document contains career information (resume/CV content).
+	HasCareerInfo bool `json:"hasCareerInfo"`
+	// Whether the document contains testimonial/recommendation content.
+	HasTestimonial bool `json:"hasTestimonial"`
+	// Name of the testimonial author (person who wrote the recommendation), if detected.
+	TestimonialAuthor *string `json:"testimonialAuthor,omitempty"`
+	// Confidence in the detection (0.0 to 1.0).
+	Confidence float64 `json:"confidence"`
+	// Brief summary of what was found in the document.
+	Summary string `json:"summary"`
+	// Hint about the document type.
+	DocumentTypeHint DocumentTypeHint `json:"documentTypeHint"`
+	// ID of the stored file for subsequent processing.
+	FileID string `json:"fileId"`
+}
+
 // Result when a duplicate file is detected during upload.
 type DuplicateFileDetected struct {
 	// The existing file that matches the uploaded content.
@@ -292,6 +324,8 @@ type FileValidationError struct {
 	// The field that failed validation (e.g., 'contentType', 'size').
 	Field string `json:"field"`
 }
+
+func (FileValidationError) IsDetectDocumentContentResponse() {}
 
 func (FileValidationError) IsUploadProfilePhotoResponse() {}
 
@@ -692,6 +726,66 @@ type User struct {
 	Name      *string   `json:"name,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// Hint about the document type from lightweight detection.
+type DocumentTypeHint string
+
+const (
+	DocumentTypeHintResume          DocumentTypeHint = "RESUME"
+	DocumentTypeHintReferenceLetter DocumentTypeHint = "REFERENCE_LETTER"
+	DocumentTypeHintHybrid          DocumentTypeHint = "HYBRID"
+	DocumentTypeHintUnknown         DocumentTypeHint = "UNKNOWN"
+)
+
+var AllDocumentTypeHint = []DocumentTypeHint{
+	DocumentTypeHintResume,
+	DocumentTypeHintReferenceLetter,
+	DocumentTypeHintHybrid,
+	DocumentTypeHintUnknown,
+}
+
+func (e DocumentTypeHint) IsValid() bool {
+	switch e {
+	case DocumentTypeHintResume, DocumentTypeHintReferenceLetter, DocumentTypeHintHybrid, DocumentTypeHintUnknown:
+		return true
+	}
+	return false
+}
+
+func (e DocumentTypeHint) String() string {
+	return string(e)
+}
+
+func (e *DocumentTypeHint) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DocumentTypeHint(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DocumentTypeHint", str)
+	}
+	return nil
+}
+
+func (e DocumentTypeHint) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *DocumentTypeHint) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e DocumentTypeHint) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 // Source of a profile experience entry.

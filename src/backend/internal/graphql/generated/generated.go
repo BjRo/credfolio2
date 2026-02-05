@@ -93,10 +93,24 @@ type ComplexityRoot struct {
 		Success   func(childComplexity int) int
 	}
 
+	DetectDocumentContentResult struct {
+		Detection func(childComplexity int) int
+	}
+
 	DiscoveredSkill struct {
 		Context func(childComplexity int) int
 		Quote   func(childComplexity int) int
 		Skill   func(childComplexity int) int
+	}
+
+	DocumentDetectionResult struct {
+		Confidence        func(childComplexity int) int
+		DocumentTypeHint  func(childComplexity int) int
+		FileID            func(childComplexity int) int
+		HasCareerInfo     func(childComplexity int) int
+		HasTestimonial    func(childComplexity int) int
+		Summary           func(childComplexity int) int
+		TestimonialAuthor func(childComplexity int) int
 	}
 
 	DuplicateFileDetected struct {
@@ -198,6 +212,7 @@ type ComplexityRoot struct {
 		DeleteProfilePhoto              func(childComplexity int, userID string) int
 		DeleteSkill                     func(childComplexity int, id string) int
 		DeleteTestimonial               func(childComplexity int, id string) int
+		DetectDocumentContent           func(childComplexity int, userID string, file graphql.Upload) int
 		UpdateAuthor                    func(childComplexity int, id string, input model.UpdateAuthorInput) int
 		UpdateEducation                 func(childComplexity int, id string, input model.UpdateEducationInput) int
 		UpdateExperience                func(childComplexity int, id string, input model.UpdateExperienceInput) int
@@ -406,6 +421,7 @@ type FileResolver interface {
 type MutationResolver interface {
 	UploadFile(ctx context.Context, userID string, file graphql.Upload, forceReimport *bool) (model.UploadFileResponse, error)
 	UploadResume(ctx context.Context, userID string, file graphql.Upload, forceReimport *bool) (model.UploadResumeResponse, error)
+	DetectDocumentContent(ctx context.Context, userID string, file graphql.Upload) (model.DetectDocumentContentResponse, error)
 	UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error)
 	UploadProfilePhoto(ctx context.Context, userID string, file graphql.Upload) (model.UploadProfilePhotoResponse, error)
 	DeleteProfilePhoto(ctx context.Context, userID string) (model.DeleteProfilePhotoResponse, error)
@@ -613,6 +629,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.DeleteResult.Success(childComplexity), true
 
+	case "DetectDocumentContentResult.detection":
+		if e.complexity.DetectDocumentContentResult.Detection == nil {
+			break
+		}
+
+		return e.complexity.DetectDocumentContentResult.Detection(childComplexity), true
+
 	case "DiscoveredSkill.context":
 		if e.complexity.DiscoveredSkill.Context == nil {
 			break
@@ -631,6 +654,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DiscoveredSkill.Skill(childComplexity), true
+
+	case "DocumentDetectionResult.confidence":
+		if e.complexity.DocumentDetectionResult.Confidence == nil {
+			break
+		}
+
+		return e.complexity.DocumentDetectionResult.Confidence(childComplexity), true
+	case "DocumentDetectionResult.documentTypeHint":
+		if e.complexity.DocumentDetectionResult.DocumentTypeHint == nil {
+			break
+		}
+
+		return e.complexity.DocumentDetectionResult.DocumentTypeHint(childComplexity), true
+	case "DocumentDetectionResult.fileId":
+		if e.complexity.DocumentDetectionResult.FileID == nil {
+			break
+		}
+
+		return e.complexity.DocumentDetectionResult.FileID(childComplexity), true
+	case "DocumentDetectionResult.hasCareerInfo":
+		if e.complexity.DocumentDetectionResult.HasCareerInfo == nil {
+			break
+		}
+
+		return e.complexity.DocumentDetectionResult.HasCareerInfo(childComplexity), true
+	case "DocumentDetectionResult.hasTestimonial":
+		if e.complexity.DocumentDetectionResult.HasTestimonial == nil {
+			break
+		}
+
+		return e.complexity.DocumentDetectionResult.HasTestimonial(childComplexity), true
+	case "DocumentDetectionResult.summary":
+		if e.complexity.DocumentDetectionResult.Summary == nil {
+			break
+		}
+
+		return e.complexity.DocumentDetectionResult.Summary(childComplexity), true
+	case "DocumentDetectionResult.testimonialAuthor":
+		if e.complexity.DocumentDetectionResult.TestimonialAuthor == nil {
+			break
+		}
+
+		return e.complexity.DocumentDetectionResult.TestimonialAuthor(childComplexity), true
 
 	case "DuplicateFileDetected.existingFile":
 		if e.complexity.DuplicateFileDetected.ExistingFile == nil {
@@ -1027,6 +1093,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeleteTestimonial(childComplexity, args["id"].(string)), true
+	case "Mutation.detectDocumentContent":
+		if e.complexity.Mutation.DetectDocumentContent == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_detectDocumentContent_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DetectDocumentContent(childComplexity, args["userId"].(string), args["file"].(graphql.Upload)), true
 	case "Mutation.updateAuthor":
 		if e.complexity.Mutation.UpdateAuthor == nil {
 			break
@@ -2286,6 +2363,54 @@ type ExtractedLetterData {
 }
 
 # ============================================================================
+# Document Content Detection Schema
+# ============================================================================
+
+"""
+Hint about the document type from lightweight detection.
+"""
+enum DocumentTypeHint {
+  RESUME
+  REFERENCE_LETTER
+  HYBRID
+  UNKNOWN
+}
+
+"""
+Result of lightweight document content detection.
+Used to quickly classify a document before running full extraction.
+"""
+type DocumentDetectionResult {
+  """Whether the document contains career information (resume/CV content)."""
+  hasCareerInfo: Boolean!
+  """Whether the document contains testimonial/recommendation content."""
+  hasTestimonial: Boolean!
+  """Name of the testimonial author (person who wrote the recommendation), if detected."""
+  testimonialAuthor: String
+  """Confidence in the detection (0.0 to 1.0)."""
+  confidence: Float!
+  """Brief summary of what was found in the document."""
+  summary: String!
+  """Hint about the document type."""
+  documentTypeHint: DocumentTypeHint!
+  """ID of the stored file for subsequent processing."""
+  fileId: ID!
+}
+
+"""
+Result of a successful document detection.
+"""
+type DetectDocumentContentResult {
+  """The detection results."""
+  detection: DocumentDetectionResult!
+}
+
+"""
+Union type for detect document content result.
+"""
+union DetectDocumentContentResponse = DetectDocumentContentResult | FileValidationError
+
+# ============================================================================
 # Main Types
 # ============================================================================
 
@@ -3167,6 +3292,23 @@ type Mutation {
   ): UploadResumeResponse!
 
   # ============================================================================
+  # Document Content Detection
+  # ============================================================================
+
+  """
+  Upload a document and run lightweight content detection.
+  Quickly classifies the document content (career info, testimonials, or both)
+  without running full extraction. The file is stored for subsequent processing.
+  Returns detection results synchronously.
+  """
+  detectDocumentContent(
+    """The user ID uploading the document."""
+    userId: ID!
+    """The document file to analyze (PDF, DOCX, or TXT only)."""
+    file: Upload!
+  ): DetectDocumentContentResponse!
+
+  # ============================================================================
   # Profile Header Mutations
   # ============================================================================
 
@@ -3485,6 +3627,22 @@ func (ec *executionContext) field_Mutation_deleteTestimonial_args(ctx context.Co
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_detectDocumentContent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "file", ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload)
+	if err != nil {
+		return nil, err
+	}
+	args["file"] = arg1
 	return args, nil
 }
 
@@ -4594,6 +4752,51 @@ func (ec *executionContext) fieldContext_DeleteResult_deletedId(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _DetectDocumentContentResult_detection(ctx context.Context, field graphql.CollectedField, obj *model.DetectDocumentContentResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DetectDocumentContentResult_detection,
+		func(ctx context.Context) (any, error) {
+			return obj.Detection, nil
+		},
+		nil,
+		ec.marshalNDocumentDetectionResult2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDocumentDetectionResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DetectDocumentContentResult_detection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DetectDocumentContentResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasCareerInfo":
+				return ec.fieldContext_DocumentDetectionResult_hasCareerInfo(ctx, field)
+			case "hasTestimonial":
+				return ec.fieldContext_DocumentDetectionResult_hasTestimonial(ctx, field)
+			case "testimonialAuthor":
+				return ec.fieldContext_DocumentDetectionResult_testimonialAuthor(ctx, field)
+			case "confidence":
+				return ec.fieldContext_DocumentDetectionResult_confidence(ctx, field)
+			case "summary":
+				return ec.fieldContext_DocumentDetectionResult_summary(ctx, field)
+			case "documentTypeHint":
+				return ec.fieldContext_DocumentDetectionResult_documentTypeHint(ctx, field)
+			case "fileId":
+				return ec.fieldContext_DocumentDetectionResult_fileId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DocumentDetectionResult", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DiscoveredSkill_skill(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredSkill) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4676,6 +4879,209 @@ func (ec *executionContext) fieldContext_DiscoveredSkill_context(_ context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentDetectionResult_hasCareerInfo(ctx context.Context, field graphql.CollectedField, obj *model.DocumentDetectionResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentDetectionResult_hasCareerInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.HasCareerInfo, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentDetectionResult_hasCareerInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentDetectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentDetectionResult_hasTestimonial(ctx context.Context, field graphql.CollectedField, obj *model.DocumentDetectionResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentDetectionResult_hasTestimonial,
+		func(ctx context.Context) (any, error) {
+			return obj.HasTestimonial, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentDetectionResult_hasTestimonial(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentDetectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentDetectionResult_testimonialAuthor(ctx context.Context, field graphql.CollectedField, obj *model.DocumentDetectionResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentDetectionResult_testimonialAuthor,
+		func(ctx context.Context) (any, error) {
+			return obj.TestimonialAuthor, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentDetectionResult_testimonialAuthor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentDetectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentDetectionResult_confidence(ctx context.Context, field graphql.CollectedField, obj *model.DocumentDetectionResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentDetectionResult_confidence,
+		func(ctx context.Context) (any, error) {
+			return obj.Confidence, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentDetectionResult_confidence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentDetectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentDetectionResult_summary(ctx context.Context, field graphql.CollectedField, obj *model.DocumentDetectionResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentDetectionResult_summary,
+		func(ctx context.Context) (any, error) {
+			return obj.Summary, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentDetectionResult_summary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentDetectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentDetectionResult_documentTypeHint(ctx context.Context, field graphql.CollectedField, obj *model.DocumentDetectionResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentDetectionResult_documentTypeHint,
+		func(ctx context.Context) (any, error) {
+			return obj.DocumentTypeHint, nil
+		},
+		nil,
+		ec.marshalNDocumentTypeHint2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentTypeHint,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentDetectionResult_documentTypeHint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentDetectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DocumentTypeHint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentDetectionResult_fileId(ctx context.Context, field graphql.CollectedField, obj *model.DocumentDetectionResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentDetectionResult_fileId,
+		func(ctx context.Context) (any, error) {
+			return obj.FileID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentDetectionResult_fileId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentDetectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6362,6 +6768,47 @@ func (ec *executionContext) fieldContext_Mutation_uploadResume(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_uploadResume_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_detectDocumentContent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_detectDocumentContent,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DetectDocumentContent(ctx, fc.Args["userId"].(string), fc.Args["file"].(graphql.Upload))
+		},
+		nil,
+		ec.marshalNDetectDocumentContentResponse2backendᚋinternalᚋgraphqlᚋmodelᚐDetectDocumentContentResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_detectDocumentContent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DetectDocumentContentResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_detectDocumentContent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -14215,6 +14662,33 @@ func (ec *executionContext) _DeleteProfilePhotoResponse(ctx context.Context, sel
 	}
 }
 
+func (ec *executionContext) _DetectDocumentContentResponse(ctx context.Context, sel ast.SelectionSet, obj model.DetectDocumentContentResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.FileValidationError:
+		return ec._FileValidationError(ctx, sel, &obj)
+	case *model.FileValidationError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._FileValidationError(ctx, sel, obj)
+	case model.DetectDocumentContentResult:
+		return ec._DetectDocumentContentResult(ctx, sel, &obj)
+	case *model.DetectDocumentContentResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DetectDocumentContentResult(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of DetectDocumentContentResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
 func (ec *executionContext) _EducationResponse(ctx context.Context, sel ast.SelectionSet, obj model.EducationResponse) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -14743,6 +15217,45 @@ func (ec *executionContext) _DeleteResult(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var detectDocumentContentResultImplementors = []string{"DetectDocumentContentResult", "DetectDocumentContentResponse"}
+
+func (ec *executionContext) _DetectDocumentContentResult(ctx context.Context, sel ast.SelectionSet, obj *model.DetectDocumentContentResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, detectDocumentContentResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DetectDocumentContentResult")
+		case "detection":
+			out.Values[i] = ec._DetectDocumentContentResult_detection(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var discoveredSkillImplementors = []string{"DiscoveredSkill"}
 
 func (ec *executionContext) _DiscoveredSkill(ctx context.Context, sel ast.SelectionSet, obj *model.DiscoveredSkill) graphql.Marshaler {
@@ -14766,6 +15279,72 @@ func (ec *executionContext) _DiscoveredSkill(ctx context.Context, sel ast.Select
 			}
 		case "context":
 			out.Values[i] = ec._DiscoveredSkill_context(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var documentDetectionResultImplementors = []string{"DocumentDetectionResult"}
+
+func (ec *executionContext) _DocumentDetectionResult(ctx context.Context, sel ast.SelectionSet, obj *model.DocumentDetectionResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, documentDetectionResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DocumentDetectionResult")
+		case "hasCareerInfo":
+			out.Values[i] = ec._DocumentDetectionResult_hasCareerInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hasTestimonial":
+			out.Values[i] = ec._DocumentDetectionResult_hasTestimonial(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "testimonialAuthor":
+			out.Values[i] = ec._DocumentDetectionResult_testimonialAuthor(ctx, field, obj)
+		case "confidence":
+			out.Values[i] = ec._DocumentDetectionResult_confidence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "summary":
+			out.Values[i] = ec._DocumentDetectionResult_summary(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "documentTypeHint":
+			out.Values[i] = ec._DocumentDetectionResult_documentTypeHint(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fileId":
+			out.Values[i] = ec._DocumentDetectionResult_fileId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -15516,7 +16095,7 @@ func (ec *executionContext) _File(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
-var fileValidationErrorImplementors = []string{"FileValidationError", "UploadProfilePhotoResponse", "UploadAuthorImageResponse", "UploadFileResponse", "UploadResumeResponse"}
+var fileValidationErrorImplementors = []string{"FileValidationError", "DetectDocumentContentResponse", "UploadProfilePhotoResponse", "UploadAuthorImageResponse", "UploadFileResponse", "UploadResumeResponse"}
 
 func (ec *executionContext) _FileValidationError(ctx context.Context, sel ast.SelectionSet, obj *model.FileValidationError) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, fileValidationErrorImplementors)
@@ -15589,6 +16168,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "uploadResume":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_uploadResume(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "detectDocumentContent":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_detectDocumentContent(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -17962,6 +18548,16 @@ func (ec *executionContext) marshalNDeleteResult2ᚖbackendᚋinternalᚋgraphql
 	return ec._DeleteResult(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNDetectDocumentContentResponse2backendᚋinternalᚋgraphqlᚋmodelᚐDetectDocumentContentResponse(ctx context.Context, sel ast.SelectionSet, v model.DetectDocumentContentResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DetectDocumentContentResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNDiscoveredSkill2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDiscoveredSkillᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.DiscoveredSkill) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -18014,6 +18610,26 @@ func (ec *executionContext) marshalNDiscoveredSkill2ᚖbackendᚋinternalᚋgrap
 		return graphql.Null
 	}
 	return ec._DiscoveredSkill(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDocumentDetectionResult2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDocumentDetectionResult(ctx context.Context, sel ast.SelectionSet, v *model.DocumentDetectionResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DocumentDetectionResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDocumentTypeHint2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentTypeHint(ctx context.Context, v any) (model.DocumentTypeHint, error) {
+	var res model.DocumentTypeHint
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDocumentTypeHint2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentTypeHint(ctx context.Context, sel ast.SelectionSet, v model.DocumentTypeHint) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNEducationResponse2backendᚋinternalᚋgraphqlᚋmodelᚐEducationResponse(ctx context.Context, sel ast.SelectionSet, v model.EducationResponse) graphql.Marshaler {

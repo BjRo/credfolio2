@@ -599,6 +599,176 @@ func (r *mutationResolver) UploadResume(ctx context.Context, userID string, file
 	}, nil
 }
 
+// DetectDocumentContent is the resolver for the detectDocumentContent field.
+func (r *mutationResolver) DetectDocumentContent(ctx context.Context, userID string, file graphql.Upload) (model.DetectDocumentContentResponse, error) {
+	r.log.Info("Document detection requested",
+		logger.Feature("detection"),
+		logger.String("user_id", userID),
+		logger.String("filename", file.Filename),
+		logger.String("content_type", file.ContentType),
+		logger.Int64("size_bytes", file.Size),
+	)
+
+	// Check if document extractor is available
+	if r.documentExtractor == nil {
+		return nil, fmt.Errorf("document detection is not available: LLM extraction is not configured")
+	}
+
+	// Validate user exists
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"application/pdf": true,
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
+		"text/plain": true,
+	}
+
+	if !allowedTypes[file.ContentType] {
+		r.log.Warning("File type not allowed",
+			logger.Feature("detection"),
+			logger.String("user_id", userID),
+			logger.String("content_type", file.ContentType),
+		)
+		return &model.FileValidationError{
+			Message: "file type not allowed: must be PDF, DOCX, or TXT",
+			Field:   "contentType",
+		}, nil
+	}
+
+	// Validate file size (max 10MB)
+	const maxSize = 10 * 1024 * 1024
+	if file.Size > maxSize {
+		r.log.Warning("File too large",
+			logger.Feature("detection"),
+			logger.String("user_id", userID),
+			logger.Int64("size_bytes", file.Size),
+		)
+		return &model.FileValidationError{
+			Message: "file too large: maximum size is 10MB",
+			Field:   "size",
+		}, nil
+	}
+
+	// Read file content
+	contentHash, fileContent, err := calculateContentHashFromReader(file.File)
+	if err != nil {
+		r.log.Error("Failed to read file content",
+			logger.Feature("detection"),
+			logger.String("user_id", userID),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to read file content: %w", err)
+	}
+
+	// Upload file to storage (so it can be reused for subsequent extraction)
+	fileID := uuid.New()
+	storageKey := fmt.Sprintf("uploads/%s/%s/%s", uid.String(), fileID.String(), file.Filename)
+
+	_, err = r.storage.Upload(ctx, storageKey, bytes.NewReader(fileContent), int64(len(fileContent)), file.ContentType)
+	if err != nil {
+		r.log.Error("Failed to upload file to storage",
+			logger.Feature("detection"),
+			logger.String("user_id", userID),
+			logger.String("storage_key", storageKey),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to upload file to storage: %w", err)
+	}
+
+	// Create file record
+	domainFile := &domain.File{
+		ID:          fileID,
+		UserID:      uid,
+		Filename:    file.Filename,
+		ContentType: file.ContentType,
+		SizeBytes:   file.Size,
+		StorageKey:  storageKey,
+		ContentHash: &contentHash,
+	}
+
+	if err := r.fileRepo.Create(ctx, domainFile); err != nil {
+		r.log.Error("Failed to create file record",
+			logger.Feature("detection"),
+			logger.String("user_id", userID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
+		_ = r.storage.Delete(ctx, storageKey) //nolint:errcheck // Best effort cleanup
+		return nil, fmt.Errorf("failed to create file record: %w", err)
+	}
+
+	// Extract text from the document
+	text, err := r.documentExtractor.ExtractText(ctx, fileContent, file.ContentType)
+	if err != nil {
+		r.log.Error("Failed to extract text from document",
+			logger.Feature("detection"),
+			logger.String("user_id", userID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to extract text from document: %w", err)
+	}
+
+	// Run lightweight detection
+	detectionResult, err := r.documentExtractor.DetectDocumentContent(ctx, text)
+	if err != nil {
+		r.log.Error("Failed to detect document content",
+			logger.Feature("detection"),
+			logger.String("user_id", userID),
+			logger.String("file_id", fileID.String()),
+			logger.Err(err),
+		)
+		return nil, fmt.Errorf("failed to detect document content: %w", err)
+	}
+
+	r.log.Info("Document detection completed",
+		logger.Feature("detection"),
+		logger.String("user_id", userID),
+		logger.String("file_id", fileID.String()),
+		logger.String("document_type", string(detectionResult.DocumentTypeHint)),
+		logger.Float64("confidence", detectionResult.Confidence),
+		logger.Bool("has_career_info", detectionResult.HasCareerInfo),
+		logger.Bool("has_testimonial", detectionResult.HasTestimonial),
+	)
+
+	// Map domain DocumentTypeHint to GraphQL enum
+	var gqlTypeHint model.DocumentTypeHint
+	switch detectionResult.DocumentTypeHint {
+	case domain.DocumentTypeResume:
+		gqlTypeHint = model.DocumentTypeHintResume
+	case domain.DocumentTypeReferenceLetter:
+		gqlTypeHint = model.DocumentTypeHintReferenceLetter
+	case domain.DocumentTypeHybrid:
+		gqlTypeHint = model.DocumentTypeHintHybrid
+	default:
+		gqlTypeHint = model.DocumentTypeHintUnknown
+	}
+
+	return &model.DetectDocumentContentResult{
+		Detection: &model.DocumentDetectionResult{
+			HasCareerInfo:     detectionResult.HasCareerInfo,
+			HasTestimonial:    detectionResult.HasTestimonial,
+			TestimonialAuthor: detectionResult.TestimonialAuthor,
+			Confidence:        detectionResult.Confidence,
+			Summary:           detectionResult.Summary,
+			DocumentTypeHint:  gqlTypeHint,
+			FileID:            fileID.String(),
+		},
+	}, nil
+}
+
 // UpdateProfileHeader is the resolver for the updateProfileHeader field.
 func (r *mutationResolver) UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error) {
 	r.log.Info("Updating profile header",
