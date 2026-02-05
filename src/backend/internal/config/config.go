@@ -42,6 +42,11 @@ type LLMConfig struct {
 	// Format: "provider/model" (e.g., "openai/gpt-4o").
 	// Defaults to "openai/gpt-4o" for best structured output support.
 	ReferenceExtractionModel string
+
+	// DetectionModel specifies the provider and model for lightweight document content detection.
+	// Format: "provider/model" (e.g., "openai/gpt-4o-mini").
+	// Defaults to "openai/gpt-4o-mini" for fast, cheap classification.
+	DetectionModel string
 }
 
 // ParseDocumentExtractionModel parses the DocumentExtractionModel into provider and model parts.
@@ -60,6 +65,12 @@ func (c *LLMConfig) ParseResumeExtractionModel() (provider, model string) {
 // Returns (provider, model). If not set, defaults to ("openai", "gpt-4o").
 func (c *LLMConfig) ParseReferenceExtractionModel() (provider, model string) {
 	return parseModelConfig(c.ReferenceExtractionModel, "openai", "gpt-4o")
+}
+
+// ParseDetectionModel parses the DetectionModel into provider and model parts.
+// Returns (provider, model). If not set, defaults to ("openai", "gpt-4o-mini").
+func (c *LLMConfig) ParseDetectionModel() (provider, model string) {
+	return parseModelConfig(c.DetectionModel, "openai", "gpt-4o-mini")
 }
 
 // parseModelConfig parses a "provider/model" string into its parts.
@@ -216,6 +227,7 @@ func Load() (*Config, error) {
 			DocumentExtractionModel:  os.Getenv("DOCUMENT_EXTRACTION_MODEL"),
 			ResumeExtractionModel:    os.Getenv("RESUME_EXTRACTION_MODEL"),
 			ReferenceExtractionModel: os.Getenv("REFERENCE_EXTRACTION_MODEL"),
+			DetectionModel:           os.Getenv("DETECTION_MODEL"),
 		},
 		Anthropic: AnthropicConfig{
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),

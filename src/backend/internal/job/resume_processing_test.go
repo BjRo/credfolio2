@@ -877,6 +877,10 @@ func (e *resumeMockExtractor) ExtractLetterData(_ context.Context, _ string, _ [
 	return nil, nil
 }
 
+func (e *resumeMockExtractor) DetectDocumentContent(_ context.Context, _ string) (*domain.DocumentDetectionResult, error) {
+	return nil, nil
+}
+
 func setupTestTracingForJobs(t *testing.T) *tracetest.InMemoryExporter {
 	t.Helper()
 	exporter := tracetest.NewInMemoryExporter()

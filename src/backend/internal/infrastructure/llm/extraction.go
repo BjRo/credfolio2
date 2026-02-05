@@ -49,9 +49,18 @@ var letterExtractionSystemPrompt string
 //go:embed prompts/reference_letter_extraction_user.txt
 var letterExtractionUserTemplate string
 
+// Document detection prompts
+//
+//go:embed prompts/document_detection_system.txt
+var detectionSystemPrompt string
+
+//go:embed prompts/document_detection_user.txt
+var detectionUserTemplate string
+
 // Compiled templates for user prompts with placeholder substitution
 var resumeUserTemplate = template.Must(template.New("resume_user").Parse(resumeExtractionUserTemplate))
 var letterUserTemplate = template.Must(template.New("letter_user").Parse(letterExtractionUserTemplate))
+var detectionUserTmpl = template.Must(template.New("detection_user").Parse(detectionUserTemplate))
 
 // DocumentExtractorConfig holds configuration for the document extractor.
 type DocumentExtractorConfig struct { //nolint:govet // Field order prioritizes readability
@@ -78,6 +87,10 @@ type DocumentExtractorConfig struct { //nolint:govet // Field order prioritizes 
 	// ReferenceExtractionChain specifies the provider chain for reference letter data extraction.
 	// If nil or empty, falls back to ResumeExtractionChain, then the default provider.
 	ReferenceExtractionChain ProviderChain
+
+	// DetectionChain specifies the provider chain for lightweight document content detection.
+	// If nil or empty, falls back to ResumeExtractionChain, then the default provider.
+	DetectionChain ProviderChain
 
 	// Logger for logging chain fallback events. If nil, fallbacks are silent.
 	Logger logger.Logger
@@ -734,6 +747,119 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 	}
 
 	return data, nil
+}
+
+// detectionOutputSchema defines the JSON schema for structured document detection.
+var detectionOutputSchema = map[string]any{
+	"type":                 "object",
+	"additionalProperties": false,
+	"properties": map[string]any{
+		"hasCareerInfo": map[string]any{
+			"type":        "boolean",
+			"description": "Whether the document contains resume/CV career content (work experience, education, skills)",
+		},
+		"hasTestimonial": map[string]any{
+			"type":        "boolean",
+			"description": "Whether the document contains recommendation/reference letter content",
+		},
+		"testimonialAuthor": map[string]any{
+			"type":        "string",
+			"description": "Name of the person who wrote the recommendation, or empty string if none",
+		},
+		"confidence": map[string]any{
+			"type":        "number",
+			"description": "Confidence in the classification (0.0 to 1.0)",
+		},
+		"summary": map[string]any{
+			"type":        "string",
+			"description": "Brief one-sentence summary of the document content",
+		},
+		"documentTypeHint": map[string]any{
+			"type":        "string",
+			"description": "Document type: resume, reference_letter, hybrid, or unknown",
+			"enum":        []string{"resume", "reference_letter", "hybrid", "unknown"},
+		},
+	},
+	"required": []string{"hasCareerInfo", "hasTestimonial", "testimonialAuthor", "confidence", "summary", "documentTypeHint"},
+}
+
+// DetectionTemplateData holds the data for rendering the detection user prompt.
+type DetectionTemplateData struct {
+	Text string
+}
+
+// DetectDocumentContent performs lightweight classification of a document's content.
+// It quickly identifies whether the document contains career information, testimonials, or both,
+// without running full extraction. This is significantly faster and cheaper than full extraction.
+func (e *DocumentExtractor) DetectDocumentContent(ctx context.Context, text string) (*domain.DocumentDetectionResult, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "document_content_detection",
+		otelTrace.WithAttributes(
+			attribute.Int("text_length", len(text)),
+		),
+	)
+	defer span.End()
+
+	// Get the appropriate provider for detection
+	chain := e.config.DetectionChain
+	if len(chain) == 0 {
+		chain = e.config.ResumeExtractionChain // Fall back to resume chain
+	}
+	provider := e.getProviderForChain(chain)
+
+	// Render the user prompt template with the document text
+	var userPromptBuf bytes.Buffer
+	if err := detectionUserTmpl.Execute(&userPromptBuf, DetectionTemplateData{Text: text}); err != nil {
+		return nil, fmt.Errorf("failed to render detection user prompt template: %w", err)
+	}
+
+	llmReq := domain.LLMRequest{
+		SystemPrompt: detectionSystemPrompt,
+		Messages: []domain.Message{
+			domain.NewTextMessage(domain.RoleUser, userPromptBuf.String()),
+		},
+		MaxTokens:    1024, // Detection is lightweight, doesn't need many tokens
+		OutputSchema: detectionOutputSchema,
+	}
+
+	resp, err := provider.Complete(ctx, llmReq)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("LLM detection failed: %w", err)
+	}
+
+	// Clean up the JSON response
+	jsonContent := stripMarkdownCodeBlock(resp.Content)
+	jsonContent = fixTrailingCommas(jsonContent)
+
+	// Parse JSON response
+	var rawData struct { //nolint:govet // Field order matches JSON output for readability
+		HasCareerInfo     bool    `json:"hasCareerInfo"`
+		HasTestimonial    bool    `json:"hasTestimonial"`
+		TestimonialAuthor string  `json:"testimonialAuthor"`
+		Confidence        float64 `json:"confidence"`
+		Summary           string  `json:"summary"`
+		DocumentTypeHint  string  `json:"documentTypeHint"`
+	}
+
+	if err := json.Unmarshal([]byte(jsonContent), &rawData); err != nil {
+		return nil, fmt.Errorf("failed to parse detection response: %w", err)
+	}
+
+	result := &domain.DocumentDetectionResult{
+		HasCareerInfo:    rawData.HasCareerInfo,
+		HasTestimonial:   rawData.HasTestimonial,
+		Confidence:       rawData.Confidence,
+		Summary:          rawData.Summary,
+		DocumentTypeHint: domain.DocumentTypeHint(rawData.DocumentTypeHint),
+	}
+
+	// Handle optional testimonial author
+	if rawData.TestimonialAuthor != "" {
+		result.TestimonialAuthor = &rawData.TestimonialAuthor
+	}
+
+	return result, nil
 }
 
 // Verify DocumentExtractor implements domain.DocumentExtractor interface.

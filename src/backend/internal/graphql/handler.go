@@ -29,11 +29,12 @@ func NewHandler(
 	expValidationRepo domain.ExperienceValidationRepository,
 	storage domain.Storage,
 	jobEnqueuer domain.JobEnqueuer,
+	documentExtractor domain.DocumentExtractor,
 	log logger.Logger,
 ) http.Handler {
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(generated.Config{
-			Resolvers: resolver.NewResolver(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, storage, jobEnqueuer, log),
+			Resolvers: resolver.NewResolver(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, storage, jobEnqueuer, documentExtractor, log),
 		}),
 	)
 	return srv

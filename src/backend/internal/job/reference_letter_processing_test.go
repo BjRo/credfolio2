@@ -185,6 +185,10 @@ func (e *mockDocumentExtractor) ExtractLetterData(_ context.Context, _ string, p
 	return e.extractLetterData, e.extractLetterError
 }
 
+func (e *mockDocumentExtractor) DetectDocumentContent(_ context.Context, _ string) (*domain.DocumentDetectionResult, error) {
+	return nil, nil
+}
+
 // mockAuthorRepository implements domain.AuthorRepository for testing.
 // Note: mockProfileRepository and mockProfileSkillRepository are defined in resume_processing_test.go
 type mockAuthorRepository struct {

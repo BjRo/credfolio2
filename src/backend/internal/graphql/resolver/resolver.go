@@ -28,6 +28,7 @@ type Resolver struct {
 	expValidationRepo     domain.ExperienceValidationRepository
 	storage               domain.Storage
 	jobEnqueuer           domain.JobEnqueuer
+	documentExtractor     domain.DocumentExtractor
 	log                   logger.Logger
 }
 
@@ -47,6 +48,7 @@ func NewResolver(
 	expValidationRepo domain.ExperienceValidationRepository,
 	storage domain.Storage,
 	jobEnqueuer domain.JobEnqueuer,
+	documentExtractor domain.DocumentExtractor,
 	log logger.Logger,
 ) *Resolver {
 	return &Resolver{
@@ -64,6 +66,7 @@ func NewResolver(
 		expValidationRepo:     expValidationRepo,
 		storage:               storage,
 		jobEnqueuer:           jobEnqueuer,
+		documentExtractor:     documentExtractor,
 		log:                   log,
 	}
 }
