@@ -1,11 +1,11 @@
 ---
 # credfolio2-ntq2
 title: Auto-trust mise.toml in devcontainer setup
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-05T13:42:37Z
-updated_at: 2026-02-05T14:42:23Z
+updated_at: 2026-02-05T14:48:36Z
 parent: credfolio2-2ex3
 ---
 
