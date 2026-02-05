@@ -1,11 +1,11 @@
 ---
 # credfolio2-u1eh
 title: Unified document processing orchestrator
-status: draft
+status: in-progress
 type: task
 priority: high
 created_at: 2026-02-05T18:02:02Z
-updated_at: 2026-02-05T18:03:08Z
+updated_at: 2026-02-05T20:20:03Z
 parent: credfolio2-3ram
 blocking:
     - credfolio2-sxcf
