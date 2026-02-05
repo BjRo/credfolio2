@@ -3,9 +3,9 @@
 title: Configure database connection pooling
 status: todo
 type: task
-priority: high
+priority: normal
 created_at: 2026-02-02T08:32:29Z
-updated_at: 2026-02-02T08:39:40Z
+updated_at: 2026-02-05T17:48:38Z
 parent: credfolio2-abtx
 ---
 

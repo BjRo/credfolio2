@@ -3,8 +3,9 @@
 title: Unified document upload with smart detection
 status: draft
 type: feature
+priority: high
 created_at: 2026-02-03T12:34:56Z
-updated_at: 2026-02-03T12:34:56Z
+updated_at: 2026-02-05T17:48:50Z
 ---
 
 ## Summary

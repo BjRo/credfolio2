@@ -1,11 +1,11 @@
 ---
 # credfolio2-hyzh
 title: Remove global LLM_PROVIDER in favor of use-case-specific model config
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-05T13:42:40Z
-updated_at: 2026-02-05T15:53:47Z
+updated_at: 2026-02-05T15:59:50Z
 parent: credfolio2-2ex3
 ---
 
@@ -29,4 +29,4 @@ Rework the configuration so that `LLM_PROVIDER` is no longer needed. Each use ca
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review

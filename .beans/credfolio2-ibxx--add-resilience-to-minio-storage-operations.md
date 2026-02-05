@@ -3,9 +3,9 @@
 title: Add resilience to MinIO storage operations
 status: todo
 type: task
-priority: high
+priority: normal
 created_at: 2026-02-02T08:35:46Z
-updated_at: 2026-02-02T08:39:28Z
+updated_at: 2026-02-05T17:48:30Z
 parent: credfolio2-abtx
 ---
 

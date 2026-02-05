@@ -3,8 +3,9 @@
 title: Explore splitting resume extraction into focused LLM steps
 status: draft
 type: feature
+priority: high
 created_at: 2026-02-05T17:40:18Z
-updated_at: 2026-02-05T17:40:18Z
+updated_at: 2026-02-05T17:49:04Z
 ---
 
 ## Context
