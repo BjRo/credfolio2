@@ -222,6 +222,12 @@ func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.Provide
 		log.Info("Braintrust tracing enabled", logger.Feature("llm"), logger.String("project", btTracing.Project()))
 	}
 
+	// Resilience config applied to all registered providers.
+	// Extraction can be slow for large documents, so allow a generous timeout.
+	resilientCfg := llm.ResilientConfig{
+		RequestTimeout: 120 * time.Second,
+	}
+
 	// Register Anthropic if API key is available
 	if cfg.Anthropic.APIKey != "" {
 		providerConfig := llm.AnthropicConfig{
@@ -231,7 +237,7 @@ func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.Provide
 		if btTracing != nil {
 			providerConfig.Middleware = btTracing.AnthropicMiddleware() //nolint:bodyclose // middleware, not response
 		}
-		provider := llm.NewAnthropicProvider(providerConfig)
+		provider := llm.NewResilientProvider(llm.NewAnthropicProvider(providerConfig), resilientCfg)
 		registry.Register("anthropic", provider)
 		providerNames = append(providerNames, "anthropic")
 		log.Debug("Registered Anthropic provider", logger.Feature("llm"))
@@ -246,7 +252,7 @@ func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.Provide
 		if btTracing != nil {
 			providerConfig.Middleware = btTracing.OpenAIMiddleware() //nolint:bodyclose // middleware, not response
 		}
-		provider := llm.NewOpenAIProvider(providerConfig)
+		provider := llm.NewResilientProvider(llm.NewOpenAIProvider(providerConfig), resilientCfg)
 		registry.Register("openai", provider)
 		providerNames = append(providerNames, "openai")
 		log.Debug("Registered OpenAI provider", logger.Feature("llm"))
@@ -283,11 +289,6 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 		return nil, handler.NewExtractUnavailableHandler(), btTracing
 	}
 
-	// Wrap default provider with resilience
-	resilientProvider := llm.NewResilientProvider(defaultProvider, llm.ResilientConfig{
-		RequestTimeout: 120 * time.Second, // Extraction can be slow for large docs
-	})
-
 	// Configure provider chains for each operation
 	docChain := llm.ProviderChain{{Provider: docProvider, Model: docModel}}
 	resumeChain := llm.ProviderChain{{Provider: resumeProvider, Model: resumeModel}}
@@ -319,7 +320,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 		logger.String("reference_extraction", fmt.Sprintf("%s/%s", refProvider, refModel)),
 	)
 
-	extractor := llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{
+	extractor := llm.NewDocumentExtractor(defaultProvider, llm.DocumentExtractorConfig{
 		ProviderRegistry:         registry,
 		DocumentExtractionChain:  docChain,
 		ResumeExtractionChain:    resumeChain,
