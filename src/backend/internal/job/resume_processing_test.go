@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -928,11 +929,11 @@ func TestExtractResumeData_CreatesParentSpan(t *testing.T) {
 	}
 }
 
-func TestResumeProcessingWorker_Timeout_Disabled(t *testing.T) {
+func TestResumeProcessingWorker_Timeout_TenMinutes(t *testing.T) {
 	worker := &ResumeProcessingWorker{}
 	timeout := worker.Timeout(nil)
-	if timeout != -1 {
-		t.Errorf("Timeout = %v, want -1 (disabled)", timeout)
+	if timeout != 10*time.Minute {
+		t.Errorf("Timeout = %v, want 10m (safety net)", timeout)
 	}
 }
 

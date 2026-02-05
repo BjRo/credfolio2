@@ -78,11 +78,12 @@ func NewReferenceLetterProcessingWorker(
 	}
 }
 
-// Timeout disables River's default 60s job timeout. LLM extraction can take
-// several minutes for structured output; timeout is handled by the resilient
-// provider layer instead (300s).
+// Timeout overrides River's default 60s job timeout with a 10-minute safety net.
+// LLM extraction can take several minutes for structured output; the primary
+// timeout is handled by the resilient provider layer (300s). This River timeout
+// serves as an outer safety net to prevent worker pool exhaustion.
 func (w *ReferenceLetterProcessingWorker) Timeout(*river.Job[ReferenceLetterProcessingArgs]) time.Duration {
-	return -1 // no River-level timeout
+	return 10 * time.Minute
 }
 
 // Work processes a reference letter and extracts credibility data using LLM.
