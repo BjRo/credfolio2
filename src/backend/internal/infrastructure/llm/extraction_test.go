@@ -531,7 +531,7 @@ func TestDocumentExtractor_ExtractTextWithRequest_CreatesSpan(t *testing.T) {
 	// Find the span by name
 	var found bool
 	for _, s := range spans {
-		if s.Name == "resume_pdf_extraction" {
+		if s.Name == "pdf_text_extraction" {
 			found = true
 			// Check for content_type attribute
 			attrFound := false
@@ -588,7 +588,7 @@ func TestDocumentExtractor_ExtractResumeData_CreatesSpan(t *testing.T) {
 
 	var found bool
 	for _, s := range spans {
-		if s.Name == "resume_structured_data_extraction" {
+		if s.Name == "resume_data_extraction" {
 			found = true
 			// Check for text_length attribute
 			attrFound := false
@@ -668,7 +668,7 @@ func TestDocumentExtractor_ExtractTextWithRequest_SpanRecordsErrorOnFailure(t *t
 	spans := exporter.GetSpans()
 	var found bool
 	for _, s := range spans {
-		if s.Name == "resume_pdf_extraction" {
+		if s.Name == "pdf_text_extraction" {
 			found = true
 			if s.Status.Code != codes.Error {
 				t.Errorf("expected span status Error, got %v", s.Status.Code)

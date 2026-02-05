@@ -135,7 +135,7 @@ func (e *DocumentExtractor) getProviderForChain(chain ProviderChain) domain.LLMP
 
 // ExtractTextWithRequest extracts text from a document image or PDF using a detailed request.
 func (e *DocumentExtractor) ExtractTextWithRequest(ctx context.Context, req ExtractionRequest) (*ExtractionResult, error) {
-	ctx, span := otel.Tracer(tracerName).Start(ctx, "resume_pdf_extraction",
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "pdf_text_extraction",
 		otelTrace.WithAttributes(
 			attribute.String("content_type", string(req.MediaType)),
 		),
@@ -375,7 +375,7 @@ type ResumeTemplateData struct {
 // ExtractResumeData implements domain.DocumentExtractor interface.
 // It extracts structured resume data from text using LLM with structured output.
 func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) (*domain.ResumeExtractedData, error) {
-	ctx, span := otel.Tracer(tracerName).Start(ctx, "resume_structured_data_extraction",
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "resume_data_extraction",
 		otelTrace.WithAttributes(
 			attribute.Int("text_length", len(text)),
 		),
