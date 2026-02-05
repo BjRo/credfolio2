@@ -326,3 +326,25 @@ mutation UploadAuthorImage($authorId: ID!, $file: Upload!) {
     }
   }
 }
+
+mutation DetectDocumentContent($userId: ID!, $file: Upload!) {
+  detectDocumentContent(userId: $userId, file: $file) {
+    ... on DetectDocumentContentResult {
+      __typename
+      detection {
+        hasCareerInfo
+        hasTestimonial
+        testimonialAuthor
+        confidence
+        summary
+        documentTypeHint
+        fileId
+      }
+    }
+    ... on FileValidationError {
+      __typename
+      message
+      field
+    }
+  }
+}

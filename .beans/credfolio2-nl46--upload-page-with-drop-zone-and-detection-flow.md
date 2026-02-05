@@ -27,44 +27,44 @@ The existing `ResumeUpload` component provides a solid pattern: drag-and-drop, f
 ## Checklist
 
 ### Page & Routing
-- [ ] Create `/upload` route at `src/frontend/src/app/upload/page.tsx`
-- [ ] Add navigation link to `/upload` in site header (or appropriate location)
+- [x] Create `/upload` route at `src/frontend/src/app/upload/page.tsx`
+- [x] Add navigation link to `/upload` in site header (or appropriate location)
 
 ### Document Drop Zone Component
-- [ ] Create `DocumentUpload` component (can adapt patterns from existing `ResumeUpload`)
+- [x] Create `DocumentUpload` component (can adapt patterns from existing `ResumeUpload`)
   - Drag-and-drop zone with visual feedback
   - File validation: PDF, DOCX, TXT (max 10MB) — same as existing
   - Upload progress indicator
   - Accept single file at a time
-- [ ] Wire up to `detectDocumentContent` GraphQL mutation
+- [x] Wire up to `detectDocumentContent` GraphQL mutation
   - Upload file
   - Show "Analyzing document..." loading state during detection
   - Display detection results when ready
 
 ### Multi-Step Flow Container
-- [ ] Create step indicator/progress component for the multi-step flow
+- [x] Create step indicator/progress component for the multi-step flow
   - Steps: Upload → Review Detection → Extract → Review Results → Import
   - Visual indicator of current step
   - Keep it simple — no need for complex wizard framework
-- [ ] Manage flow state with React useState (current step, detection results, etc.)
+- [x] Manage flow state with React useState (current step, detection results, etc.)
 
 ### Loading States
-- [ ] Upload progress bar (reuse existing pattern)
-- [ ] Detection analysis spinner/skeleton
-- [ ] Clear messaging at each stage ("Uploading...", "Analyzing document content...")
+- [x] Upload progress bar (reuse existing pattern)
+- [x] Detection analysis spinner/skeleton
+- [x] Clear messaging at each stage ("Uploading...", "Analyzing document content...")
 
 ### Error Handling
-- [ ] File validation errors (wrong type, too large)
-- [ ] Upload failure
-- [ ] Detection failure / unreadable document
+- [x] File validation errors (wrong type, too large)
+- [x] Upload failure
+- [x] Detection failure / unreadable document
   - Show message: "We couldn't read this document. Please try uploading a clearer version."
-- [ ] Duplicate file detection (reuse existing pattern)
+- [x] Duplicate file detection (reuse existing pattern)
 
 ### Testing
-- [ ] Unit tests for DocumentUpload component
-- [ ] Test file validation
-- [ ] Test loading states and error states
-- [ ] Test flow navigation
+- [x] Unit tests for DocumentUpload component
+- [x] Test file validation
+- [x] Test loading states and error states
+- [x] Test flow navigation
 
 ## Design Notes
 
@@ -74,9 +74,9 @@ The existing `ResumeUpload` component provides a solid pattern: drag-and-drop, f
 - Mobile-friendly: the drop zone should work well on small screens
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (for UI changes)
+- [x] All checklist items above are completed
 - [ ] Branch pushed and PR created for human review
