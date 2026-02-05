@@ -72,6 +72,8 @@ COPY --chown=node:node mise.toml /home/node/mise.toml
 RUN cd /home/node && mise trust ~/mise.toml && mise install
 # Tell mise where to find the config file regardless of working directory
 ENV MISE_GLOBAL_CONFIG_FILE=/home/node/mise.toml
+# Auto-trust mise.toml in the workspace so devs don't need to run `mise trust` manually
+ENV MISE_TRUSTED_CONFIG_PATHS=/workspace
 # Add mise shims to PATH (mise installed system-wide via apt)
 ENV PATH="/home/node/.local/share/mise/shims:${PATH}"
 
