@@ -1,11 +1,11 @@
 ---
 # credfolio2-4h8a
 title: Document content detection service
-status: draft
+status: in-progress
 type: task
 priority: high
 created_at: 2026-02-05T18:01:39Z
-updated_at: 2026-02-05T18:03:03Z
+updated_at: 2026-02-05T19:58:19Z
 parent: credfolio2-3ram
 blocking:
     - credfolio2-u1eh
