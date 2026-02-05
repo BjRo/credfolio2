@@ -37,6 +37,11 @@ type LLMConfig struct {
 	// Format: "provider/model" (e.g., "openai/gpt-4o").
 	// Defaults to "openai/gpt-4o" for best structured output support.
 	ResumeExtractionModel string
+
+	// ReferenceExtractionModel specifies the provider and model for reference letter data extraction.
+	// Format: "provider/model" (e.g., "openai/gpt-4o").
+	// Defaults to "openai/gpt-4o" for best structured output support.
+	ReferenceExtractionModel string
 }
 
 // ParseDocumentExtractionModel parses the DocumentExtractionModel into provider and model parts.
@@ -49,6 +54,12 @@ func (c *LLMConfig) ParseDocumentExtractionModel() (provider, model string) {
 // Returns (provider, model). If not set, defaults to ("openai", "gpt-4o").
 func (c *LLMConfig) ParseResumeExtractionModel() (provider, model string) {
 	return parseModelConfig(c.ResumeExtractionModel, "openai", "gpt-4o")
+}
+
+// ParseReferenceExtractionModel parses the ReferenceExtractionModel into provider and model parts.
+// Returns (provider, model). If not set, defaults to ("openai", "gpt-4o").
+func (c *LLMConfig) ParseReferenceExtractionModel() (provider, model string) {
+	return parseModelConfig(c.ReferenceExtractionModel, "openai", "gpt-4o")
 }
 
 // parseModelConfig parses a "provider/model" string into its parts.
@@ -202,8 +213,9 @@ func Load() (*Config, error) {
 			MaxWorkers: queueMaxWorkers,
 		},
 		LLM: LLMConfig{
-			DocumentExtractionModel: os.Getenv("DOCUMENT_EXTRACTION_MODEL"),
-			ResumeExtractionModel:   os.Getenv("RESUME_EXTRACTION_MODEL"),
+			DocumentExtractionModel:  os.Getenv("DOCUMENT_EXTRACTION_MODEL"),
+			ResumeExtractionModel:    os.Getenv("RESUME_EXTRACTION_MODEL"),
+			ReferenceExtractionModel: os.Getenv("REFERENCE_EXTRACTION_MODEL"),
 		},
 		Anthropic: AnthropicConfig{
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),

@@ -385,6 +385,32 @@ func TestParseResumeExtractionModel(t *testing.T) {
 	}
 }
 
+func TestParseReferenceExtractionModel(t *testing.T) {
+	tests := []struct {
+		name         string
+		value        string
+		wantProvider string
+		wantModel    string
+	}{
+		{"empty defaults to openai/gpt-4o", "", "openai", "gpt-4o"},
+		{"provider/model", "anthropic/claude-sonnet-4-5-20250929", "anthropic", "claude-sonnet-4-5-20250929"},
+		{"provider only", "anthropic", "anthropic", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := LLMConfig{ReferenceExtractionModel: tt.value}
+			provider, model := cfg.ParseReferenceExtractionModel()
+			if provider != tt.wantProvider {
+				t.Errorf("provider = %q, want %q", provider, tt.wantProvider)
+			}
+			if model != tt.wantModel {
+				t.Errorf("model = %q, want %q", model, tt.wantModel)
+			}
+		})
+	}
+}
+
 func TestLoad_LLMDefaults(t *testing.T) {
 	clearEnv(t)
 
@@ -399,6 +425,9 @@ func TestLoad_LLMDefaults(t *testing.T) {
 	if cfg.LLM.ResumeExtractionModel != "" {
 		t.Errorf("LLM.ResumeExtractionModel = %q, want %q", cfg.LLM.ResumeExtractionModel, "")
 	}
+	if cfg.LLM.ReferenceExtractionModel != "" {
+		t.Errorf("LLM.ReferenceExtractionModel = %q, want %q", cfg.LLM.ReferenceExtractionModel, "")
+	}
 }
 
 func TestLoad_LLMOverrides(t *testing.T) {
@@ -406,6 +435,7 @@ func TestLoad_LLMOverrides(t *testing.T) {
 
 	t.Setenv("DOCUMENT_EXTRACTION_MODEL", "openai/gpt-4o")
 	t.Setenv("RESUME_EXTRACTION_MODEL", "anthropic/claude-sonnet-4-5-20250929")
+	t.Setenv("REFERENCE_EXTRACTION_MODEL", "openai/gpt-4o-mini")
 
 	cfg, err := Load()
 	if err != nil {
@@ -417,6 +447,9 @@ func TestLoad_LLMOverrides(t *testing.T) {
 	}
 	if cfg.LLM.ResumeExtractionModel != "anthropic/claude-sonnet-4-5-20250929" {
 		t.Errorf("LLM.ResumeExtractionModel = %q, want %q", cfg.LLM.ResumeExtractionModel, "anthropic/claude-sonnet-4-5-20250929")
+	}
+	if cfg.LLM.ReferenceExtractionModel != "openai/gpt-4o-mini" {
+		t.Errorf("LLM.ReferenceExtractionModel = %q, want %q", cfg.LLM.ReferenceExtractionModel, "openai/gpt-4o-mini")
 	}
 }
 
@@ -440,6 +473,7 @@ func clearEnv(t *testing.T) {
 		"SERVER_PORT",
 		"DOCUMENT_EXTRACTION_MODEL",
 		"RESUME_EXTRACTION_MODEL",
+		"REFERENCE_EXTRACTION_MODEL",
 		"LLM_PROVIDER",
 	}
 

@@ -263,6 +263,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 	// Parse per-use-case model configuration
 	docProvider, docModel := cfg.LLM.ParseDocumentExtractionModel()
 	resumeProvider, resumeModel := cfg.LLM.ParseResumeExtractionModel()
+	refProvider, refModel := cfg.LLM.ParseReferenceExtractionModel()
 
 	// Determine a default provider from the document extraction chain config.
 	// This serves as the fallback when a chain references an unregistered provider.
@@ -290,21 +291,24 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 	// Configure provider chains for each operation
 	docChain := llm.ProviderChain{{Provider: docProvider, Model: docModel}}
 	resumeChain := llm.ProviderChain{{Provider: resumeProvider, Model: resumeModel}}
+	refChain := llm.ProviderChain{{Provider: refProvider, Model: refModel}}
 
 	// Validate that configured chains reference registered providers
-	if _, ok := registry.Get(docProvider); !ok {
-		log.Warning("Document extraction chain references unregistered provider — will fall back to default",
-			logger.Feature("llm"),
-			logger.String("provider", docProvider),
-			logger.String("registered", fmt.Sprintf("%v", providerNames)),
-		)
-	}
-	if _, ok := registry.Get(resumeProvider); !ok {
-		log.Warning("Resume extraction chain references unregistered provider — will fall back to default",
-			logger.Feature("llm"),
-			logger.String("provider", resumeProvider),
-			logger.String("registered", fmt.Sprintf("%v", providerNames)),
-		)
+	for _, check := range []struct {
+		name     string
+		provider string
+	}{
+		{"Document extraction", docProvider},
+		{"Resume extraction", resumeProvider},
+		{"Reference extraction", refProvider},
+	} {
+		if _, ok := registry.Get(check.provider); !ok {
+			log.Warning(check.name+" chain references unregistered provider — will fall back to default",
+				logger.Feature("llm"),
+				logger.String("provider", check.provider),
+				logger.String("registered", fmt.Sprintf("%v", providerNames)),
+			)
+		}
 	}
 
 	// Log which providers are being used for each operation
@@ -312,13 +316,15 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 		logger.Feature("llm"),
 		logger.String("document_extraction", fmt.Sprintf("%s/%s", docProvider, docModel)),
 		logger.String("resume_extraction", fmt.Sprintf("%s/%s", resumeProvider, resumeModel)),
+		logger.String("reference_extraction", fmt.Sprintf("%s/%s", refProvider, refModel)),
 	)
 
 	extractor := llm.NewDocumentExtractor(resilientProvider, llm.DocumentExtractorConfig{
-		ProviderRegistry:        registry,
-		DocumentExtractionChain: docChain,
-		ResumeExtractionChain:   resumeChain,
-		Logger:                  log,
+		ProviderRegistry:         registry,
+		DocumentExtractionChain:  docChain,
+		ResumeExtractionChain:    resumeChain,
+		ReferenceExtractionChain: refChain,
+		Logger:                   log,
 	})
 	extractHandler := handler.NewExtractHandler(extractor, log)
 	log.Info("LLM extraction enabled", logger.Feature("llm"), logger.String("providers", fmt.Sprintf("%v", providerNames)))
