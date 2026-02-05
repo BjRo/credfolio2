@@ -1,4 +1,4 @@
-FROM node:20
+FROM debian:bookworm-slim
 
 ARG TZ
 ENV TZ="$TZ"
@@ -7,6 +7,8 @@ ARG CLAUDE_CODE_VERSION=latest
 
 # Install basic development tools and iptables/ipset
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
   less \
   git \
   procps \
@@ -49,18 +51,36 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libcairo2 \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Go
-ARG GO_VERSION=1.24.1
-RUN ARCH=$(dpkg --print-architecture) && \
-  if [ "$ARCH" = "amd64" ]; then GO_ARCH="amd64"; \
-  elif [ "$ARCH" = "arm64" ]; then GO_ARCH="arm64"; \
-  else GO_ARCH="$ARCH"; fi && \
-  wget "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
-  tar -C /usr/local -xzf "go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
-  rm "go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"
+# Install mise from official apt repository
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends gpg wget ca-certificates && \
+  wget -qO - https://mise.jdx.dev/gpg-key.pub | gpg --dearmor | tee /etc/apt/trusted.gpg.d/mise-archive-keyring.gpg 1> /dev/null && \
+  echo "deb [signed-by=/etc/apt/trusted.gpg.d/mise-archive-keyring.gpg arch=amd64,arm64] https://mise.jdx.dev/deb stable main" | tee /etc/apt/sources.list.d/mise.list && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends mise && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
 
-ENV PATH=$PATH:/usr/local/go/bin:/home/node/go/bin
+# Create node user (for consistency with previous node:20 base)
+RUN useradd -m -s /bin/bash -u 1000 node && \
+  usermod -aG sudo node && \
+  echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node && \
+  chmod 0440 /etc/sudoers.d/node
+
+# Copy mise.toml and install Go and Node via mise
+USER node
+COPY --chown=node:node mise.toml /home/node/mise.toml
+RUN cd /home/node && mise trust ~/mise.toml && mise install
+# Tell mise where to find the config file regardless of working directory
+ENV MISE_GLOBAL_CONFIG_FILE=/home/node/mise.toml
+# Add mise shims to PATH (mise installed system-wide via apt)
+ENV PATH="/home/node/.local/share/mise/shims:${PATH}"
+
+# Set up Go environment (mise installs to ~/.local/share/mise/installs/)
 ENV GOPATH=/home/node/go
+ENV PATH="${PATH}:/home/node/go/bin"
+
+# Switch back to root for remaining installations
+USER root
 
 # Install golangci-lint
 ARG GOLANGCI_LINT_VERSION=1.64.5
@@ -116,11 +136,13 @@ RUN ARCH=$(dpkg --print-architecture) && \
   mv beans /usr/local/bin/ && \
   rm "beans_Linux_${BEANS_ARCH}.tar.gz"
 
-# Enable Corepack for pnpm support (uses packageManager field in package.json)
-RUN corepack enable
-
 # Set up non-root user
 USER node
+
+# Enable Corepack for pnpm support (uses packageManager field in package.json)
+# Must run as node user since Node is installed via mise in node's home directory
+# Use mise exec to run corepack within mise's environment where Node is available
+RUN mise exec -- corepack enable
 
 # Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
@@ -144,17 +166,17 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -x
 
 # Install Claude
-RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+RUN mise exec -- npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # Install agent-browser for browser automation
-RUN npm install -g agent-browser && \
-  npx playwright install chromium
+RUN mise exec -- npm install -g agent-browser && \
+  mise exec -- npx playwright install chromium
 
 
 # Copy and set up firewall scripts
-COPY init-firewall.sh /usr/local/bin/
-COPY dynamic-domains.conf /usr/local/bin/
-COPY warmup-dns.sh /usr/local/bin/
+COPY .devcontainer/init-firewall.sh /usr/local/bin/
+COPY .devcontainer/dynamic-domains.conf /usr/local/bin/
+COPY .devcontainer/warmup-dns.sh /usr/local/bin/
 USER root
 RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/warmup-dns.sh && \
   echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \

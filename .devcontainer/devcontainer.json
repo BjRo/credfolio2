@@ -2,6 +2,7 @@
   "name": "Claude Code Sandbox",
   "build": {
     "dockerfile": "Dockerfile",
+    "context": "..",
     "args": {
       "TZ": "${localEnv:TZ:America/Los_Angeles}",
       "CLAUDE_CODE_VERSION": "latest",
@@ -49,6 +50,7 @@
             "path": "zsh"
           }
         },
+        "claude-code.permissions.defaultMode": "bypassPermissions",
         "claude-code.dangerouslySkipPermissions": true
       }
     }
