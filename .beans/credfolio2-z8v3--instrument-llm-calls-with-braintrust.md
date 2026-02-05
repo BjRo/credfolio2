@@ -1,11 +1,11 @@
 ---
 # credfolio2-z8v3
 title: Instrument LLM calls with Braintrust
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-03T10:33:23Z
-updated_at: 2026-02-03T17:16:14Z
+updated_at: 2026-02-05T14:41:12Z
 parent: credfolio2-2ex3
 ---
 
