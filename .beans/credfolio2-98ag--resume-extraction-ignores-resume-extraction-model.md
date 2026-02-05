@@ -56,13 +56,13 @@ If `NewChainedProvider` fails (e.g., provider "openai" not registered because `O
 - [x] Verify the OpenAI provider is actually being registered (check OPENAI_API_KEY is set in the environment)
 - [x] Remove usage of deprecated `DefaultModel` in `ExtractResumeData` — let the chain handle model selection exclusively
 - [x] Add an integration/unit test that verifies provider chain routing works correctly
-- [ ] Verify the fix in Braintrust — confirm OpenAI calls appear for resume extraction
+- [x] Verify the fix in Braintrust — confirm OpenAI calls appear for resume extraction
 
 ## Definition of Done
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
+- [x] All other checklist items above are completed
 - [x] Branch pushed and PR created for human review
 
 ## Key Files
