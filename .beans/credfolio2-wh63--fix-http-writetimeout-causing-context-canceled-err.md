@@ -1,11 +1,11 @@
 ---
 # credfolio2-wh63
 title: Fix HTTP WriteTimeout causing context canceled errors during LLM detection
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-02-05T21:59:46Z
-updated_at: 2026-02-05T22:26:05Z
+updated_at: 2026-02-05T22:54:19Z
 ---
 
 ## Summary
@@ -43,4 +43,4 @@ Split into async pattern matching existing `processDocument` flow:
 - [x] \`pnpm test\` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
