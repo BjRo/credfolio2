@@ -79,4 +79,4 @@ The existing `ResumeUpload` component provides a solid pattern: drag-and-drop, f
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
