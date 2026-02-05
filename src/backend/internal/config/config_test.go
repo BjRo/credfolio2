@@ -165,7 +165,7 @@ func TestLoad_ServerDefaults(t *testing.T) {
 	}{
 		{"Port", cfg.Server.Port, defaultServerPort},
 		{"ReadTimeout", cfg.Server.ReadTimeout, 30 * time.Second},
-		{"WriteTimeout", cfg.Server.WriteTimeout, 120 * time.Second},
+		{"WriteTimeout", cfg.Server.WriteTimeout, 360 * time.Second},
 		{"IdleTimeout", cfg.Server.IdleTimeout, 120 * time.Second},
 	}
 

@@ -217,7 +217,7 @@ func Load() (*Config, error) {
 		Server: ServerConfig{
 			Port:         serverPort,
 			ReadTimeout:  30 * time.Second,
-			WriteTimeout: 120 * time.Second, // Long timeout for LLM extraction requests
+			WriteTimeout: 360 * time.Second, // Must exceed LLM provider timeout (300s) to avoid premature context cancellation
 			IdleTimeout:  120 * time.Second,
 		},
 		Queue: QueueConfig{
