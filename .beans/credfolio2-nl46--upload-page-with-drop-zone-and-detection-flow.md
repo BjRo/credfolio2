@@ -1,11 +1,11 @@
 ---
 # credfolio2-nl46
 title: Upload page with drop zone and detection flow
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-02-05T18:02:20Z
-updated_at: 2026-02-05T21:00:27Z
+updated_at: 2026-02-05T21:17:09Z
 parent: credfolio2-3ram
 blocking:
     - credfolio2-d5jd
