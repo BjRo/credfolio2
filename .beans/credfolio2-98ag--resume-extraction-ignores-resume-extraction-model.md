@@ -1,11 +1,11 @@
 ---
 # credfolio2-98ag
 title: Resume extraction ignores RESUME_EXTRACTION_MODEL — all calls route to Anthropic
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-02-05T14:35:04Z
-updated_at: 2026-02-05T14:37:15Z
+updated_at: 2026-02-05T15:32:05Z
 parent: credfolio2-2ex3
 ---
 
@@ -51,17 +51,17 @@ If `NewChainedProvider` fails (e.g., provider "openai" not registered because `O
 
 ## Checklist
 
-- [ ] Add error logging in `getProviderForChain` when chain creation fails (log the error + chain config)
-- [ ] Add startup validation in `createLLMExtractor` (main.go) that warns if a configured chain references an unregistered provider
-- [ ] Verify the OpenAI provider is actually being registered (check OPENAI_API_KEY is set in the environment)
-- [ ] Remove usage of deprecated `DefaultModel` in `ExtractResumeData` — let the chain handle model selection exclusively
-- [ ] Add an integration/unit test that verifies provider chain routing works correctly
+- [x] Add error logging in `getProviderForChain` when chain creation fails (log the error + chain config)
+- [x] Add startup validation in `createLLMExtractor` (main.go) that warns if a configured chain references an unregistered provider
+- [x] Verify the OpenAI provider is actually being registered (check OPENAI_API_KEY is set in the environment)
+- [x] Remove usage of deprecated `DefaultModel` in `ExtractResumeData` — let the chain handle model selection exclusively
+- [x] Add an integration/unit test that verifies provider chain routing works correctly
 - [ ] Verify the fix in Braintrust — confirm OpenAI calls appear for resume extraction
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 

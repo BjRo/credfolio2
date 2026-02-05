@@ -16,6 +16,7 @@ import (
 	otelTrace "go.opentelemetry.io/otel/trace"
 
 	"backend/internal/domain"
+	"backend/internal/logger"
 )
 
 const tracerName = "credfolio"
@@ -73,6 +74,9 @@ type DocumentExtractorConfig struct { //nolint:govet // Field order prioritizes 
 	// ResumeExtractionChain specifies the provider chain for resume data extraction.
 	// If nil or empty, uses the default provider.
 	ResumeExtractionChain ProviderChain
+
+	// Logger for logging chain fallback events. If nil, fallbacks are silent.
+	Logger logger.Logger
 }
 
 // ExtractionRequest represents a request to extract text from a document.
@@ -128,7 +132,14 @@ func (e *DocumentExtractor) getProviderForChain(chain ProviderChain) domain.LLMP
 		if err == nil {
 			return chained
 		}
-		// Fall back to default on error
+		if e.config.Logger != nil {
+			e.config.Logger.Warning("Provider chain creation failed, falling back to default provider",
+				logger.Feature("llm"),
+				logger.String("chain_provider", chain.Primary().Provider),
+				logger.String("chain_model", chain.Primary().Model),
+				logger.Err(err),
+			)
+		}
 	}
 	return e.defaultProvider
 }
@@ -396,7 +407,6 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 		Messages: []domain.Message{
 			domain.NewTextMessage(domain.RoleUser, userPromptBuf.String()),
 		},
-		Model:        e.config.DefaultModel,
 		MaxTokens:    e.config.MaxTokens,
 		OutputSchema: resumeOutputSchema,
 	}
@@ -592,7 +602,6 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 		Messages: []domain.Message{
 			domain.NewTextMessage(domain.RoleUser, userPromptBuf.String()),
 		},
-		Model:        e.config.DefaultModel,
 		MaxTokens:    e.config.MaxTokens,
 		OutputSchema: letterOutputSchema,
 	}
