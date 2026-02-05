@@ -30,6 +30,12 @@ func (ReferenceLetterProcessingArgs) Kind() string {
 	return "reference_letter_processing"
 }
 
+// InsertOpts returns default insert options — limits retries to avoid
+// repeatedly hammering LLM providers on persistent failures.
+func (ReferenceLetterProcessingArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{MaxAttempts: 2}
+}
+
 // ReferenceLetterProcessingWorker processes uploaded reference letters to extract credibility data.
 type ReferenceLetterProcessingWorker struct {
 	river.WorkerDefaults[ReferenceLetterProcessingArgs]

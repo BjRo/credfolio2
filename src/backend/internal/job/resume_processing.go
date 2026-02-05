@@ -30,6 +30,12 @@ func (ResumeProcessingArgs) Kind() string {
 	return "resume_processing"
 }
 
+// InsertOpts returns default insert options — limits retries to avoid
+// repeatedly hammering LLM providers on persistent failures.
+func (ResumeProcessingArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{MaxAttempts: 2}
+}
+
 // ResumeProcessingWorker processes uploaded resumes to extract profile data.
 type ResumeProcessingWorker struct {
 	river.WorkerDefaults[ResumeProcessingArgs]

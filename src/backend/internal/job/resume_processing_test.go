@@ -927,3 +927,11 @@ func TestExtractResumeData_CreatesParentSpan(t *testing.T) {
 		t.Errorf("expected span named 'resume_extraction', got spans: %v", names)
 	}
 }
+
+func TestResumeProcessingArgs_InsertOpts_MaxAttempts(t *testing.T) {
+	args := ResumeProcessingArgs{}
+	opts := args.InsertOpts()
+	if opts.MaxAttempts != 2 {
+		t.Errorf("MaxAttempts = %d, want 2", opts.MaxAttempts)
+	}
+}

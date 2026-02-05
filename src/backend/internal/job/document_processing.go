@@ -23,6 +23,12 @@ func (DocumentProcessingArgs) Kind() string {
 	return "document_processing"
 }
 
+// InsertOpts returns default insert options — limits retries to avoid
+// repeatedly hammering LLM providers on persistent failures.
+func (DocumentProcessingArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{MaxAttempts: 2}
+}
+
 // DocumentProcessingWorker processes uploaded documents to extract reference letter data.
 type DocumentProcessingWorker struct {
 	river.WorkerDefaults[DocumentProcessingArgs]
