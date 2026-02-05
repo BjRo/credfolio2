@@ -33,14 +33,14 @@ Braintrust provides LLM observability, allowing inspection of prompts, responses
 - [x] Modify LLM providers to accept middleware options (AnthropicConfig.Middleware, OpenAIConfig.Middleware)
 - [x] Initialize Braintrust and inject tracing middleware at startup (createProviderRegistry in main.go)
 - [x] Add project naming for organized traces (BRAINTRUST_PROJECT env var, defaults to "credfolio")
-- [ ] Verify traces appear in Braintrust dashboard (requires BRAINTRUST_API_KEY to test)
+- [x] Verify traces appear in Braintrust dashboard (requires BRAINTRUST_API_KEY to test)
 - [x] Document how to view traces in Braintrust (see README section below)
 
 ## Definition of Done
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] All checklist items above are completed (pending: verify traces in Braintrust dashboard)
+- [x] All checklist items above are completed
 - [x] Branch pushed and PR created for human review: https://github.com/BjRo/credfolio2/pull/68
 
 ## How to View Traces in Braintrust

@@ -3,9 +3,11 @@ package llm
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/braintrustdata/braintrust-sdk-go"
+	btlogger "github.com/braintrustdata/braintrust-sdk-go/logger"
 	traceanthropic "github.com/braintrustdata/braintrust-sdk-go/trace/contrib/anthropic"
 	traceopenai "github.com/braintrustdata/braintrust-sdk-go/trace/contrib/openai"
 	"go.opentelemetry.io/otel"
@@ -37,13 +39,21 @@ func NewBraintrustTracing(cfg BraintrustConfig, log logger.Logger) (*BraintrustT
 		return nil, nil
 	}
 
+	// Set up OpenTelemetry error handler BEFORE creating TracerProvider.
+	// Without this, OTLP export failures (network errors, auth failures) are
+	// silently swallowed by the batch span processor — the most common reason
+	// for "no data in Braintrust."
+	otel.SetErrorHandler(&otelErrorHandler{log: log})
+
 	// Create TracerProvider
 	tp := trace.NewTracerProvider()
 	otel.SetTracerProvider(tp)
 
-	// Create Braintrust client with API key
+	// Create Braintrust client with API key and SDK logger for visibility
+	// into login, export, and span processing activity.
 	opts := []braintrust.Option{
 		braintrust.WithAPIKey(cfg.APIKey),
+		braintrust.WithLogger(&braintrustLogAdapter{log: log}),
 	}
 	if cfg.Project != "" {
 		opts = append(opts, braintrust.WithProject(cfg.Project))
@@ -112,4 +122,42 @@ func (bt *BraintrustTracing) Project() string {
 		return ""
 	}
 	return bt.config.Project
+}
+
+// otelErrorHandler routes OpenTelemetry internal errors (e.g. OTLP export
+// failures) to our application logger so they are visible in server logs.
+type otelErrorHandler struct {
+	log logger.Logger
+}
+
+func (h *otelErrorHandler) Handle(err error) {
+	h.log.Error("OpenTelemetry error (possible Braintrust export failure)",
+		logger.Feature("braintrust"),
+		logger.Err(err),
+	)
+}
+
+// braintrustLogAdapter adapts our logger.Logger to the Braintrust SDK's
+// logger.Logger interface so SDK-internal messages (login, tracing setup,
+// span processing) are visible in server logs.
+type braintrustLogAdapter struct {
+	log logger.Logger
+}
+
+var _ btlogger.Logger = (*braintrustLogAdapter)(nil)
+
+func (a *braintrustLogAdapter) Debug(msg string, args ...any) {
+	a.log.Debug(fmt.Sprintf("[braintrust] %s %v", msg, args), logger.Feature("braintrust"))
+}
+
+func (a *braintrustLogAdapter) Info(msg string, args ...any) {
+	a.log.Info(fmt.Sprintf("[braintrust] %s %v", msg, args), logger.Feature("braintrust"))
+}
+
+func (a *braintrustLogAdapter) Warn(msg string, args ...any) {
+	a.log.Warning(fmt.Sprintf("[braintrust] %s %v", msg, args), logger.Feature("braintrust"))
+}
+
+func (a *braintrustLogAdapter) Error(msg string, args ...any) {
+	a.log.Error(fmt.Sprintf("[braintrust] %s %v", msg, args), logger.Feature("braintrust"))
 }
