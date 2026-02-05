@@ -5,7 +5,8 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-02-05T14:35:04Z
-updated_at: 2026-02-05T14:35:04Z
+updated_at: 2026-02-05T14:37:15Z
+parent: credfolio2-2ex3
 ---
 
 ## Observed Behavior

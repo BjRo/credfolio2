@@ -3,8 +3,10 @@
 title: Name LLM extraction calls in Braintrust traces
 status: todo
 type: task
+priority: normal
 created_at: 2026-02-05T14:28:32Z
-updated_at: 2026-02-05T14:28:32Z
+updated_at: 2026-02-05T14:37:24Z
+parent: credfolio2-2ex3
 ---
 
 ## Context
