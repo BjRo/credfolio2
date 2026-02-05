@@ -256,3 +256,59 @@ query GetExperienceValidations($experienceId: ID!) {
     }
   }
 }
+
+query GetDocumentProcessingStatus($resumeId: ID, $referenceLetterID: ID) {
+  documentProcessingStatus(resumeId: $resumeId, referenceLetterID: $referenceLetterID) {
+    allComplete
+    resume {
+      id
+      status
+      extractedData {
+        name
+        email
+        phone
+        location
+        summary
+        extractedAt
+        confidence
+      }
+      errorMessage
+    }
+    referenceLetter {
+      id
+      status
+      extractedData {
+        author {
+          name
+          title
+          company
+          relationship
+        }
+        testimonials {
+          quote
+          skillsMentioned
+        }
+        skillMentions {
+          skill
+          quote
+          context
+        }
+        experienceMentions {
+          company
+          role
+          quote
+        }
+        discoveredSkills {
+          skill
+          quote
+          context
+        }
+        metadata {
+          extractedAt
+          modelVersion
+          processingTimeMs
+        }
+      }
+    }
+  }
+}

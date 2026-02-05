@@ -354,3 +354,39 @@ mutation ReportDocumentFeedback($userId: ID!, $input: DocumentFeedbackInput!) {
     success
   }
 }
+
+mutation ProcessDocument($userId: ID!, $input: ProcessDocumentInput!) {
+  processDocument(userId: $userId, input: $input) {
+    ... on ProcessDocumentResult {
+      __typename
+      resumeId
+      referenceLetterID
+    }
+    ... on ProcessDocumentError {
+      __typename
+      message
+      field
+    }
+  }
+}
+
+mutation ImportDocumentResults($userId: ID!, $input: ImportDocumentResultsInput!) {
+  importDocumentResults(userId: $userId, input: $input) {
+    ... on ImportDocumentResultsResult {
+      __typename
+      profile {
+        id
+      }
+      importedCount {
+        experiences
+        educations
+        skills
+      }
+    }
+    ... on ImportDocumentResultsError {
+      __typename
+      message
+      field
+    }
+  }
+}

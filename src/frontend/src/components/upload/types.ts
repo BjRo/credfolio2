@@ -39,3 +39,89 @@ export interface DetectionResultsProps {
 }
 
 export const CONFIDENCE_THRESHOLD = 0.7;
+
+export interface ProcessDocumentIds {
+  resumeId: string | null;
+  referenceLetterID: string | null;
+}
+
+export interface ResumeExtractionData {
+  id: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  extractedData: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    location: string | null;
+    summary: string | null;
+    extractedAt: string;
+    confidence: number;
+  } | null;
+  errorMessage: string | null;
+}
+
+export interface ReferenceLetterExtractionData {
+  id: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "APPLIED";
+  extractedData: {
+    author: {
+      name: string;
+      title: string | null;
+      company: string | null;
+      relationship: string;
+    };
+    testimonials: Array<{
+      quote: string;
+      skillsMentioned: string[] | null;
+    }>;
+    skillMentions: Array<{
+      skill: string;
+      quote: string;
+      context: string | null;
+    }>;
+    experienceMentions: Array<{
+      company: string;
+      role: string;
+      quote: string;
+    }>;
+    discoveredSkills: Array<{
+      skill: string;
+      quote: string;
+      context: string | null;
+    }>;
+    metadata: {
+      extractedAt: string;
+      modelVersion: string;
+      processingTimeMs: number | null;
+    };
+  } | null;
+}
+
+export interface ExtractionResults {
+  resume: ResumeExtractionData | null;
+  referenceLetter: ReferenceLetterExtractionData | null;
+}
+
+export interface ExtractionProgressProps {
+  userId: string;
+  fileId: string;
+  extractCareerInfo: boolean;
+  extractTestimonial: boolean;
+  onComplete: (results: ExtractionResults, processIds: ProcessDocumentIds) => void;
+  onError: (error: string) => void;
+}
+
+export interface ExtractionReviewProps {
+  userId: string;
+  fileId: string;
+  results: ExtractionResults;
+  processDocumentIds: ProcessDocumentIds;
+  onImportComplete: (profileId: string) => void;
+  onBack: () => void;
+}
+
+export interface FeedbackFormProps {
+  userId: string;
+  fileId: string;
+  onSubmitted?: () => void;
+}
