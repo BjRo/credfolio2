@@ -174,6 +174,16 @@ export type DeleteResult = {
   success: Scalars['Boolean']['output'];
 };
 
+/** Union type for detect document content result. */
+export type DetectDocumentContentResponse = DetectDocumentContentResult | FileValidationError;
+
+/** Result of a successful document detection. */
+export type DetectDocumentContentResult = {
+  __typename?: 'DetectDocumentContentResult';
+  /** The detection results. */
+  detection: DocumentDetectionResult;
+};
+
 /** A skill discovered in a reference letter that may not be on the profile. */
 export type DiscoveredSkill = {
   __typename?: 'DiscoveredSkill';
@@ -184,6 +194,72 @@ export type DiscoveredSkill = {
   /** The skill name. */
   skill: Scalars['String']['output'];
 };
+
+/**
+ * Result of lightweight document content detection.
+ * Used to quickly classify a document before running full extraction.
+ */
+export type DocumentDetectionResult = {
+  __typename?: 'DocumentDetectionResult';
+  /** Confidence in the detection (0.0 to 1.0). */
+  confidence: Scalars['Float']['output'];
+  /** Hint about the document type. */
+  documentTypeHint: DocumentTypeHint;
+  /** ID of the stored file for subsequent processing. */
+  fileId: Scalars['ID']['output'];
+  /** Whether the document contains career information (resume/CV content). */
+  hasCareerInfo: Scalars['Boolean']['output'];
+  /** Whether the document contains testimonial/recommendation content. */
+  hasTestimonial: Scalars['Boolean']['output'];
+  /** Brief summary of what was found in the document. */
+  summary: Scalars['String']['output'];
+  /** Name of the testimonial author (person who wrote the recommendation), if detected. */
+  testimonialAuthor?: Maybe<Scalars['String']['output']>;
+};
+
+/** Input for reporting feedback about document detection or extraction. */
+export type DocumentFeedbackInput = {
+  /** The type of feedback being reported. */
+  feedbackType: DocumentFeedbackType;
+  /** ID of the file the feedback relates to. */
+  fileId: Scalars['ID']['input'];
+  /** Free-text message describing the issue. */
+  message: Scalars['String']['input'];
+};
+
+/** Result of reporting document feedback. */
+export type DocumentFeedbackResult = {
+  __typename?: 'DocumentFeedbackResult';
+  /** Whether the feedback was recorded successfully. */
+  success: Scalars['Boolean']['output'];
+};
+
+/** The type of feedback being reported about document processing. */
+export enum DocumentFeedbackType {
+  /** Feedback about incorrect document type detection. */
+  DetectionCorrection = 'DETECTION_CORRECTION',
+  /** Feedback about extraction quality issues. */
+  ExtractionQuality = 'EXTRACTION_QUALITY'
+}
+
+/** Aggregated processing status across resume and reference letter extraction. */
+export type DocumentProcessingStatus = {
+  __typename?: 'DocumentProcessingStatus';
+  /** Overall status: true when all requested extractions are complete (COMPLETED or FAILED). */
+  allComplete: Scalars['Boolean']['output'];
+  /** Reference letter processing status (null if letter extraction was not requested). */
+  referenceLetter?: Maybe<ReferenceLetter>;
+  /** Resume processing status (null if resume extraction was not requested). */
+  resume?: Maybe<Resume>;
+};
+
+/** Hint about the document type from lightweight detection. */
+export enum DocumentTypeHint {
+  Hybrid = 'HYBRID',
+  ReferenceLetter = 'REFERENCE_LETTER',
+  Resume = 'RESUME',
+  Unknown = 'UNKNOWN'
+}
 
 /** Result when a duplicate file is detected during upload. */
 export type DuplicateFileDetected = {
@@ -364,6 +440,46 @@ export type FileValidationError = {
   message: Scalars['String']['output'];
 };
 
+/** Error returned when import document results validation fails. */
+export type ImportDocumentResultsError = {
+  __typename?: 'ImportDocumentResultsError';
+  /** The field that caused the error. */
+  field?: Maybe<Scalars['String']['output']>;
+  /** Error message describing the failure. */
+  message: Scalars['String']['output'];
+};
+
+/** Input for importing extracted document results into profile tables. */
+export type ImportDocumentResultsInput = {
+  /** Reference letter ID whose validations should be applied (null to skip). */
+  referenceLetterID?: InputMaybe<Scalars['ID']['input']>;
+  /** Resume ID to materialize into profile (null to skip). */
+  resumeId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Union type for import document results. */
+export type ImportDocumentResultsResponse = ImportDocumentResultsError | ImportDocumentResultsResult;
+
+/** Result of importing document results into profile tables. */
+export type ImportDocumentResultsResult = {
+  __typename?: 'ImportDocumentResultsResult';
+  /** Counts of items that were imported. */
+  importedCount: ImportedCount;
+  /** The updated profile after materialization. */
+  profile: Profile;
+};
+
+/** Counts of items imported into the profile. */
+export type ImportedCount = {
+  __typename?: 'ImportedCount';
+  /** Number of education entries materialized. */
+  educations: Scalars['Int']['output'];
+  /** Number of work experiences materialized. */
+  experiences: Scalars['Int']['output'];
+  /** Number of skills materialized. */
+  skills: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   /**
@@ -397,6 +513,32 @@ export type Mutation = {
   deleteSkill: DeleteResult;
   /** Delete a testimonial. */
   deleteTestimonial: DeleteResult;
+  /**
+   * Upload a document and run lightweight content detection.
+   * Quickly classifies the document content (career info, testimonials, or both)
+   * without running full extraction. The file is stored for subsequent processing.
+   * Returns detection results synchronously.
+   */
+  detectDocumentContent: DetectDocumentContentResponse;
+  /**
+   * Import extracted document results into profile tables.
+   * Materializes resume data (experiences, education, skills) and/or applies
+   * reference letter validations. The referenced entities must be in COMPLETED status.
+   */
+  importDocumentResults: ImportDocumentResultsResponse;
+  /**
+   * Start processing a previously uploaded document for extraction.
+   * The file must already exist (created via detectDocumentContent).
+   * Creates resume and/or reference letter records as needed, enqueues extraction,
+   * and returns IDs for polling via documentProcessingStatus.
+   * At least one of extractCareerInfo or extractTestimonial must be true.
+   */
+  processDocument: ProcessDocumentResponse;
+  /**
+   * Report feedback about document detection or extraction quality.
+   * Feedback is logged for analysis; no table is created for MVP.
+   */
+  reportDocumentFeedback: DocumentFeedbackResult;
   /**
    * Update an author's information.
    * Allows correcting author details and adding LinkedIn profile links.
@@ -505,6 +647,30 @@ export type MutationDeleteTestimonialArgs = {
 };
 
 
+export type MutationDetectDocumentContentArgs = {
+  file: Scalars['Upload']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationImportDocumentResultsArgs = {
+  input: ImportDocumentResultsInput;
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationProcessDocumentArgs = {
+  input: ProcessDocumentInput;
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationReportDocumentFeedbackArgs = {
+  input: DocumentFeedbackInput;
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateAuthorArgs = {
   id: Scalars['ID']['input'];
   input: UpdateAuthorInput;
@@ -568,6 +734,40 @@ export type NewSkillInput = {
   name: Scalars['String']['input'];
   /** Quote context from the reference letter mentioning this skill. */
   quoteContext?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Error returned when process document validation fails. */
+export type ProcessDocumentError = {
+  __typename?: 'ProcessDocumentError';
+  /** The field that failed validation. */
+  field?: Maybe<Scalars['String']['output']>;
+  /** Error message describing the validation failure. */
+  message: Scalars['String']['output'];
+};
+
+/**
+ * Input for processing a previously uploaded document.
+ * The fileId must reference a file previously stored via detectDocumentContent.
+ */
+export type ProcessDocumentInput = {
+  /** Whether to extract career/resume information from the document. */
+  extractCareerInfo: Scalars['Boolean']['input'];
+  /** Whether to extract testimonial/reference letter content from the document. */
+  extractTestimonial: Scalars['Boolean']['input'];
+  /** ID of the file already stored via detectDocumentContent. */
+  fileId: Scalars['ID']['input'];
+};
+
+/** Union type for process document result. */
+export type ProcessDocumentResponse = ProcessDocumentError | ProcessDocumentResult;
+
+/** IDs of the entities created for tracking extraction progress. */
+export type ProcessDocumentResult = {
+  __typename?: 'ProcessDocumentResult';
+  /** Reference letter ID created for testimonial extraction (null if not requested). */
+  referenceLetterID?: Maybe<Scalars['ID']['output']>;
+  /** Resume ID created for career info extraction (null if not requested). */
+  resumeId?: Maybe<Scalars['ID']['output']>;
 };
 
 /** A user's profile containing manually editable data. */
@@ -712,6 +912,12 @@ export type Query = {
    * Used for pre-upload duplicate detection.
    */
   checkDuplicateFile?: Maybe<DuplicateFileDetected>;
+  /**
+   * Get the processing status of a document.
+   * Provide the resume ID and/or reference letter ID returned by processDocument.
+   * Returns aggregated status across all requested extractions.
+   */
+  documentProcessingStatus?: Maybe<DocumentProcessingStatus>;
   /** Get all validations for a specific experience. */
   experienceValidations: Array<ExperienceValidation>;
   /** Get a file by ID. */
@@ -759,6 +965,12 @@ export type QueryAuthorsArgs = {
 export type QueryCheckDuplicateFileArgs = {
   contentHash: Scalars['String']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type QueryDocumentProcessingStatusArgs = {
+  referenceLetterID?: InputMaybe<Scalars['ID']['input']>;
+  resumeId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -1299,6 +1511,17 @@ export type UploadAuthorImageMutation = { __typename?: 'Mutation', uploadAuthorI
     | { __typename: 'UploadAuthorImageResult', file: { __typename?: 'File', id: string, filename: string, contentType: string, sizeBytes: number }, author: { __typename?: 'Author', id: string, name: string, title?: string | null, company?: string | null, linkedInUrl?: string | null, imageUrl?: string | null, updatedAt: string } }
    };
 
+export type DetectDocumentContentMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  file: Scalars['Upload']['input'];
+}>;
+
+
+export type DetectDocumentContentMutation = { __typename?: 'Mutation', detectDocumentContent:
+    | { __typename: 'DetectDocumentContentResult', detection: { __typename?: 'DocumentDetectionResult', hasCareerInfo: boolean, hasTestimonial: boolean, testimonialAuthor?: string | null, confidence: number, summary: string, documentTypeHint: DocumentTypeHint, fileId: string } }
+    | { __typename: 'FileValidationError', message: string, field: string }
+   };
+
 export type GetReferenceLetterQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -1394,6 +1617,7 @@ export const DeleteProfilePhotoDocument = {"kind":"Document","definitions":[{"ki
 export const DeleteTestimonialDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteTestimonial"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteTestimonial"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"deletedId"}}]}}]}}]} as unknown as DocumentNode<DeleteTestimonialMutation, DeleteTestimonialMutationVariables>;
 export const UpdateAuthorDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateAuthor"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateAuthorInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateAuthor"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"linkedInUrl"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<UpdateAuthorMutation, UpdateAuthorMutationVariables>;
 export const UploadAuthorImageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UploadAuthorImage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"authorId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"uploadAuthorImage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"authorId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"authorId"}}},{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"UploadAuthorImageResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"sizeBytes"}}]}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"linkedInUrl"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FileValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<UploadAuthorImageMutation, UploadAuthorImageMutationVariables>;
+export const DetectDocumentContentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DetectDocumentContent"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"detectDocumentContent"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"DetectDocumentContentResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"detection"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasCareerInfo"}},{"kind":"Field","name":{"kind":"Name","value":"hasTestimonial"}},{"kind":"Field","name":{"kind":"Name","value":"testimonialAuthor"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}},{"kind":"Field","name":{"kind":"Name","value":"summary"}},{"kind":"Field","name":{"kind":"Name","value":"documentTypeHint"}},{"kind":"Field","name":{"kind":"Name","value":"fileId"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FileValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<DetectDocumentContentMutation, DetectDocumentContentMutationVariables>;
 export const GetReferenceLetterDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetter"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"dateWritten"}},{"kind":"Field","name":{"kind":"Name","value":"rawText"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"relationship"}}]}},{"kind":"Field","name":{"kind":"Name","value":"testimonials"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"skillsMentioned"}}]}},{"kind":"Field","name":{"kind":"Name","value":"skillMentions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skill"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"context"}}]}},{"kind":"Field","name":{"kind":"Name","value":"experienceMentions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}}]}},{"kind":"Field","name":{"kind":"Name","value":"discoveredSkills"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skill"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"context"}}]}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"extractedAt"}},{"kind":"Field","name":{"kind":"Name","value":"modelVersion"}},{"kind":"Field","name":{"kind":"Name","value":"processingTimeMs"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"sizeBytes"}}]}}]}}]}}]} as unknown as DocumentNode<GetReferenceLetterQuery, GetReferenceLetterQueryVariables>;
 export const GetReferenceLettersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetters"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetters"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"organization"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<GetReferenceLettersQuery, GetReferenceLettersQueryVariables>;
 export const GetReferenceLetterStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetReferenceLetterStatus"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<GetReferenceLetterStatusQuery, GetReferenceLetterStatusQueryVariables>;
