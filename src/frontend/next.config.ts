@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   // Use experimental webpackMemoryOptimizations to reduce memory pressure
   experimental: {
     webpackMemoryOptimizations: true,
+    proxyTimeout: 360_000, // 360s — must exceed backend LLM provider timeout (300s)
   },
 
   // Allow images from MinIO storage
