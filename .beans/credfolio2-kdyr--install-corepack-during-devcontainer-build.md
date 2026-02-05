@@ -1,11 +1,11 @@
 ---
 # credfolio2-kdyr
 title: Install corepack during devcontainer build
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-05T13:42:31Z
-updated_at: 2026-02-05T14:50:01Z
+updated_at: 2026-02-05T14:56:14Z
 parent: credfolio2-2ex3
 ---
 
