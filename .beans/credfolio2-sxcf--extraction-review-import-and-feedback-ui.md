@@ -1,11 +1,11 @@
 ---
 # credfolio2-sxcf
 title: Extraction review, import and feedback UI
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-02-05T18:02:57Z
-updated_at: 2026-02-05T21:31:12Z
+updated_at: 2026-02-05T21:52:33Z
 parent: credfolio2-3ram
 ---
 
@@ -91,4 +91,4 @@ After full extraction runs, users need to review what was extracted, optionally 
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review (PR #83)
