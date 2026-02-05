@@ -1,11 +1,11 @@
 ---
 # credfolio2-98ag
 title: Resume extraction ignores RESUME_EXTRACTION_MODEL — all calls route to Anthropic
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-02-05T14:35:04Z
-updated_at: 2026-02-05T15:32:05Z
+updated_at: 2026-02-05T15:51:37Z
 parent: credfolio2-2ex3
 ---
 
