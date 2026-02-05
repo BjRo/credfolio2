@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DetectionResults } from "./DetectionResults";
 import { DocumentUpload } from "./DocumentUpload";
 import { StepIndicator } from "./StepIndicator";
 import type { DocumentDetectionResult, FlowStep } from "./types";
@@ -19,6 +20,16 @@ export function UploadFlow() {
     setCurrentStep("review-detection");
   };
 
+  const handleProceed = (_extractCareerInfo: boolean, _extractTestimonial: boolean) => {
+    setCurrentStep("extract");
+  };
+
+  const handleCancel = () => {
+    setDetection(null);
+    setFileName(null);
+    setCurrentStep("upload");
+  };
+
   return (
     <div className="w-full max-w-3xl mx-auto">
       <StepIndicator steps={FLOW_STEPS} currentStep={currentStep} />
@@ -27,19 +38,18 @@ export function UploadFlow() {
         <DocumentUpload userId={DEMO_USER_ID} onDetectionComplete={handleDetectionComplete} />
       )}
 
-      {currentStep !== "upload" && (
+      {currentStep === "review-detection" && detection && fileName && (
+        <DetectionResults
+          detection={detection}
+          fileName={fileName}
+          userId={DEMO_USER_ID}
+          onProceed={handleProceed}
+          onCancel={handleCancel}
+        />
+      )}
+
+      {currentStep !== "upload" && currentStep !== "review-detection" && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>
-            Detection results ready for: <span className="font-medium">{fileName}</span>
-          </p>
-          {detection && (
-            <p className="text-sm mt-2">
-              Found: {detection.hasCareerInfo && "Career info"}
-              {detection.hasCareerInfo && detection.hasTestimonial && " & "}
-              {detection.hasTestimonial &&
-                `Testimonial${detection.testimonialAuthor ? ` from ${detection.testimonialAuthor}` : ""}`}
-            </p>
-          )}
           <p className="text-sm mt-2">Next steps coming soon...</p>
         </div>
       )}

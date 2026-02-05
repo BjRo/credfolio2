@@ -348,3 +348,9 @@ mutation DetectDocumentContent($userId: ID!, $file: Upload!) {
     }
   }
 }
+
+mutation ReportDocumentFeedback($userId: ID!, $input: DocumentFeedbackInput!) {
+  reportDocumentFeedback(userId: $userId, input: $input) {
+    success
+  }
+}

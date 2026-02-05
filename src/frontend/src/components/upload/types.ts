@@ -28,3 +28,14 @@ export interface StepIndicatorProps {
   steps: { key: string; label: string }[];
   currentStep: string;
 }
+
+export interface DetectionResultsProps {
+  detection: DocumentDetectionResult;
+  fileName: string;
+  userId: string;
+  onProceed: (extractCareerInfo: boolean, extractTestimonial: boolean) => void;
+  onCancel: () => void;
+  onFeedbackSubmitted?: () => void;
+}
+
+export const CONFIDENCE_THRESHOLD = 0.7;
