@@ -75,6 +75,13 @@ func NewResumeProcessingWorker(
 	}
 }
 
+// Timeout disables River's default 60s job timeout. LLM extraction can take
+// several minutes for structured output; timeout is handled by the resilient
+// provider layer instead (300s).
+func (w *ResumeProcessingWorker) Timeout(*river.Job[ResumeProcessingArgs]) time.Duration {
+	return -1 // no River-level timeout
+}
+
 // Work processes a resume and extracts profile data using LLM.
 func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[ResumeProcessingArgs]) error {
 	args := job.Args

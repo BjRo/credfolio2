@@ -1163,6 +1163,14 @@ func TestExtractLetterData_CreatesParentSpan(t *testing.T) {
 	}
 }
 
+func TestReferenceLetterProcessingWorker_Timeout_Disabled(t *testing.T) {
+	worker := &ReferenceLetterProcessingWorker{}
+	timeout := worker.Timeout(nil)
+	if timeout != -1 {
+		t.Errorf("Timeout = %v, want -1 (disabled)", timeout)
+	}
+}
+
 func TestReferenceLetterProcessingArgs_InsertOpts_MaxAttempts(t *testing.T) {
 	args := ReferenceLetterProcessingArgs{}
 	opts := args.InsertOpts()

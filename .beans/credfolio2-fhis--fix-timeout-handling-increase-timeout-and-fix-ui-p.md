@@ -15,14 +15,20 @@ Two related issues when LLM extraction times out:
 
 ## Investigation Findings
 
-- **Backend**: The failsafe timeout only cancels its derived context, NOT the River job context. So `updateStatusFailed(ctx, ...)` should succeed. However, the error from `updateStatusFailed` was silently ignored (`_ = ...`), so DB update failures were invisible.
-- **Frontend**: Both `ResumeUpload` and `ReferenceLetterUploadModal` properly check for `"FAILED"` status and stop polling. The GraphQL converter correctly maps "failed" → "FAILED". No frontend fix needed.
-- **Root cause**: Most likely the 120s timeout was too short for gpt-5-nano structured output, causing repeated timeouts. With MaxAttempts: 2 and 120s per attempt, the status bounced "failed" → "processing" → "failed" over ~4 minutes — appearing stuck to the user.
+- **Root cause found**: River's `WorkerDefaults.Timeout()` returns 0, which inherits the client-level `JobTimeoutDefault = 1 * time.Minute`. This 60s River timeout cancels the entire job context — killing BOTH the LLM call AND the subsequent `updateStatusFailed` DB call. That's why the status never gets set to "failed" and the UI polls forever.
+- **Frontend**: Both `ResumeUpload` and `ReferenceLetterUploadModal` properly check for `"FAILED"` status and stop polling. No frontend fix needed.
+- The `updateStatusFailed` errors were silently ignored — now logged.
+
+## Fixes Applied
+1. Override `Timeout()` on resume and reference letter workers to return -1 (no River-level timeout)
+2. Increased ResilientProvider timeout from 120s to 300s
+3. Changed `updateStatusFailed` to log DB errors instead of silently ignoring
 
 ## Checklist
-- [x] Investigate: Does updateStatusFailed actually execute on timeout? (check if context is still valid)
-- [x] Investigate: How does the frontend poll and does it handle "failed" status?
+- [x] Investigate: Does updateStatusFailed actually execute on timeout? (River's 60s kills the context first)
+- [x] Investigate: How does the frontend poll and does it handle "failed" status? (Yes, correctly)
 - [x] Increase resilient timeout to 300s
+- [x] Override worker Timeout() to disable River's 60s default
 - [x] Frontend polling already handles failure status correctly — no fix needed
 - [x] Log updateStatusFailed errors instead of silently ignoring them
 - [x] Tests pass

@@ -928,6 +928,14 @@ func TestExtractResumeData_CreatesParentSpan(t *testing.T) {
 	}
 }
 
+func TestResumeProcessingWorker_Timeout_Disabled(t *testing.T) {
+	worker := &ResumeProcessingWorker{}
+	timeout := worker.Timeout(nil)
+	if timeout != -1 {
+		t.Errorf("Timeout = %v, want -1 (disabled)", timeout)
+	}
+}
+
 func TestResumeProcessingArgs_InsertOpts_MaxAttempts(t *testing.T) {
 	args := ResumeProcessingArgs{}
 	opts := args.InsertOpts()
