@@ -7,6 +7,11 @@ import (
 
 	"backend/internal/domain"
 	"backend/internal/infrastructure/llm"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
 
 func TestDocumentExtractor_ExtractTextWithRequest(t *testing.T) {
@@ -480,4 +485,234 @@ func TestDocumentExtractor_ExtractLetterData_InvalidJSON(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
 	}
+}
+
+// setupTestTracing sets up an in-memory span exporter for testing OTel spans.
+// Returns the exporter and a cleanup function that restores the original TracerProvider.
+func setupTestTracing(t *testing.T) *tracetest.InMemoryExporter {
+	t.Helper()
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	prev := otel.GetTracerProvider()
+	otel.SetTracerProvider(tp)
+	t.Cleanup(func() {
+		otel.SetTracerProvider(prev)
+		_ = tp.Shutdown(context.Background())
+	})
+	return exporter
+}
+
+func TestDocumentExtractor_ExtractTextWithRequest_CreatesSpan(t *testing.T) {
+	exporter := setupTestTracing(t)
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content:      "Extracted text",
+			InputTokens:  100,
+			OutputTokens: 50,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	_, err := extractor.ExtractTextWithRequest(context.Background(), llm.ExtractionRequest{
+		Document:  []byte{0xFF, 0xD8, 0xFF},
+		MediaType: domain.ImageMediaTypeJPEG,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	spans := exporter.GetSpans()
+	if len(spans) == 0 {
+		t.Fatal("expected at least one span, got none")
+	}
+
+	// Find the span by name
+	var found bool
+	for _, s := range spans {
+		if s.Name == "resume_pdf_extraction" {
+			found = true
+			// Check for content_type attribute
+			attrFound := false
+			for _, attr := range s.Attributes {
+				if string(attr.Key) == "content_type" && attr.Value.AsString() == string(domain.ImageMediaTypeJPEG) {
+					attrFound = true
+				}
+			}
+			if !attrFound {
+				t.Error("expected content_type attribute on span")
+			}
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected span named 'resume_pdf_extraction', got spans: %v", spanNames(spans))
+	}
+}
+
+func TestDocumentExtractor_ExtractResumeData_CreatesSpan(t *testing.T) {
+	exporter := setupTestTracing(t)
+
+	jsonResponse := `{
+		"name": "Test User",
+		"email": "test@example.com",
+		"phone": "",
+		"location": "",
+		"summary": "",
+		"experience": [],
+		"education": [],
+		"skills": [],
+		"confidence": 0.9
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content:      jsonResponse,
+			InputTokens:  200,
+			OutputTokens: 100,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	_, err := extractor.ExtractResumeData(context.Background(), "Some resume text that is quite long")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	spans := exporter.GetSpans()
+	if len(spans) == 0 {
+		t.Fatal("expected at least one span, got none")
+	}
+
+	var found bool
+	for _, s := range spans {
+		if s.Name == "resume_structured_data_extraction" {
+			found = true
+			// Check for text_length attribute
+			attrFound := false
+			for _, attr := range s.Attributes {
+				if string(attr.Key) == "text_length" && attr.Value.AsInt64() == 35 {
+					attrFound = true
+				}
+			}
+			if !attrFound {
+				t.Error("expected text_length attribute on span")
+			}
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected span named 'resume_structured_data_extraction', got spans: %v", spanNames(spans))
+	}
+}
+
+func TestDocumentExtractor_ExtractLetterData_CreatesSpan(t *testing.T) {
+	exporter := setupTestTracing(t)
+
+	jsonResponse := `{
+		"author": {"name": "Author", "title": "", "company": "", "relationship": "peer"},
+		"testimonials": [],
+		"skillMentions": [],
+		"experienceMentions": [],
+		"discoveredSkills": []
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content: jsonResponse,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	_, err := extractor.ExtractLetterData(context.Background(), "Letter text here", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	spans := exporter.GetSpans()
+	var found bool
+	for _, s := range spans {
+		if s.Name == "letter_data_extraction" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected span named 'letter_data_extraction', got spans: %v", spanNames(spans))
+	}
+}
+
+func TestDocumentExtractor_ExtractTextWithRequest_SpanRecordsErrorOnFailure(t *testing.T) {
+	exporter := setupTestTracing(t)
+
+	inner := &mockProvider{
+		err: &domain.LLMError{
+			Provider: "mock",
+			Message:  "API error",
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	_, err := extractor.ExtractTextWithRequest(context.Background(), llm.ExtractionRequest{
+		Document:  []byte{0xFF, 0xD8, 0xFF},
+		MediaType: domain.ImageMediaTypeJPEG,
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	spans := exporter.GetSpans()
+	var found bool
+	for _, s := range spans {
+		if s.Name == "resume_pdf_extraction" {
+			found = true
+			if s.Status.Code != codes.Error {
+				t.Errorf("expected span status Error, got %v", s.Status.Code)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Error("expected span even on error")
+	}
+}
+
+func TestDocumentExtractor_NoTracerProvider_WorksWithoutSpans(t *testing.T) {
+	// This test verifies nil-safety: when no custom TracerProvider is set,
+	// OTel's noop tracer is used and extraction still works.
+	// We don't set up any tracer provider — the default noop should be in effect.
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content:      "Extracted text",
+			InputTokens:  100,
+			OutputTokens: 50,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractTextWithRequest(context.Background(), llm.ExtractionRequest{
+		Document:  []byte{0xFF, 0xD8, 0xFF},
+		MediaType: domain.ImageMediaTypeJPEG,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Text != "Extracted text" {
+		t.Errorf("Text = %q, want %q", result.Text, "Extracted text")
+	}
+}
+
+// spanNames returns the names of all spans for debugging.
+func spanNames(spans []tracetest.SpanStub) []string {
+	names := make([]string, len(spans))
+	for i, s := range spans {
+		names[i] = s.Name
+	}
+	return names
 }

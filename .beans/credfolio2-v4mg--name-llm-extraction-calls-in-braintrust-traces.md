@@ -1,11 +1,11 @@
 ---
 # credfolio2-v4mg
 title: Name LLM extraction calls in Braintrust traces
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-02-05T14:28:32Z
-updated_at: 2026-02-05T14:37:24Z
+updated_at: 2026-02-05T14:57:42Z
 parent: credfolio2-2ex3
 ---
 
@@ -43,15 +43,15 @@ Since `otel.SetTracerProvider(tp)` is already called during Braintrust init (in 
 
 ## Checklist
 
-- [ ] Add `go.opentelemetry.io/otel` import to `extraction.go`
-- [ ] Wrap `ExtractTextWithRequest` LLM call in a `resume_pdf_extraction` span
-- [ ] Wrap `ExtractResumeData` LLM call in a `resume_structured_data_extraction` span
-- [ ] Add useful span attributes (e.g., content_type for text extraction, text length for structured extraction)
-- [ ] Verify spans are nil-safe (work correctly when Braintrust tracing is disabled / no TracerProvider set)
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
+- [x] Add `go.opentelemetry.io/otel` import to `extraction.go`
+- [x] Wrap `ExtractTextWithRequest` LLM call in a `resume_pdf_extraction` span
+- [x] Wrap `ExtractResumeData` LLM call in a `resume_structured_data_extraction` span
+- [x] Add useful span attributes (e.g., content_type for text extraction, text length for structured extraction)
+- [x] Verify spans are nil-safe (work correctly when Braintrust tracing is disabled / no TracerProvider set)
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 
 ## Key Files
