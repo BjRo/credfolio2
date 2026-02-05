@@ -117,6 +117,9 @@ ENV DEVCONTAINER=true
 RUN mkdir -p /workspace /home/node/.claude && \
   chown -R node:node /workspace /home/node/.claude
 
+# Copy Claude Code user settings (bypass permissions in devcontainer)
+COPY --chown=node:node .devcontainer/claude-user-settings.json /home/node/.claude/settings.json
+
 WORKDIR /workspace
 
 ARG GIT_DELTA_VERSION=0.18.2

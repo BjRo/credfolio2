@@ -20,9 +20,13 @@ const (
 	defaultOpenAITimeout = 60 * time.Second
 )
 
+// OpenAIMiddleware is the type for OpenAI SDK middleware functions.
+type OpenAIMiddleware = func(*http.Request, option.MiddlewareNext) (*http.Response, error)
+
 // OpenAIConfig holds configuration for the OpenAI provider.
 type OpenAIConfig struct {
 	HTTPClient   *http.Client
+	Middleware   OpenAIMiddleware // Optional middleware for tracing/logging
 	APIKey       string
 	BaseURL      string
 	DefaultModel string
@@ -55,6 +59,11 @@ func NewOpenAIProvider(config OpenAIConfig) *OpenAIProvider {
 
 	if config.HTTPClient != nil {
 		opts = append(opts, option.WithHTTPClient(config.HTTPClient))
+	}
+
+	// Add middleware for tracing if configured
+	if config.Middleware != nil {
+		opts = append(opts, option.WithMiddleware(config.Middleware))
 	}
 
 	client := openai.NewClient(opts...)

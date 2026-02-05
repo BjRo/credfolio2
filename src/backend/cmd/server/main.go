@@ -87,7 +87,14 @@ func run(log logger.Logger) error {
 	}
 
 	// Create LLM extractor with provider registry for per-operation chains
-	extractor, extractHandler := createLLMExtractor(cfg, log)
+	extractor, extractHandler, btTracing := createLLMExtractor(cfg, log)
+	if btTracing != nil {
+		defer func() {
+			if shutdownErr := btTracing.Shutdown(context.Background()); shutdownErr != nil {
+				log.Error("Failed to shutdown Braintrust tracing", logger.Feature("llm"), logger.Err(shutdownErr))
+			}
+		}()
+	}
 
 	// Create job queue workers
 	workers := river.NewWorkers()
@@ -199,17 +206,33 @@ type userCreator interface {
 }
 
 // createProviderRegistry creates all available LLM providers and returns a registry.
-// Returns the registry, the default provider (based on LLM_PROVIDER config), and list of provider names.
-func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.ProviderRegistry, domain.LLMProvider, []string) {
+// Returns the registry, the default provider (based on LLM_PROVIDER config), list of provider names, and Braintrust tracing.
+func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.ProviderRegistry, domain.LLMProvider, []string, *llm.BraintrustTracing) {
 	registry := llm.NewProviderRegistry()
 	var providerNames []string
 	var defaultProvider domain.LLMProvider
 
+	// Initialize Braintrust tracing if configured
+	btTracing, err := llm.NewBraintrustTracing(llm.BraintrustConfig{
+		APIKey:  cfg.Braintrust.APIKey,
+		Project: cfg.Braintrust.Project,
+	}, log)
+	if err != nil {
+		log.Warning("Failed to initialize Braintrust tracing", logger.Feature("llm"), logger.Err(err))
+	} else if btTracing != nil {
+		log.Info("Braintrust tracing enabled", logger.Feature("llm"), logger.String("project", btTracing.Project()))
+	}
+
 	// Register Anthropic if API key is available
 	if cfg.Anthropic.APIKey != "" {
-		provider := llm.NewAnthropicProvider(llm.AnthropicConfig{
+		providerConfig := llm.AnthropicConfig{
 			APIKey: cfg.Anthropic.APIKey,
-		})
+		}
+		// Add Braintrust middleware if tracing is enabled
+		if btTracing != nil {
+			providerConfig.Middleware = btTracing.AnthropicMiddleware() //nolint:bodyclose // middleware, not response
+		}
+		provider := llm.NewAnthropicProvider(providerConfig)
 		registry.Register("anthropic", provider)
 		providerNames = append(providerNames, "anthropic")
 		log.Debug("Registered Anthropic provider", logger.Feature("llm"))
@@ -217,9 +240,14 @@ func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.Provide
 
 	// Register OpenAI if API key is available
 	if cfg.OpenAI.APIKey != "" {
-		provider := llm.NewOpenAIProvider(llm.OpenAIConfig{
+		providerConfig := llm.OpenAIConfig{
 			APIKey: cfg.OpenAI.APIKey,
-		})
+		}
+		// Add Braintrust middleware if tracing is enabled
+		if btTracing != nil {
+			providerConfig.Middleware = btTracing.OpenAIMiddleware() //nolint:bodyclose // middleware, not response
+		}
+		provider := llm.NewOpenAIProvider(providerConfig)
 		registry.Register("openai", provider)
 		providerNames = append(providerNames, "openai")
 		log.Debug("Registered OpenAI provider", logger.Feature("llm"))
@@ -242,16 +270,16 @@ func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.Provide
 			logger.String("fallback", providerNames[0]))
 	}
 
-	return registry, defaultProvider, providerNames
+	return registry, defaultProvider, providerNames, btTracing
 }
 
 // createLLMExtractor creates the document extractor with per-operation provider chains.
-// Returns the extractor (nil if no providers available) and the HTTP handler.
-func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExtractor, http.Handler) {
-	registry, defaultProvider, providerNames := createProviderRegistry(cfg, log)
+// Returns the extractor (nil if no providers available), the HTTP handler, and the Braintrust tracing instance.
+func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExtractor, http.Handler, *llm.BraintrustTracing) {
+	registry, defaultProvider, providerNames, btTracing := createProviderRegistry(cfg, log)
 	if defaultProvider == nil {
 		log.Warning("LLM extraction disabled (no API key configured)", logger.Feature("llm"))
-		return nil, handler.NewExtractUnavailableHandler()
+		return nil, handler.NewExtractUnavailableHandler(), btTracing
 	}
 
 	// Wrap default provider with resilience
@@ -287,7 +315,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 	extractHandler := handler.NewExtractHandler(extractor, log)
 	log.Info("LLM extraction enabled", logger.Feature("llm"), logger.String("providers", fmt.Sprintf("%v", providerNames)))
 
-	return extractor, extractHandler
+	return extractor, extractHandler, btTracing
 }
 
 // ensureDemoUser creates the demo user if it doesn't exist.

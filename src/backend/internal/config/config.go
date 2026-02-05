@@ -21,6 +21,7 @@ type Config struct { //nolint:govet // Field order prioritizes readability
 	LLM         LLMConfig
 	Anthropic   AnthropicConfig
 	OpenAI      OpenAIConfig
+	Braintrust  BraintrustConfig
 }
 
 // LLMConfig holds general LLM configuration.
@@ -113,6 +114,17 @@ type OpenAIConfig struct {
 	APIKey string
 }
 
+// BraintrustConfig holds Braintrust observability settings.
+type BraintrustConfig struct {
+	// APIKey is the Braintrust API key for sending traces.
+	// If empty, Braintrust tracing is disabled.
+	APIKey string
+
+	// Project is the Braintrust project name for organizing traces.
+	// Defaults to "credfolio" if not specified.
+	Project string
+}
+
 // Load reads configuration from environment variables.
 // It uses sensible defaults matching docker-compose.yml for local development.
 func Load() (*Config, error) {
@@ -183,6 +195,10 @@ func Load() (*Config, error) {
 		},
 		OpenAI: OpenAIConfig{
 			APIKey: os.Getenv("OPEN_AI_API_KEY"),
+		},
+		Braintrust: BraintrustConfig{
+			APIKey:  os.Getenv("BRAINTRUST_API_KEY"),
+			Project: getEnv("BRAINTRUST_PROJECT", "credfolio"),
 		},
 	}
 

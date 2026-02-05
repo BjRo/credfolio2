@@ -3,8 +3,10 @@
 title: Server-side redirect for root page when profile exists
 status: todo
 type: task
+priority: normal
 created_at: 2026-01-27T16:38:45Z
-updated_at: 2026-01-27T16:38:45Z
+updated_at: 2026-02-05T14:37:44Z
+parent: credfolio2-abtx
 ---
 
 The current root page (/) uses a client-side redirect via `useEffect` + `router.push()` when a completed resume exists. This causes a brief flash of the loading spinner before redirecting.

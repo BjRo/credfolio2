@@ -36,38 +36,41 @@ Claude Code runs in **bypass permissions mode** inside the devcontainer only. Th
 2. All work happens in a sandboxed Docker environment
 3. The workspace settings outside the container remain restrictive
 
-### Configuration
+### How It Works
 
-Bypass permissions is enabled through multiple layers:
+Claude Code loads settings from two scopes, merging them at runtime:
 
-1. **VSCode extension settings** ([devcontainer.json](devcontainer.json#L52-L53)):
-   ```json
-   "claude-code.permissions.defaultMode": "bypassPermissions",
-   "claude-code.dangerouslySkipPermissions": true
-   ```
+| Scope | File | Purpose |
+|-------|------|---------|
+| **User** | `~/.claude/settings.json` | Global permissions — bypass mode, tool allow list |
+| **Project** | `/workspace/.claude/settings.json` | Hooks (`PreToolUse`, `SessionStart`, `PreCompact`), `.env` deny rules |
 
-2. **Claude config volume** (`~/.claude/` inside container):
-   - Mounted from Docker volume: `claude-code-config-${devcontainerId}`
-   - Contains `settings.json` with `defaultMode: "bypassPermissions"`
-   - Persists across container rebuilds
+The **user-level** settings are baked into the Docker image from [`claude-user-settings.json`](claude-user-settings.json) via the Dockerfile:
 
-3. **Workspace settings** (`.claude/settings.json` in project root):
-   - Remain restrictive (empty allow list)
-   - Only affect Claude Code when running outside the container
-   - Ensure permission checks when working on the host
+```dockerfile
+COPY --chown=node:node .devcontainer/claude-user-settings.json /home/node/.claude/settings.json
+```
 
-### Why This Works
+The **project-level** settings come from the repo checkout at `/workspace/.claude/settings.json` and are available automatically when the workspace is mounted.
 
-The devcontainer sets `CLAUDE_CONFIG_DIR=/home/node/.claude`, which points to the Docker volume mount. This means:
+### Editing Permissions
 
-- Inside the container: Uses volume settings with bypass enabled
-- Outside the container: Uses workspace settings with restrictions
-- Complete isolation between environments
+To change which tools are allowed without prompts, edit [`claude-user-settings.json`](claude-user-settings.json) and rebuild the devcontainer. The current allow list:
+
+- `Bash(*)`, `Read(*)`, `Write(*)`, `Edit(*)` — file and shell operations
+- `Grep(*)`, `Glob(*)` — search operations
+- `Task(*)` — subagent operations
+- `WebFetch(*)`, `WebSearch(*)` — web access
+
+### VSCode Extension Settings
+
+Bypass mode is also configured at the extension level in [`devcontainer.json`](devcontainer.json):
+
+```json
+"claude-code.permissions.defaultMode": "bypassPermissions",
+"claude-code.dangerouslySkipPermissions": true
+```
 
 ### Rebuilding the Container
 
-The bypass permissions settings persist across rebuilds because:
-- VSCode settings are in `devcontainer.json` (rebuilt each time)
-- Claude config is in a Docker volume (persists across rebuilds)
-
-No manual reconfiguration needed after rebuilding.
+No manual reconfiguration needed — user settings are baked into the image and project settings come from the repo.
