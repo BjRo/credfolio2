@@ -113,6 +113,16 @@ type ComplexityRoot struct {
 		TestimonialAuthor func(childComplexity int) int
 	}
 
+	DocumentFeedbackResult struct {
+		Success func(childComplexity int) int
+	}
+
+	DocumentProcessingStatus struct {
+		AllComplete     func(childComplexity int) int
+		ReferenceLetter func(childComplexity int) int
+		Resume          func(childComplexity int) int
+	}
+
 	DuplicateFileDetected struct {
 		ExistingFile            func(childComplexity int) int
 		ExistingReferenceLetter func(childComplexity int) int
@@ -202,6 +212,22 @@ type ComplexityRoot struct {
 		Message func(childComplexity int) int
 	}
 
+	ImportDocumentResultsError struct {
+		Field   func(childComplexity int) int
+		Message func(childComplexity int) int
+	}
+
+	ImportDocumentResultsResult struct {
+		ImportedCount func(childComplexity int) int
+		Profile       func(childComplexity int) int
+	}
+
+	ImportedCount struct {
+		Educations  func(childComplexity int) int
+		Experiences func(childComplexity int) int
+		Skills      func(childComplexity int) int
+	}
+
 	Mutation struct {
 		ApplyReferenceLetterValidations func(childComplexity int, userID string, input model.ApplyValidationsInput) int
 		CreateEducation                 func(childComplexity int, userID string, input model.CreateEducationInput) int
@@ -213,6 +239,9 @@ type ComplexityRoot struct {
 		DeleteSkill                     func(childComplexity int, id string) int
 		DeleteTestimonial               func(childComplexity int, id string) int
 		DetectDocumentContent           func(childComplexity int, userID string, file graphql.Upload) int
+		ImportDocumentResults           func(childComplexity int, userID string, input model.ImportDocumentResultsInput) int
+		ProcessDocument                 func(childComplexity int, userID string, input model.ProcessDocumentInput) int
+		ReportDocumentFeedback          func(childComplexity int, userID string, input model.DocumentFeedbackInput) int
 		UpdateAuthor                    func(childComplexity int, id string, input model.UpdateAuthorInput) int
 		UpdateEducation                 func(childComplexity int, id string, input model.UpdateEducationInput) int
 		UpdateExperience                func(childComplexity int, id string, input model.UpdateExperienceInput) int
@@ -222,6 +251,16 @@ type ComplexityRoot struct {
 		UploadFile                      func(childComplexity int, userID string, file graphql.Upload, forceReimport *bool) int
 		UploadProfilePhoto              func(childComplexity int, userID string, file graphql.Upload) int
 		UploadResume                    func(childComplexity int, userID string, file graphql.Upload, forceReimport *bool) int
+	}
+
+	ProcessDocumentError struct {
+		Field   func(childComplexity int) int
+		Message func(childComplexity int) int
+	}
+
+	ProcessDocumentResult struct {
+		ReferenceLetterID func(childComplexity int) int
+		ResumeID          func(childComplexity int) int
 	}
 
 	Profile struct {
@@ -296,23 +335,24 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Author                func(childComplexity int, id string) int
-		Authors               func(childComplexity int, profileID string) int
-		CheckDuplicateFile    func(childComplexity int, userID string, contentHash string) int
-		ExperienceValidations func(childComplexity int, experienceID string) int
-		File                  func(childComplexity int, id string) int
-		Files                 func(childComplexity int, userID string) int
-		Profile               func(childComplexity int, userID string) int
-		ProfileEducation      func(childComplexity int, id string) int
-		ProfileExperience     func(childComplexity int, id string) int
-		ProfileSkill          func(childComplexity int, id string) int
-		ReferenceLetter       func(childComplexity int, id string) int
-		ReferenceLetters      func(childComplexity int, userID string) int
-		Resume                func(childComplexity int, id string) int
-		Resumes               func(childComplexity int, userID string) int
-		SkillValidations      func(childComplexity int, skillID string) int
-		Testimonials          func(childComplexity int, profileID string) int
-		User                  func(childComplexity int, id string) int
+		Author                   func(childComplexity int, id string) int
+		Authors                  func(childComplexity int, profileID string) int
+		CheckDuplicateFile       func(childComplexity int, userID string, contentHash string) int
+		DocumentProcessingStatus func(childComplexity int, resumeID *string, referenceLetterID *string) int
+		ExperienceValidations    func(childComplexity int, experienceID string) int
+		File                     func(childComplexity int, id string) int
+		Files                    func(childComplexity int, userID string) int
+		Profile                  func(childComplexity int, userID string) int
+		ProfileEducation         func(childComplexity int, id string) int
+		ProfileExperience        func(childComplexity int, id string) int
+		ProfileSkill             func(childComplexity int, id string) int
+		ReferenceLetter          func(childComplexity int, id string) int
+		ReferenceLetters         func(childComplexity int, userID string) int
+		Resume                   func(childComplexity int, id string) int
+		Resumes                  func(childComplexity int, userID string) int
+		SkillValidations         func(childComplexity int, skillID string) int
+		Testimonials             func(childComplexity int, profileID string) int
+		User                     func(childComplexity int, id string) int
 	}
 
 	ReferenceLetter struct {
@@ -422,6 +462,9 @@ type MutationResolver interface {
 	UploadFile(ctx context.Context, userID string, file graphql.Upload, forceReimport *bool) (model.UploadFileResponse, error)
 	UploadResume(ctx context.Context, userID string, file graphql.Upload, forceReimport *bool) (model.UploadResumeResponse, error)
 	DetectDocumentContent(ctx context.Context, userID string, file graphql.Upload) (model.DetectDocumentContentResponse, error)
+	ProcessDocument(ctx context.Context, userID string, input model.ProcessDocumentInput) (model.ProcessDocumentResponse, error)
+	ImportDocumentResults(ctx context.Context, userID string, input model.ImportDocumentResultsInput) (model.ImportDocumentResultsResponse, error)
+	ReportDocumentFeedback(ctx context.Context, userID string, input model.DocumentFeedbackInput) (*model.DocumentFeedbackResult, error)
 	UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error)
 	UploadProfilePhoto(ctx context.Context, userID string, file graphql.Upload) (model.UploadProfilePhotoResponse, error)
 	DeleteProfilePhoto(ctx context.Context, userID string) (model.DeleteProfilePhotoResponse, error)
@@ -464,6 +507,7 @@ type QueryResolver interface {
 	SkillValidations(ctx context.Context, skillID string) ([]*model.SkillValidation, error)
 	ExperienceValidations(ctx context.Context, experienceID string) ([]*model.ExperienceValidation, error)
 	CheckDuplicateFile(ctx context.Context, userID string, contentHash string) (*model.DuplicateFileDetected, error)
+	DocumentProcessingStatus(ctx context.Context, resumeID *string, referenceLetterID *string) (*model.DocumentProcessingStatus, error)
 }
 type SkillValidationResolver interface {
 	Skill(ctx context.Context, obj *model.SkillValidation) (*model.ProfileSkill, error)
@@ -697,6 +741,32 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DocumentDetectionResult.TestimonialAuthor(childComplexity), true
+
+	case "DocumentFeedbackResult.success":
+		if e.complexity.DocumentFeedbackResult.Success == nil {
+			break
+		}
+
+		return e.complexity.DocumentFeedbackResult.Success(childComplexity), true
+
+	case "DocumentProcessingStatus.allComplete":
+		if e.complexity.DocumentProcessingStatus.AllComplete == nil {
+			break
+		}
+
+		return e.complexity.DocumentProcessingStatus.AllComplete(childComplexity), true
+	case "DocumentProcessingStatus.referenceLetter":
+		if e.complexity.DocumentProcessingStatus.ReferenceLetter == nil {
+			break
+		}
+
+		return e.complexity.DocumentProcessingStatus.ReferenceLetter(childComplexity), true
+	case "DocumentProcessingStatus.resume":
+		if e.complexity.DocumentProcessingStatus.Resume == nil {
+			break
+		}
+
+		return e.complexity.DocumentProcessingStatus.Resume(childComplexity), true
 
 	case "DuplicateFileDetected.existingFile":
 		if e.complexity.DuplicateFileDetected.ExistingFile == nil {
@@ -994,6 +1064,51 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.FileValidationError.Message(childComplexity), true
 
+	case "ImportDocumentResultsError.field":
+		if e.complexity.ImportDocumentResultsError.Field == nil {
+			break
+		}
+
+		return e.complexity.ImportDocumentResultsError.Field(childComplexity), true
+	case "ImportDocumentResultsError.message":
+		if e.complexity.ImportDocumentResultsError.Message == nil {
+			break
+		}
+
+		return e.complexity.ImportDocumentResultsError.Message(childComplexity), true
+
+	case "ImportDocumentResultsResult.importedCount":
+		if e.complexity.ImportDocumentResultsResult.ImportedCount == nil {
+			break
+		}
+
+		return e.complexity.ImportDocumentResultsResult.ImportedCount(childComplexity), true
+	case "ImportDocumentResultsResult.profile":
+		if e.complexity.ImportDocumentResultsResult.Profile == nil {
+			break
+		}
+
+		return e.complexity.ImportDocumentResultsResult.Profile(childComplexity), true
+
+	case "ImportedCount.educations":
+		if e.complexity.ImportedCount.Educations == nil {
+			break
+		}
+
+		return e.complexity.ImportedCount.Educations(childComplexity), true
+	case "ImportedCount.experiences":
+		if e.complexity.ImportedCount.Experiences == nil {
+			break
+		}
+
+		return e.complexity.ImportedCount.Experiences(childComplexity), true
+	case "ImportedCount.skills":
+		if e.complexity.ImportedCount.Skills == nil {
+			break
+		}
+
+		return e.complexity.ImportedCount.Skills(childComplexity), true
+
 	case "Mutation.applyReferenceLetterValidations":
 		if e.complexity.Mutation.ApplyReferenceLetterValidations == nil {
 			break
@@ -1104,6 +1219,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DetectDocumentContent(childComplexity, args["userId"].(string), args["file"].(graphql.Upload)), true
+	case "Mutation.importDocumentResults":
+		if e.complexity.Mutation.ImportDocumentResults == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_importDocumentResults_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ImportDocumentResults(childComplexity, args["userId"].(string), args["input"].(model.ImportDocumentResultsInput)), true
+	case "Mutation.processDocument":
+		if e.complexity.Mutation.ProcessDocument == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_processDocument_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ProcessDocument(childComplexity, args["userId"].(string), args["input"].(model.ProcessDocumentInput)), true
+	case "Mutation.reportDocumentFeedback":
+		if e.complexity.Mutation.ReportDocumentFeedback == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportDocumentFeedback_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReportDocumentFeedback(childComplexity, args["userId"].(string), args["input"].(model.DocumentFeedbackInput)), true
 	case "Mutation.updateAuthor":
 		if e.complexity.Mutation.UpdateAuthor == nil {
 			break
@@ -1203,6 +1351,32 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UploadResume(childComplexity, args["userId"].(string), args["file"].(graphql.Upload), args["forceReimport"].(*bool)), true
+
+	case "ProcessDocumentError.field":
+		if e.complexity.ProcessDocumentError.Field == nil {
+			break
+		}
+
+		return e.complexity.ProcessDocumentError.Field(childComplexity), true
+	case "ProcessDocumentError.message":
+		if e.complexity.ProcessDocumentError.Message == nil {
+			break
+		}
+
+		return e.complexity.ProcessDocumentError.Message(childComplexity), true
+
+	case "ProcessDocumentResult.referenceLetterID":
+		if e.complexity.ProcessDocumentResult.ReferenceLetterID == nil {
+			break
+		}
+
+		return e.complexity.ProcessDocumentResult.ReferenceLetterID(childComplexity), true
+	case "ProcessDocumentResult.resumeId":
+		if e.complexity.ProcessDocumentResult.ResumeID == nil {
+			break
+		}
+
+		return e.complexity.ProcessDocumentResult.ResumeID(childComplexity), true
 
 	case "Profile.createdAt":
 		if e.complexity.Profile.CreatedAt == nil {
@@ -1561,6 +1735,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.CheckDuplicateFile(childComplexity, args["userId"].(string), args["contentHash"].(string)), true
+	case "Query.documentProcessingStatus":
+		if e.complexity.Query.DocumentProcessingStatus == nil {
+			break
+		}
+
+		args, err := ec.field_Query_documentProcessingStatus_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DocumentProcessingStatus(childComplexity, args["resumeId"].(*string), args["referenceLetterID"].(*string)), true
 	case "Query.experienceValidations":
 		if e.complexity.Query.ExperienceValidations == nil {
 			break
@@ -2094,8 +2279,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateEducationInput,
 		ec.unmarshalInputCreateExperienceInput,
 		ec.unmarshalInputCreateSkillInput,
+		ec.unmarshalInputDocumentFeedbackInput,
 		ec.unmarshalInputExperienceValidationInput,
+		ec.unmarshalInputImportDocumentResultsInput,
 		ec.unmarshalInputNewSkillInput,
+		ec.unmarshalInputProcessDocumentInput,
 		ec.unmarshalInputSkillValidationInput,
 		ec.unmarshalInputTestimonialInput,
 		ec.unmarshalInputUpdateAuthorInput,
@@ -3110,6 +3298,137 @@ type ExperienceValidation {
   createdAt: DateTime!
 }
 
+# ============================================================================
+# Unified Document Processing Schema
+# ============================================================================
+
+"""
+Input for processing a previously uploaded document.
+The fileId must reference a file previously stored via detectDocumentContent.
+"""
+input ProcessDocumentInput {
+  """ID of the file already stored via detectDocumentContent."""
+  fileId: ID!
+  """Whether to extract career/resume information from the document."""
+  extractCareerInfo: Boolean!
+  """Whether to extract testimonial/reference letter content from the document."""
+  extractTestimonial: Boolean!
+}
+
+"""
+IDs of the entities created for tracking extraction progress.
+"""
+type ProcessDocumentResult {
+  """Resume ID created for career info extraction (null if not requested)."""
+  resumeId: ID
+  """Reference letter ID created for testimonial extraction (null if not requested)."""
+  referenceLetterID: ID
+}
+
+"""
+Error returned when process document validation fails.
+"""
+type ProcessDocumentError {
+  """Error message describing the validation failure."""
+  message: String!
+  """The field that failed validation."""
+  field: String
+}
+
+"""
+Union type for process document result.
+"""
+union ProcessDocumentResponse = ProcessDocumentResult | ProcessDocumentError
+
+"""
+Aggregated processing status across resume and reference letter extraction.
+"""
+type DocumentProcessingStatus {
+  """Resume processing status (null if resume extraction was not requested)."""
+  resume: Resume
+  """Reference letter processing status (null if letter extraction was not requested)."""
+  referenceLetter: ReferenceLetter
+  """Overall status: true when all requested extractions are complete (COMPLETED or FAILED)."""
+  allComplete: Boolean!
+}
+
+"""
+Input for importing extracted document results into profile tables.
+"""
+input ImportDocumentResultsInput {
+  """Resume ID to materialize into profile (null to skip)."""
+  resumeId: ID
+  """Reference letter ID whose validations should be applied (null to skip)."""
+  referenceLetterID: ID
+}
+
+"""
+Counts of items imported into the profile.
+"""
+type ImportedCount {
+  """Number of work experiences materialized."""
+  experiences: Int!
+  """Number of education entries materialized."""
+  educations: Int!
+  """Number of skills materialized."""
+  skills: Int!
+}
+
+"""
+Result of importing document results into profile tables.
+"""
+type ImportDocumentResultsResult {
+  """The updated profile after materialization."""
+  profile: Profile!
+  """Counts of items that were imported."""
+  importedCount: ImportedCount!
+}
+
+"""
+Error returned when import document results validation fails.
+"""
+type ImportDocumentResultsError {
+  """Error message describing the failure."""
+  message: String!
+  """The field that caused the error."""
+  field: String
+}
+
+"""
+Union type for import document results.
+"""
+union ImportDocumentResultsResponse = ImportDocumentResultsResult | ImportDocumentResultsError
+
+"""
+The type of feedback being reported about document processing.
+"""
+enum DocumentFeedbackType {
+  """Feedback about incorrect document type detection."""
+  DETECTION_CORRECTION
+  """Feedback about extraction quality issues."""
+  EXTRACTION_QUALITY
+}
+
+"""
+Input for reporting feedback about document detection or extraction.
+"""
+input DocumentFeedbackInput {
+  """ID of the file the feedback relates to."""
+  fileId: ID!
+  """The type of feedback being reported."""
+  feedbackType: DocumentFeedbackType!
+  """Free-text message describing the issue."""
+  message: String!
+}
+
+"""
+Result of reporting document feedback.
+"""
+type DocumentFeedbackResult {
+  """Whether the feedback was recorded successfully."""
+  success: Boolean!
+}
+
 type Query {
   """
   Get a user by ID.
@@ -3198,6 +3517,13 @@ type Query {
   Used for pre-upload duplicate detection.
   """
   checkDuplicateFile(userId: ID!, contentHash: String!): DuplicateFileDetected
+
+  """
+  Get the processing status of a document.
+  Provide the resume ID and/or reference letter ID returned by processDocument.
+  Returns aggregated status across all requested extractions.
+  """
+  documentProcessingStatus(resumeId: ID, referenceLetterID: ID): DocumentProcessingStatus
 }
 
 # ============================================================================
@@ -3307,6 +3633,47 @@ type Mutation {
     """The document file to analyze (PDF, DOCX, or TXT only)."""
     file: Upload!
   ): DetectDocumentContentResponse!
+
+  # ============================================================================
+  # Unified Document Processing
+  # ============================================================================
+
+  """
+  Start processing a previously uploaded document for extraction.
+  The file must already exist (created via detectDocumentContent).
+  Creates resume and/or reference letter records as needed, enqueues extraction,
+  and returns IDs for polling via documentProcessingStatus.
+  At least one of extractCareerInfo or extractTestimonial must be true.
+  """
+  processDocument(
+    """The user ID requesting processing."""
+    userId: ID!
+    """Processing options specifying what to extract."""
+    input: ProcessDocumentInput!
+  ): ProcessDocumentResponse!
+
+  """
+  Import extracted document results into profile tables.
+  Materializes resume data (experiences, education, skills) and/or applies
+  reference letter validations. The referenced entities must be in COMPLETED status.
+  """
+  importDocumentResults(
+    """The user ID importing the results."""
+    userId: ID!
+    """Which document results to import."""
+    input: ImportDocumentResultsInput!
+  ): ImportDocumentResultsResponse!
+
+  """
+  Report feedback about document detection or extraction quality.
+  Feedback is logged for analysis; no table is created for MVP.
+  """
+  reportDocumentFeedback(
+    """The user ID reporting the feedback."""
+    userId: ID!
+    """The feedback details."""
+    input: DocumentFeedbackInput!
+  ): DocumentFeedbackResult!
 
   # ============================================================================
   # Profile Header Mutations
@@ -3646,6 +4013,54 @@ func (ec *executionContext) field_Mutation_detectDocumentContent_args(ctx contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_importDocumentResults_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNImportDocumentResultsInput2backendᚋinternalᚋgraphqlᚋmodelᚐImportDocumentResultsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_processDocument_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNProcessDocumentInput2backendᚋinternalᚋgraphqlᚋmodelᚐProcessDocumentInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reportDocumentFeedback_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDocumentFeedbackInput2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentFeedbackInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateAuthor_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3846,6 +4261,22 @@ func (ec *executionContext) field_Query_checkDuplicateFile_args(ctx context.Cont
 		return nil, err
 	}
 	args["contentHash"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_documentProcessingStatus_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "resumeId", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["resumeId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "referenceLetterID", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["referenceLetterID"] = arg1
 	return args, nil
 }
 
@@ -5082,6 +5513,168 @@ func (ec *executionContext) fieldContext_DocumentDetectionResult_fileId(_ contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentFeedbackResult_success(ctx context.Context, field graphql.CollectedField, obj *model.DocumentFeedbackResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentFeedbackResult_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentFeedbackResult_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentFeedbackResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentProcessingStatus_resume(ctx context.Context, field graphql.CollectedField, obj *model.DocumentProcessingStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentProcessingStatus_resume,
+		func(ctx context.Context) (any, error) {
+			return obj.Resume, nil
+		},
+		nil,
+		ec.marshalOResume2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐResume,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentProcessingStatus_resume(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentProcessingStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Resume_id(ctx, field)
+			case "status":
+				return ec.fieldContext_Resume_status(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_Resume_extractedData(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_Resume_errorMessage(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Resume_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Resume_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_Resume_user(ctx, field)
+			case "file":
+				return ec.fieldContext_Resume_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Resume", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentProcessingStatus_referenceLetter(ctx context.Context, field graphql.CollectedField, obj *model.DocumentProcessingStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentProcessingStatus_referenceLetter,
+		func(ctx context.Context) (any, error) {
+			return obj.ReferenceLetter, nil
+		},
+		nil,
+		ec.marshalOReferenceLetter2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐReferenceLetter,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentProcessingStatus_referenceLetter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentProcessingStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ReferenceLetter_id(ctx, field)
+			case "title":
+				return ec.fieldContext_ReferenceLetter_title(ctx, field)
+			case "authorName":
+				return ec.fieldContext_ReferenceLetter_authorName(ctx, field)
+			case "authorTitle":
+				return ec.fieldContext_ReferenceLetter_authorTitle(ctx, field)
+			case "organization":
+				return ec.fieldContext_ReferenceLetter_organization(ctx, field)
+			case "dateWritten":
+				return ec.fieldContext_ReferenceLetter_dateWritten(ctx, field)
+			case "rawText":
+				return ec.fieldContext_ReferenceLetter_rawText(ctx, field)
+			case "extractedData":
+				return ec.fieldContext_ReferenceLetter_extractedData(ctx, field)
+			case "status":
+				return ec.fieldContext_ReferenceLetter_status(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ReferenceLetter_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_ReferenceLetter_updatedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_ReferenceLetter_user(ctx, field)
+			case "file":
+				return ec.fieldContext_ReferenceLetter_file(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReferenceLetter", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DocumentProcessingStatus_allComplete(ctx context.Context, field graphql.CollectedField, obj *model.DocumentProcessingStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DocumentProcessingStatus_allComplete,
+		func(ctx context.Context) (any, error) {
+			return obj.AllComplete, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DocumentProcessingStatus_allComplete(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentProcessingStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6692,6 +7285,245 @@ func (ec *executionContext) fieldContext_FileValidationError_field(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _ImportDocumentResultsError_message(ctx context.Context, field graphql.CollectedField, obj *model.ImportDocumentResultsError) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportDocumentResultsError_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportDocumentResultsError_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportDocumentResultsError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportDocumentResultsError_field(ctx context.Context, field graphql.CollectedField, obj *model.ImportDocumentResultsError) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportDocumentResultsError_field,
+		func(ctx context.Context) (any, error) {
+			return obj.Field, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportDocumentResultsError_field(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportDocumentResultsError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportDocumentResultsResult_profile(ctx context.Context, field graphql.CollectedField, obj *model.ImportDocumentResultsResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportDocumentResultsResult_profile,
+		func(ctx context.Context) (any, error) {
+			return obj.Profile, nil
+		},
+		nil,
+		ec.marshalNProfile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐProfile,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportDocumentResultsResult_profile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportDocumentResultsResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Profile_id(ctx, field)
+			case "user":
+				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
+			case "profilePhotoUrl":
+				return ec.fieldContext_Profile_profilePhotoUrl(ctx, field)
+			case "experiences":
+				return ec.fieldContext_Profile_experiences(ctx, field)
+			case "educations":
+				return ec.fieldContext_Profile_educations(ctx, field)
+			case "skills":
+				return ec.fieldContext_Profile_skills(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Profile_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Profile_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Profile", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportDocumentResultsResult_importedCount(ctx context.Context, field graphql.CollectedField, obj *model.ImportDocumentResultsResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportDocumentResultsResult_importedCount,
+		func(ctx context.Context) (any, error) {
+			return obj.ImportedCount, nil
+		},
+		nil,
+		ec.marshalNImportedCount2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐImportedCount,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportDocumentResultsResult_importedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportDocumentResultsResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "experiences":
+				return ec.fieldContext_ImportedCount_experiences(ctx, field)
+			case "educations":
+				return ec.fieldContext_ImportedCount_educations(ctx, field)
+			case "skills":
+				return ec.fieldContext_ImportedCount_skills(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ImportedCount", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportedCount_experiences(ctx context.Context, field graphql.CollectedField, obj *model.ImportedCount) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportedCount_experiences,
+		func(ctx context.Context) (any, error) {
+			return obj.Experiences, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportedCount_experiences(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportedCount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportedCount_educations(ctx context.Context, field graphql.CollectedField, obj *model.ImportedCount) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportedCount_educations,
+		func(ctx context.Context) (any, error) {
+			return obj.Educations, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportedCount_educations(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportedCount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportedCount_skills(ctx context.Context, field graphql.CollectedField, obj *model.ImportedCount) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportedCount_skills,
+		func(ctx context.Context) (any, error) {
+			return obj.Skills, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportedCount_skills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportedCount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_uploadFile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6809,6 +7641,133 @@ func (ec *executionContext) fieldContext_Mutation_detectDocumentContent(ctx cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_detectDocumentContent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_processDocument(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_processDocument,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().ProcessDocument(ctx, fc.Args["userId"].(string), fc.Args["input"].(model.ProcessDocumentInput))
+		},
+		nil,
+		ec.marshalNProcessDocumentResponse2backendᚋinternalᚋgraphqlᚋmodelᚐProcessDocumentResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_processDocument(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ProcessDocumentResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_processDocument_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_importDocumentResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_importDocumentResults,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().ImportDocumentResults(ctx, fc.Args["userId"].(string), fc.Args["input"].(model.ImportDocumentResultsInput))
+		},
+		nil,
+		ec.marshalNImportDocumentResultsResponse2backendᚋinternalᚋgraphqlᚋmodelᚐImportDocumentResultsResponse,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_importDocumentResults(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ImportDocumentResultsResponse does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_importDocumentResults_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reportDocumentFeedback(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_reportDocumentFeedback,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().ReportDocumentFeedback(ctx, fc.Args["userId"].(string), fc.Args["input"].(model.DocumentFeedbackInput))
+		},
+		nil,
+		ec.marshalNDocumentFeedbackResult2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDocumentFeedbackResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reportDocumentFeedback(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_DocumentFeedbackResult_success(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DocumentFeedbackResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reportDocumentFeedback_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7511,6 +8470,122 @@ func (ec *executionContext) fieldContext_Mutation_deleteTestimonial(ctx context.
 	if fc.Args, err = ec.field_Mutation_deleteTestimonial_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProcessDocumentError_message(ctx context.Context, field graphql.CollectedField, obj *model.ProcessDocumentError) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProcessDocumentError_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProcessDocumentError_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProcessDocumentError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProcessDocumentError_field(ctx context.Context, field graphql.CollectedField, obj *model.ProcessDocumentError) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProcessDocumentError_field,
+		func(ctx context.Context) (any, error) {
+			return obj.Field, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProcessDocumentError_field(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProcessDocumentError",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProcessDocumentResult_resumeId(ctx context.Context, field graphql.CollectedField, obj *model.ProcessDocumentResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProcessDocumentResult_resumeId,
+		func(ctx context.Context) (any, error) {
+			return obj.ResumeID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProcessDocumentResult_resumeId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProcessDocumentResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProcessDocumentResult_referenceLetterID(ctx context.Context, field graphql.CollectedField, obj *model.ProcessDocumentResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ProcessDocumentResult_referenceLetterID,
+		func(ctx context.Context) (any, error) {
+			return obj.ReferenceLetterID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ProcessDocumentResult_referenceLetterID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProcessDocumentResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -10241,6 +11316,55 @@ func (ec *executionContext) fieldContext_Query_checkDuplicateFile(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_checkDuplicateFile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_documentProcessingStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_documentProcessingStatus,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().DocumentProcessingStatus(ctx, fc.Args["resumeId"].(*string), fc.Args["referenceLetterID"].(*string))
+		},
+		nil,
+		ec.marshalODocumentProcessingStatus2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDocumentProcessingStatus,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_documentProcessingStatus(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "resume":
+				return ec.fieldContext_DocumentProcessingStatus_resume(ctx, field)
+			case "referenceLetter":
+				return ec.fieldContext_DocumentProcessingStatus_referenceLetter(ctx, field)
+			case "allComplete":
+				return ec.fieldContext_DocumentProcessingStatus_allComplete(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DocumentProcessingStatus", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_documentProcessingStatus_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -14165,6 +15289,47 @@ func (ec *executionContext) unmarshalInputCreateSkillInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDocumentFeedbackInput(ctx context.Context, obj any) (model.DocumentFeedbackInput, error) {
+	var it model.DocumentFeedbackInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"fileId", "feedbackType", "message"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "fileId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FileID = data
+		case "feedbackType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("feedbackType"))
+			data, err := ec.unmarshalNDocumentFeedbackType2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentFeedbackType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FeedbackType = data
+		case "message":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Message = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputExperienceValidationInput(ctx context.Context, obj any) (model.ExperienceValidationInput, error) {
 	var it model.ExperienceValidationInput
 	asMap := map[string]any{}
@@ -14193,6 +15358,40 @@ func (ec *executionContext) unmarshalInputExperienceValidationInput(ctx context.
 				return it, err
 			}
 			it.QuoteSnippet = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputImportDocumentResultsInput(ctx context.Context, obj any) (model.ImportDocumentResultsInput, error) {
+	var it model.ImportDocumentResultsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"resumeId", "referenceLetterID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "resumeId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resumeId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResumeID = data
+		case "referenceLetterID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceLetterID"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReferenceLetterID = data
 		}
 	}
 
@@ -14234,6 +15433,47 @@ func (ec *executionContext) unmarshalInputNewSkillInput(ctx context.Context, obj
 				return it, err
 			}
 			it.QuoteContext = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputProcessDocumentInput(ctx context.Context, obj any) (model.ProcessDocumentInput, error) {
+	var it model.ProcessDocumentInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"fileId", "extractCareerInfo", "extractTestimonial"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "fileId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FileID = data
+		case "extractCareerInfo":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractCareerInfo"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractCareerInfo = data
+		case "extractTestimonial":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractTestimonial"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractTestimonial = data
 		}
 	}
 
@@ -14739,6 +15979,60 @@ func (ec *executionContext) _ExperienceResponse(ctx context.Context, sel ast.Sel
 			return typedObj
 		} else {
 			panic(fmt.Errorf("unexpected type %T; non-generated variants of ExperienceResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
+func (ec *executionContext) _ImportDocumentResultsResponse(ctx context.Context, sel ast.SelectionSet, obj model.ImportDocumentResultsResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ImportDocumentResultsResult:
+		return ec._ImportDocumentResultsResult(ctx, sel, &obj)
+	case *model.ImportDocumentResultsResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ImportDocumentResultsResult(ctx, sel, obj)
+	case model.ImportDocumentResultsError:
+		return ec._ImportDocumentResultsError(ctx, sel, &obj)
+	case *model.ImportDocumentResultsError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ImportDocumentResultsError(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of ImportDocumentResultsResponse must implement graphql.Marshaler", obj))
+		}
+	}
+}
+
+func (ec *executionContext) _ProcessDocumentResponse(ctx context.Context, sel ast.SelectionSet, obj model.ProcessDocumentResponse) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ProcessDocumentResult:
+		return ec._ProcessDocumentResult(ctx, sel, &obj)
+	case *model.ProcessDocumentResult:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProcessDocumentResult(ctx, sel, obj)
+	case model.ProcessDocumentError:
+		return ec._ProcessDocumentError(ctx, sel, &obj)
+	case *model.ProcessDocumentError:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProcessDocumentError(ctx, sel, obj)
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of ProcessDocumentResponse must implement graphql.Marshaler", obj))
 		}
 	}
 }
@@ -15342,6 +16636,88 @@ func (ec *executionContext) _DocumentDetectionResult(ctx context.Context, sel as
 			}
 		case "fileId":
 			out.Values[i] = ec._DocumentDetectionResult_fileId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var documentFeedbackResultImplementors = []string{"DocumentFeedbackResult"}
+
+func (ec *executionContext) _DocumentFeedbackResult(ctx context.Context, sel ast.SelectionSet, obj *model.DocumentFeedbackResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, documentFeedbackResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DocumentFeedbackResult")
+		case "success":
+			out.Values[i] = ec._DocumentFeedbackResult_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var documentProcessingStatusImplementors = []string{"DocumentProcessingStatus"}
+
+func (ec *executionContext) _DocumentProcessingStatus(ctx context.Context, sel ast.SelectionSet, obj *model.DocumentProcessingStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, documentProcessingStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DocumentProcessingStatus")
+		case "resume":
+			out.Values[i] = ec._DocumentProcessingStatus_resume(ctx, field, obj)
+		case "referenceLetter":
+			out.Values[i] = ec._DocumentProcessingStatus_referenceLetter(ctx, field, obj)
+		case "allComplete":
+			out.Values[i] = ec._DocumentProcessingStatus_allComplete(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16139,6 +17515,140 @@ func (ec *executionContext) _FileValidationError(ctx context.Context, sel ast.Se
 	return out
 }
 
+var importDocumentResultsErrorImplementors = []string{"ImportDocumentResultsError", "ImportDocumentResultsResponse"}
+
+func (ec *executionContext) _ImportDocumentResultsError(ctx context.Context, sel ast.SelectionSet, obj *model.ImportDocumentResultsError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, importDocumentResultsErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ImportDocumentResultsError")
+		case "message":
+			out.Values[i] = ec._ImportDocumentResultsError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "field":
+			out.Values[i] = ec._ImportDocumentResultsError_field(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var importDocumentResultsResultImplementors = []string{"ImportDocumentResultsResult", "ImportDocumentResultsResponse"}
+
+func (ec *executionContext) _ImportDocumentResultsResult(ctx context.Context, sel ast.SelectionSet, obj *model.ImportDocumentResultsResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, importDocumentResultsResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ImportDocumentResultsResult")
+		case "profile":
+			out.Values[i] = ec._ImportDocumentResultsResult_profile(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "importedCount":
+			out.Values[i] = ec._ImportDocumentResultsResult_importedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var importedCountImplementors = []string{"ImportedCount"}
+
+func (ec *executionContext) _ImportedCount(ctx context.Context, sel ast.SelectionSet, obj *model.ImportedCount) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, importedCountImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ImportedCount")
+		case "experiences":
+			out.Values[i] = ec._ImportedCount_experiences(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "educations":
+			out.Values[i] = ec._ImportedCount_educations(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "skills":
+			out.Values[i] = ec._ImportedCount_skills(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -16175,6 +17685,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "detectDocumentContent":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_detectDocumentContent(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "processDocument":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_processDocument(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "importDocumentResults":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_importDocumentResults(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reportDocumentFeedback":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportDocumentFeedback(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -16291,6 +17822,85 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var processDocumentErrorImplementors = []string{"ProcessDocumentError", "ProcessDocumentResponse"}
+
+func (ec *executionContext) _ProcessDocumentError(ctx context.Context, sel ast.SelectionSet, obj *model.ProcessDocumentError) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, processDocumentErrorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProcessDocumentError")
+		case "message":
+			out.Values[i] = ec._ProcessDocumentError_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "field":
+			out.Values[i] = ec._ProcessDocumentError_field(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var processDocumentResultImplementors = []string{"ProcessDocumentResult", "ProcessDocumentResponse"}
+
+func (ec *executionContext) _ProcessDocumentResult(ctx context.Context, sel ast.SelectionSet, obj *model.ProcessDocumentResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, processDocumentResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProcessDocumentResult")
+		case "resumeId":
+			out.Values[i] = ec._ProcessDocumentResult_resumeId(ctx, field, obj)
+		case "referenceLetterID":
+			out.Values[i] = ec._ProcessDocumentResult_referenceLetterID(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17179,6 +18789,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_checkDuplicateFile(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "documentProcessingStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_documentProcessingStatus(ctx, field)
 				return res
 			}
 
@@ -18622,6 +20251,35 @@ func (ec *executionContext) marshalNDocumentDetectionResult2ᚖbackendᚋinterna
 	return ec._DocumentDetectionResult(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNDocumentFeedbackInput2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentFeedbackInput(ctx context.Context, v any) (model.DocumentFeedbackInput, error) {
+	res, err := ec.unmarshalInputDocumentFeedbackInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDocumentFeedbackResult2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentFeedbackResult(ctx context.Context, sel ast.SelectionSet, v model.DocumentFeedbackResult) graphql.Marshaler {
+	return ec._DocumentFeedbackResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDocumentFeedbackResult2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDocumentFeedbackResult(ctx context.Context, sel ast.SelectionSet, v *model.DocumentFeedbackResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DocumentFeedbackResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDocumentFeedbackType2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentFeedbackType(ctx context.Context, v any) (model.DocumentFeedbackType, error) {
+	var res model.DocumentFeedbackType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDocumentFeedbackType2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentFeedbackType(ctx context.Context, sel ast.SelectionSet, v model.DocumentFeedbackType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNDocumentTypeHint2backendᚋinternalᚋgraphqlᚋmodelᚐDocumentTypeHint(ctx context.Context, v any) (model.DocumentTypeHint, error) {
 	var res model.DocumentTypeHint
 	err := res.UnmarshalGQL(v)
@@ -19004,6 +20662,31 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNImportDocumentResultsInput2backendᚋinternalᚋgraphqlᚋmodelᚐImportDocumentResultsInput(ctx context.Context, v any) (model.ImportDocumentResultsInput, error) {
+	res, err := ec.unmarshalInputImportDocumentResultsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNImportDocumentResultsResponse2backendᚋinternalᚋgraphqlᚋmodelᚐImportDocumentResultsResponse(ctx context.Context, sel ast.SelectionSet, v model.ImportDocumentResultsResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ImportDocumentResultsResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNImportedCount2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐImportedCount(ctx context.Context, sel ast.SelectionSet, v *model.ImportedCount) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ImportedCount(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19038,6 +20721,21 @@ func (ec *executionContext) unmarshalNNewSkillInput2ᚕᚖbackendᚋinternalᚋg
 func (ec *executionContext) unmarshalNNewSkillInput2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐNewSkillInput(ctx context.Context, v any) (*model.NewSkillInput, error) {
 	res, err := ec.unmarshalInputNewSkillInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNProcessDocumentInput2backendᚋinternalᚋgraphqlᚋmodelᚐProcessDocumentInput(ctx context.Context, v any) (model.ProcessDocumentInput, error) {
+	res, err := ec.unmarshalInputProcessDocumentInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNProcessDocumentResponse2backendᚋinternalᚋgraphqlᚋmodelᚐProcessDocumentResponse(ctx context.Context, sel ast.SelectionSet, v model.ProcessDocumentResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProcessDocumentResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNProfile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐProfile(ctx context.Context, sel ast.SelectionSet, v *model.Profile) graphql.Marshaler {
@@ -19990,6 +21688,13 @@ func (ec *executionContext) marshalODateTime2ᚖtimeᚐTime(ctx context.Context,
 	_ = ctx
 	res := graphql.MarshalTime(*v)
 	return res
+}
+
+func (ec *executionContext) marshalODocumentProcessingStatus2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDocumentProcessingStatus(ctx context.Context, sel ast.SelectionSet, v *model.DocumentProcessingStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._DocumentProcessingStatus(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalODuplicateFileDetected2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐDuplicateFileDetected(ctx context.Context, sel ast.SelectionSet, v *model.DuplicateFileDetected) graphql.Marshaler {

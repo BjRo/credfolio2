@@ -4,6 +4,7 @@ package resolver
 import (
 	"backend/internal/domain"
 	"backend/internal/logger"
+	"backend/internal/service"
 )
 
 // This file will not be regenerated automatically.
@@ -29,6 +30,7 @@ type Resolver struct {
 	storage               domain.Storage
 	jobEnqueuer           domain.JobEnqueuer
 	documentExtractor     domain.DocumentExtractor
+	materializationSvc    *service.MaterializationService
 	log                   logger.Logger
 }
 
@@ -49,6 +51,7 @@ func NewResolver(
 	storage domain.Storage,
 	jobEnqueuer domain.JobEnqueuer,
 	documentExtractor domain.DocumentExtractor,
+	materializationSvc *service.MaterializationService,
 	log logger.Logger,
 ) *Resolver {
 	return &Resolver{
@@ -67,6 +70,7 @@ func NewResolver(
 		storage:               storage,
 		jobEnqueuer:           jobEnqueuer,
 		documentExtractor:     documentExtractor,
+		materializationSvc:    materializationSvc,
 		log:                   log,
 	}
 }

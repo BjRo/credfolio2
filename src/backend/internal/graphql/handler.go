@@ -11,6 +11,7 @@ import (
 	"backend/internal/graphql/generated"
 	"backend/internal/graphql/resolver"
 	"backend/internal/logger"
+	"backend/internal/service"
 )
 
 // NewHandler creates a new GraphQL HTTP handler with the given repositories.
@@ -30,11 +31,12 @@ func NewHandler(
 	storage domain.Storage,
 	jobEnqueuer domain.JobEnqueuer,
 	documentExtractor domain.DocumentExtractor,
+	materializationSvc *service.MaterializationService,
 	log logger.Logger,
 ) http.Handler {
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(generated.Config{
-			Resolvers: resolver.NewResolver(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, storage, jobEnqueuer, documentExtractor, log),
+			Resolvers: resolver.NewResolver(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, storage, jobEnqueuer, documentExtractor, materializationSvc, log),
 		}),
 	)
 	return srv

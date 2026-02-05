@@ -27,6 +27,7 @@ import (
 	"backend/internal/job"
 	"backend/internal/logger"
 	"backend/internal/repository/postgres"
+	"backend/internal/service"
 )
 
 func main() {
@@ -99,13 +100,19 @@ func run(log logger.Logger) error {
 	// Create job queue workers
 	workers := river.NewWorkers()
 
+	// Create shared materialization service
+	materializationSvc := service.NewMaterializationService(profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo)
+
 	// Register processing workers only if LLM is configured
 	if extractor != nil {
-		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, fileStorage, extractor, log))
+		river.AddWorker(workers, job.NewResumeProcessingWorker(resumeRepo, fileRepo, fileStorage, extractor, materializationSvc, log))
 		log.Info("Resume processing worker registered", logger.Feature("jobs"))
 
 		river.AddWorker(workers, job.NewReferenceLetterProcessingWorker(refLetterRepo, fileRepo, profileRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, fileStorage, extractor, log))
 		log.Info("Reference letter processing worker registered", logger.Feature("jobs"))
+
+		river.AddWorker(workers, job.NewDocumentProcessingWorker(resumeRepo, refLetterRepo, fileRepo, profileRepo, profileSkillRepo, fileStorage, extractor, log))
+		log.Info("Unified document processing worker registered", logger.Feature("jobs"))
 	} else {
 		log.Warning("Processing workers not registered (LLM not configured)", logger.Feature("jobs"))
 	}
@@ -147,7 +154,7 @@ func run(log logger.Logger) error {
 	r.Post("/api/extract", extractHandler.ServeHTTP)
 
 	// GraphQL API
-	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, fileStorage, queueClient, extractor, log))
+	r.Handle("/graphql", graphql.NewHandler(userRepo, fileRepo, refLetterRepo, resumeRepo, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo, fileStorage, queueClient, extractor, materializationSvc, log))
 	r.Get("/playground", graphql.NewPlaygroundHandler("/graphql").ServeHTTP)
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)

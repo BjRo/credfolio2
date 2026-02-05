@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +14,7 @@ import (
 
 	"backend/internal/domain"
 	"backend/internal/logger"
+	"backend/internal/service"
 )
 
 // ResumeProcessingArgs contains the arguments for a resume processing job.
@@ -39,39 +39,30 @@ func (ResumeProcessingArgs) InsertOpts() river.InsertOpts {
 // ResumeProcessingWorker processes uploaded resumes to extract profile data.
 type ResumeProcessingWorker struct {
 	river.WorkerDefaults[ResumeProcessingArgs]
-	resumeRepo     domain.ResumeRepository
-	fileRepo       domain.FileRepository
-	profileRepo    domain.ProfileRepository
-	profileExpRepo   domain.ProfileExperienceRepository
-	profileEduRepo   domain.ProfileEducationRepository
-	profileSkillRepo domain.ProfileSkillRepository
-	storage          domain.Storage
-	extractor      domain.DocumentExtractor
-	log            logger.Logger
+	resumeRepo        domain.ResumeRepository
+	fileRepo          domain.FileRepository
+	storage           domain.Storage
+	extractor         domain.DocumentExtractor
+	materializationSvc *service.MaterializationService
+	log               logger.Logger
 }
 
 // NewResumeProcessingWorker creates a new resume processing worker.
 func NewResumeProcessingWorker(
 	resumeRepo domain.ResumeRepository,
 	fileRepo domain.FileRepository,
-	profileRepo domain.ProfileRepository,
-	profileExpRepo domain.ProfileExperienceRepository,
-	profileEduRepo domain.ProfileEducationRepository,
-	profileSkillRepo domain.ProfileSkillRepository,
 	storage domain.Storage,
 	extractor domain.DocumentExtractor,
+	materializationSvc *service.MaterializationService,
 	log logger.Logger,
 ) *ResumeProcessingWorker {
 	return &ResumeProcessingWorker{
-		resumeRepo:       resumeRepo,
-		fileRepo:         fileRepo,
-		profileRepo:      profileRepo,
-		profileExpRepo:   profileExpRepo,
-		profileEduRepo:   profileEduRepo,
-		profileSkillRepo: profileSkillRepo,
-		storage:          storage,
-		extractor:        extractor,
-		log:              log,
+		resumeRepo:        resumeRepo,
+		fileRepo:          fileRepo,
+		storage:           storage,
+		extractor:         extractor,
+		materializationSvc: materializationSvc,
+		log:               log,
 	}
 }
 
@@ -183,7 +174,7 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 			logger.Err(err),
 		)
 	} else if resume != nil {
-		if matErr := w.materializeExtractedData(ctx, args.ResumeID, resume.UserID, extractedData); matErr != nil {
+		if _, matErr := w.materializationSvc.MaterializeResumeData(ctx, args.ResumeID, resume.UserID, extractedData); matErr != nil {
 			w.log.Error("Failed to materialize extracted data into profile",
 				logger.Feature("jobs"),
 				logger.String("resume_id", args.ResumeID.String()),
@@ -307,169 +298,4 @@ func (w *ResumeProcessingWorker) updateStatusFailed(ctx context.Context, id uuid
 			logger.Err(err),
 		)
 	}
-}
-
-// materializeExtractedData creates profile education, experience, and skill rows from extracted resume data.
-// This makes profile tables the single source of truth for display.
-// Each category (experiences, education, skills) is processed independently so that failures in one
-// category don't prevent the others from being saved.
-func (w *ResumeProcessingWorker) materializeExtractedData(ctx context.Context, resumeID uuid.UUID, userID uuid.UUID, data *domain.ResumeExtractedData) error {
-	// Get or create the user's profile
-	profile, err := w.profileRepo.GetOrCreateByUserID(ctx, userID)
-	if err != nil {
-		return fmt.Errorf("failed to get or create profile: %w", err)
-	}
-
-	// Delete any existing entries from this resume (idempotent re-processing)
-	if delErr := w.profileExpRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
-		return fmt.Errorf("failed to delete existing experiences for resume: %w", delErr)
-	}
-	if delErr := w.profileEduRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
-		return fmt.Errorf("failed to delete existing education for resume: %w", delErr)
-	}
-	if delErr := w.profileSkillRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
-		return fmt.Errorf("failed to delete existing skills for resume: %w", delErr)
-	}
-
-	// Process each category independently to ensure partial success
-	var errors []error
-
-	if expErr := w.materializeExperiences(ctx, resumeID, profile.ID, data.Experience); expErr != nil {
-		errors = append(errors, fmt.Errorf("experiences: %w", expErr))
-	}
-	if eduErr := w.materializeEducation(ctx, resumeID, profile.ID, data.Education); eduErr != nil {
-		errors = append(errors, fmt.Errorf("education: %w", eduErr))
-	}
-	if skillErr := w.materializeSkills(ctx, resumeID, profile.ID, data.Skills); skillErr != nil {
-		errors = append(errors, fmt.Errorf("skills: %w", skillErr))
-	}
-
-	// Return aggregated error if any category failed
-	if len(errors) > 0 {
-		return fmt.Errorf("materialization errors: %v", errors)
-	}
-
-	return nil
-}
-
-func (w *ResumeProcessingWorker) materializeExperiences(ctx context.Context, resumeID, profileID uuid.UUID, experiences []domain.WorkExperience) error {
-	displayOrder, err := w.profileExpRepo.GetNextDisplayOrder(ctx, profileID)
-	if err != nil {
-		return fmt.Errorf("failed to get next experience display order: %w", err)
-	}
-
-	for i, exp := range experiences {
-		originalJSON, marshalErr := json.Marshal(exp)
-		if marshalErr != nil {
-			return fmt.Errorf("failed to marshal experience original data: %w", marshalErr)
-		}
-
-		profileExp := &domain.ProfileExperience{
-			ID:             uuid.New(),
-			ProfileID:      profileID,
-			Company:        exp.Company,
-			Title:          exp.Title,
-			Location:       exp.Location,
-			StartDate:      exp.StartDate,
-			EndDate:        exp.EndDate,
-			IsCurrent:      exp.IsCurrent,
-			Description:    exp.Description,
-			DisplayOrder:   displayOrder + i,
-			Source:         domain.ExperienceSourceResumeExtracted,
-			SourceResumeID: &resumeID,
-			OriginalData:   originalJSON,
-		}
-		if createErr := w.profileExpRepo.Create(ctx, profileExp); createErr != nil {
-			return fmt.Errorf("failed to create experience for %s at %s: %w", exp.Title, exp.Company, createErr)
-		}
-	}
-	return nil
-}
-
-func (w *ResumeProcessingWorker) materializeEducation(ctx context.Context, resumeID, profileID uuid.UUID, educations []domain.Education) error {
-	displayOrder, err := w.profileEduRepo.GetNextDisplayOrder(ctx, profileID)
-	if err != nil {
-		return fmt.Errorf("failed to get next education display order: %w", err)
-	}
-
-	for i, edu := range educations {
-		originalJSON, marshalErr := json.Marshal(edu)
-		if marshalErr != nil {
-			return fmt.Errorf("failed to marshal education original data: %w", marshalErr)
-		}
-
-		degree := "Degree"
-		if edu.Degree != nil && *edu.Degree != "" {
-			degree = *edu.Degree
-		}
-
-		profileEdu := &domain.ProfileEducation{
-			ID:             uuid.New(),
-			ProfileID:      profileID,
-			Institution:    edu.Institution,
-			Degree:         degree,
-			Field:          edu.Field,
-			StartDate:      edu.StartDate,
-			EndDate:        edu.EndDate,
-			Description:    edu.Achievements, // Map achievements -> description
-			GPA:            edu.GPA,
-			DisplayOrder:   displayOrder + i,
-			Source:         domain.ExperienceSourceResumeExtracted,
-			SourceResumeID: &resumeID,
-			OriginalData:   originalJSON,
-		}
-		if createErr := w.profileEduRepo.Create(ctx, profileEdu); createErr != nil {
-			return fmt.Errorf("failed to create education for %s: %w", edu.Institution, createErr)
-		}
-	}
-	return nil
-}
-
-func (w *ResumeProcessingWorker) materializeSkills(ctx context.Context, resumeID, profileID uuid.UUID, skills []string) error {
-	displayOrder, err := w.profileSkillRepo.GetNextDisplayOrder(ctx, profileID)
-	if err != nil {
-		return fmt.Errorf("failed to get next skill display order: %w", err)
-	}
-
-	// Deduplicate skills before inserting to avoid unique constraint violations
-	dedupedSkills := deduplicateSkills(skills)
-
-	for i, skillName := range dedupedSkills {
-		profileSkill := &domain.ProfileSkill{
-			ID:             uuid.New(),
-			ProfileID:      profileID,
-			Name:           skillName,
-			NormalizedName: strings.ToLower(skillName),
-			Category:       "TECHNICAL",
-			DisplayOrder:   displayOrder + i,
-			Source:         domain.ExperienceSourceResumeExtracted,
-			SourceResumeID: &resumeID,
-		}
-		// Use CreateIgnoreDuplicate to silently skip skills that already exist
-		// (e.g., from manual entry or previous extraction from another resume)
-		if createErr := w.profileSkillRepo.CreateIgnoreDuplicate(ctx, profileSkill); createErr != nil {
-			return fmt.Errorf("failed to create skill %q: %w", skillName, createErr)
-		}
-	}
-	return nil
-}
-
-// deduplicateSkills removes duplicate skills by normalized name, preserving the first occurrence.
-// It also trims whitespace and filters out empty strings.
-func deduplicateSkills(skills []string) []string {
-	seen := make(map[string]bool)
-	result := make([]string, 0, len(skills))
-
-	for _, skill := range skills {
-		trimmed := strings.TrimSpace(skill)
-		if trimmed == "" {
-			continue
-		}
-		normalized := strings.ToLower(trimmed)
-		if !seen[normalized] {
-			seen[normalized] = true
-			result = append(result, trimmed)
-		}
-	}
-	return result
 }

@@ -769,6 +769,275 @@ func (r *mutationResolver) DetectDocumentContent(ctx context.Context, userID str
 	}, nil
 }
 
+// ProcessDocument is the resolver for the processDocument field.
+func (r *mutationResolver) ProcessDocument(ctx context.Context, userID string, input model.ProcessDocumentInput) (model.ProcessDocumentResponse, error) {
+	r.log.Info("Process document requested",
+		logger.Feature("document-processing"),
+		logger.String("user_id", userID),
+		logger.String("file_id", input.FileID),
+		logger.Bool("extract_career_info", input.ExtractCareerInfo),
+		logger.Bool("extract_testimonial", input.ExtractTestimonial),
+	)
+
+	// Validate at least one extraction type is requested
+	if !input.ExtractCareerInfo && !input.ExtractTestimonial {
+		return &model.ProcessDocumentError{
+			Message: "at least one of extractCareerInfo or extractTestimonial must be true",
+		}, nil
+	}
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return &model.ProcessDocumentError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		return &model.ProcessDocumentError{
+			Message: "user not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Parse and validate file ID
+	fileID, err := uuid.Parse(input.FileID)
+	if err != nil {
+		return &model.ProcessDocumentError{
+			Message: "invalid file ID format",
+			Field:   stringPtr("fileId"),
+		}, nil
+	}
+
+	// Verify file exists and belongs to user
+	file, err := r.fileRepo.GetByID(ctx, fileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file: %w", err)
+	}
+	if file == nil {
+		return &model.ProcessDocumentError{
+			Message: "file not found",
+			Field:   stringPtr("fileId"),
+		}, nil
+	}
+	if file.UserID != uid {
+		return &model.ProcessDocumentError{
+			Message: "file does not belong to user",
+			Field:   stringPtr("fileId"),
+		}, nil
+	}
+
+	result := &model.ProcessDocumentResult{}
+	var resumeID *uuid.UUID
+	var refLetterID *uuid.UUID
+
+	// Create resume record if career info extraction requested
+	if input.ExtractCareerInfo {
+		resume := &domain.Resume{
+			ID:     uuid.New(),
+			UserID: uid,
+			FileID: fileID,
+			Status: domain.ResumeStatusPending,
+		}
+		if err := r.resumeRepo.Create(ctx, resume); err != nil {
+			return nil, fmt.Errorf("failed to create resume record: %w", err)
+		}
+		rid := resume.ID.String()
+		result.ResumeID = &rid
+		resumeID = &resume.ID
+	}
+
+	// Create reference letter record if testimonial extraction requested
+	if input.ExtractTestimonial {
+		refLetter := &domain.ReferenceLetter{
+			ID:     uuid.New(),
+			UserID: uid,
+			FileID: &fileID,
+			Status: domain.ReferenceLetterStatusPending,
+		}
+		if err := r.refLetterRepo.Create(ctx, refLetter); err != nil {
+			return nil, fmt.Errorf("failed to create reference letter record: %w", err)
+		}
+		lid := refLetter.ID.String()
+		result.ReferenceLetterID = &lid
+		refLetterID = &refLetter.ID
+	}
+
+	// Enqueue the unified processing job
+	if err := r.jobEnqueuer.EnqueueUnifiedDocumentProcessing(ctx, domain.UnifiedDocumentProcessingRequest{
+		StorageKey:        file.StorageKey,
+		FileID:            fileID,
+		ContentType:       file.ContentType,
+		UserID:            uid,
+		ResumeID:          resumeID,
+		ReferenceLetterID: refLetterID,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to enqueue document processing: %w", err)
+	}
+
+	r.log.Info("Document processing enqueued",
+		logger.Feature("document-processing"),
+		logger.String("user_id", userID),
+		logger.String("file_id", input.FileID),
+	)
+
+	return result, nil
+}
+
+// ImportDocumentResults is the resolver for the importDocumentResults field.
+func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID string, input model.ImportDocumentResultsInput) (model.ImportDocumentResultsResponse, error) {
+	r.log.Info("Import document results requested",
+		logger.Feature("document-processing"),
+		logger.String("user_id", userID),
+	)
+
+	// Validate at least one ID is provided
+	if input.ResumeID == nil && input.ReferenceLetterID == nil {
+		return &model.ImportDocumentResultsError{
+			Message: "at least one of resumeId or referenceLetterID must be provided",
+		}, nil
+	}
+
+	// Parse and validate user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return &model.ImportDocumentResultsError{
+			Message: "invalid user ID format",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	// Verify user exists
+	user, err := r.userRepo.GetByID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		return &model.ImportDocumentResultsError{
+			Message: "user not found",
+			Field:   stringPtr("userId"),
+		}, nil
+	}
+
+	imported := &model.ImportedCount{}
+
+	// Materialize resume data if resume ID is provided
+	if input.ResumeID != nil {
+		resumeID, err := uuid.Parse(*input.ResumeID)
+		if err != nil {
+			return &model.ImportDocumentResultsError{
+				Message: "invalid resume ID format",
+				Field:   stringPtr("resumeId"),
+			}, nil
+		}
+
+		resume, err := r.resumeRepo.GetByID(ctx, resumeID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get resume: %w", err)
+		}
+		if resume == nil {
+			return &model.ImportDocumentResultsError{
+				Message: "resume not found",
+				Field:   stringPtr("resumeId"),
+			}, nil
+		}
+		if resume.UserID != uid {
+			return &model.ImportDocumentResultsError{
+				Message: "resume does not belong to user",
+				Field:   stringPtr("resumeId"),
+			}, nil
+		}
+		if resume.Status != domain.ResumeStatusCompleted {
+			return &model.ImportDocumentResultsError{
+				Message: fmt.Sprintf("resume is not ready for import (status: %s)", resume.Status),
+				Field:   stringPtr("resumeId"),
+			}, nil
+		}
+
+		// Parse extracted data
+		var extractedData domain.ResumeExtractedData
+		if err := json.Unmarshal(resume.ExtractedData, &extractedData); err != nil {
+			return nil, fmt.Errorf("failed to parse extracted resume data: %w", err)
+		}
+
+		// Materialize into profile tables
+		matResult, err := r.materializationSvc.MaterializeResumeData(ctx, resumeID, uid, &extractedData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to materialize resume data: %w", err)
+		}
+
+		imported.Experiences = matResult.Experiences
+		imported.Educations = matResult.Educations
+		imported.Skills = matResult.Skills
+
+		r.log.Info("Resume data materialized",
+			logger.Feature("document-processing"),
+			logger.String("resume_id", resumeID.String()),
+			logger.Int("experiences", matResult.Experiences),
+			logger.Int("educations", matResult.Educations),
+			logger.Int("skills", matResult.Skills),
+		)
+	}
+
+	// Get or create the profile to return
+	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile: %w", err)
+	}
+
+	// Build profile response with current data
+	gqlProfile := domainProfileToGQL(profile, nil)
+
+	return &model.ImportDocumentResultsResult{
+		Profile:       gqlProfile,
+		ImportedCount: imported,
+	}, nil
+}
+
+// ReportDocumentFeedback is the resolver for the reportDocumentFeedback field.
+func (r *mutationResolver) ReportDocumentFeedback(ctx context.Context, userID string, input model.DocumentFeedbackInput) (*model.DocumentFeedbackResult, error) {
+	// Parse user ID
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return &model.DocumentFeedbackResult{Success: false}, nil
+	}
+
+	// Parse file ID
+	fileID, err := uuid.Parse(input.FileID)
+	if err != nil {
+		return &model.DocumentFeedbackResult{Success: false}, nil
+	}
+
+	// Map GraphQL enum to domain type
+	var feedbackType domain.DocumentFeedbackType
+	switch input.FeedbackType {
+	case model.DocumentFeedbackTypeDetectionCorrection:
+		feedbackType = domain.DocumentFeedbackDetectionCorrection
+	case model.DocumentFeedbackTypeExtractionQuality:
+		feedbackType = domain.DocumentFeedbackExtractionQuality
+	default:
+		feedbackType = domain.DocumentFeedbackType(input.FeedbackType.String())
+	}
+
+	// Log structured feedback (no table for MVP)
+	r.log.Info("Document feedback reported",
+		logger.Feature("document-feedback"),
+		logger.String("user_id", uid.String()),
+		logger.String("file_id", fileID.String()),
+		logger.String("feedback_type", string(feedbackType)),
+		logger.String("message", input.Message),
+	)
+
+	return &model.DocumentFeedbackResult{Success: true}, nil
+}
+
 // UpdateProfileHeader is the resolver for the updateProfileHeader field.
 func (r *mutationResolver) UpdateProfileHeader(ctx context.Context, userID string, input model.UpdateProfileHeaderInput) (model.ProfileHeaderResponse, error) {
 	r.log.Info("Updating profile header",
@@ -3374,6 +3643,68 @@ func (r *queryResolver) CheckDuplicateFile(ctx context.Context, userID string, c
 		ExistingReferenceLetter: gqlExistingRefLetter,
 		Message:                 fmt.Sprintf("This document was already uploaded on %s.", existingFile.CreatedAt.Format("Jan 2, 2006")),
 	}, nil
+}
+
+// DocumentProcessingStatus is the resolver for the documentProcessingStatus field.
+func (r *queryResolver) DocumentProcessingStatus(ctx context.Context, resumeID *string, referenceLetterID *string) (*model.DocumentProcessingStatus, error) {
+	if resumeID == nil && referenceLetterID == nil {
+		return nil, fmt.Errorf("at least one of resumeId or referenceLetterID must be provided")
+	}
+
+	result := &model.DocumentProcessingStatus{
+		AllComplete: true,
+	}
+
+	// Check resume status
+	if resumeID != nil {
+		rid, err := uuid.Parse(*resumeID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid resume ID: %w", err)
+		}
+		resume, err := r.resumeRepo.GetByID(ctx, rid)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get resume: %w", err)
+		}
+		if resume != nil {
+			user, _ := r.userRepo.GetByID(ctx, resume.UserID)
+			gqlUser := toGraphQLUser(user)
+			file, _ := r.fileRepo.GetByID(ctx, resume.FileID)
+			gqlFile := toGraphQLFile(file, gqlUser)
+			result.Resume = toGraphQLResume(resume, gqlUser, gqlFile)
+
+			if resume.Status != domain.ResumeStatusCompleted && resume.Status != domain.ResumeStatusFailed {
+				result.AllComplete = false
+			}
+		}
+	}
+
+	// Check reference letter status
+	if referenceLetterID != nil {
+		lid, err := uuid.Parse(*referenceLetterID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid reference letter ID: %w", err)
+		}
+		refLetter, err := r.refLetterRepo.GetByID(ctx, lid)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get reference letter: %w", err)
+		}
+		if refLetter != nil {
+			user, _ := r.userRepo.GetByID(ctx, refLetter.UserID)
+			gqlUser := toGraphQLUser(user)
+			var gqlFile *model.File
+			if refLetter.FileID != nil {
+				file, _ := r.fileRepo.GetByID(ctx, *refLetter.FileID)
+				gqlFile = toGraphQLFile(file, gqlUser)
+			}
+			result.ReferenceLetter = toGraphQLReferenceLetter(refLetter, gqlUser, gqlFile)
+
+			if refLetter.Status != domain.ReferenceLetterStatusCompleted && refLetter.Status != domain.ReferenceLetterStatusFailed {
+				result.AllComplete = false
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // Skill is the resolver for the skill field.
