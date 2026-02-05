@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 
 	"backend/internal/domain"
 	"backend/internal/logger"
@@ -198,15 +200,22 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 // The profileSkills parameter provides context about existing profile skills, enabling the LLM to
 // distinguish between mentions of existing skills (for validation) and newly discovered skills.
 func (w *ReferenceLetterProcessingWorker) extractLetterData(ctx context.Context, data []byte, contentType string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
+	ctx, span := otel.Tracer("credfolio").Start(ctx, "reference_letter_extraction")
+	defer span.End()
+
 	// First, extract text from the document
 	text, err := w.extractor.ExtractText(ctx, data, contentType)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to extract text: %w", err)
 	}
 
 	// Then, use LLM to extract structured credibility data from the text
 	extractedData, err := w.extractor.ExtractLetterData(ctx, text, profileSkills)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to extract letter data: %w", err)
 	}
 

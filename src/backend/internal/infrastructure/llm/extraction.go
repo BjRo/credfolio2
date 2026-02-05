@@ -10,8 +10,15 @@ import (
 	"strings"
 	"text/template"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	otelTrace "go.opentelemetry.io/otel/trace"
+
 	"backend/internal/domain"
 )
+
+const tracerName = "credfolio"
 
 // Embedded prompts from external files for easier maintenance and review.
 // Prompts are split into system (instructions) and user (content) for better
@@ -128,6 +135,13 @@ func (e *DocumentExtractor) getProviderForChain(chain ProviderChain) domain.LLMP
 
 // ExtractTextWithRequest extracts text from a document image or PDF using a detailed request.
 func (e *DocumentExtractor) ExtractTextWithRequest(ctx context.Context, req ExtractionRequest) (*ExtractionResult, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "pdf_text_extraction",
+		otelTrace.WithAttributes(
+			attribute.String("content_type", string(req.MediaType)),
+		),
+	)
+	defer span.End()
+
 	// Get the appropriate provider for document extraction
 	provider := e.getProviderForChain(e.config.DocumentExtractionChain)
 
@@ -157,6 +171,8 @@ func (e *DocumentExtractor) ExtractTextWithRequest(ctx context.Context, req Extr
 	// Execute extraction
 	resp, err := provider.Complete(ctx, llmReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
@@ -359,6 +375,13 @@ type ResumeTemplateData struct {
 // ExtractResumeData implements domain.DocumentExtractor interface.
 // It extracts structured resume data from text using LLM with structured output.
 func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) (*domain.ResumeExtractedData, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "resume_data_extraction",
+		otelTrace.WithAttributes(
+			attribute.Int("text_length", len(text)),
+		),
+	)
+	defer span.End()
+
 	// Get the appropriate provider for resume extraction
 	provider := e.getProviderForChain(e.config.ResumeExtractionChain)
 
@@ -380,6 +403,8 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 
 	resp, err := provider.Complete(ctx, llmReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("LLM extraction failed: %w", err)
 	}
 
@@ -546,6 +571,13 @@ type LetterTemplateData struct {
 //
 //nolint:gocyclo // Complex extraction logic with multiple validation paths
 func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "letter_data_extraction",
+		otelTrace.WithAttributes(
+			attribute.Int("text_length", len(text)),
+		),
+	)
+	defer span.End()
+
 	// Get the appropriate provider for resume extraction (reusing same chain for letters)
 	provider := e.getProviderForChain(e.config.ResumeExtractionChain)
 
@@ -567,6 +599,8 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 
 	resp, err := provider.Complete(ctx, llmReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("LLM extraction failed: %w", err)
 	}
 

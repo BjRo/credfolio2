@@ -12,6 +12,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"backend/internal/domain"
 	"backend/internal/logger"
@@ -1101,5 +1104,61 @@ func TestMapAuthorToTestimonialRelationship(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("mapAuthorToTestimonialRelationship(%q) = %q, want %q", tt.input, result, tt.expected)
 		}
+	}
+}
+
+func setupLetterTestTracing(t *testing.T) *tracetest.InMemoryExporter {
+	t.Helper()
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	prev := otel.GetTracerProvider()
+	otel.SetTracerProvider(tp)
+	t.Cleanup(func() {
+		otel.SetTracerProvider(prev)
+		_ = tp.Shutdown(context.Background()) //nolint:errcheck // best effort cleanup in test
+	})
+	return exporter
+}
+
+func TestExtractLetterData_CreatesParentSpan(t *testing.T) {
+	exporter := setupLetterTestTracing(t)
+
+	extractor := &mockDocumentExtractor{
+		extractTextResult: "Reference letter text",
+		extractLetterData: &domain.ExtractedLetterData{
+			Author: domain.ExtractedAuthor{
+				Name:         "Author Name",
+				Relationship: domain.AuthorRelationshipPeer,
+			},
+			Testimonials:       []domain.ExtractedTestimonial{},
+			SkillMentions:      []domain.ExtractedSkillMention{},
+			ExperienceMentions: []domain.ExtractedExperienceMention{},
+			DiscoveredSkills:   []domain.DiscoveredSkill{},
+		},
+	}
+
+	worker := &ReferenceLetterProcessingWorker{
+		extractor: extractor,
+	}
+
+	_, err := worker.extractLetterData(context.Background(), []byte("pdf data"), "application/pdf", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	spans := exporter.GetSpans()
+	var found bool
+	for _, s := range spans {
+		if s.Name == "reference_letter_extraction" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		names := make([]string, len(spans))
+		for i, s := range spans {
+			names[i] = s.Name
+		}
+		t.Errorf("expected span named 'reference_letter_extraction', got spans: %v", names)
 	}
 }
