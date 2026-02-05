@@ -1,11 +1,11 @@
 ---
 # credfolio2-d5jd
 title: Detection results, selection and correction UI
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-02-05T18:02:39Z
-updated_at: 2026-02-05T21:18:43Z
+updated_at: 2026-02-05T21:29:58Z
 parent: credfolio2-3ram
 blocking:
     - credfolio2-sxcf
