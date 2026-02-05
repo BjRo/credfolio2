@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { DetectionProgress } from "./DetectionProgress";
 import { DetectionResults } from "./DetectionResults";
 import { DocumentUpload } from "./DocumentUpload";
 import { ExtractionProgress } from "./ExtractionProgress";
@@ -20,17 +21,27 @@ const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";
 export function UploadFlow() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<FlowStep>("upload");
-  const [detection, setDetection] = useState<DocumentDetectionResult | null>(null);
+  const [fileId, setFileId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [detection, setDetection] = useState<DocumentDetectionResult | null>(null);
   const [extractCareerInfo, setExtractCareerInfo] = useState(false);
   const [extractTestimonial, setExtractTestimonial] = useState(false);
   const [extractionResults, setExtractionResults] = useState<ExtractionResults | null>(null);
   const [processIds, setProcessIds] = useState<ProcessDocumentIds | null>(null);
 
-  const handleDetectionComplete = (result: DocumentDetectionResult, name: string) => {
-    setDetection(result);
+  const handleUploadComplete = (id: string, name: string) => {
+    setFileId(id);
     setFileName(name);
+    setCurrentStep("detect");
+  };
+
+  const handleDetectionComplete = (result: DocumentDetectionResult) => {
+    setDetection(result);
     setCurrentStep("review-detection");
+  };
+
+  const handleDetectionError = (_error: string) => {
+    // Error is displayed by DetectionProgress component
   };
 
   const handleProceed = (careerInfo: boolean, testimonial: boolean) => {
@@ -41,6 +52,7 @@ export function UploadFlow() {
 
   const handleCancel = () => {
     setDetection(null);
+    setFileId(null);
     setFileName(null);
     setCurrentStep("upload");
   };
@@ -71,7 +83,15 @@ export function UploadFlow() {
       <StepIndicator steps={FLOW_STEPS} currentStep={currentStep} />
 
       {currentStep === "upload" && (
-        <DocumentUpload userId={DEMO_USER_ID} onDetectionComplete={handleDetectionComplete} />
+        <DocumentUpload userId={DEMO_USER_ID} onUploadComplete={handleUploadComplete} />
+      )}
+
+      {currentStep === "detect" && fileId && (
+        <DetectionProgress
+          fileId={fileId}
+          onDetectionComplete={handleDetectionComplete}
+          onError={handleDetectionError}
+        />
       )}
 
       {currentStep === "review-detection" && detection && fileName && (
@@ -84,10 +104,10 @@ export function UploadFlow() {
         />
       )}
 
-      {currentStep === "extract" && detection && (
+      {currentStep === "extract" && fileId && (
         <ExtractionProgress
           userId={DEMO_USER_ID}
-          fileId={detection.fileId}
+          fileId={fileId}
           extractCareerInfo={extractCareerInfo}
           extractTestimonial={extractTestimonial}
           onComplete={handleExtractionComplete}
@@ -95,10 +115,10 @@ export function UploadFlow() {
         />
       )}
 
-      {currentStep === "review-results" && extractionResults && detection && processIds && (
+      {currentStep === "review-results" && extractionResults && fileId && processIds && (
         <ExtractionReview
           userId={DEMO_USER_ID}
-          fileId={detection.fileId}
+          fileId={fileId}
           results={extractionResults}
           processDocumentIds={processIds}
           onImportComplete={handleImportComplete}

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type {
+  DetectionProgressProps,
   DetectionResultsProps,
   DocumentDetectionResult,
   ExtractionProgressProps,
@@ -18,31 +19,49 @@ vi.mock("next/navigation", () => ({
 // Mock the child components to isolate UploadFlow logic
 vi.mock("./DocumentUpload", () => ({
   DocumentUpload: ({
-    onDetectionComplete,
+    onUploadComplete,
   }: {
     userId: string;
-    onDetectionComplete: (detection: DocumentDetectionResult, fileName: string) => void;
+    onUploadComplete: (fileId: string, fileName: string) => void;
   }) => (
     <div data-testid="document-upload">
       <button
         type="button"
-        data-testid="simulate-detection"
-        onClick={() =>
-          onDetectionComplete(
-            {
-              hasCareerInfo: true,
-              hasTestimonial: true,
-              testimonialAuthor: "Jane Doe",
-              confidence: 0.92,
-              summary: "A hybrid document",
-              documentTypeHint: "HYBRID",
-              fileId: "file-456",
-            },
-            "test-document.pdf"
-          )
-        }
+        data-testid="simulate-upload"
+        onClick={() => onUploadComplete("file-456", "test-document.pdf")}
       >
-        Simulate Detection
+        Simulate Upload
+      </button>
+    </div>
+  ),
+}));
+
+const mockDetection: DocumentDetectionResult = {
+  hasCareerInfo: true,
+  hasTestimonial: true,
+  testimonialAuthor: "Jane Doe",
+  confidence: 0.92,
+  summary: "A hybrid document",
+  documentTypeHint: "HYBRID",
+  fileId: "file-456",
+};
+
+vi.mock("./DetectionProgress", () => ({
+  DetectionProgress: ({ onDetectionComplete, onError }: DetectionProgressProps) => (
+    <div data-testid="detection-progress">
+      <button
+        type="button"
+        data-testid="simulate-detection-complete"
+        onClick={() => onDetectionComplete(mockDetection)}
+      >
+        Complete Detection
+      </button>
+      <button
+        type="button"
+        data-testid="simulate-detection-error"
+        onClick={() => onError("Detection failed")}
+      >
+        Fail Detection
       </button>
     </div>
   ),
@@ -124,6 +143,18 @@ vi.mock("./ExtractionReview", () => ({
   ),
 }));
 
+// Helper: navigate from upload → detect → review-detection
+async function navigateToDetectionResults() {
+  fireEvent.click(screen.getByTestId("simulate-upload"));
+  await waitFor(() => {
+    expect(screen.getByTestId("detection-progress")).toBeInTheDocument();
+  });
+  fireEvent.click(screen.getByTestId("simulate-detection-complete"));
+  await waitFor(() => {
+    expect(screen.getByTestId("detection-results")).toBeInTheDocument();
+  });
+}
+
 describe("UploadFlow", () => {
   it("renders StepIndicator with upload as current step", () => {
     render(<UploadFlow />);
@@ -136,11 +167,27 @@ describe("UploadFlow", () => {
     expect(screen.getByTestId("document-upload")).toBeInTheDocument();
   });
 
+  it("transitions to detect step when upload completes", async () => {
+    render(<UploadFlow />);
+
+    fireEvent.click(screen.getByTestId("simulate-upload"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("detection-progress")).toBeInTheDocument();
+      const analyzeStep = screen.getByText("Analyze").closest("li");
+      expect(analyzeStep).toHaveAttribute("aria-current", "step");
+    });
+  });
+
   it("transitions to review-detection step when detection completes", async () => {
     render(<UploadFlow />);
 
-    const simulateButton = screen.getByTestId("simulate-detection");
-    fireEvent.click(simulateButton);
+    fireEvent.click(screen.getByTestId("simulate-upload"));
+    await waitFor(() => {
+      expect(screen.getByTestId("detection-progress")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("simulate-detection-complete"));
 
     await waitFor(() => {
       const reviewStep = screen.getByText("Review Detection").closest("li");
@@ -151,18 +198,15 @@ describe("UploadFlow", () => {
   it("shows DetectionResults component after detection completes", async () => {
     render(<UploadFlow />);
 
-    fireEvent.click(screen.getByTestId("simulate-detection"));
+    await navigateToDetectionResults();
 
-    await waitFor(() => {
-      expect(screen.getByTestId("detection-results")).toBeInTheDocument();
-      expect(screen.getByTestId("detection-filename")).toHaveTextContent("test-document.pdf");
-    });
+    expect(screen.getByTestId("detection-filename")).toHaveTextContent("test-document.pdf");
   });
 
-  it("hides DocumentUpload after detection completes", async () => {
+  it("hides DocumentUpload after upload completes", async () => {
     render(<UploadFlow />);
 
-    fireEvent.click(screen.getByTestId("simulate-detection"));
+    fireEvent.click(screen.getByTestId("simulate-upload"));
 
     await waitFor(() => {
       expect(screen.queryByTestId("document-upload")).not.toBeInTheDocument();
@@ -172,11 +216,7 @@ describe("UploadFlow", () => {
   it("transitions to extract step when user proceeds", async () => {
     render(<UploadFlow />);
 
-    fireEvent.click(screen.getByTestId("simulate-detection"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("detection-results")).toBeInTheDocument();
-    });
+    await navigateToDetectionResults();
 
     fireEvent.click(screen.getByTestId("proceed-button"));
 
@@ -189,11 +229,7 @@ describe("UploadFlow", () => {
   it("returns to upload step when user cancels", async () => {
     render(<UploadFlow />);
 
-    fireEvent.click(screen.getByTestId("simulate-detection"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("detection-results")).toBeInTheDocument();
-    });
+    await navigateToDetectionResults();
 
     fireEvent.click(screen.getByTestId("cancel-button"));
 
@@ -207,10 +243,7 @@ describe("UploadFlow", () => {
   it("shows ExtractionProgress in extract step", async () => {
     render(<UploadFlow />);
 
-    fireEvent.click(screen.getByTestId("simulate-detection"));
-    await waitFor(() => {
-      expect(screen.getByTestId("detection-results")).toBeInTheDocument();
-    });
+    await navigateToDetectionResults();
 
     fireEvent.click(screen.getByTestId("proceed-button"));
 
@@ -224,10 +257,7 @@ describe("UploadFlow", () => {
   it("transitions to review-results when extraction completes", async () => {
     render(<UploadFlow />);
 
-    fireEvent.click(screen.getByTestId("simulate-detection"));
-    await waitFor(() => {
-      expect(screen.getByTestId("detection-results")).toBeInTheDocument();
-    });
+    await navigateToDetectionResults();
 
     fireEvent.click(screen.getByTestId("proceed-button"));
     await waitFor(() => {
@@ -246,11 +276,8 @@ describe("UploadFlow", () => {
   it("redirects to profile when import completes", async () => {
     render(<UploadFlow />);
 
-    // Navigate to extraction review
-    fireEvent.click(screen.getByTestId("simulate-detection"));
-    await waitFor(() => {
-      expect(screen.getByTestId("detection-results")).toBeInTheDocument();
-    });
+    await navigateToDetectionResults();
+
     fireEvent.click(screen.getByTestId("proceed-button"));
     await waitFor(() => {
       expect(screen.getByTestId("extraction-progress")).toBeInTheDocument();
@@ -274,11 +301,8 @@ describe("UploadFlow", () => {
   it("returns to review-detection when back is clicked from review-results", async () => {
     render(<UploadFlow />);
 
-    // Navigate to extraction review
-    fireEvent.click(screen.getByTestId("simulate-detection"));
-    await waitFor(() => {
-      expect(screen.getByTestId("detection-results")).toBeInTheDocument();
-    });
+    await navigateToDetectionResults();
+
     fireEvent.click(screen.getByTestId("proceed-button"));
     await waitFor(() => {
       expect(screen.getByTestId("extraction-progress")).toBeInTheDocument();

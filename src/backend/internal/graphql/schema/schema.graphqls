@@ -196,17 +196,43 @@ type DocumentDetectionResult {
 }
 
 """
-Result of a successful document detection.
+Result of a successful document upload for detection.
+Returns the file ID for polling detection status.
 """
-type DetectDocumentContentResult {
-  """The detection results."""
-  detection: DocumentDetectionResult!
+type UploadForDetectionResult {
+  """The ID of the uploaded file."""
+  fileId: ID!
 }
 
 """
-Union type for detect document content result.
+Union type for upload for detection result.
 """
-union DetectDocumentContentResponse = DetectDocumentContentResult | FileValidationError
+union UploadForDetectionResponse = UploadForDetectionResult | FileValidationError
+
+"""
+Status of asynchronous document detection.
+"""
+enum DetectionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+"""
+Status of a document detection job.
+Poll this query to track detection progress after uploadForDetection.
+"""
+type DocumentDetectionStatus {
+  """The file ID being detected."""
+  fileId: ID!
+  """Current detection status."""
+  status: DetectionStatus!
+  """Detection results, available when status is COMPLETED."""
+  detection: DocumentDetectionResult
+  """Error message, set when status is FAILED."""
+  error: String
+}
 
 # ============================================================================
 # Main Types
@@ -914,10 +940,10 @@ type ExperienceValidation {
 
 """
 Input for processing a previously uploaded document.
-The fileId must reference a file previously stored via detectDocumentContent.
+The fileId must reference a file previously stored via uploadForDetection.
 """
 input ProcessDocumentInput {
-  """ID of the file already stored via detectDocumentContent."""
+  """ID of the file already stored via uploadForDetection."""
   fileId: ID!
   """Whether to extract career/resume information from the document."""
   extractCareerInfo: Boolean!
@@ -1134,6 +1160,12 @@ type Query {
   Returns aggregated status across all requested extractions.
   """
   documentProcessingStatus(resumeId: ID, referenceLetterID: ID): DocumentProcessingStatus
+
+  """
+  Get the detection status for an uploaded document.
+  Poll this after uploadForDetection to get detection results.
+  """
+  documentDetectionStatus(fileId: ID!): DocumentDetectionStatus
 }
 
 # ============================================================================
@@ -1232,17 +1264,16 @@ type Mutation {
   # ============================================================================
 
   """
-  Upload a document and run lightweight content detection.
-  Quickly classifies the document content (career info, testimonials, or both)
-  without running full extraction. The file is stored for subsequent processing.
-  Returns detection results synchronously.
+  Upload a document and start asynchronous content detection.
+  Stores the file and enqueues a background detection job.
+  Poll documentDetectionStatus to get detection results.
   """
-  detectDocumentContent(
+  uploadForDetection(
     """The user ID uploading the document."""
     userId: ID!
     """The document file to analyze (PDF, DOCX, or TXT only)."""
     file: Upload!
-  ): DetectDocumentContentResponse!
+  ): UploadForDetectionResponse!
 
   # ============================================================================
   # Unified Document Processing
@@ -1250,7 +1281,7 @@ type Mutation {
 
   """
   Start processing a previously uploaded document for extraction.
-  The file must already exist (created via detectDocumentContent).
+  The file must already exist (created via uploadForDetection).
   Creates resume and/or reference letter records as needed, enqueues extraction,
   and returns IDs for polling via documentProcessingStatus.
   At least one of extractCareerInfo or extractTestimonial must be true.

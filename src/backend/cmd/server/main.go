@@ -113,6 +113,9 @@ func run(log logger.Logger) error {
 
 		river.AddWorker(workers, job.NewDocumentProcessingWorker(resumeRepo, refLetterRepo, fileRepo, profileRepo, profileSkillRepo, fileStorage, extractor, log))
 		log.Info("Unified document processing worker registered", logger.Feature("jobs"))
+
+		river.AddWorker(workers, job.NewDocumentDetectionWorker(fileRepo, fileStorage, extractor, log))
+		log.Info("Document detection worker registered", logger.Feature("jobs"))
 	} else {
 		log.Warning("Processing workers not registered (LLM not configured)", logger.Feature("jobs"))
 	}

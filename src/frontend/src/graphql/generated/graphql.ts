@@ -174,15 +174,13 @@ export type DeleteResult = {
   success: Scalars['Boolean']['output'];
 };
 
-/** Union type for detect document content result. */
-export type DetectDocumentContentResponse = DetectDocumentContentResult | FileValidationError;
-
-/** Result of a successful document detection. */
-export type DetectDocumentContentResult = {
-  __typename?: 'DetectDocumentContentResult';
-  /** The detection results. */
-  detection: DocumentDetectionResult;
-};
+/** Status of asynchronous document detection. */
+export enum DetectionStatus {
+  Completed = 'COMPLETED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Processing = 'PROCESSING'
+}
 
 /** A skill discovered in a reference letter that may not be on the profile. */
 export type DiscoveredSkill = {
@@ -215,6 +213,22 @@ export type DocumentDetectionResult = {
   summary: Scalars['String']['output'];
   /** Name of the testimonial author (person who wrote the recommendation), if detected. */
   testimonialAuthor?: Maybe<Scalars['String']['output']>;
+};
+
+/**
+ * Status of a document detection job.
+ * Poll this query to track detection progress after uploadForDetection.
+ */
+export type DocumentDetectionStatus = {
+  __typename?: 'DocumentDetectionStatus';
+  /** Detection results, available when status is COMPLETED. */
+  detection?: Maybe<DocumentDetectionResult>;
+  /** Error message, set when status is FAILED. */
+  error?: Maybe<Scalars['String']['output']>;
+  /** The file ID being detected. */
+  fileId: Scalars['ID']['output'];
+  /** Current detection status. */
+  status: DetectionStatus;
 };
 
 /** Input for reporting feedback about document detection or extraction. */
@@ -514,13 +528,6 @@ export type Mutation = {
   /** Delete a testimonial. */
   deleteTestimonial: DeleteResult;
   /**
-   * Upload a document and run lightweight content detection.
-   * Quickly classifies the document content (career info, testimonials, or both)
-   * without running full extraction. The file is stored for subsequent processing.
-   * Returns detection results synchronously.
-   */
-  detectDocumentContent: DetectDocumentContentResponse;
-  /**
    * Import extracted document results into profile tables.
    * Materializes resume data (experiences, education, skills) and/or applies
    * reference letter validations. The referenced entities must be in COMPLETED status.
@@ -528,7 +535,7 @@ export type Mutation = {
   importDocumentResults: ImportDocumentResultsResponse;
   /**
    * Start processing a previously uploaded document for extraction.
-   * The file must already exist (created via detectDocumentContent).
+   * The file must already exist (created via uploadForDetection).
    * Creates resume and/or reference letter records as needed, enqueues extraction,
    * and returns IDs for polling via documentProcessingStatus.
    * At least one of extractCareerInfo or extractTestimonial must be true.
@@ -580,6 +587,12 @@ export type Mutation = {
    * unless forceReimport is true.
    */
   uploadFile: UploadFileResponse;
+  /**
+   * Upload a document and start asynchronous content detection.
+   * Stores the file and enqueues a background detection job.
+   * Poll documentDetectionStatus to get detection results.
+   */
+  uploadForDetection: UploadForDetectionResponse;
   /**
    * Upload a profile photo.
    * Accepts JPEG, PNG, GIF, or WebP images (max 5MB).
@@ -647,12 +660,6 @@ export type MutationDeleteTestimonialArgs = {
 };
 
 
-export type MutationDetectDocumentContentArgs = {
-  file: Scalars['Upload']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-
 export type MutationImportDocumentResultsArgs = {
   input: ImportDocumentResultsInput;
   userId: Scalars['ID']['input'];
@@ -714,6 +721,12 @@ export type MutationUploadFileArgs = {
 };
 
 
+export type MutationUploadForDetectionArgs = {
+  file: Scalars['Upload']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationUploadProfilePhotoArgs = {
   file: Scalars['Upload']['input'];
   userId: Scalars['ID']['input'];
@@ -747,14 +760,14 @@ export type ProcessDocumentError = {
 
 /**
  * Input for processing a previously uploaded document.
- * The fileId must reference a file previously stored via detectDocumentContent.
+ * The fileId must reference a file previously stored via uploadForDetection.
  */
 export type ProcessDocumentInput = {
   /** Whether to extract career/resume information from the document. */
   extractCareerInfo: Scalars['Boolean']['input'];
   /** Whether to extract testimonial/reference letter content from the document. */
   extractTestimonial: Scalars['Boolean']['input'];
-  /** ID of the file already stored via detectDocumentContent. */
+  /** ID of the file already stored via uploadForDetection. */
   fileId: Scalars['ID']['input'];
 };
 
@@ -913,6 +926,11 @@ export type Query = {
    */
   checkDuplicateFile?: Maybe<DuplicateFileDetected>;
   /**
+   * Get the detection status for an uploaded document.
+   * Poll this after uploadForDetection to get detection results.
+   */
+  documentDetectionStatus?: Maybe<DocumentDetectionStatus>;
+  /**
    * Get the processing status of a document.
    * Provide the resume ID and/or reference letter ID returned by processDocument.
    * Returns aggregated status across all requested extractions.
@@ -965,6 +983,11 @@ export type QueryAuthorsArgs = {
 export type QueryCheckDuplicateFileArgs = {
   contentHash: Scalars['String']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type QueryDocumentDetectionStatusArgs = {
+  fileId: Scalars['ID']['input'];
 };
 
 
@@ -1311,6 +1334,19 @@ export type UploadFileResult = {
   referenceLetter: ReferenceLetter;
 };
 
+/** Union type for upload for detection result. */
+export type UploadForDetectionResponse = FileValidationError | UploadForDetectionResult;
+
+/**
+ * Result of a successful document upload for detection.
+ * Returns the file ID for polling detection status.
+ */
+export type UploadForDetectionResult = {
+  __typename?: 'UploadForDetectionResult';
+  /** The ID of the uploaded file. */
+  fileId: Scalars['ID']['output'];
+};
+
 /** Union type for profile photo upload result. */
 export type UploadProfilePhotoResponse = FileValidationError | UploadProfilePhotoResult;
 
@@ -1511,15 +1547,15 @@ export type UploadAuthorImageMutation = { __typename?: 'Mutation', uploadAuthorI
     | { __typename: 'UploadAuthorImageResult', file: { __typename?: 'File', id: string, filename: string, contentType: string, sizeBytes: number }, author: { __typename?: 'Author', id: string, name: string, title?: string | null, company?: string | null, linkedInUrl?: string | null, imageUrl?: string | null, updatedAt: string } }
    };
 
-export type DetectDocumentContentMutationVariables = Exact<{
+export type UploadForDetectionMutationVariables = Exact<{
   userId: Scalars['ID']['input'];
   file: Scalars['Upload']['input'];
 }>;
 
 
-export type DetectDocumentContentMutation = { __typename?: 'Mutation', detectDocumentContent:
-    | { __typename: 'DetectDocumentContentResult', detection: { __typename?: 'DocumentDetectionResult', hasCareerInfo: boolean, hasTestimonial: boolean, testimonialAuthor?: string | null, confidence: number, summary: string, documentTypeHint: DocumentTypeHint, fileId: string } }
+export type UploadForDetectionMutation = { __typename?: 'Mutation', uploadForDetection:
     | { __typename: 'FileValidationError', message: string, field: string }
+    | { __typename: 'UploadForDetectionResult', fileId: string }
    };
 
 export type ReportDocumentFeedbackMutationVariables = Exact<{
@@ -1629,6 +1665,13 @@ export type GetExperienceValidationsQueryVariables = Exact<{
 
 export type GetExperienceValidationsQuery = { __typename?: 'Query', experienceValidations: Array<{ __typename?: 'ExperienceValidation', id: string, quoteSnippet?: string | null, createdAt: string, referenceLetter: { __typename?: 'ReferenceLetter', id: string, extractedData?: { __typename?: 'ExtractedLetterData', author: { __typename?: 'ExtractedAuthor', name: string, title?: string | null, company?: string | null, relationship: AuthorRelationship } } | null } }> };
 
+export type GetDocumentDetectionStatusQueryVariables = Exact<{
+  fileId: Scalars['ID']['input'];
+}>;
+
+
+export type GetDocumentDetectionStatusQuery = { __typename?: 'Query', documentDetectionStatus?: { __typename?: 'DocumentDetectionStatus', fileId: string, status: DetectionStatus, error?: string | null, detection?: { __typename?: 'DocumentDetectionResult', hasCareerInfo: boolean, hasTestimonial: boolean, testimonialAuthor?: string | null, confidence: number, summary: string, documentTypeHint: DocumentTypeHint, fileId: string } | null } | null };
+
 export type GetDocumentProcessingStatusQueryVariables = Exact<{
   resumeId?: InputMaybe<Scalars['ID']['input']>;
   referenceLetterID?: InputMaybe<Scalars['ID']['input']>;
@@ -1655,7 +1698,7 @@ export const DeleteProfilePhotoDocument = {"kind":"Document","definitions":[{"ki
 export const DeleteTestimonialDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteTestimonial"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteTestimonial"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"deletedId"}}]}}]}}]} as unknown as DocumentNode<DeleteTestimonialMutation, DeleteTestimonialMutationVariables>;
 export const UpdateAuthorDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateAuthor"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateAuthorInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateAuthor"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"linkedInUrl"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<UpdateAuthorMutation, UpdateAuthorMutationVariables>;
 export const UploadAuthorImageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UploadAuthorImage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"authorId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"uploadAuthorImage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"authorId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"authorId"}}},{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"UploadAuthorImageResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"sizeBytes"}}]}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"linkedInUrl"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FileValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<UploadAuthorImageMutation, UploadAuthorImageMutationVariables>;
-export const DetectDocumentContentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DetectDocumentContent"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"detectDocumentContent"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"DetectDocumentContentResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"detection"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasCareerInfo"}},{"kind":"Field","name":{"kind":"Name","value":"hasTestimonial"}},{"kind":"Field","name":{"kind":"Name","value":"testimonialAuthor"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}},{"kind":"Field","name":{"kind":"Name","value":"summary"}},{"kind":"Field","name":{"kind":"Name","value":"documentTypeHint"}},{"kind":"Field","name":{"kind":"Name","value":"fileId"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FileValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<DetectDocumentContentMutation, DetectDocumentContentMutationVariables>;
+export const UploadForDetectionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UploadForDetection"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"uploadForDetection"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"UploadForDetectionResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"fileId"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FileValidationError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<UploadForDetectionMutation, UploadForDetectionMutationVariables>;
 export const ReportDocumentFeedbackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ReportDocumentFeedback"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"DocumentFeedbackInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"reportDocumentFeedback"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}}]}}]}}]} as unknown as DocumentNode<ReportDocumentFeedbackMutation, ReportDocumentFeedbackMutationVariables>;
 export const ProcessDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ProcessDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ProcessDocumentInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"processDocument"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ProcessDocumentResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"resumeId"}},{"kind":"Field","name":{"kind":"Name","value":"referenceLetterID"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ProcessDocumentError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<ProcessDocumentMutation, ProcessDocumentMutationVariables>;
 export const ImportDocumentResultsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ImportDocumentResults"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ImportDocumentResultsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"importDocumentResults"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ImportDocumentResultsResult"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"importedCount"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"experiences"}},{"kind":"Field","name":{"kind":"Name","value":"educations"}},{"kind":"Field","name":{"kind":"Name","value":"skills"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ImportDocumentResultsError"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"field"}}]}}]}}]}}]} as unknown as DocumentNode<ImportDocumentResultsMutation, ImportDocumentResultsMutationVariables>;
@@ -1670,4 +1713,5 @@ export const GetProfileDocument = {"kind":"Document","definitions":[{"kind":"Ope
 export const GetTestimonialsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetTestimonials"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"profileId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"testimonials"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"profileId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"profileId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"linkedInUrl"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}}]}},{"kind":"Field","name":{"kind":"Name","value":"authorName"}},{"kind":"Field","name":{"kind":"Name","value":"authorTitle"}},{"kind":"Field","name":{"kind":"Name","value":"authorCompany"}},{"kind":"Field","name":{"kind":"Name","value":"relationship"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"validatedSkills"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"file"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetTestimonialsQuery, GetTestimonialsQueryVariables>;
 export const GetSkillValidationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSkillValidations"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"skillId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skillValidations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"skillId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"skillId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"quoteSnippet"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"relationship"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetSkillValidationsQuery, GetSkillValidationsQueryVariables>;
 export const GetExperienceValidationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetExperienceValidations"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"experienceId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"experienceValidations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"experienceId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"experienceId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"quoteSnippet"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"relationship"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetExperienceValidationsQuery, GetExperienceValidationsQueryVariables>;
+export const GetDocumentDetectionStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDocumentDetectionStatus"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"fileId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"documentDetectionStatus"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"fileId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"fileId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"fileId"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"detection"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasCareerInfo"}},{"kind":"Field","name":{"kind":"Name","value":"hasTestimonial"}},{"kind":"Field","name":{"kind":"Name","value":"testimonialAuthor"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}},{"kind":"Field","name":{"kind":"Name","value":"summary"}},{"kind":"Field","name":{"kind":"Name","value":"documentTypeHint"}},{"kind":"Field","name":{"kind":"Name","value":"fileId"}}]}},{"kind":"Field","name":{"kind":"Name","value":"error"}}]}}]}}]} as unknown as DocumentNode<GetDocumentDetectionStatusQuery, GetDocumentDetectionStatusQueryVariables>;
 export const GetDocumentProcessingStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDocumentProcessingStatus"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"resumeId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"referenceLetterID"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"documentProcessingStatus"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"resumeId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"resumeId"}}},{"kind":"Argument","name":{"kind":"Name","value":"referenceLetterID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"referenceLetterID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"allComplete"}},{"kind":"Field","name":{"kind":"Name","value":"resume"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"phone"}},{"kind":"Field","name":{"kind":"Name","value":"location"}},{"kind":"Field","name":{"kind":"Name","value":"summary"}},{"kind":"Field","name":{"kind":"Name","value":"extractedAt"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errorMessage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"referenceLetter"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"extractedData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"relationship"}}]}},{"kind":"Field","name":{"kind":"Name","value":"testimonials"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"skillsMentioned"}}]}},{"kind":"Field","name":{"kind":"Name","value":"skillMentions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skill"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"context"}}]}},{"kind":"Field","name":{"kind":"Name","value":"experienceMentions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"company"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}}]}},{"kind":"Field","name":{"kind":"Name","value":"discoveredSkills"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skill"}},{"kind":"Field","name":{"kind":"Name","value":"quote"}},{"kind":"Field","name":{"kind":"Name","value":"context"}}]}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"extractedAt"}},{"kind":"Field","name":{"kind":"Name","value":"modelVersion"}},{"kind":"Field","name":{"kind":"Name","value":"processingTimeMs"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetDocumentProcessingStatusQuery, GetDocumentProcessingStatusQueryVariables>;

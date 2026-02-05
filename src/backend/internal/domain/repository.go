@@ -39,6 +39,9 @@ type FileRepository interface {
 	// Returns nil if no matching file exists.
 	GetByUserIDAndContentHash(ctx context.Context, userID uuid.UUID, contentHash string) (*File, error)
 
+	// Update persists changes to an existing file record.
+	Update(ctx context.Context, file *File) error
+
 	// Delete removes a file record by its ID.
 	Delete(ctx context.Context, id uuid.UUID) error
 }

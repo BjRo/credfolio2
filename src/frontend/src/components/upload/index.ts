@@ -1,3 +1,4 @@
+export { DetectionProgress } from "./DetectionProgress";
 export { DetectionResults } from "./DetectionResults";
 export { DocumentUpload } from "./DocumentUpload";
 export { ExtractionProgress } from "./ExtractionProgress";

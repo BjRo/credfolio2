@@ -28,6 +28,14 @@ type UnifiedDocumentProcessingRequest struct { //nolint:govet // Field ordering 
 	ReferenceLetterID *uuid.UUID
 }
 
+// DocumentDetectionRequest contains the data needed to enqueue a document detection job.
+type DocumentDetectionRequest struct { //nolint:govet // Field ordering prioritizes readability
+	FileID      uuid.UUID
+	UserID      uuid.UUID
+	StorageKey  string
+	ContentType string
+}
+
 // JobEnqueuer defines the interface for enqueueing background jobs.
 type JobEnqueuer interface {
 	// EnqueueDocumentProcessing adds a document processing job to the queue.
@@ -39,4 +47,8 @@ type JobEnqueuer interface {
 	// EnqueueUnifiedDocumentProcessing adds a unified document processing job to the queue.
 	// The unified worker extracts text once and runs the selected extractors (resume, letter, or both).
 	EnqueueUnifiedDocumentProcessing(ctx context.Context, req UnifiedDocumentProcessingRequest) error
+
+	// EnqueueDocumentDetection adds a document detection job to the queue.
+	// The worker extracts text and runs lightweight content classification.
+	EnqueueDocumentDetection(ctx context.Context, req DocumentDetectionRequest) error
 }

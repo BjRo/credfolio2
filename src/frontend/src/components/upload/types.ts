@@ -8,10 +8,17 @@ export interface DocumentDetectionResult {
   fileId: string;
 }
 
-export type FlowStep = "upload" | "review-detection" | "extract" | "review-results" | "import";
+export type FlowStep =
+  | "upload"
+  | "detect"
+  | "review-detection"
+  | "extract"
+  | "review-results"
+  | "import";
 
 export const FLOW_STEPS: { key: FlowStep; label: string }[] = [
   { key: "upload", label: "Upload" },
+  { key: "detect", label: "Analyze" },
   { key: "review-detection", label: "Review Detection" },
   { key: "extract", label: "Extract" },
   { key: "review-results", label: "Review Results" },
@@ -20,8 +27,14 @@ export const FLOW_STEPS: { key: FlowStep; label: string }[] = [
 
 export interface DocumentUploadProps {
   userId: string;
-  onDetectionComplete: (detection: DocumentDetectionResult, fileName: string) => void;
+  onUploadComplete: (fileId: string, fileName: string) => void;
   onError?: (error: string) => void;
+}
+
+export interface DetectionProgressProps {
+  fileId: string;
+  onDetectionComplete: (detection: DocumentDetectionResult) => void;
+  onError: (error: string) => void;
 }
 
 export interface StepIndicatorProps {

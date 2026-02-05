@@ -70,6 +70,12 @@ func (r *FileRepository) GetByUserIDAndContentHash(ctx context.Context, userID u
 	return file, nil
 }
 
+// Update persists changes to an existing file record.
+func (r *FileRepository) Update(ctx context.Context, file *domain.File) error {
+	_, err := r.db.NewUpdate().Model(file).WherePK().Exec(ctx)
+	return err
+}
+
 // Delete removes a file record by its ID.
 func (r *FileRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.NewDelete().Model((*domain.File)(nil)).Where("id = ?", id).Exec(ctx)

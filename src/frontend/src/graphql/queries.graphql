@@ -257,6 +257,23 @@ query GetExperienceValidations($experienceId: ID!) {
   }
 }
 
+query GetDocumentDetectionStatus($fileId: ID!) {
+  documentDetectionStatus(fileId: $fileId) {
+    fileId
+    status
+    detection {
+      hasCareerInfo
+      hasTestimonial
+      testimonialAuthor
+      confidence
+      summary
+      documentTypeHint
+      fileId
+    }
+    error
+  }
+}
+
 query GetDocumentProcessingStatus($resumeId: ID, $referenceLetterID: ID) {
   documentProcessingStatus(resumeId: $resumeId, referenceLetterID: $referenceLetterID) {
     allComplete

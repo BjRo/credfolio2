@@ -5,33 +5,42 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-02-05T21:59:46Z
-updated_at: 2026-02-05T22:00:45Z
+updated_at: 2026-02-05T22:26:05Z
 ---
 
 ## Summary
 
-When uploading a document, the detection step calls the Anthropic API via the resilient LLM provider. The HTTP server's WriteTimeout (120s) is shorter than the resilient provider's request timeout (300s), so Go cancels the request context before the LLM response arrives. This surfaces as: `[ERROR] [detection] Failed to extract text from document {"error":"anthropic: context canceled"}`
-
-## Root Cause
-
-In `src/backend/internal/config/config.go`, the server timeouts are:
-- `ReadTimeout: 30 * time.Second`
-- `WriteTimeout: 120 * time.Second`
-
-In `src/backend/cmd/server/main.go`, the resilient provider config is:
-- `RequestTimeout: 300 * time.Second`
-
-The WriteTimeout fires first (120s < 300s), canceling the context.
+The `detectDocumentContent` mutation synchronously uploads a file AND calls LLM APIs (text extraction + classification), blocking the HTTP request for 30-120+ seconds. Next.js rewrite proxy has a 30s default timeout, killing the connection → "anthropic: context canceled".
 
 ## Fix
 
-Increase `WriteTimeout` to be longer than `RequestTimeout` (e.g., 360s) so the LLM provider's own timeout governs the deadline, not the HTTP server.
+Split into async pattern matching existing `processDocument` flow:
+1. **Upload mutation** (fast): store file, queue detection job, return fileId
+2. **Background worker** (async): extract text + classify via LLM, save results to DB
+3. **Polling query** (fast): frontend polls for detection status/results
 
 ## Checklist
 
-- [x] Increase WriteTimeout in config.go to 360s (longer than provider's 300s)
+### Backend
+- [x] Migration: add detection_status, detection_result, detection_error to files table
+- [x] Domain: DetectionStatus type, File struct fields, FileRepository.Update, JobEnqueuer.EnqueueDocumentDetection
+- [x] File repository: implement Update method
+- [x] Detection worker (TDD): background job for text extraction + detection
+- [x] Queue + server wiring: EnqueueDocumentDetection, register worker
+- [x] GraphQL schema: rename mutation, add polling query + types, regenerate
+- [x] Resolver: async upload mutation + detection status query + tests
+
+### Frontend
+- [x] Types: update DocumentUploadProps, add DetectionProgressProps
+- [x] DocumentUpload (TDD): change to uploadForDetection, return fileId only
+- [x] DetectionProgress (TDD): new polling component
+- [x] UploadFlow: add "detect" step, wire components
+- [x] Cleanup: revert proxyTimeout and WriteTimeout workarounds
+
+### Definition of Done
 - [x] Tests written (TDD: write tests before implementation)
-- [x] `pnpm lint` passes with no errors
-- [x] `pnpm test` passes with no failures
-- [x] All checklist items above are completed
+- [x] \`pnpm lint\` passes with no errors
+- [x] \`pnpm test\` passes with no failures
+- [ ] Visual verification with agent-browser (for UI changes)
+- [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
