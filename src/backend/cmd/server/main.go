@@ -206,11 +206,10 @@ type userCreator interface {
 }
 
 // createProviderRegistry creates all available LLM providers and returns a registry.
-// Returns the registry, the default provider (based on LLM_PROVIDER config), list of provider names, and Braintrust tracing.
-func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.ProviderRegistry, domain.LLMProvider, []string, *llm.BraintrustTracing) {
+// Returns the registry, list of provider names, and Braintrust tracing.
+func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.ProviderRegistry, []string, *llm.BraintrustTracing) {
 	registry := llm.NewProviderRegistry()
 	var providerNames []string
-	var defaultProvider domain.LLMProvider
 
 	// Initialize Braintrust tracing if configured
 	btTracing, err := llm.NewBraintrustTracing(llm.BraintrustConfig{
@@ -253,30 +252,31 @@ func createProviderRegistry(cfg *config.Config, log logger.Logger) (*llm.Provide
 		log.Debug("Registered OpenAI provider", logger.Feature("llm"))
 	}
 
-	// Determine default provider based on config
-	selectedProvider := cfg.LLM.Provider
-	if selectedProvider == "" {
-		selectedProvider = "anthropic" // Default
-	}
-
-	if p, ok := registry.Get(selectedProvider); ok {
-		defaultProvider = p
-	} else if len(providerNames) > 0 {
-		// Fall back to first available provider
-		defaultProvider, _ = registry.Get(providerNames[0])
-		log.Warning("Configured provider not available, falling back",
-			logger.Feature("llm"),
-			logger.String("configured", selectedProvider),
-			logger.String("fallback", providerNames[0]))
-	}
-
-	return registry, defaultProvider, providerNames, btTracing
+	return registry, providerNames, btTracing
 }
 
 // createLLMExtractor creates the document extractor with per-operation provider chains.
 // Returns the extractor (nil if no providers available), the HTTP handler, and the Braintrust tracing instance.
 func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExtractor, http.Handler, *llm.BraintrustTracing) {
-	registry, defaultProvider, providerNames, btTracing := createProviderRegistry(cfg, log)
+	registry, providerNames, btTracing := createProviderRegistry(cfg, log)
+
+	// Parse per-use-case model configuration
+	docProvider, docModel := cfg.LLM.ParseDocumentExtractionModel()
+	resumeProvider, resumeModel := cfg.LLM.ParseResumeExtractionModel()
+
+	// Determine a default provider from the document extraction chain config.
+	// This serves as the fallback when a chain references an unregistered provider.
+	var defaultProvider domain.LLMProvider
+	if p, ok := registry.Get(docProvider); ok {
+		defaultProvider = p
+	} else if len(providerNames) > 0 {
+		defaultProvider, _ = registry.Get(providerNames[0])
+		log.Warning("Document extraction provider not available, falling back",
+			logger.Feature("llm"),
+			logger.String("configured", docProvider),
+			logger.String("fallback", providerNames[0]))
+	}
+
 	if defaultProvider == nil {
 		log.Warning("LLM extraction disabled (no API key configured)", logger.Feature("llm"))
 		return nil, handler.NewExtractUnavailableHandler(), btTracing
@@ -288,16 +288,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 	})
 
 	// Configure provider chains for each operation
-	// Document extraction uses the default provider (good for vision/PDF)
-	// Resume extraction uses a dedicated provider+model (better for structured output)
-	docProvider := cfg.LLM.Provider
-	if docProvider == "" {
-		docProvider = "anthropic"
-	}
-	docChain := llm.ProviderChain{{Provider: docProvider}}
-
-	// Resume extraction uses dedicated provider/model (defaults to openai/gpt-4o)
-	resumeProvider, resumeModel := cfg.LLM.ParseResumeExtractionModel()
+	docChain := llm.ProviderChain{{Provider: docProvider, Model: docModel}}
 	resumeChain := llm.ProviderChain{{Provider: resumeProvider, Model: resumeModel}}
 
 	// Validate that configured chains reference registered providers
@@ -319,7 +310,7 @@ func createLLMExtractor(cfg *config.Config, log logger.Logger) (*llm.DocumentExt
 	// Log which providers are being used for each operation
 	log.Info("Configured extraction providers",
 		logger.Feature("llm"),
-		logger.String("document_extraction", docProvider),
+		logger.String("document_extraction", fmt.Sprintf("%s/%s", docProvider, docModel)),
 		logger.String("resume_extraction", fmt.Sprintf("%s/%s", resumeProvider, resumeModel)),
 	)
 

@@ -24,11 +24,14 @@ type Config struct { //nolint:govet // Field order prioritizes readability
 	Braintrust  BraintrustConfig
 }
 
-// LLMConfig holds general LLM configuration.
+// LLMConfig holds per-use-case LLM model configuration.
+// Each use case specifies its own provider and model independently,
+// using the "provider/model" format (e.g., "openai/gpt-4o").
 type LLMConfig struct {
-	// Provider specifies which LLM provider to use: "anthropic" or "openai".
-	// Defaults to "anthropic" if not specified.
-	Provider string
+	// DocumentExtractionModel specifies the provider and model for document text extraction.
+	// Format: "provider/model" (e.g., "anthropic/claude-sonnet-4-5-20250929").
+	// Defaults to "anthropic" (provider default model) if not specified.
+	DocumentExtractionModel string
 
 	// ResumeExtractionModel specifies the provider and model for resume data extraction.
 	// Format: "provider/model" (e.g., "openai/gpt-4o").
@@ -36,12 +39,24 @@ type LLMConfig struct {
 	ResumeExtractionModel string
 }
 
+// ParseDocumentExtractionModel parses the DocumentExtractionModel into provider and model parts.
+// Returns (provider, model). If not set, defaults to ("anthropic", "").
+func (c *LLMConfig) ParseDocumentExtractionModel() (provider, model string) {
+	return parseModelConfig(c.DocumentExtractionModel, "anthropic", "")
+}
+
 // ParseResumeExtractionModel parses the ResumeExtractionModel into provider and model parts.
-// Returns (provider, model). If no "/" is present, treats the whole string as provider.
+// Returns (provider, model). If not set, defaults to ("openai", "gpt-4o").
 func (c *LLMConfig) ParseResumeExtractionModel() (provider, model string) {
-	value := c.ResumeExtractionModel
+	return parseModelConfig(c.ResumeExtractionModel, "openai", "gpt-4o")
+}
+
+// parseModelConfig parses a "provider/model" string into its parts.
+// If the value is empty, returns the provided defaults.
+// If no "/" is present, treats the whole string as provider with empty model.
+func parseModelConfig(value, defaultProvider, defaultModel string) (provider, model string) {
 	if value == "" {
-		return "openai", "gpt-4o" // Default
+		return defaultProvider, defaultModel
 	}
 
 	// Split on first "/"
@@ -187,8 +202,8 @@ func Load() (*Config, error) {
 			MaxWorkers: queueMaxWorkers,
 		},
 		LLM: LLMConfig{
-			Provider:                 getEnv("LLM_PROVIDER", "anthropic"),
-			ResumeExtractionModel: os.Getenv("RESUME_EXTRACTION_MODEL"), // Default: openai/gpt-4o
+			DocumentExtractionModel: os.Getenv("DOCUMENT_EXTRACTION_MODEL"),
+			ResumeExtractionModel:   os.Getenv("RESUME_EXTRACTION_MODEL"),
 		},
 		Anthropic: AnthropicConfig{
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),

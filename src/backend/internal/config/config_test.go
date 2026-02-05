@@ -333,6 +333,93 @@ func TestLoad_InvalidServerPort(t *testing.T) {
 	}
 }
 
+func TestParseDocumentExtractionModel(t *testing.T) {
+	tests := []struct {
+		name         string
+		value        string
+		wantProvider string
+		wantModel    string
+	}{
+		{"empty defaults to anthropic", "", "anthropic", ""},
+		{"provider/model", "openai/gpt-4o", "openai", "gpt-4o"},
+		{"provider only", "openai", "openai", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := LLMConfig{DocumentExtractionModel: tt.value}
+			provider, model := cfg.ParseDocumentExtractionModel()
+			if provider != tt.wantProvider {
+				t.Errorf("provider = %q, want %q", provider, tt.wantProvider)
+			}
+			if model != tt.wantModel {
+				t.Errorf("model = %q, want %q", model, tt.wantModel)
+			}
+		})
+	}
+}
+
+func TestParseResumeExtractionModel(t *testing.T) {
+	tests := []struct {
+		name         string
+		value        string
+		wantProvider string
+		wantModel    string
+	}{
+		{"empty defaults to openai/gpt-4o", "", "openai", "gpt-4o"},
+		{"provider/model", "anthropic/claude-sonnet-4-5-20250929", "anthropic", "claude-sonnet-4-5-20250929"},
+		{"provider only", "anthropic", "anthropic", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := LLMConfig{ResumeExtractionModel: tt.value}
+			provider, model := cfg.ParseResumeExtractionModel()
+			if provider != tt.wantProvider {
+				t.Errorf("provider = %q, want %q", provider, tt.wantProvider)
+			}
+			if model != tt.wantModel {
+				t.Errorf("model = %q, want %q", model, tt.wantModel)
+			}
+		})
+	}
+}
+
+func TestLoad_LLMDefaults(t *testing.T) {
+	clearEnv(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.LLM.DocumentExtractionModel != "" {
+		t.Errorf("LLM.DocumentExtractionModel = %q, want %q", cfg.LLM.DocumentExtractionModel, "")
+	}
+	if cfg.LLM.ResumeExtractionModel != "" {
+		t.Errorf("LLM.ResumeExtractionModel = %q, want %q", cfg.LLM.ResumeExtractionModel, "")
+	}
+}
+
+func TestLoad_LLMOverrides(t *testing.T) {
+	clearEnv(t)
+
+	t.Setenv("DOCUMENT_EXTRACTION_MODEL", "openai/gpt-4o")
+	t.Setenv("RESUME_EXTRACTION_MODEL", "anthropic/claude-sonnet-4-5-20250929")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.LLM.DocumentExtractionModel != "openai/gpt-4o" {
+		t.Errorf("LLM.DocumentExtractionModel = %q, want %q", cfg.LLM.DocumentExtractionModel, "openai/gpt-4o")
+	}
+	if cfg.LLM.ResumeExtractionModel != "anthropic/claude-sonnet-4-5-20250929" {
+		t.Errorf("LLM.ResumeExtractionModel = %q, want %q", cfg.LLM.ResumeExtractionModel, "anthropic/claude-sonnet-4-5-20250929")
+	}
+}
+
 // clearEnv clears all config-related environment variables for test isolation.
 func clearEnv(t *testing.T) {
 	t.Helper()
@@ -351,6 +438,9 @@ func clearEnv(t *testing.T) {
 		"MINIO_USE_SSL",
 		"MINIO_BUCKET",
 		"SERVER_PORT",
+		"DOCUMENT_EXTRACTION_MODEL",
+		"RESUME_EXTRACTION_MODEL",
+		"LLM_PROVIDER",
 	}
 
 	for _, v := range vars {
