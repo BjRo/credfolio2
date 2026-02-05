@@ -59,7 +59,7 @@ The existing extractors (resume extraction, reference letter extraction) are hea
   - Pure reference letter
   - Hybrid document (both career info and testimonial)
   - Unreadable/empty document
-- [ ] Integration test for GraphQL mutation
+- [x] Integration test for GraphQL mutation
 
 ## Design Notes
 
@@ -71,5 +71,5 @@ The existing extractors (resume extraction, reference letter extraction) are hea
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] All checklist items above are completed
+- [x] All checklist items above are completed
 - [ ] Branch pushed and PR created for human review

@@ -620,9 +620,12 @@ func (r *mutationResolver) DetectDocumentContent(ctx context.Context, userID str
 		return nil, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	_, err = r.userRepo.GetByID(ctx, uid)
+	user, err := r.userRepo.GetByID(ctx, uid)
 	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
+		return nil, fmt.Errorf("failed to verify user: %w", err)
+	}
+	if user == nil {
+		return nil, fmt.Errorf("user not found")
 	}
 
 	// Validate file type
