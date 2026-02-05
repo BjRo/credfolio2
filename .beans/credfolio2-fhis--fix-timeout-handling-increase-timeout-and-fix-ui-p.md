@@ -1,11 +1,11 @@
 ---
 # credfolio2-fhis
 title: 'Fix timeout handling: increase timeout and fix UI polling on failure'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-02-05T17:12:45Z
-updated_at: 2026-02-05T17:12:45Z
+updated_at: 2026-02-05T17:18:49Z
 ---
 
 Two related issues when LLM extraction times out:
@@ -32,4 +32,4 @@ Two related issues when LLM extraction times out:
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
