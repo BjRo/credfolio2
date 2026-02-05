@@ -908,6 +908,137 @@ type ExperienceValidation {
   createdAt: DateTime!
 }
 
+# ============================================================================
+# Unified Document Processing Schema
+# ============================================================================
+
+"""
+Input for processing a previously uploaded document.
+The fileId must reference a file previously stored via detectDocumentContent.
+"""
+input ProcessDocumentInput {
+  """ID of the file already stored via detectDocumentContent."""
+  fileId: ID!
+  """Whether to extract career/resume information from the document."""
+  extractCareerInfo: Boolean!
+  """Whether to extract testimonial/reference letter content from the document."""
+  extractTestimonial: Boolean!
+}
+
+"""
+IDs of the entities created for tracking extraction progress.
+"""
+type ProcessDocumentResult {
+  """Resume ID created for career info extraction (null if not requested)."""
+  resumeId: ID
+  """Reference letter ID created for testimonial extraction (null if not requested)."""
+  referenceLetterID: ID
+}
+
+"""
+Error returned when process document validation fails.
+"""
+type ProcessDocumentError {
+  """Error message describing the validation failure."""
+  message: String!
+  """The field that failed validation."""
+  field: String
+}
+
+"""
+Union type for process document result.
+"""
+union ProcessDocumentResponse = ProcessDocumentResult | ProcessDocumentError
+
+"""
+Aggregated processing status across resume and reference letter extraction.
+"""
+type DocumentProcessingStatus {
+  """Resume processing status (null if resume extraction was not requested)."""
+  resume: Resume
+  """Reference letter processing status (null if letter extraction was not requested)."""
+  referenceLetter: ReferenceLetter
+  """Overall status: true when all requested extractions are complete (COMPLETED or FAILED)."""
+  allComplete: Boolean!
+}
+
+"""
+Input for importing extracted document results into profile tables.
+"""
+input ImportDocumentResultsInput {
+  """Resume ID to materialize into profile (null to skip)."""
+  resumeId: ID
+  """Reference letter ID whose validations should be applied (null to skip)."""
+  referenceLetterID: ID
+}
+
+"""
+Counts of items imported into the profile.
+"""
+type ImportedCount {
+  """Number of work experiences materialized."""
+  experiences: Int!
+  """Number of education entries materialized."""
+  educations: Int!
+  """Number of skills materialized."""
+  skills: Int!
+}
+
+"""
+Result of importing document results into profile tables.
+"""
+type ImportDocumentResultsResult {
+  """The updated profile after materialization."""
+  profile: Profile!
+  """Counts of items that were imported."""
+  importedCount: ImportedCount!
+}
+
+"""
+Error returned when import document results validation fails.
+"""
+type ImportDocumentResultsError {
+  """Error message describing the failure."""
+  message: String!
+  """The field that caused the error."""
+  field: String
+}
+
+"""
+Union type for import document results.
+"""
+union ImportDocumentResultsResponse = ImportDocumentResultsResult | ImportDocumentResultsError
+
+"""
+The type of feedback being reported about document processing.
+"""
+enum DocumentFeedbackType {
+  """Feedback about incorrect document type detection."""
+  DETECTION_CORRECTION
+  """Feedback about extraction quality issues."""
+  EXTRACTION_QUALITY
+}
+
+"""
+Input for reporting feedback about document detection or extraction.
+"""
+input DocumentFeedbackInput {
+  """ID of the file the feedback relates to."""
+  fileId: ID!
+  """The type of feedback being reported."""
+  feedbackType: DocumentFeedbackType!
+  """Free-text message describing the issue."""
+  message: String!
+}
+
+"""
+Result of reporting document feedback.
+"""
+type DocumentFeedbackResult {
+  """Whether the feedback was recorded successfully."""
+  success: Boolean!
+}
+
 type Query {
   """
   Get a user by ID.
@@ -996,6 +1127,13 @@ type Query {
   Used for pre-upload duplicate detection.
   """
   checkDuplicateFile(userId: ID!, contentHash: String!): DuplicateFileDetected
+
+  """
+  Get the processing status of a document.
+  Provide the resume ID and/or reference letter ID returned by processDocument.
+  Returns aggregated status across all requested extractions.
+  """
+  documentProcessingStatus(resumeId: ID, referenceLetterID: ID): DocumentProcessingStatus
 }
 
 # ============================================================================
@@ -1105,6 +1243,47 @@ type Mutation {
     """The document file to analyze (PDF, DOCX, or TXT only)."""
     file: Upload!
   ): DetectDocumentContentResponse!
+
+  # ============================================================================
+  # Unified Document Processing
+  # ============================================================================
+
+  """
+  Start processing a previously uploaded document for extraction.
+  The file must already exist (created via detectDocumentContent).
+  Creates resume and/or reference letter records as needed, enqueues extraction,
+  and returns IDs for polling via documentProcessingStatus.
+  At least one of extractCareerInfo or extractTestimonial must be true.
+  """
+  processDocument(
+    """The user ID requesting processing."""
+    userId: ID!
+    """Processing options specifying what to extract."""
+    input: ProcessDocumentInput!
+  ): ProcessDocumentResponse!
+
+  """
+  Import extracted document results into profile tables.
+  Materializes resume data (experiences, education, skills) and/or applies
+  reference letter validations. The referenced entities must be in COMPLETED status.
+  """
+  importDocumentResults(
+    """The user ID importing the results."""
+    userId: ID!
+    """Which document results to import."""
+    input: ImportDocumentResultsInput!
+  ): ImportDocumentResultsResponse!
+
+  """
+  Report feedback about document detection or extraction quality.
+  Feedback is logged for analysis; no table is created for MVP.
+  """
+  reportDocumentFeedback(
+    """The user ID reporting the feedback."""
+    userId: ID!
+    """The feedback details."""
+    input: DocumentFeedbackInput!
+  ): DocumentFeedbackResult!
 
   # ============================================================================
   # Profile Header Mutations

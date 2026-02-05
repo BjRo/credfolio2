@@ -135,5 +135,25 @@ func (c *Client) EnqueueResumeProcessing(ctx context.Context, req domain.ResumeP
 	return nil
 }
 
+// EnqueueUnifiedDocumentProcessing adds a unified document processing job to the queue.
+// The unified worker extracts text once and runs the selected extractors (resume, letter, or both).
+func (c *Client) EnqueueUnifiedDocumentProcessing(ctx context.Context, req domain.UnifiedDocumentProcessingRequest) error {
+	args := job.DocumentProcessingArgs{
+		StorageKey:        req.StorageKey,
+		FileID:            req.FileID,
+		ContentType:       req.ContentType,
+		UserID:            req.UserID,
+		ResumeID:          req.ResumeID,
+		ReferenceLetterID: req.ReferenceLetterID,
+	}
+
+	_, err := c.riverClient.Insert(ctx, args, nil)
+	if err != nil {
+		return fmt.Errorf("failed to enqueue unified document processing job: %w", err)
+	}
+
+	return nil
+}
+
 // Verify Client implements domain.JobEnqueuer.
 var _ domain.JobEnqueuer = (*Client)(nil)

@@ -36,6 +36,16 @@ type ExperienceResponse interface {
 	IsExperienceResponse()
 }
 
+// Union type for import document results.
+type ImportDocumentResultsResponse interface {
+	IsImportDocumentResultsResponse()
+}
+
+// Union type for process document result.
+type ProcessDocumentResponse interface {
+	IsProcessDocumentResponse()
+}
+
 // Union type for profile header update result.
 type ProfileHeaderResponse interface {
 	IsProfileHeaderResponse()
@@ -228,6 +238,32 @@ type DocumentDetectionResult struct {
 	FileID string `json:"fileId"`
 }
 
+// Input for reporting feedback about document detection or extraction.
+type DocumentFeedbackInput struct {
+	// ID of the file the feedback relates to.
+	FileID string `json:"fileId"`
+	// The type of feedback being reported.
+	FeedbackType DocumentFeedbackType `json:"feedbackType"`
+	// Free-text message describing the issue.
+	Message string `json:"message"`
+}
+
+// Result of reporting document feedback.
+type DocumentFeedbackResult struct {
+	// Whether the feedback was recorded successfully.
+	Success bool `json:"success"`
+}
+
+// Aggregated processing status across resume and reference letter extraction.
+type DocumentProcessingStatus struct {
+	// Resume processing status (null if resume extraction was not requested).
+	Resume *Resume `json:"resume,omitempty"`
+	// Reference letter processing status (null if letter extraction was not requested).
+	ReferenceLetter *ReferenceLetter `json:"referenceLetter,omitempty"`
+	// Overall status: true when all requested extractions are complete (COMPLETED or FAILED).
+	AllComplete bool `json:"allComplete"`
+}
+
 // Result when a duplicate file is detected during upload.
 type DuplicateFileDetected struct {
 	// The existing file that matches the uploaded content.
@@ -335,6 +371,44 @@ func (FileValidationError) IsUploadFileResponse() {}
 
 func (FileValidationError) IsUploadResumeResponse() {}
 
+// Error returned when import document results validation fails.
+type ImportDocumentResultsError struct {
+	// Error message describing the failure.
+	Message string `json:"message"`
+	// The field that caused the error.
+	Field *string `json:"field,omitempty"`
+}
+
+func (ImportDocumentResultsError) IsImportDocumentResultsResponse() {}
+
+// Input for importing extracted document results into profile tables.
+type ImportDocumentResultsInput struct {
+	// Resume ID to materialize into profile (null to skip).
+	ResumeID *string `json:"resumeId,omitempty"`
+	// Reference letter ID whose validations should be applied (null to skip).
+	ReferenceLetterID *string `json:"referenceLetterID,omitempty"`
+}
+
+// Result of importing document results into profile tables.
+type ImportDocumentResultsResult struct {
+	// The updated profile after materialization.
+	Profile *Profile `json:"profile"`
+	// Counts of items that were imported.
+	ImportedCount *ImportedCount `json:"importedCount"`
+}
+
+func (ImportDocumentResultsResult) IsImportDocumentResultsResponse() {}
+
+// Counts of items imported into the profile.
+type ImportedCount struct {
+	// Number of work experiences materialized.
+	Experiences int `json:"experiences"`
+	// Number of education entries materialized.
+	Educations int `json:"educations"`
+	// Number of skills materialized.
+	Skills int `json:"skills"`
+}
+
 type Mutation struct {
 }
 
@@ -347,6 +421,37 @@ type NewSkillInput struct {
 	// Quote context from the reference letter mentioning this skill.
 	QuoteContext *string `json:"quoteContext,omitempty"`
 }
+
+// Error returned when process document validation fails.
+type ProcessDocumentError struct {
+	// Error message describing the validation failure.
+	Message string `json:"message"`
+	// The field that failed validation.
+	Field *string `json:"field,omitempty"`
+}
+
+func (ProcessDocumentError) IsProcessDocumentResponse() {}
+
+// Input for processing a previously uploaded document.
+// The fileId must reference a file previously stored via detectDocumentContent.
+type ProcessDocumentInput struct {
+	// ID of the file already stored via detectDocumentContent.
+	FileID string `json:"fileId"`
+	// Whether to extract career/resume information from the document.
+	ExtractCareerInfo bool `json:"extractCareerInfo"`
+	// Whether to extract testimonial/reference letter content from the document.
+	ExtractTestimonial bool `json:"extractTestimonial"`
+}
+
+// IDs of the entities created for tracking extraction progress.
+type ProcessDocumentResult struct {
+	// Resume ID created for career info extraction (null if not requested).
+	ResumeID *string `json:"resumeId,omitempty"`
+	// Reference letter ID created for testimonial extraction (null if not requested).
+	ReferenceLetterID *string `json:"referenceLetterID,omitempty"`
+}
+
+func (ProcessDocumentResult) IsProcessDocumentResponse() {}
 
 // A user's profile containing manually editable data.
 type Profile struct {
@@ -726,6 +831,64 @@ type User struct {
 	Name      *string   `json:"name,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// The type of feedback being reported about document processing.
+type DocumentFeedbackType string
+
+const (
+	// Feedback about incorrect document type detection.
+	DocumentFeedbackTypeDetectionCorrection DocumentFeedbackType = "DETECTION_CORRECTION"
+	// Feedback about extraction quality issues.
+	DocumentFeedbackTypeExtractionQuality DocumentFeedbackType = "EXTRACTION_QUALITY"
+)
+
+var AllDocumentFeedbackType = []DocumentFeedbackType{
+	DocumentFeedbackTypeDetectionCorrection,
+	DocumentFeedbackTypeExtractionQuality,
+}
+
+func (e DocumentFeedbackType) IsValid() bool {
+	switch e {
+	case DocumentFeedbackTypeDetectionCorrection, DocumentFeedbackTypeExtractionQuality:
+		return true
+	}
+	return false
+}
+
+func (e DocumentFeedbackType) String() string {
+	return string(e)
+}
+
+func (e *DocumentFeedbackType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DocumentFeedbackType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DocumentFeedbackType", str)
+	}
+	return nil
+}
+
+func (e DocumentFeedbackType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *DocumentFeedbackType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e DocumentFeedbackType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 // Hint about the document type from lightweight detection.
