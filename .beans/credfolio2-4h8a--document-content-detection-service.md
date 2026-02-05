@@ -72,4 +72,4 @@ The existing extractors (resume extraction, reference letter extraction) are hea
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] All checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
