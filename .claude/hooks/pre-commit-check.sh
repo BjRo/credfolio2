@@ -16,8 +16,8 @@ INPUT=$(cat)
 # Extract the command being executed
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 
-# Only intercept git commit commands
-if [[ ! "$COMMAND" =~ ^git\ commit ]] && [[ ! "$COMMAND" =~ \&\&\ *git\ commit ]]; then
+# Only intercept git commit commands (account for flags like -C <dir> before subcommand)
+if [[ ! "$COMMAND" =~ git\ ((-[^ ]+\ +[^ ]+\ +)*)commit ]] && [[ ! "$COMMAND" =~ \&\&\ *git\ ((-[^ ]+\ +[^ ]+\ +)*)commit ]]; then
     exit 0  # Not a commit command, allow it
 fi
 
