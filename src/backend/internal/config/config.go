@@ -194,7 +194,7 @@ func Load() (*Config, error) {
 			APIKey: os.Getenv("ANTHROPIC_API_KEY"),
 		},
 		OpenAI: OpenAIConfig{
-			APIKey: os.Getenv("OPEN_AI_API_KEY"),
+			APIKey: os.Getenv("OPENAI_API_KEY"),
 		},
 		Braintrust: BraintrustConfig{
 			APIKey:  os.Getenv("BRAINTRUST_API_KEY"),
