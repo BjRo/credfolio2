@@ -144,10 +144,12 @@ RUN ARCH=$(dpkg --print-architecture) && \
 # Set up non-root user
 USER node
 
-# Enable Corepack for pnpm support (uses packageManager field in package.json)
+# Enable Corepack and pre-install pnpm (uses packageManager field in package.json)
 # Must run as node user since Node is installed via mise in node's home directory
 # Use mise exec to run corepack within mise's environment where Node is available
-RUN mise exec -- corepack enable
+# Copy package.json so corepack install can read the packageManager version
+COPY --chown=node:node package.json /tmp/package.json
+RUN mise exec -- corepack enable && cd /tmp && mise exec -- corepack install
 
 # Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
