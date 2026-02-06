@@ -20,12 +20,12 @@ Update /review-frontend and /review-backend skills to submit a proper (non-block
 - Inline comments + summary body grouped in one review
 
 ## Checklist
-- [ ] Update review-backend SKILL.md section 4 (Post Review Comments)
-- [ ] Update review-frontend SKILL.md section 4 (Post Review Comments)
-- [ ] Ensure both skills instruct the agent to collect findings first, then submit as a single review
-- [ ] Verify instructions use the correct GitHub API endpoint and JSON format
+- [x] Update review-backend SKILL.md section 4 (Post Review Comments)
+- [x] Update review-frontend SKILL.md section 4 (Post Review Comments)
+- [x] Ensure both skills instruct the agent to collect findings first, then submit as a single review
+- [x] Verify instructions use the correct GitHub API endpoint and JSON format
 
 ## Definition of Done
-- [ ] Both skill files updated
-- [ ] Instructions are clear and correct for an AI agent to follow
-- [ ] Branch pushed and PR created for human review
+- [x] Both skill files updated
+- [x] Instructions are clear and correct for an AI agent to follow
+- [x] Branch pushed and PR created for human review
