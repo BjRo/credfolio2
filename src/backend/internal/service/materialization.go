@@ -19,6 +19,12 @@ type MaterializationResult struct {
 	Testimonials int
 }
 
+// CrossReferenceResult contains counts of auto-applied validations.
+type CrossReferenceResult struct {
+	SkillValidations      int
+	ExperienceValidations int
+}
+
 // MaterializationService handles materializing extracted data into profile tables.
 // It is used by both the ResumeProcessingWorker (auto-materialization) and the
 // importDocumentResults mutation (user-confirmed import).
@@ -29,6 +35,8 @@ type MaterializationService struct {
 	profileSkillRepo domain.ProfileSkillRepository
 	authorRepo       domain.AuthorRepository
 	testimonialRepo  domain.TestimonialRepository
+	skillValRepo     domain.SkillValidationRepository
+	expValRepo       domain.ExperienceValidationRepository
 }
 
 // NewMaterializationService creates a new MaterializationService.
@@ -39,6 +47,8 @@ func NewMaterializationService(
 	profileSkillRepo domain.ProfileSkillRepository,
 	authorRepo domain.AuthorRepository,
 	testimonialRepo domain.TestimonialRepository,
+	skillValRepo domain.SkillValidationRepository,
+	expValRepo domain.ExperienceValidationRepository,
 ) *MaterializationService {
 	return &MaterializationService{
 		profileRepo:      profileRepo,
@@ -47,6 +57,8 @@ func NewMaterializationService(
 		profileSkillRepo: profileSkillRepo,
 		authorRepo:       authorRepo,
 		testimonialRepo:  testimonialRepo,
+		skillValRepo:     skillValRepo,
+		expValRepo:       expValRepo,
 	}
 }
 
@@ -351,6 +363,88 @@ func (s *MaterializationService) populateProfileHeader(ctx context.Context, prof
 		}
 	}
 	return nil
+}
+
+// CrossReferenceValidations matches reference letter skill/experience mentions
+// against the profile's skills and experiences, creating validation records for matches.
+// This is called during unified import when both a resume and reference letter are imported together.
+func (s *MaterializationService) CrossReferenceValidations(
+	ctx context.Context,
+	profileID uuid.UUID,
+	referenceLetterID uuid.UUID,
+	letterData *domain.ExtractedLetterData,
+) (*CrossReferenceResult, error) {
+	result := &CrossReferenceResult{}
+
+	// Get all profile skills for matching
+	skills, err := s.profileSkillRepo.GetByProfileID(ctx, profileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile skills: %w", err)
+	}
+
+	// Build normalized name -> skill lookup
+	skillByNorm := make(map[string]*domain.ProfileSkill, len(skills))
+	for _, sk := range skills {
+		skillByNorm[sk.NormalizedName] = sk
+	}
+
+	// Match skill mentions to profile skills
+	for _, mention := range letterData.SkillMentions {
+		normalized := strings.ToLower(strings.TrimSpace(mention.Skill))
+		if sk, ok := skillByNorm[normalized]; ok {
+			quote := mention.Quote
+			validation := &domain.SkillValidation{
+				ID:                uuid.New(),
+				ProfileSkillID:    sk.ID,
+				ReferenceLetterID: referenceLetterID,
+				QuoteSnippet:      &quote,
+			}
+			if createErr := s.skillValRepo.Create(ctx, validation); createErr != nil {
+				// Ignore duplicate constraint errors
+				if !strings.Contains(createErr.Error(), "duplicate") && !strings.Contains(createErr.Error(), "unique constraint") {
+					return result, fmt.Errorf("failed to create skill validation: %w", createErr)
+				}
+				continue
+			}
+			result.SkillValidations++
+		}
+	}
+
+	// Get all profile experiences for matching
+	experiences, err := s.profileExpRepo.GetByProfileID(ctx, profileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile experiences: %w", err)
+	}
+
+	// Build normalized company -> experience lookup
+	expByCompany := make(map[string]*domain.ProfileExperience, len(experiences))
+	for _, exp := range experiences {
+		norm := strings.ToLower(strings.TrimSpace(exp.Company))
+		expByCompany[norm] = exp
+	}
+
+	// Match experience mentions to profile experiences
+	for _, mention := range letterData.ExperienceMentions {
+		normalized := strings.ToLower(strings.TrimSpace(mention.Company))
+		if exp, ok := expByCompany[normalized]; ok {
+			quote := mention.Quote
+			validation := &domain.ExperienceValidation{
+				ID:                  uuid.New(),
+				ProfileExperienceID: exp.ID,
+				ReferenceLetterID:   referenceLetterID,
+				QuoteSnippet:        &quote,
+			}
+			if createErr := s.expValRepo.Create(ctx, validation); createErr != nil {
+				if !strings.Contains(createErr.Error(), "duplicate") && !strings.Contains(createErr.Error(), "unique constraint") {
+					return result, fmt.Errorf("failed to create experience validation: %w", createErr)
+				}
+				continue
+			}
+			result.ExperienceValidations++
+		}
+	}
+
+	return result, nil
 }
 
 // mapAuthorRelationship maps an AuthorRelationship to a TestimonialRelationship.

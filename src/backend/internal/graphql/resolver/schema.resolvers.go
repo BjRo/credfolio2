@@ -859,6 +859,10 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 
 	imported := &model.ImportedCount{}
 
+	// Track reference letter data for cross-referencing after both materializations
+	var refLetterIDForXRef *uuid.UUID
+	var refLetterDataForXRef *domain.ExtractedLetterData
+
 	// Materialize resume data if resume ID is provided
 	if input.ResumeID != nil {
 		resumeID, err := uuid.Parse(*input.ResumeID)
@@ -965,6 +969,10 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 
 			imported.Testimonials = matResult.Testimonials
 
+			// Save for cross-referencing with resume skills/experiences
+			refLetterIDForXRef = &refLetterID
+			refLetterDataForXRef = &extractedData
+
 			r.log.Info("Reference letter data materialized",
 				logger.Feature("document-processing"),
 				logger.String("reference_letter_id", refLetterID.String()),
@@ -977,6 +985,24 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get profile: %w", err)
+	}
+
+	// Cross-reference reference letter mentions with profile skills/experiences
+	if refLetterIDForXRef != nil && refLetterDataForXRef != nil {
+		xrefResult, xrefErr := r.materializationSvc.CrossReferenceValidations(ctx, profile.ID, *refLetterIDForXRef, refLetterDataForXRef)
+		if xrefErr != nil {
+			r.log.Error("Failed to cross-reference validations",
+				logger.Feature("document-processing"),
+				logger.Err(xrefErr),
+			)
+			// Non-fatal — the import itself succeeded
+		} else {
+			r.log.Info("Cross-referenced validations",
+				logger.Feature("document-processing"),
+				logger.Int("skill_validations", xrefResult.SkillValidations),
+				logger.Int("experience_validations", xrefResult.ExperienceValidations),
+			)
+		}
 	}
 
 	// Build profile response with current data

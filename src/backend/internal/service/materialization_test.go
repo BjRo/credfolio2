@@ -387,6 +387,152 @@ func (r *mockTestimonialRepository) DeleteByReferenceLetterID(_ context.Context,
 	return nil
 }
 
+type mockSkillValidationRepository struct {
+	validations map[uuid.UUID]*domain.SkillValidation
+}
+
+func newMockSkillValidationRepository() *mockSkillValidationRepository {
+	return &mockSkillValidationRepository{validations: make(map[uuid.UUID]*domain.SkillValidation)}
+}
+
+func (r *mockSkillValidationRepository) Create(_ context.Context, v *domain.SkillValidation) error {
+	if v.ID == uuid.Nil {
+		v.ID = uuid.New()
+	}
+	r.validations[v.ID] = v
+	return nil
+}
+
+func (r *mockSkillValidationRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.SkillValidation, error) {
+	v, ok := r.validations[id]
+	if !ok {
+		return nil, nil
+	}
+	return v, nil
+}
+
+func (r *mockSkillValidationRepository) GetByProfileSkillID(_ context.Context, profileSkillID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.ProfileSkillID == profileSkillID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockSkillValidationRepository) GetByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.ReferenceLetterID == refLetterID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockSkillValidationRepository) GetByTestimonialID(_ context.Context, testimonialID uuid.UUID) ([]*domain.SkillValidation, error) {
+	var result []*domain.SkillValidation
+	for _, v := range r.validations {
+		if v.TestimonialID != nil && *v.TestimonialID == testimonialID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockSkillValidationRepository) DeleteByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) error {
+	for id, v := range r.validations {
+		if v.ReferenceLetterID == refLetterID {
+			delete(r.validations, id)
+		}
+	}
+	return nil
+}
+
+func (r *mockSkillValidationRepository) CountByProfileSkillID(_ context.Context, profileSkillID uuid.UUID) (int, error) {
+	count := 0
+	for _, v := range r.validations {
+		if v.ProfileSkillID == profileSkillID {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (r *mockSkillValidationRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.validations, id)
+	return nil
+}
+
+type mockExpValidationRepository struct {
+	validations map[uuid.UUID]*domain.ExperienceValidation
+}
+
+func newMockExpValidationRepository() *mockExpValidationRepository {
+	return &mockExpValidationRepository{validations: make(map[uuid.UUID]*domain.ExperienceValidation)}
+}
+
+func (r *mockExpValidationRepository) Create(_ context.Context, v *domain.ExperienceValidation) error {
+	if v.ID == uuid.Nil {
+		v.ID = uuid.New()
+	}
+	r.validations[v.ID] = v
+	return nil
+}
+
+func (r *mockExpValidationRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.ExperienceValidation, error) {
+	v, ok := r.validations[id]
+	if !ok {
+		return nil, nil
+	}
+	return v, nil
+}
+
+func (r *mockExpValidationRepository) GetByProfileExperienceID(_ context.Context, profileExpID uuid.UUID) ([]*domain.ExperienceValidation, error) {
+	var result []*domain.ExperienceValidation
+	for _, v := range r.validations {
+		if v.ProfileExperienceID == profileExpID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockExpValidationRepository) GetByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) ([]*domain.ExperienceValidation, error) {
+	var result []*domain.ExperienceValidation
+	for _, v := range r.validations {
+		if v.ReferenceLetterID == refLetterID {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockExpValidationRepository) DeleteByReferenceLetterID(_ context.Context, refLetterID uuid.UUID) error {
+	for id, v := range r.validations {
+		if v.ReferenceLetterID == refLetterID {
+			delete(r.validations, id)
+		}
+	}
+	return nil
+}
+
+func (r *mockExpValidationRepository) CountByProfileExperienceID(_ context.Context, profileExpID uuid.UUID) (int, error) {
+	count := 0
+	for _, v := range r.validations {
+		if v.ProfileExperienceID == profileExpID {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (r *mockExpValidationRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.validations, id)
+	return nil
+}
+
 func newTestService() (*MaterializationService, *mockProfileRepository, *mockProfileExperienceRepository, *mockProfileEducationRepository, *mockProfileSkillRepository) {
 	profileRepo := newMockProfileRepository()
 	expRepo := newMockProfileExperienceRepository()
@@ -394,7 +540,7 @@ func newTestService() (*MaterializationService, *mockProfileRepository, *mockPro
 	skillRepo := newMockProfileSkillRepository()
 	authorRepo := newMockAuthorRepository()
 	testimonialRepo := newMockTestimonialRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo)
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, newMockSkillValidationRepository(), newMockExpValidationRepository())
 	return svc, profileRepo, expRepo, eduRepo, skillRepo
 }
 
@@ -405,7 +551,7 @@ func newTestServiceWithRefs() (*MaterializationService, *mockProfileRepository, 
 	skillRepo := newMockProfileSkillRepository()
 	authorRepo := newMockAuthorRepository()
 	testimonialRepo := newMockTestimonialRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo)
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, newMockSkillValidationRepository(), newMockExpValidationRepository())
 	return svc, profileRepo, authorRepo, testimonialRepo
 }
 
@@ -894,7 +1040,7 @@ func TestMaterializePartialSuccess_ExperiencesFail(t *testing.T) {
 	expRepo := &mockFailingProfileExperienceRepository{newMockProfileExperienceRepository()}
 	eduRepo := newMockProfileEducationRepository()
 	skillRepo := newMockProfileSkillRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository())
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExpValidationRepository())
 
 	data := &domain.ResumeExtractedData{
 		Experience: []domain.WorkExperience{
@@ -941,7 +1087,7 @@ func TestMaterializePartialSuccess_SkillsFail(t *testing.T) {
 	expRepo := newMockProfileExperienceRepository()
 	eduRepo := newMockProfileEducationRepository()
 	skillRepo := &mockFailingProfileSkillRepository{newMockProfileSkillRepository()}
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository())
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExpValidationRepository())
 
 	data := &domain.ResumeExtractedData{
 		Experience: []domain.WorkExperience{
@@ -1274,5 +1420,108 @@ func TestMaterializeReferenceLetterWithNoTestimonials(t *testing.T) {
 	// Should not create an author when there are no testimonials
 	if len(authorRepo.authors) != 0 {
 		t.Errorf("expected 0 authors when no testimonials, got %d", len(authorRepo.authors))
+	}
+}
+
+func TestCrossReferenceValidationsMatchesSkills(t *testing.T) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	eduRepo := newMockProfileEducationRepository()
+	skillRepo := newMockProfileSkillRepository()
+	skillValRepo := newMockSkillValidationRepository()
+	expValRepo := newMockExpValidationRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+
+	profileID := uuid.New()
+
+	// Pre-populate profile skills (as if materialized from resume)
+	goSkill := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "Go", NormalizedName: "go"}
+	pgSkill := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "PostgreSQL", NormalizedName: "postgresql"}
+	skillRepo.skills[goSkill.ID] = goSkill
+	skillRepo.skills[pgSkill.ID] = pgSkill
+
+	// Pre-populate profile experience
+	exp := &domain.ProfileExperience{ID: uuid.New(), ProfileID: profileID, Company: "Acme Corp", Title: "Engineer"}
+	expRepo.experiences[exp.ID] = exp
+
+	refLetterID := uuid.New()
+	letterData := &domain.ExtractedLetterData{
+		SkillMentions: []domain.ExtractedSkillMention{
+			{Skill: "Go", Quote: "Expert Go programmer"},
+			{Skill: "PostgreSQL", Quote: "Deep PostgreSQL knowledge"},
+			{Skill: "Kubernetes", Quote: "K8s experience"}, // no match
+		},
+		ExperienceMentions: []domain.ExtractedExperienceMention{
+			{Company: "Acme Corp", Role: "Engineer", Quote: "Great work at Acme"},
+			{Company: "Other Inc", Role: "Intern", Quote: "Summer internship"},  // no match
+		},
+	}
+
+	result, err := svc.CrossReferenceValidations(context.Background(), profileID, refLetterID, letterData)
+	if err != nil {
+		t.Fatalf("CrossReferenceValidations returned error: %v", err)
+	}
+
+	if result.SkillValidations != 2 {
+		t.Errorf("expected 2 skill validations, got %d", result.SkillValidations)
+	}
+	if result.ExperienceValidations != 1 {
+		t.Errorf("expected 1 experience validation, got %d", result.ExperienceValidations)
+	}
+	if len(skillValRepo.validations) != 2 {
+		t.Errorf("expected 2 skill validation records, got %d", len(skillValRepo.validations))
+	}
+	if len(expValRepo.validations) != 1 {
+		t.Errorf("expected 1 experience validation record, got %d", len(expValRepo.validations))
+	}
+
+	// Verify the skill validations reference the correct skills and quotes
+	for _, sv := range skillValRepo.validations {
+		if sv.ReferenceLetterID != refLetterID {
+			t.Errorf("expected reference letter ID %s, got %s", refLetterID, sv.ReferenceLetterID)
+		}
+		if sv.ProfileSkillID != goSkill.ID && sv.ProfileSkillID != pgSkill.ID {
+			t.Errorf("unexpected skill ID %s", sv.ProfileSkillID)
+		}
+	}
+}
+
+func TestCrossReferenceValidationsCaseInsensitive(t *testing.T) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	skillRepo := newMockProfileSkillRepository()
+	skillValRepo := newMockSkillValidationRepository()
+	expValRepo := newMockExpValidationRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+
+	profileID := uuid.New()
+
+	// Profile skill with lowercase normalized name
+	skill := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "AWS", NormalizedName: "aws"}
+	skillRepo.skills[skill.ID] = skill
+
+	// Experience with mixed case
+	exp := &domain.ProfileExperience{ID: uuid.New(), ProfileID: profileID, Company: "AL Talent, Inc. DBA Wellfound", Title: "SEM"}
+	expRepo.experiences[exp.ID] = exp
+
+	letterData := &domain.ExtractedLetterData{
+		SkillMentions: []domain.ExtractedSkillMention{
+			{Skill: "AWS", Quote: "Used AWS extensively"}, // uppercase mention vs lowercase normalized
+		},
+		ExperienceMentions: []domain.ExtractedExperienceMention{
+			{Company: "al talent, inc. dba wellfound", Role: "SEM", Quote: "Led teams at Wellfound"}, // lowercase mention
+		},
+	}
+
+	result, err := svc.CrossReferenceValidations(context.Background(), profileID, uuid.New(), letterData)
+	if err != nil {
+		t.Fatalf("CrossReferenceValidations returned error: %v", err)
+	}
+
+	if result.SkillValidations != 1 {
+		t.Errorf("expected 1 skill validation (case-insensitive match), got %d", result.SkillValidations)
+	}
+	if result.ExperienceValidations != 1 {
+		t.Errorf("expected 1 experience validation (case-insensitive match), got %d", result.ExperienceValidations)
 	}
 }
