@@ -57,7 +57,7 @@ export default function ProfilePage() {
 
   if (profileResult.fetching) {
     return (
-      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 lg:pr-20">
         <div className="max-w-4xl mx-auto">
           <ProfileSkeleton />
         </div>
@@ -67,7 +67,7 @@ export default function ProfilePage() {
 
   if (profileResult.error) {
     return (
-      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 lg:pr-20">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-destructive mb-4">Error Loading Profile</h1>
           <p className="text-muted-foreground mb-6">{profileResult.error.message}</p>
@@ -79,7 +79,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 lg:pr-20">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Profile Not Found</h1>
           <p className="text-muted-foreground mb-6">
@@ -113,7 +113,7 @@ export default function ProfilePage() {
             userId={userId}
             onMutationSuccess={handleMutationSuccess}
           />
-          <div className="hidden lg:block absolute top-0 left-full ml-3">
+          <div className="absolute top-0 left-full ml-3">
             <ProfileActionsBar
               onAddReference={handleAddReference}
               onExport={handleExport}

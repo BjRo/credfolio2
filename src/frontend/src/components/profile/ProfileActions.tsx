@@ -77,7 +77,7 @@ export function ProfileActionsBar(props: ProfileActionsProps) {
             size="icon"
             onClick={action.onClick}
             aria-label={action.label}
-            className="transition-transform duration-150 hover:scale-110"
+            className="hover:scale-110"
           >
             <action.icon className="w-4 h-4" aria-hidden="true" />
           </Button>
