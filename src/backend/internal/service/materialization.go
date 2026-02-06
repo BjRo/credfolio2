@@ -241,6 +241,9 @@ func (s *MaterializationService) MaterializeReferenceLetterData(
 	}
 
 	// Delete any existing testimonials from this reference letter (idempotent re-processing)
+	// TODO: Wrap delete + create cycle in a DB transaction for atomicity. A crash between
+	// delete and the last create could leave the user with lost testimonials. Same pattern
+	// exists in MaterializeResumeData — address both together.
 	if delErr := s.testimonialRepo.DeleteByReferenceLetterID(ctx, referenceLetterID); delErr != nil {
 		return nil, fmt.Errorf("failed to delete existing testimonials for reference letter: %w", delErr)
 	}
@@ -285,6 +288,10 @@ func (s *MaterializationService) MaterializeReferenceLetterData(
 }
 
 // findOrCreateAuthor finds an existing author by name and company, or creates a new one.
+// TODO: Add a unique DB constraint on (profile_id, name, company) to guard against
+// duplicate authors from concurrent imports (TOCTOU race in the find-then-create pattern).
+// TODO: Consider updating existing author's Title when reusing, so newer reference letters
+// with updated titles (e.g., promotions) refresh the canonical Author entity.
 func (s *MaterializationService) findOrCreateAuthor(ctx context.Context, profileID uuid.UUID, extracted *domain.ExtractedAuthor) (*domain.Author, error) {
 	// Try to find existing author with same name and company
 	existing, err := s.authorRepo.FindByNameAndCompany(ctx, profileID, extracted.Name, extracted.Company)

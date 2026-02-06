@@ -992,8 +992,8 @@ func TestMaterializeReferenceLetterCreatesTestimonials(t *testing.T) {
 	}
 
 	var quotes []string
-	for _, t := range testimonialRepo.testimonials {
-		quotes = append(quotes, t.Quote)
+	for _, tm := range testimonialRepo.testimonials {
+		quotes = append(quotes, tm.Quote)
 	}
 	for _, expected := range []string{"John is an exceptional engineer.", "He excels at problem-solving."} {
 		found := false
