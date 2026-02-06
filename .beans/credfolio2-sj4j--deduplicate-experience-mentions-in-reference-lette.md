@@ -1,11 +1,11 @@
 ---
 # credfolio2-sj4j
 title: Deduplicate experience mentions in reference letter extraction
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-02-06T09:00:04Z
-updated_at: 2026-02-06T09:02:14Z
+updated_at: 2026-02-06T13:09:16Z
 parent: credfolio2-3ram
 ---
 
