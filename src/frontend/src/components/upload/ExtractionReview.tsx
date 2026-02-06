@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CheckboxCard } from "@/components/ui/checkbox-card";
 import { SelectionControls } from "@/components/ui/selection-controls";
 import { GRAPHQL_ENDPOINT } from "@/lib/urql/client";
 import { FeedbackForm } from "./FeedbackForm";
@@ -374,58 +375,6 @@ function AuthorInfoSection({ data }: { data: ReferenceLetterExtractionData }) {
 }
 
 // --- Selectable section components ---
-
-interface CheckboxCardProps {
-  checked: boolean;
-  onToggle: () => void;
-  disabled: boolean;
-  selectedClassName: string;
-  borderStyle?: string;
-  children: React.ReactNode;
-}
-
-function CheckboxCard({
-  checked,
-  onToggle,
-  disabled,
-  selectedClassName,
-  borderStyle = "border",
-  children,
-}: CheckboxCardProps) {
-  return (
-    // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
-    <div
-      role="checkbox"
-      aria-checked={checked}
-      tabIndex={disabled ? -1 : 0}
-      onClick={() => !disabled && onToggle()}
-      onKeyDown={(e) => {
-        if (!disabled && (e.key === " " || e.key === "Enter")) {
-          e.preventDefault();
-          onToggle();
-        }
-      }}
-      className={`flex items-start gap-3 p-4 rounded-lg ${borderStyle} transition-colors w-full text-left ${
-        disabled
-          ? "bg-muted cursor-not-allowed"
-          : checked
-            ? `${selectedClassName} cursor-pointer`
-            : "bg-card border-border hover:bg-muted/50 cursor-pointer"
-      }`}
-    >
-      <Checkbox
-        checked={checked}
-        onCheckedChange={() => onToggle()}
-        onClick={(e) => e.stopPropagation()}
-        disabled={disabled}
-        className="mt-1"
-        tabIndex={-1}
-        aria-hidden="true"
-      />
-      <div className="flex-1">{children}</div>
-    </div>
-  );
-}
 
 function ExperiencesSection({
   experiences,

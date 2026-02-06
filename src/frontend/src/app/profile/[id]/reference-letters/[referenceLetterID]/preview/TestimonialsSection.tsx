@@ -2,7 +2,7 @@
 
 import { Quote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CheckboxCard } from "@/components/ui/checkbox-card";
 import { SelectionControls } from "@/components/ui/selection-controls";
 import type { TestimonialItem } from "./page";
 
@@ -46,37 +46,14 @@ export function TestimonialsSection({
       {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
       <div className="space-y-4" role="group" aria-label="Testimonials">
         {testimonials.map((testimonial, index) => (
-          // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
-          <div
+          <CheckboxCard
             key={`testimonial-${testimonial.quote.slice(0, 50)}-${index}`}
-            role="checkbox"
-            aria-checked={selectedTestimonials.has(index)}
-            tabIndex={disabled ? -1 : 0}
-            onClick={() => !disabled && onToggle(index)}
-            onKeyDown={(e) => {
-              if (!disabled && (e.key === " " || e.key === "Enter")) {
-                e.preventDefault();
-                onToggle(index);
-              }
-            }}
-            className={`flex items-start gap-3 p-4 rounded-lg border transition-colors w-full text-left ${
-              disabled
-                ? "bg-muted cursor-not-allowed"
-                : selectedTestimonials.has(index)
-                  ? "bg-primary/5 border-primary/30 cursor-pointer"
-                  : "bg-card border-border hover:bg-muted/50 cursor-pointer"
-            }`}
+            checked={selectedTestimonials.has(index)}
+            onToggle={() => onToggle(index)}
+            disabled={disabled}
+            selectedClassName="bg-primary/5 border-primary/30"
           >
-            <Checkbox
-              checked={selectedTestimonials.has(index)}
-              onCheckedChange={() => onToggle(index)}
-              onClick={(e) => e.stopPropagation()}
-              disabled={disabled}
-              className="mt-1"
-              tabIndex={-1}
-              aria-hidden="true"
-            />
-            <div className="flex-1 space-y-3">
+            <div className="space-y-3">
               <blockquote className="text-foreground">&ldquo;{testimonial.quote}&rdquo;</blockquote>
               <div className="flex flex-col gap-2">
                 <p className="text-sm text-muted-foreground">
@@ -95,7 +72,7 @@ export function TestimonialsSection({
                 )}
               </div>
             </div>
-          </div>
+          </CheckboxCard>
         ))}
       </div>
     </section>

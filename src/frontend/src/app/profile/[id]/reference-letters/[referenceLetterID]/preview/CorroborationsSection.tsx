@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CheckboxCard } from "@/components/ui/checkbox-card";
 import { SelectionControls } from "@/components/ui/selection-controls";
 import type { ExperienceCorroboration, SkillCorroboration } from "./page";
 
@@ -58,43 +58,18 @@ export function CorroborationsSection({
           {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
           <div className="space-y-3" role="group" aria-label="Skills corroborations">
             {skillCorroborations.map((corr, index) => (
-              // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
-              <div
+              <CheckboxCard
                 key={`${corr.profileSkillId}-${index}`}
-                role="checkbox"
-                aria-checked={selectedSkillCorroborations.has(corr.profileSkillId)}
-                tabIndex={disabled ? -1 : 0}
-                onClick={() => !disabled && onSkillToggle(corr.profileSkillId)}
-                onKeyDown={(e) => {
-                  if (!disabled && (e.key === " " || e.key === "Enter")) {
-                    e.preventDefault();
-                    onSkillToggle(corr.profileSkillId);
-                  }
-                }}
-                className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
-                  disabled
-                    ? "bg-muted cursor-not-allowed"
-                    : selectedSkillCorroborations.has(corr.profileSkillId)
-                      ? "bg-success/5 border-success/30 cursor-pointer"
-                      : "bg-card border-border hover:bg-muted/50 cursor-pointer"
-                }`}
+                checked={selectedSkillCorroborations.has(corr.profileSkillId)}
+                onToggle={() => onSkillToggle(corr.profileSkillId)}
+                disabled={disabled}
+                selectedClassName="bg-success/5 border-success/30"
               >
-                <Checkbox
-                  checked={selectedSkillCorroborations.has(corr.profileSkillId)}
-                  onCheckedChange={() => onSkillToggle(corr.profileSkillId)}
-                  onClick={(e) => e.stopPropagation()}
-                  disabled={disabled}
-                  className="mt-1"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{corr.skillName}</p>
-                  <blockquote className="mt-2 pl-3 border-l-2 border-muted-foreground/20 text-sm text-muted-foreground italic">
-                    &ldquo;{corr.quote}&rdquo;
-                  </blockquote>
-                </div>
-              </div>
+                <p className="font-medium text-foreground">{corr.skillName}</p>
+                <blockquote className="mt-2 pl-3 border-l-2 border-muted-foreground/20 text-sm text-muted-foreground italic">
+                  &ldquo;{corr.quote}&rdquo;
+                </blockquote>
+              </CheckboxCard>
             ))}
           </div>
         </div>
@@ -117,45 +92,20 @@ export function CorroborationsSection({
           {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
           <div className="space-y-3" role="group" aria-label="Experience corroborations">
             {experienceCorroborations.map((corr, index) => (
-              // biome-ignore lint/a11y/useSemanticElements: Custom styled checkbox card with inner Checkbox component
-              <div
+              <CheckboxCard
                 key={`${corr.profileExperienceId}-${index}`}
-                role="checkbox"
-                aria-checked={selectedExperienceCorroborations.has(corr.profileExperienceId)}
-                tabIndex={disabled ? -1 : 0}
-                onClick={() => !disabled && onExperienceToggle(corr.profileExperienceId)}
-                onKeyDown={(e) => {
-                  if (!disabled && (e.key === " " || e.key === "Enter")) {
-                    e.preventDefault();
-                    onExperienceToggle(corr.profileExperienceId);
-                  }
-                }}
-                className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
-                  disabled
-                    ? "bg-muted cursor-not-allowed"
-                    : selectedExperienceCorroborations.has(corr.profileExperienceId)
-                      ? "bg-success/5 border-success/30 cursor-pointer"
-                      : "bg-card border-border hover:bg-muted/50 cursor-pointer"
-                }`}
+                checked={selectedExperienceCorroborations.has(corr.profileExperienceId)}
+                onToggle={() => onExperienceToggle(corr.profileExperienceId)}
+                disabled={disabled}
+                selectedClassName="bg-success/5 border-success/30"
               >
-                <Checkbox
-                  checked={selectedExperienceCorroborations.has(corr.profileExperienceId)}
-                  onCheckedChange={() => onExperienceToggle(corr.profileExperienceId)}
-                  onClick={(e) => e.stopPropagation()}
-                  disabled={disabled}
-                  className="mt-1"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">
-                    {corr.role} at {corr.company}
-                  </p>
-                  <blockquote className="mt-2 pl-3 border-l-2 border-muted-foreground/20 text-sm text-muted-foreground italic">
-                    &ldquo;{corr.quote}&rdquo;
-                  </blockquote>
-                </div>
-              </div>
+                <p className="font-medium text-foreground">
+                  {corr.role} at {corr.company}
+                </p>
+                <blockquote className="mt-2 pl-3 border-l-2 border-muted-foreground/20 text-sm text-muted-foreground italic">
+                  &ldquo;{corr.quote}&rdquo;
+                </blockquote>
+              </CheckboxCard>
             ))}
           </div>
         </div>
