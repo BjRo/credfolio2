@@ -2559,7 +2559,7 @@ func TestApplyReferenceLetterValidations(t *testing.T) {
 			{Company: "Acme Inc", Role: "Software Engineer", Quote: "Led the team at Acme Inc"},
 		},
 		DiscoveredSkills: []domain.DiscoveredSkill{
-			{Skill: "Kubernetes", Quote: "Deployed applications on Kubernetes", Context: &kubernetesContext},
+			{Skill: "Kubernetes", Quote: "Deployed applications on Kubernetes", Context: &kubernetesContext, Category: domain.SkillCategoryTechnical},
 		},
 	}
 	extractedDataJSON, err := json.Marshal(extractedData)

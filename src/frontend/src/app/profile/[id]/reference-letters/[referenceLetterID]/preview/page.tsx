@@ -9,7 +9,7 @@ import {
   GetProfileByIdDocument,
   GetReferenceLetterDocument,
   ReferenceLetterStatus,
-  SkillCategory,
+  type SkillCategory,
 } from "@/graphql/generated/graphql";
 import { CorroborationsSection } from "./CorroborationsSection";
 import { DiscoveredSkillsSection } from "./DiscoveredSkillsSection";
@@ -38,6 +38,7 @@ export interface TestimonialItem {
 export interface DiscoveredSkill {
   name: string;
   quote: string;
+  category: SkillCategory;
 }
 
 export default function ValidationPreviewPage() {
@@ -54,7 +55,9 @@ export default function ValidationPreviewPage() {
     Set<string>
   >(new Set());
   const [selectedTestimonials, setSelectedTestimonials] = useState<Set<number>>(new Set());
-  const [selectedDiscoveredSkills, setSelectedDiscoveredSkills] = useState<Set<string>>(new Set());
+  const [selectedDiscoveredSkills, setSelectedDiscoveredSkills] = useState<
+    Map<string, { selected: boolean; category: SkillCategory }>
+  >(new Map());
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Query reference letter with extracted data
@@ -147,6 +150,7 @@ export default function ValidationPreviewPage() {
     return extractedData.discoveredSkills.map((ds) => ({
       name: ds.skill,
       quote: ds.quote || "",
+      category: ds.category,
     }));
   }, [extractedData?.discoveredSkills]);
 
@@ -166,8 +170,12 @@ export default function ValidationPreviewPage() {
     const testimonialIndices = new Set(testimonials.map((_, i) => i));
     setSelectedTestimonials(testimonialIndices);
 
-    // Discovered skills are NOT pre-selected
-    setSelectedDiscoveredSkills(new Set());
+    // Initialize discovered skills with LLM categories, not pre-selected
+    const dsMap = new Map<string, { selected: boolean; category: SkillCategory }>();
+    for (const ds of discoveredSkills) {
+      dsMap.set(ds.name, { selected: false, category: ds.category });
+    }
+    setSelectedDiscoveredSkills(dsMap);
 
     setIsInitialized(true);
   }, [
@@ -177,6 +185,7 @@ export default function ValidationPreviewPage() {
     skillCorroborations,
     experienceCorroborations,
     testimonials,
+    discoveredSkills,
   ]);
 
   // Selection handlers
@@ -218,15 +227,28 @@ export default function ValidationPreviewPage() {
 
   const handleDiscoveredSkillToggle = useCallback((skillName: string) => {
     setSelectedDiscoveredSkills((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(skillName)) {
-        newSet.delete(skillName);
-      } else {
-        newSet.add(skillName);
+      const next = new Map(prev);
+      const entry = next.get(skillName);
+      if (entry) {
+        next.set(skillName, { ...entry, selected: !entry.selected });
       }
-      return newSet;
+      return next;
     });
   }, []);
+
+  const handleDiscoveredSkillCategoryChange = useCallback(
+    (skillName: string, category: SkillCategory) => {
+      setSelectedDiscoveredSkills((prev) => {
+        const next = new Map(prev);
+        const entry = next.get(skillName);
+        if (entry) {
+          next.set(skillName, { ...entry, category });
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   // Select/Deselect all handlers
   const handleSelectAllSkillCorroborations = useCallback(() => {
@@ -256,11 +278,23 @@ export default function ValidationPreviewPage() {
   }, []);
 
   const handleSelectAllDiscoveredSkills = useCallback(() => {
-    setSelectedDiscoveredSkills(new Set(discoveredSkills.map((d) => d.name)));
-  }, [discoveredSkills]);
+    setSelectedDiscoveredSkills((prev) => {
+      const next = new Map(prev);
+      for (const [name, entry] of next) {
+        next.set(name, { ...entry, selected: true });
+      }
+      return next;
+    });
+  }, []);
 
   const handleDeselectAllDiscoveredSkills = useCallback(() => {
-    setSelectedDiscoveredSkills(new Set());
+    setSelectedDiscoveredSkills((prev) => {
+      const next = new Map(prev);
+      for (const [name, entry] of next) {
+        next.set(name, { ...entry, selected: false });
+      }
+      return next;
+    });
   }, []);
 
   // Apply selected validations
@@ -291,12 +325,12 @@ export default function ValidationPreviewPage() {
         skillsMentioned: t.skillsMentioned,
       }));
 
-    // Build new skills input (use SOFT as default category for discovered skills)
+    // Build new skills input using per-skill category (LLM-assigned or user-overridden)
     const newSkillsInput = discoveredSkills
-      .filter((d) => selectedDiscoveredSkills.has(d.name))
+      .filter((d) => selectedDiscoveredSkills.get(d.name)?.selected)
       .map((d) => ({
         name: d.name,
-        category: SkillCategory.Soft, // Default to soft skills for discovered skills
+        category: selectedDiscoveredSkills.get(d.name)?.category ?? d.category,
         quoteContext: d.quote || undefined,
       }));
 
@@ -426,11 +460,14 @@ export default function ValidationPreviewPage() {
   }
 
   // Calculate total selected
+  const selectedDiscoveredCount = [...selectedDiscoveredSkills.values()].filter(
+    (v) => v.selected
+  ).length;
   const totalSelected =
     selectedSkillCorroborations.size +
     selectedExperienceCorroborations.size +
     selectedTestimonials.size +
-    selectedDiscoveredSkills.size;
+    selectedDiscoveredCount;
 
   // Check if already applied
   const isAlreadyApplied = referenceLetter.status === ReferenceLetterStatus.Applied;
@@ -506,8 +543,9 @@ export default function ValidationPreviewPage() {
         {discoveredSkills.length > 0 && (
           <DiscoveredSkillsSection
             discoveredSkills={discoveredSkills}
-            selectedSkills={selectedDiscoveredSkills}
+            selected={selectedDiscoveredSkills}
             onToggle={handleDiscoveredSkillToggle}
+            onCategoryChange={handleDiscoveredSkillCategoryChange}
             onSelectAll={handleSelectAllDiscoveredSkills}
             onDeselectAll={handleDeselectAllDiscoveredSkills}
             disabled={isAlreadyApplied}

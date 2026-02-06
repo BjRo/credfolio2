@@ -9,9 +9,10 @@ import (
 
 // DiscoveredSkill is the GraphQL model for a skill discovered in a reference letter.
 type DiscoveredSkill struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
-	Skill   string  `json:"skill"`
-	Quote   string  `json:"quote"`
-	Context *string `json:"context,omitempty"`
+	Skill    string               `json:"skill"`
+	Quote    string               `json:"quote"`
+	Context  *string              `json:"context,omitempty"`
+	Category domain.SkillCategory `json:"category"`
 }
 
 // ExtractedLetterData is the GraphQL model for extracted letter data (credibility-focused).

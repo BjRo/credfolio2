@@ -124,6 +124,7 @@ export interface ReferenceLetterExtractionData {
       skill: string;
       quote: string;
       context: string | null;
+      category: "TECHNICAL" | "SOFT" | "DOMAIN";
     }>;
     metadata: {
       extractedAt: string;

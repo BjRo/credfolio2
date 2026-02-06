@@ -436,8 +436,8 @@ type ImportDocumentResultsInput struct {
 	SelectedSkills []string `json:"selectedSkills,omitempty"`
 	// Indices of testimonials to import. Null = import all.
 	SelectedTestimonialIndices []int `json:"selectedTestimonialIndices,omitempty"`
-	// Discovered skill names to import from reference letter. Null = import all.
-	SelectedDiscoveredSkills []string `json:"selectedDiscoveredSkills,omitempty"`
+	// Discovered skills to import from reference letter with per-skill category. Null = import all.
+	SelectedDiscoveredSkills []*SelectedDiscoveredSkillInput `json:"selectedDiscoveredSkills,omitempty"`
 }
 
 // Result of importing document results into profile tables.
@@ -693,6 +693,14 @@ type ResumeExtractedData struct {
 	ExtractedAt time.Time `json:"extractedAt"`
 	// Overall confidence score (0.0 to 1.0).
 	Confidence float64 `json:"confidence"`
+}
+
+// Input for a discovered skill selected for import, carrying both name and category.
+type SelectedDiscoveredSkillInput struct {
+	// The skill name.
+	Name string `json:"name"`
+	// The skill category (user may override the LLM-assigned category).
+	Category domain.SkillCategory `json:"category"`
 }
 
 // Result of a successful skill operation.
@@ -1087,16 +1095,19 @@ const (
 	ExperienceSourceManual ExperienceSource = "MANUAL"
 	// Extracted from an uploaded resume.
 	ExperienceSourceResumeExtracted ExperienceSource = "RESUME_EXTRACTED"
+	// Discovered in a reference letter.
+	ExperienceSourceLetterDiscovered ExperienceSource = "LETTER_DISCOVERED"
 )
 
 var AllExperienceSource = []ExperienceSource{
 	ExperienceSourceManual,
 	ExperienceSourceResumeExtracted,
+	ExperienceSourceLetterDiscovered,
 }
 
 func (e ExperienceSource) IsValid() bool {
 	switch e {
-	case ExperienceSourceManual, ExperienceSourceResumeExtracted:
+	case ExperienceSourceManual, ExperienceSourceResumeExtracted, ExperienceSourceLetterDiscovered:
 		return true
 	}
 	return false

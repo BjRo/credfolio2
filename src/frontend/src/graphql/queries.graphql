@@ -32,6 +32,7 @@ query GetReferenceLetter($id: ID!) {
         skill
         quote
         context
+        category
       }
       metadata {
         extractedAt
@@ -378,6 +379,7 @@ query GetDocumentProcessingStatus($resumeId: ID, $referenceLetterID: ID) {
           skill
           quote
           context
+          category
         }
         metadata {
           extractedAt

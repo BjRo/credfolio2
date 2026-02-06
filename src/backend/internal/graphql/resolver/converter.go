@@ -181,9 +181,10 @@ func toGraphQLDiscoveredSkills(skills []domain.DiscoveredSkill) []*model.Discove
 	result := make([]*model.DiscoveredSkill, len(skills))
 	for i, s := range skills {
 		result[i] = &model.DiscoveredSkill{
-			Skill:   s.Skill,
-			Quote:   s.Quote,
-			Context: s.Context,
+			Skill:    s.Skill,
+			Quote:    s.Quote,
+			Context:  s.Context,
+			Category: s.Category,
 		}
 	}
 	return result
@@ -409,6 +410,8 @@ func toGraphQLProfileExperience(e *domain.ProfileExperience) *model.ProfileExper
 		source = model.ExperienceSourceManual
 	case domain.ExperienceSourceResumeExtracted:
 		source = model.ExperienceSourceResumeExtracted
+	case domain.ExperienceSourceLetterDiscovered:
+		source = model.ExperienceSourceLetterDiscovered
 	default:
 		source = model.ExperienceSourceManual
 	}
@@ -464,6 +467,8 @@ func toGraphQLProfileEducation(e *domain.ProfileEducation) *model.ProfileEducati
 		source = model.ExperienceSourceManual
 	case domain.ExperienceSourceResumeExtracted:
 		source = model.ExperienceSourceResumeExtracted
+	case domain.ExperienceSourceLetterDiscovered:
+		source = model.ExperienceSourceLetterDiscovered
 	default:
 		source = model.ExperienceSourceManual
 	}
@@ -510,6 +515,8 @@ func toGraphQLProfileSkill(s *domain.ProfileSkill) *model.ProfileSkill {
 		source = model.ExperienceSourceManual
 	case domain.ExperienceSourceResumeExtracted:
 		source = model.ExperienceSourceResumeExtracted
+	case domain.ExperienceSourceLetterDiscovered:
+		source = model.ExperienceSourceLetterDiscovered
 	default:
 		source = model.ExperienceSourceManual
 	}

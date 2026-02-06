@@ -72,9 +72,15 @@ export function ExtractionReview({
   const [selectedTestimonials, setSelectedTestimonials] = useState<Set<number>>(
     () => new Set(testimonials.map((_, i) => i))
   );
-  const [selectedDiscoveredSkills, setSelectedDiscoveredSkills] = useState<Set<string>>(
-    () => new Set()
-  );
+  const [selectedDiscoveredSkills, setSelectedDiscoveredSkills] = useState<
+    Map<string, { selected: boolean; category: "TECHNICAL" | "SOFT" | "DOMAIN" }>
+  >(() => {
+    const map = new Map<string, { selected: boolean; category: "TECHNICAL" | "SOFT" | "DOMAIN" }>();
+    for (const ds of discoveredSkills) {
+      map.set(ds.skill, { selected: false, category: ds.category });
+    }
+    return map;
+  });
 
   // Toggle handlers
   const toggleExperience = useCallback((index: number) => {
@@ -115,12 +121,34 @@ export function ExtractionReview({
 
   const toggleDiscoveredSkill = useCallback((name: string) => {
     setSelectedDiscoveredSkills((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
+      const next = new Map(prev);
+      const entry = next.get(name);
+      if (entry) {
+        next.set(name, { ...entry, selected: !entry.selected });
+      }
       return next;
     });
   }, []);
+
+  const changeDiscoveredSkillCategory = useCallback(
+    (name: string, category: "TECHNICAL" | "SOFT" | "DOMAIN") => {
+      setSelectedDiscoveredSkills((prev) => {
+        const next = new Map(prev);
+        const entry = next.get(name);
+        if (entry) {
+          next.set(name, { ...entry, category });
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  // Count selected discovered skills
+  const selectedDiscoveredCount = useMemo(
+    () => [...selectedDiscoveredSkills.values()].filter((v) => v.selected).length,
+    [selectedDiscoveredSkills]
+  );
 
   // Total selected count
   const totalSelected = useMemo(
@@ -129,13 +157,13 @@ export function ExtractionReview({
       selectedEducation.size +
       selectedSkills.size +
       selectedTestimonials.size +
-      selectedDiscoveredSkills.size,
+      selectedDiscoveredCount,
     [
       selectedExperiences,
       selectedEducation,
       selectedSkills,
       selectedTestimonials,
-      selectedDiscoveredSkills,
+      selectedDiscoveredCount,
     ]
   );
 
@@ -160,7 +188,11 @@ export function ExtractionReview({
               selectedEducationIndices: hasResumeData ? [...selectedEducation] : null,
               selectedSkills: hasResumeData ? [...selectedSkills] : null,
               selectedTestimonialIndices: hasLetterData ? [...selectedTestimonials] : null,
-              selectedDiscoveredSkills: hasLetterData ? [...selectedDiscoveredSkills] : null,
+              selectedDiscoveredSkills: hasLetterData
+                ? [...selectedDiscoveredSkills.entries()]
+                    .filter(([, v]) => v.selected)
+                    .map(([name, v]) => ({ name, category: v.category }))
+                : null,
             },
           },
         }),
@@ -256,10 +288,25 @@ export function ExtractionReview({
           discoveredSkills={discoveredSkills}
           selected={selectedDiscoveredSkills}
           onToggle={toggleDiscoveredSkill}
+          onCategoryChange={changeDiscoveredSkillCategory}
           onSelectAll={() =>
-            setSelectedDiscoveredSkills(new Set(discoveredSkills.map((s) => s.skill)))
+            setSelectedDiscoveredSkills((prev) => {
+              const next = new Map(prev);
+              for (const [name, entry] of next) {
+                next.set(name, { ...entry, selected: true });
+              }
+              return next;
+            })
           }
-          onDeselectAll={() => setSelectedDiscoveredSkills(new Set())}
+          onDeselectAll={() =>
+            setSelectedDiscoveredSkills((prev) => {
+              const next = new Map(prev);
+              for (const [name, entry] of next) {
+                next.set(name, { ...entry, selected: false });
+              }
+              return next;
+            })
+          }
           disabled={isImporting}
         />
       )}
@@ -650,21 +697,52 @@ function TestimonialsSection({
   );
 }
 
+type SkillCategoryValue = "TECHNICAL" | "SOFT" | "DOMAIN";
+
+const CATEGORY_LABELS: Record<SkillCategoryValue, string> = {
+  TECHNICAL: "Technical",
+  SOFT: "Soft Skills",
+  DOMAIN: "Domain Knowledge",
+};
+
+const CATEGORY_ORDER: SkillCategoryValue[] = ["TECHNICAL", "SOFT", "DOMAIN"];
+
 function DiscoveredSkillsSection({
   discoveredSkills,
   selected,
   onToggle,
+  onCategoryChange,
   onSelectAll,
   onDeselectAll,
   disabled,
 }: {
-  discoveredSkills: Array<{ skill: string; quote: string; context: string | null }>;
-  selected: Set<string>;
+  discoveredSkills: Array<{
+    skill: string;
+    quote: string;
+    context: string | null;
+    category: SkillCategoryValue;
+  }>;
+  selected: Map<string, { selected: boolean; category: SkillCategoryValue }>;
   onToggle: (name: string) => void;
+  onCategoryChange: (name: string, category: SkillCategoryValue) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
   disabled: boolean;
 }) {
+  const selectedCount = [...selected.values()].filter((v) => v.selected).length;
+
+  // Group skills by their current category (from selection state, which may be overridden)
+  const grouped = useMemo(() => {
+    const groups = new Map<SkillCategoryValue, typeof discoveredSkills>();
+    for (const skill of discoveredSkills) {
+      const category = selected.get(skill.skill)?.category ?? skill.category;
+      const group = groups.get(category) ?? [];
+      group.push(skill);
+      groups.set(category, group);
+    }
+    return groups;
+  }, [discoveredSkills, selected]);
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
@@ -673,7 +751,7 @@ function DiscoveredSkillsSection({
           <h2 className="text-xl font-semibold text-foreground">Skills Your Reference Noticed</h2>
         </div>
         <SelectionControls
-          selectedCount={selected.size}
+          selectedCount={selectedCount}
           totalCount={discoveredSkills.length}
           onSelectAll={onSelectAll}
           onDeselectAll={onDeselectAll}
@@ -684,26 +762,64 @@ function DiscoveredSkillsSection({
         These skills were mentioned in the reference letter but aren&apos;t in the resume. Select
         any you want to add.
       </p>
-      {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
-      <div className="space-y-3" role="group" aria-label="Discovered skills">
-        {discoveredSkills.map((skill) => (
-          <CheckboxCard
-            key={skill.skill}
-            checked={selected.has(skill.skill)}
-            onToggle={() => onToggle(skill.skill)}
-            disabled={disabled}
-            selectedClassName="bg-warning/5 border-warning/50"
-            borderStyle="border-2 border-dashed"
+      {CATEGORY_ORDER.filter((cat) => grouped.has(cat)).map((cat) => (
+        <div key={cat} className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            {CATEGORY_LABELS[cat]}
+          </h3>
+          {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
+          <div
+            className="space-y-3"
+            role="group"
+            aria-label={`${CATEGORY_LABELS[cat]} discovered skills`}
           >
-            <p className="font-medium text-foreground">{skill.skill}</p>
-            {skill.quote && (
-              <blockquote className="mt-2 pl-3 border-l-2 border-warning/30 text-sm text-muted-foreground italic">
-                &ldquo;{skill.quote}&rdquo;
-              </blockquote>
-            )}
-          </CheckboxCard>
-        ))}
-      </div>
+            {grouped.get(cat)?.map((skill) => {
+              const entry = selected.get(skill.skill);
+              const isSelected = entry?.selected ?? false;
+              const currentCategory = entry?.category ?? skill.category;
+              return (
+                <CheckboxCard
+                  key={skill.skill}
+                  checked={isSelected}
+                  onToggle={() => onToggle(skill.skill)}
+                  disabled={disabled}
+                  selectedClassName="bg-warning/5 border-warning/50"
+                  borderStyle="border-2 border-dashed"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground">{skill.skill}</p>
+                      {skill.quote && (
+                        <blockquote className="mt-2 pl-3 border-l-2 border-warning/30 text-sm text-muted-foreground italic">
+                          &ldquo;{skill.quote}&rdquo;
+                        </blockquote>
+                      )}
+                    </div>
+                    <select
+                      value={currentCategory}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onCategoryChange(skill.skill, e.target.value as SkillCategoryValue);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      disabled={disabled}
+                      className="text-xs px-2 py-1 rounded border border-border bg-background text-foreground shrink-0"
+                      aria-label={`Category for ${skill.skill}`}
+                    >
+                      {CATEGORY_ORDER.map((c) => (
+                        <option key={c} value={c}>
+                          {CATEGORY_LABELS[c]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </CheckboxCard>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </section>
   );
 }

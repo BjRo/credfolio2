@@ -65,9 +65,10 @@ type ExtractionMetadata struct { //nolint:govet // Field ordering prioritizes JS
 
 // DiscoveredSkill represents a skill discovered in a reference letter that may not be on the profile.
 type DiscoveredSkill struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
-	Skill   string  `json:"skill"`
-	Quote   string  `json:"quote"`
-	Context *string `json:"context,omitempty"`
+	Skill    string        `json:"skill"`
+	Quote    string        `json:"quote"`
+	Context  *string       `json:"context,omitempty"`
+	Category SkillCategory `json:"category"`
 }
 
 // ExtractedLetterData is the complete extracted data from a reference letter.
