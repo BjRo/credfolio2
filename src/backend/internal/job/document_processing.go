@@ -150,17 +150,21 @@ func (w *DocumentProcessingWorker) Work(ctx context.Context, job *river.Job[Docu
 		return fmt.Errorf("failed to extract text: %w", err)
 	}
 
-	// Run extractors independently — failure in one should not prevent the other
+	// Run extractors sequentially — resume first so we can pass its skills to the letter extractor
 	var extractionErrors []string
+	var resumeSkills []domain.ProfileSkillContext
 
 	if args.ResumeID != nil {
-		if resumeErr := w.processResumeExtraction(ctx, *args.ResumeID, text); resumeErr != nil {
+		skills, resumeErr := w.processResumeExtraction(ctx, *args.ResumeID, text)
+		if resumeErr != nil {
 			extractionErrors = append(extractionErrors, fmt.Sprintf("resume: %v", resumeErr))
+		} else {
+			resumeSkills = skills
 		}
 	}
 
 	if args.ReferenceLetterID != nil {
-		if letterErr := w.processLetterExtraction(ctx, *args.ReferenceLetterID, args.UserID, text); letterErr != nil {
+		if letterErr := w.processLetterExtraction(ctx, *args.ReferenceLetterID, args.UserID, text, resumeSkills); letterErr != nil {
 			extractionErrors = append(extractionErrors, fmt.Sprintf("letter: %v", letterErr))
 		}
 	}
@@ -191,7 +195,9 @@ func (w *DocumentProcessingWorker) extractText(ctx context.Context, data []byte,
 }
 
 // processResumeExtraction runs the resume extractor and saves results.
-func (w *DocumentProcessingWorker) processResumeExtraction(ctx context.Context, resumeID uuid.UUID, text string) error {
+// Returns the extracted skills as ProfileSkillContext so they can be passed
+// to the reference letter extractor (which needs them before materialization).
+func (w *DocumentProcessingWorker) processResumeExtraction(ctx context.Context, resumeID uuid.UUID, text string) ([]domain.ProfileSkillContext, error) {
 	ctx, span := otel.Tracer("credfolio").Start(ctx, "unified_resume_extraction")
 	defer span.End()
 
@@ -206,7 +212,7 @@ func (w *DocumentProcessingWorker) processResumeExtraction(ctx context.Context, 
 			logger.Err(err),
 		)
 		w.updateResumeStatusFailed(ctx, resumeID, errMsg)
-		return fmt.Errorf("resume extraction failed: %w", err)
+		return nil, fmt.Errorf("resume extraction failed: %w", err)
 	}
 
 	extractedData.ExtractedAt = time.Now()
@@ -215,13 +221,16 @@ func (w *DocumentProcessingWorker) processResumeExtraction(ctx context.Context, 
 	if saveErr := w.saveResumeExtractedData(ctx, resumeID, extractedData); saveErr != nil {
 		errMsg := fmt.Sprintf("failed to save resume extracted data: %v", saveErr)
 		w.updateResumeStatusFailed(ctx, resumeID, errMsg)
-		return fmt.Errorf("failed to save resume data: %w", saveErr)
+		return nil, fmt.Errorf("failed to save resume data: %w", saveErr)
 	}
 
 	// Mark resume as completed (no auto-materialization in unified flow)
 	if err := w.updateResumeStatus(ctx, resumeID, domain.ResumeStatusCompleted, nil); err != nil {
-		return fmt.Errorf("failed to mark resume completed: %w", err)
+		return nil, fmt.Errorf("failed to mark resume completed: %w", err)
 	}
+
+	// Build skill context from extracted data for the letter extractor
+	skillCtx := resumeSkillsToContext(extractedData.Skills)
 
 	w.log.Info("Resume extraction completed (unified)",
 		logger.Feature("jobs"),
@@ -231,16 +240,52 @@ func (w *DocumentProcessingWorker) processResumeExtraction(ctx context.Context, 
 		logger.Int("education_count", len(extractedData.Education)),
 		logger.Int("skills_count", len(extractedData.Skills)),
 	)
-	return nil
+	return skillCtx, nil
+}
+
+// resumeSkillsToContext converts extracted resume skill names to ProfileSkillContext
+// for use in the reference letter extraction prompt.
+func resumeSkillsToContext(skills []string) []domain.ProfileSkillContext {
+	result := make([]domain.ProfileSkillContext, 0, len(skills))
+	for _, name := range skills {
+		result = append(result, domain.ProfileSkillContext{
+			Name:           name,
+			NormalizedName: strings.ToLower(strings.TrimSpace(name)),
+		})
+	}
+	return result
+}
+
+// mergeSkillContexts combines existing profile skills with resume-extracted skills,
+// deduplicating by normalized name.
+func mergeSkillContexts(existing, additional []domain.ProfileSkillContext) []domain.ProfileSkillContext {
+	if len(additional) == 0 {
+		return existing
+	}
+	seen := make(map[string]bool, len(existing))
+	for _, s := range existing {
+		seen[s.NormalizedName] = true
+	}
+	merged := make([]domain.ProfileSkillContext, len(existing))
+	copy(merged, existing)
+	for _, s := range additional {
+		if !seen[s.NormalizedName] {
+			merged = append(merged, s)
+			seen[s.NormalizedName] = true
+		}
+	}
+	return merged
 }
 
 // processLetterExtraction runs the reference letter extractor and saves results.
-func (w *DocumentProcessingWorker) processLetterExtraction(ctx context.Context, letterID uuid.UUID, userID uuid.UUID, text string) error {
+// resumeSkills are skills just extracted from a co-uploaded resume (not yet materialized).
+func (w *DocumentProcessingWorker) processLetterExtraction(ctx context.Context, letterID uuid.UUID, userID uuid.UUID, text string, resumeSkills []domain.ProfileSkillContext) error {
 	ctx, span := otel.Tracer("credfolio").Start(ctx, "unified_letter_extraction")
 	defer span.End()
 
-	// Get the user's profile skills for context
+	// Merge existing profile skills with just-extracted resume skills
 	profileSkills := w.getProfileSkillsContext(ctx, userID)
+	profileSkills = mergeSkillContexts(profileSkills, resumeSkills)
 
 	extractedData, err := w.extractor.ExtractLetterData(ctx, text, profileSkills)
 	if err != nil {
