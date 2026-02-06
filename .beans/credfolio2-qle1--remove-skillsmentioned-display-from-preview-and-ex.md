@@ -1,10 +1,11 @@
 ---
 # credfolio2-qle1
 title: Remove skillsMentioned display from preview and extraction review UIs
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-02-06T22:12:05Z
-updated_at: 2026-02-06T22:12:05Z
+updated_at: 2026-02-06T22:17:22Z
 ---
 
 The `skillsMentioned` field displayed in testimonial preview and extraction review screens is LLM extraction metadata used internally by the backend to filter `validatedSkills`. Showing it to users is misleading — especially labeled "Skills validated:" in the preview when nothing has been validated yet.
