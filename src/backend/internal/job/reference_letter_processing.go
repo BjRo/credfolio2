@@ -233,11 +233,8 @@ func (w *ReferenceLetterProcessingWorker) extractLetterData(ctx context.Context,
 		return nil, fmt.Errorf("failed to extract letter data: %w", err)
 	}
 
-	// Set extraction timestamp
-	extractedData.Metadata = domain.ExtractionMetadata{
-		ExtractedAt:  time.Now(),
-		ModelVersion: "claude-sonnet-4-20250514", // TODO: Get from extractor config
-	}
+	// Set extraction timestamp (ModelVersion is set by the extractor from the LLM response)
+	extractedData.Metadata.ExtractedAt = time.Now()
 
 	return extractedData, nil
 }

@@ -313,10 +313,8 @@ func (w *DocumentProcessingWorker) processLetterExtraction(ctx context.Context, 
 		return fmt.Errorf("letter extraction failed: %w", err)
 	}
 
-	extractedData.Metadata = domain.ExtractionMetadata{
-		ExtractedAt:  time.Now(),
-		ModelVersion: "claude-sonnet-4-20250514", // TODO: Get from extractor config
-	}
+	// ModelVersion is set by the extractor from the LLM response
+	extractedData.Metadata.ExtractedAt = time.Now()
 
 	// Save extracted data and mark as completed
 	if saveErr := w.saveLetterExtractedData(ctx, letterID, extractedData); saveErr != nil {

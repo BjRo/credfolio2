@@ -39,8 +39,8 @@ type LLMConfig struct {
 	ResumeExtractionModel string
 
 	// ReferenceExtractionModel specifies the provider and model for reference letter data extraction.
-	// Format: "provider/model" (e.g., "openai/gpt-4o").
-	// Defaults to "openai/gpt-4o" for best structured output support.
+	// Format: "provider/model" (e.g., "anthropic/claude-haiku-4-5-20251001").
+	// Defaults to "anthropic/claude-haiku-4-5-20251001" — best speed/cost for structured extraction.
 	ReferenceExtractionModel string
 
 	// DetectionModel specifies the provider and model for lightweight document content detection.
@@ -62,9 +62,9 @@ func (c *LLMConfig) ParseResumeExtractionModel() (provider, model string) {
 }
 
 // ParseReferenceExtractionModel parses the ReferenceExtractionModel into provider and model parts.
-// Returns (provider, model). If not set, defaults to ("openai", "gpt-4o").
+// Returns (provider, model). If not set, defaults to ("anthropic", "claude-haiku-4-5-20251001").
 func (c *LLMConfig) ParseReferenceExtractionModel() (provider, model string) {
-	return parseModelConfig(c.ReferenceExtractionModel, "openai", "gpt-4o")
+	return parseModelConfig(c.ReferenceExtractionModel, "anthropic", "claude-haiku-4-5-20251001")
 }
 
 // ParseDetectionModel parses the DetectionModel into provider and model parts.
