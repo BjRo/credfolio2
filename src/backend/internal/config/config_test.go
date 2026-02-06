@@ -392,7 +392,7 @@ func TestParseReferenceExtractionModel(t *testing.T) {
 		wantProvider string
 		wantModel    string
 	}{
-		{"empty defaults to openai/gpt-4.1", "", "openai", "gpt-4.1"},
+		{"empty defaults to anthropic/claude-haiku-4-5-20251001", "", "anthropic", "claude-haiku-4-5-20251001"},
 		{"provider/model", "anthropic/claude-sonnet-4-5-20250929", "anthropic", "claude-sonnet-4-5-20250929"},
 		{"provider only", "anthropic", "anthropic", ""},
 	}
