@@ -9,7 +9,7 @@ import { CheckboxCard } from "@/components/ui/checkbox-card";
 import { SelectionControls } from "@/components/ui/selection-controls";
 import type { SkillCategory } from "@/graphql/generated/graphql";
 import { GRAPHQL_ENDPOINT } from "@/lib/urql/client";
-import { DiscoveredSkillsSection } from "./DiscoveredSkillsSection";
+import { DiscoveredSkillsSection, normalizeCategory } from "./DiscoveredSkillsSection";
 import { FeedbackForm } from "./FeedbackForm";
 import type {
   ExtractionResults,
@@ -79,7 +79,7 @@ export function ExtractionReview({
   >(() => {
     const map = new Map<string, { selected: boolean; category: SkillCategory }>();
     for (const ds of discoveredSkills) {
-      map.set(ds.skill, { selected: false, category: ds.category });
+      map.set(ds.skill, { selected: false, category: normalizeCategory(ds.category) });
     }
     return map;
   });

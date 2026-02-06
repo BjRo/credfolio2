@@ -26,7 +26,7 @@ const CATEGORY_ORDER: SkillCategory[] = [
 
 const VALID_CATEGORIES = new Set<string>(CATEGORY_ORDER);
 
-function normalizeCategory(category: string): SkillCategory {
+export function normalizeCategory(category: string): SkillCategory {
   if (VALID_CATEGORIES.has(category)) return category as SkillCategory;
   return SkillCategory.Soft;
 }

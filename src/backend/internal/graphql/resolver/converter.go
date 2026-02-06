@@ -12,6 +12,18 @@ import (
 // jsonNull is the string representation of a JSON null value.
 const jsonNull = "null"
 
+// normalizeSkillCategory converts a domain SkillCategory to the GraphQL enum format (uppercase).
+// Empty or unrecognized categories default to SOFT.
+func normalizeSkillCategory(cat domain.SkillCategory) domain.SkillCategory {
+	upper := domain.SkillCategory(strings.ToUpper(string(cat)))
+	switch upper {
+	case "TECHNICAL", "SOFT", "DOMAIN":
+		return upper
+	default:
+		return "SOFT"
+	}
+}
+
 // emailRegex is a basic regex for email validation.
 // It's intentionally permissive to allow most valid emails.
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
@@ -184,7 +196,7 @@ func toGraphQLDiscoveredSkills(skills []domain.DiscoveredSkill) []*model.Discove
 			Skill:    s.Skill,
 			Quote:    s.Quote,
 			Context:  s.Context,
-			Category: domain.SkillCategory(strings.ToUpper(string(s.Category))),
+			Category: normalizeSkillCategory(s.Category),
 		}
 	}
 	return result
