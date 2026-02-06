@@ -86,6 +86,7 @@ const LETTER_DATA: ExtractionResults["referenceLetter"] = {
         skill: "System Design",
         quote: "Designed the entire microservices architecture",
         context: "architecture",
+        category: "DOMAIN" as const,
       },
     ],
     metadata: { extractedAt: "2025-01-01", modelVersion: "v1", processingTimeMs: 5000 },
@@ -259,7 +260,9 @@ describe("ExtractionReview", () => {
 
     it("discovered skills are NOT pre-selected", () => {
       render(<ExtractionReview {...defaultProps} />);
-      const group = screen.getByRole("group", { name: "Discovered skills" });
+      const group = screen.getByRole("group", {
+        name: "Domain Knowledge discovered skills",
+      });
       const card = within(group).getByRole("checkbox");
       expect(card).toHaveAttribute("aria-checked", "false");
     });

@@ -978,7 +978,14 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 				extractedData.Testimonials = service.FilterByIndices(extractedData.Testimonials, input.SelectedTestimonialIndices)
 			}
 			if input.SelectedDiscoveredSkills != nil {
-				extractedData.DiscoveredSkills = service.FilterDiscoveredSkillsByName(extractedData.DiscoveredSkills, input.SelectedDiscoveredSkills)
+				selected := make([]service.SelectedDiscoveredSkill, len(input.SelectedDiscoveredSkills))
+				for i, s := range input.SelectedDiscoveredSkills {
+					selected[i] = service.SelectedDiscoveredSkill{
+						Name:     s.Name,
+						Category: s.Category,
+					}
+				}
+				extractedData.DiscoveredSkills = service.FilterDiscoveredSkillsWithCategory(extractedData.DiscoveredSkills, selected)
 			}
 
 			// Materialize into profile tables
@@ -2531,13 +2538,14 @@ func (r *mutationResolver) ApplyReferenceLetterValidations(ctx context.Context, 
 		}
 
 		skill := &domain.ProfileSkill{
-			ID:             uuid.New(),
-			ProfileID:      profile.ID,
-			Name:           ns.Name,
-			NormalizedName: normalizeSkillName(ns.Name),
-			Category:       strings.ToUpper(string(ns.Category)),
-			DisplayOrder:   displayOrder,
-			Source:         domain.ExperienceSourceManual,
+			ID:                      uuid.New(),
+			ProfileID:               profile.ID,
+			Name:                    ns.Name,
+			NormalizedName:          normalizeSkillName(ns.Name),
+			Category:                strings.ToUpper(string(ns.Category)),
+			DisplayOrder:            displayOrder,
+			Source:                  domain.ExperienceSourceLetterDiscovered,
+			SourceReferenceLetterID: &refLetterID,
 		}
 
 		if createErr := r.profileSkillRepo.Create(ctx, skill); createErr != nil {
@@ -4052,3 +4060,5 @@ type profileSkillResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type skillValidationResolver struct{ *Resolver }
 type testimonialResolver struct{ *Resolver }
+
+// !!! WARNING !!!

@@ -534,9 +534,15 @@ func (r *mockProfileSkillRepository) Create(_ context.Context, skill *domain.Pro
 }
 
 func (r *mockProfileSkillRepository) CreateIgnoreDuplicate(_ context.Context, skill *domain.ProfileSkill) error {
-	// Same as Create for test purposes - just silently succeeds
 	if skill.ID == uuid.Nil {
 		skill.ID = uuid.New()
+	}
+	// Simulate ON CONFLICT DO UPDATE RETURNING * — return existing row's ID on duplicate
+	for _, existing := range r.skills {
+		if existing.ProfileID == skill.ProfileID && existing.NormalizedName == skill.NormalizedName {
+			skill.ID = existing.ID
+			return nil
+		}
 	}
 	r.skills[skill.ID] = skill
 	return nil
@@ -2559,7 +2565,7 @@ func TestApplyReferenceLetterValidations(t *testing.T) {
 			{Company: "Acme Inc", Role: "Software Engineer", Quote: "Led the team at Acme Inc"},
 		},
 		DiscoveredSkills: []domain.DiscoveredSkill{
-			{Skill: "Kubernetes", Quote: "Deployed applications on Kubernetes", Context: &kubernetesContext},
+			{Skill: "Kubernetes", Quote: "Deployed applications on Kubernetes", Context: &kubernetesContext, Category: domain.SkillCategoryTechnical},
 		},
 	}
 	extractedDataJSON, err := json.Marshal(extractedData)

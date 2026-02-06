@@ -242,8 +242,10 @@ func DeduplicateSkills(skills []string) []string {
 	return result
 }
 
-// MaterializeReferenceLetterData creates testimonial rows from extracted reference letter data.
-// It finds or creates an Author entity, then creates Testimonial records for each extracted testimonial.
+// MaterializeReferenceLetterData creates testimonial rows and ProfileSkill records
+// for discovered skills from extracted reference letter data.
+// It finds or creates an Author entity, creates Testimonial records for each extracted testimonial,
+// and creates ProfileSkill + SkillValidation records for each discovered skill.
 // Idempotent: deletes existing testimonials from the same reference letter before re-creating.
 func (s *MaterializationService) MaterializeReferenceLetterData(
 	ctx context.Context,
@@ -266,6 +268,15 @@ func (s *MaterializationService) MaterializeReferenceLetterData(
 	}
 
 	result := &MaterializationResult{}
+
+	// Materialize discovered skills as ProfileSkill records
+	if len(data.DiscoveredSkills) > 0 {
+		skillCount, skillErr := s.materializeDiscoveredSkills(ctx, referenceLetterID, profile.ID, data.DiscoveredSkills)
+		if skillErr != nil {
+			return result, fmt.Errorf("failed to materialize discovered skills: %w", skillErr)
+		}
+		result.Skills = skillCount
+	}
 
 	if len(data.Testimonials) == 0 {
 		return result, nil
@@ -302,6 +313,64 @@ func (s *MaterializationService) MaterializeReferenceLetterData(
 	}
 
 	return result, nil
+}
+
+// materializeDiscoveredSkills creates ProfileSkill records for skills discovered in a reference letter.
+// For each skill, it also creates a SkillValidation record linking the skill to the reference letter.
+func (s *MaterializationService) materializeDiscoveredSkills(
+	ctx context.Context,
+	referenceLetterID uuid.UUID,
+	profileID uuid.UUID,
+	discoveredSkills []domain.DiscoveredSkill,
+) (int, error) {
+	displayOrder, err := s.profileSkillRepo.GetNextDisplayOrder(ctx, profileID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get next skill display order: %w", err)
+	}
+
+	count := 0
+	for i, ds := range discoveredSkills {
+		category := strings.ToUpper(string(ds.Category))
+		if category == "" {
+			category = "SOFT"
+		}
+
+		refLetterID := referenceLetterID
+		skill := &domain.ProfileSkill{
+			ID:                      uuid.New(),
+			ProfileID:               profileID,
+			Name:                    ds.Skill,
+			NormalizedName:          strings.ToLower(ds.Skill),
+			Category:                category,
+			DisplayOrder:            displayOrder + i,
+			Source:                  domain.ExperienceSourceLetterDiscovered,
+			SourceReferenceLetterID: &refLetterID,
+		}
+
+		if createErr := s.profileSkillRepo.CreateIgnoreDuplicate(ctx, skill); createErr != nil {
+			return count, fmt.Errorf("failed to create discovered skill %q: %w", ds.Skill, createErr)
+		}
+
+		// Create a SkillValidation linking the skill to the reference letter with the quote
+		quote := ds.Quote
+		if quote != "" {
+			validation := &domain.SkillValidation{
+				ID:                uuid.New(),
+				ProfileSkillID:    skill.ID,
+				ReferenceLetterID: referenceLetterID,
+				QuoteSnippet:      &quote,
+			}
+			if valErr := s.skillValRepo.Create(ctx, validation); valErr != nil {
+				// Non-fatal: skill was created, validation is bonus
+				if !strings.Contains(valErr.Error(), "duplicate") && !strings.Contains(valErr.Error(), "unique constraint") {
+					return count, fmt.Errorf("failed to create skill validation for %q: %w", ds.Skill, valErr)
+				}
+			}
+		}
+
+		count++
+	}
+	return count, nil
 }
 
 // findOrCreateAuthor finds an existing author by name and company, or creates a new one.
@@ -549,6 +618,30 @@ func FilterDiscoveredSkillsByName(skills []domain.DiscoveredSkill, selected []st
 	result := make([]domain.DiscoveredSkill, 0, len(selected))
 	for _, skill := range skills {
 		if set[strings.ToLower(strings.TrimSpace(skill.Skill))] {
+			result = append(result, skill)
+		}
+	}
+	return result
+}
+
+// SelectedDiscoveredSkill carries a discovered skill's name and user-chosen category for import.
+type SelectedDiscoveredSkill struct {
+	Name     string
+	Category domain.SkillCategory
+}
+
+// FilterDiscoveredSkillsWithCategory filters discovered skills by name from the selected set,
+// overriding each skill's category with the user-chosen category.
+func FilterDiscoveredSkillsWithCategory(skills []domain.DiscoveredSkill, selected []SelectedDiscoveredSkill) []domain.DiscoveredSkill {
+	categoryByName := make(map[string]domain.SkillCategory, len(selected))
+	for _, s := range selected {
+		categoryByName[strings.ToLower(strings.TrimSpace(s.Name))] = s.Category
+	}
+	result := make([]domain.DiscoveredSkill, 0, len(selected))
+	for _, skill := range skills {
+		norm := strings.ToLower(strings.TrimSpace(skill.Skill))
+		if cat, ok := categoryByName[norm]; ok {
+			skill.Category = cat // Override with user-chosen category
 			result = append(result, skill)
 		}
 	}

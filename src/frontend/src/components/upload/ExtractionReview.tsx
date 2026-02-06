@@ -1,13 +1,15 @@
 "use client";
 
-import { Briefcase, GraduationCap, Quote, Sparkles, Wrench } from "lucide-react";
+import { Briefcase, GraduationCap, Quote, Wrench } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckboxCard } from "@/components/ui/checkbox-card";
 import { SelectionControls } from "@/components/ui/selection-controls";
+import type { SkillCategory } from "@/graphql/generated/graphql";
 import { GRAPHQL_ENDPOINT } from "@/lib/urql/client";
+import { DiscoveredSkillsSection, normalizeCategory } from "./DiscoveredSkillsSection";
 import { FeedbackForm } from "./FeedbackForm";
 import type {
   ExtractionResults,
@@ -72,9 +74,15 @@ export function ExtractionReview({
   const [selectedTestimonials, setSelectedTestimonials] = useState<Set<number>>(
     () => new Set(testimonials.map((_, i) => i))
   );
-  const [selectedDiscoveredSkills, setSelectedDiscoveredSkills] = useState<Set<string>>(
-    () => new Set()
-  );
+  const [selectedDiscoveredSkills, setSelectedDiscoveredSkills] = useState<
+    Map<string, { selected: boolean; category: SkillCategory }>
+  >(() => {
+    const map = new Map<string, { selected: boolean; category: SkillCategory }>();
+    for (const ds of discoveredSkills) {
+      map.set(ds.skill, { selected: false, category: normalizeCategory(ds.category) });
+    }
+    return map;
+  });
 
   // Toggle handlers
   const toggleExperience = useCallback((index: number) => {
@@ -115,12 +123,31 @@ export function ExtractionReview({
 
   const toggleDiscoveredSkill = useCallback((name: string) => {
     setSelectedDiscoveredSkills((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
+      const next = new Map(prev);
+      const entry = next.get(name);
+      if (entry) {
+        next.set(name, { ...entry, selected: !entry.selected });
+      }
       return next;
     });
   }, []);
+
+  const changeDiscoveredSkillCategory = useCallback((name: string, category: SkillCategory) => {
+    setSelectedDiscoveredSkills((prev) => {
+      const next = new Map(prev);
+      const entry = next.get(name);
+      if (entry) {
+        next.set(name, { ...entry, category });
+      }
+      return next;
+    });
+  }, []);
+
+  // Count selected discovered skills
+  const selectedDiscoveredCount = useMemo(
+    () => [...selectedDiscoveredSkills.values()].filter((v) => v.selected).length,
+    [selectedDiscoveredSkills]
+  );
 
   // Total selected count
   const totalSelected = useMemo(
@@ -129,13 +156,13 @@ export function ExtractionReview({
       selectedEducation.size +
       selectedSkills.size +
       selectedTestimonials.size +
-      selectedDiscoveredSkills.size,
+      selectedDiscoveredCount,
     [
       selectedExperiences,
       selectedEducation,
       selectedSkills,
       selectedTestimonials,
-      selectedDiscoveredSkills,
+      selectedDiscoveredCount,
     ]
   );
 
@@ -160,7 +187,11 @@ export function ExtractionReview({
               selectedEducationIndices: hasResumeData ? [...selectedEducation] : null,
               selectedSkills: hasResumeData ? [...selectedSkills] : null,
               selectedTestimonialIndices: hasLetterData ? [...selectedTestimonials] : null,
-              selectedDiscoveredSkills: hasLetterData ? [...selectedDiscoveredSkills] : null,
+              selectedDiscoveredSkills: hasLetterData
+                ? [...selectedDiscoveredSkills.entries()]
+                    .filter(([, v]) => v.selected)
+                    .map(([name, v]) => ({ name, category: v.category }))
+                : null,
             },
           },
         }),
@@ -253,14 +284,34 @@ export function ExtractionReview({
 
       {discoveredSkills.length > 0 && (
         <DiscoveredSkillsSection
-          discoveredSkills={discoveredSkills}
+          discoveredSkills={discoveredSkills.map((ds) => ({
+            name: ds.skill,
+            quote: ds.quote,
+            category: ds.category,
+          }))}
           selected={selectedDiscoveredSkills}
           onToggle={toggleDiscoveredSkill}
+          onCategoryChange={changeDiscoveredSkillCategory}
           onSelectAll={() =>
-            setSelectedDiscoveredSkills(new Set(discoveredSkills.map((s) => s.skill)))
+            setSelectedDiscoveredSkills((prev) => {
+              const next = new Map(prev);
+              for (const [name, entry] of next) {
+                next.set(name, { ...entry, selected: true });
+              }
+              return next;
+            })
           }
-          onDeselectAll={() => setSelectedDiscoveredSkills(new Set())}
+          onDeselectAll={() =>
+            setSelectedDiscoveredSkills((prev) => {
+              const next = new Map(prev);
+              for (const [name, entry] of next) {
+                next.set(name, { ...entry, selected: false });
+              }
+              return next;
+            })
+          }
           disabled={isImporting}
+          description="These skills were mentioned in the reference letter but aren&apos;t in the resume. Select any you want to add."
         />
       )}
 
@@ -643,64 +694,6 @@ function TestimonialsSection({
                 )}
               </div>
             </div>
-          </CheckboxCard>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function DiscoveredSkillsSection({
-  discoveredSkills,
-  selected,
-  onToggle,
-  onSelectAll,
-  onDeselectAll,
-  disabled,
-}: {
-  discoveredSkills: Array<{ skill: string; quote: string; context: string | null }>;
-  selected: Set<string>;
-  onToggle: (name: string) => void;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-warning" />
-          <h2 className="text-xl font-semibold text-foreground">Skills Your Reference Noticed</h2>
-        </div>
-        <SelectionControls
-          selectedCount={selected.size}
-          totalCount={discoveredSkills.length}
-          onSelectAll={onSelectAll}
-          onDeselectAll={onDeselectAll}
-          disabled={disabled}
-        />
-      </div>
-      <p className="text-sm text-muted-foreground">
-        These skills were mentioned in the reference letter but aren&apos;t in the resume. Select
-        any you want to add.
-      </p>
-      {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
-      <div className="space-y-3" role="group" aria-label="Discovered skills">
-        {discoveredSkills.map((skill) => (
-          <CheckboxCard
-            key={skill.skill}
-            checked={selected.has(skill.skill)}
-            onToggle={() => onToggle(skill.skill)}
-            disabled={disabled}
-            selectedClassName="bg-warning/5 border-warning/50"
-            borderStyle="border-2 border-dashed"
-          >
-            <p className="font-medium text-foreground">{skill.skill}</p>
-            {skill.quote && (
-              <blockquote className="mt-2 pl-3 border-l-2 border-warning/30 text-sm text-muted-foreground italic">
-                &ldquo;{skill.quote}&rdquo;
-              </blockquote>
-            )}
           </CheckboxCard>
         ))}
       </div>

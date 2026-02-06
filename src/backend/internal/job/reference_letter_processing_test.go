@@ -484,8 +484,8 @@ func TestReferenceLetterProcessingWorker_Work_Success(t *testing.T) {
 			{Company: "Acme Corp", Role: "Senior Engineer", Quote: "During her time as Senior Engineer..."},
 		},
 		DiscoveredSkills: []domain.DiscoveredSkill{
-			{Skill: "mentoring", Quote: "She mentored junior developers...", Context: &leadershipContext},
-			{Skill: "system design", Quote: "Her system design skills...", Context: &skillContext},
+			{Skill: "mentoring", Quote: "She mentored junior developers...", Context: &leadershipContext, Category: domain.SkillCategorySoft},
+			{Skill: "system design", Quote: "Her system design skills...", Context: &skillContext, Category: domain.SkillCategoryTechnical},
 		},
 	}
 
@@ -1033,8 +1033,8 @@ func TestReferenceLetterProcessingWorker_DoesNotCreateDiscoveredSkills(t *testin
 			Relationship: domain.AuthorRelationshipOther,
 		},
 		DiscoveredSkills: []domain.DiscoveredSkill{
-			{Skill: "Kubernetes", Quote: "Expert in Kubernetes...", Context: &technicalContext},
-			{Skill: "Team Building", Quote: "Great at team building...", Context: &softContext},
+			{Skill: "Kubernetes", Quote: "Expert in Kubernetes...", Context: &technicalContext, Category: domain.SkillCategoryTechnical},
+			{Skill: "Team Building", Quote: "Great at team building...", Context: &softContext, Category: domain.SkillCategorySoft},
 		},
 	}
 

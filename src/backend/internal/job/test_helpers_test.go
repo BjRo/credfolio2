@@ -96,12 +96,17 @@ func (r *mockProfileSkillRepository) CreateIgnoreDuplicate(_ context.Context, sk
 	if skill.ID == uuid.Nil {
 		skill.ID = uuid.New()
 	}
-	// Simulate ON CONFLICT DO NOTHING - silently ignore duplicates
+	// Simulate ON CONFLICT DO UPDATE RETURNING * — return existing row's ID on duplicate
 	if r.normalizedByProfile[skill.ProfileID] == nil {
 		r.normalizedByProfile[skill.ProfileID] = make(map[string]bool)
 	}
 	if r.normalizedByProfile[skill.ProfileID][skill.NormalizedName] {
-		// Silently ignore duplicate - this is the ON CONFLICT DO NOTHING behavior
+		for _, existing := range r.skills {
+			if existing.ProfileID == skill.ProfileID && existing.NormalizedName == skill.NormalizedName {
+				skill.ID = existing.ID
+				break
+			}
+		}
 		return nil
 	}
 	r.normalizedByProfile[skill.ProfileID][skill.NormalizedName] = true

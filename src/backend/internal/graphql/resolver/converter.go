@@ -12,6 +12,18 @@ import (
 // jsonNull is the string representation of a JSON null value.
 const jsonNull = "null"
 
+// normalizeSkillCategory converts a domain SkillCategory to the GraphQL enum format (uppercase).
+// Empty or unrecognized categories default to SOFT.
+func normalizeSkillCategory(cat domain.SkillCategory) domain.SkillCategory {
+	upper := domain.SkillCategory(strings.ToUpper(string(cat)))
+	switch upper {
+	case "TECHNICAL", "SOFT", "DOMAIN":
+		return upper
+	default:
+		return "SOFT"
+	}
+}
+
 // emailRegex is a basic regex for email validation.
 // It's intentionally permissive to allow most valid emails.
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
@@ -181,9 +193,10 @@ func toGraphQLDiscoveredSkills(skills []domain.DiscoveredSkill) []*model.Discove
 	result := make([]*model.DiscoveredSkill, len(skills))
 	for i, s := range skills {
 		result[i] = &model.DiscoveredSkill{
-			Skill:   s.Skill,
-			Quote:   s.Quote,
-			Context: s.Context,
+			Skill:    s.Skill,
+			Quote:    s.Quote,
+			Context:  s.Context,
+			Category: normalizeSkillCategory(s.Category),
 		}
 	}
 	return result
@@ -409,6 +422,8 @@ func toGraphQLProfileExperience(e *domain.ProfileExperience) *model.ProfileExper
 		source = model.ExperienceSourceManual
 	case domain.ExperienceSourceResumeExtracted:
 		source = model.ExperienceSourceResumeExtracted
+	case domain.ExperienceSourceLetterDiscovered:
+		source = model.ExperienceSourceLetterDiscovered
 	default:
 		source = model.ExperienceSourceManual
 	}
@@ -464,6 +479,8 @@ func toGraphQLProfileEducation(e *domain.ProfileEducation) *model.ProfileEducati
 		source = model.ExperienceSourceManual
 	case domain.ExperienceSourceResumeExtracted:
 		source = model.ExperienceSourceResumeExtracted
+	case domain.ExperienceSourceLetterDiscovered:
+		source = model.ExperienceSourceLetterDiscovered
 	default:
 		source = model.ExperienceSourceManual
 	}
@@ -510,6 +527,8 @@ func toGraphQLProfileSkill(s *domain.ProfileSkill) *model.ProfileSkill {
 		source = model.ExperienceSourceManual
 	case domain.ExperienceSourceResumeExtracted:
 		source = model.ExperienceSourceResumeExtracted
+	case domain.ExperienceSourceLetterDiscovered:
+		source = model.ExperienceSourceLetterDiscovered
 	default:
 		source = model.ExperienceSourceManual
 	}

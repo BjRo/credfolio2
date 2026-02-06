@@ -212,10 +212,17 @@ func (r *mockProfileSkillRepository) CreateIgnoreDuplicate(_ context.Context, sk
 	if skill.ID == uuid.Nil {
 		skill.ID = uuid.New()
 	}
+	// Simulate ON CONFLICT DO UPDATE RETURNING * — return existing row's ID on duplicate
 	if r.normalizedByProfile[skill.ProfileID] == nil {
 		r.normalizedByProfile[skill.ProfileID] = make(map[string]bool)
 	}
 	if r.normalizedByProfile[skill.ProfileID][skill.NormalizedName] {
+		for _, existing := range r.skills {
+			if existing.ProfileID == skill.ProfileID && existing.NormalizedName == skill.NormalizedName {
+				skill.ID = existing.ID
+				break
+			}
+		}
 		return nil
 	}
 	r.normalizedByProfile[skill.ProfileID][skill.NormalizedName] = true
@@ -1423,6 +1430,208 @@ func TestMaterializeReferenceLetterWithNoTestimonials(t *testing.T) {
 	}
 }
 
+func newTestServiceWithAll() (*MaterializationService, *mockProfileRepository, *mockProfileSkillRepository, *mockSkillValidationRepository, *mockTestimonialRepository) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	eduRepo := newMockProfileEducationRepository()
+	skillRepo := newMockProfileSkillRepository()
+	authorRepo := newMockAuthorRepository()
+	testimonialRepo := newMockTestimonialRepository()
+	skillValRepo := newMockSkillValidationRepository()
+	expValRepo := newMockExpValidationRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, skillValRepo, expValRepo)
+	return svc, profileRepo, skillRepo, skillValRepo, testimonialRepo
+}
+
+func TestMaterializeReferenceLetterCreatesDiscoveredSkills(t *testing.T) {
+	svc, _, skillRepo, skillValRepo, _ := newTestServiceWithAll()
+
+	refLetterID := uuid.New()
+	data := &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "Jane Smith",
+			Title:        stringPtr("CTO"),
+			Company:      stringPtr("TechCo"),
+			Relationship: domain.AuthorRelationshipManager,
+		},
+		Testimonials: []domain.ExtractedTestimonial{
+			{Quote: "Great engineer."},
+		},
+		DiscoveredSkills: []domain.DiscoveredSkill{
+			{Skill: "Mentoring", Quote: "Excellent mentor to junior devs", Category: domain.SkillCategorySoft},
+			{Skill: "Kubernetes", Quote: "Deployed on K8s clusters", Category: domain.SkillCategoryTechnical},
+			{Skill: "Financial Modeling", Quote: "Built risk models", Category: domain.SkillCategoryDomain},
+		},
+	}
+
+	result, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, uuid.New(), data)
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	if result.Skills != 3 {
+		t.Errorf("expected 3 skills, got %d", result.Skills)
+	}
+	if result.Testimonials != 1 {
+		t.Errorf("expected 1 testimonial, got %d", result.Testimonials)
+	}
+
+	// Verify skills were created with correct source and category
+	if len(skillRepo.skills) != 3 {
+		t.Fatalf("expected 3 skills in repo, got %d", len(skillRepo.skills))
+	}
+
+	skillsByName := make(map[string]*domain.ProfileSkill)
+	for _, skill := range skillRepo.skills {
+		skillsByName[skill.Name] = skill
+	}
+
+	mentoring := skillsByName["Mentoring"]
+	if mentoring == nil {
+		t.Fatal("expected Mentoring skill to be created")
+	}
+	if mentoring.Source != domain.ExperienceSourceLetterDiscovered {
+		t.Errorf("expected source 'letter_discovered', got %q", mentoring.Source)
+	}
+	if mentoring.Category != "SOFT" {
+		t.Errorf("expected category 'SOFT', got %q", mentoring.Category)
+	}
+	if mentoring.SourceReferenceLetterID == nil || *mentoring.SourceReferenceLetterID != refLetterID {
+		t.Error("expected SourceReferenceLetterID to match reference letter ID")
+	}
+
+	k8s := skillsByName["Kubernetes"]
+	if k8s == nil {
+		t.Fatal("expected Kubernetes skill to be created")
+	}
+	if k8s.Category != "TECHNICAL" {
+		t.Errorf("expected category 'TECHNICAL', got %q", k8s.Category)
+	}
+
+	fm := skillsByName["Financial Modeling"]
+	if fm == nil {
+		t.Fatal("expected Financial Modeling skill to be created")
+	}
+	if fm.Category != "DOMAIN" {
+		t.Errorf("expected category 'DOMAIN', got %q", fm.Category)
+	}
+
+	// Verify skill validations were created with quotes
+	if len(skillValRepo.validations) != 3 {
+		t.Fatalf("expected 3 skill validations, got %d", len(skillValRepo.validations))
+	}
+
+	for _, val := range skillValRepo.validations {
+		if val.ReferenceLetterID != refLetterID {
+			t.Errorf("expected reference letter ID %s, got %s", refLetterID, val.ReferenceLetterID)
+		}
+		if val.QuoteSnippet == nil || *val.QuoteSnippet == "" {
+			t.Error("expected quote snippet to be set")
+		}
+	}
+}
+
+func TestMaterializeReferenceLetterDiscoveredSkillsWithNoTestimonials(t *testing.T) {
+	svc, _, skillRepo, skillValRepo, _ := newTestServiceWithAll()
+
+	refLetterID := uuid.New()
+	data := &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "Jane Smith",
+			Relationship: domain.AuthorRelationshipOther,
+		},
+		Testimonials: []domain.ExtractedTestimonial{},
+		DiscoveredSkills: []domain.DiscoveredSkill{
+			{Skill: "Leadership", Quote: "Led the team well", Category: domain.SkillCategorySoft},
+		},
+	}
+
+	result, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, uuid.New(), data)
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	if result.Skills != 1 {
+		t.Errorf("expected 1 skill, got %d", result.Skills)
+	}
+	if result.Testimonials != 0 {
+		t.Errorf("expected 0 testimonials, got %d", result.Testimonials)
+	}
+
+	// Skill and validation should still be created even without testimonials
+	if len(skillRepo.skills) != 1 {
+		t.Fatalf("expected 1 skill in repo, got %d", len(skillRepo.skills))
+	}
+	if len(skillValRepo.validations) != 1 {
+		t.Fatalf("expected 1 skill validation, got %d", len(skillValRepo.validations))
+	}
+}
+
+func TestFilterDiscoveredSkillsWithCategory(t *testing.T) {
+	skills := []domain.DiscoveredSkill{
+		{Skill: "Go", Quote: "Expert Go", Category: domain.SkillCategoryTechnical},
+		{Skill: "Mentoring", Quote: "Great mentor", Category: domain.SkillCategorySoft},
+		{Skill: "Finance", Quote: "Financial knowledge", Category: domain.SkillCategoryDomain},
+	}
+
+	tests := []struct {
+		name     string
+		selected []SelectedDiscoveredSkill
+		expected int
+		// Check that category override works
+		checkCategory bool
+		checkName     string
+		checkCat      domain.SkillCategory
+	}{
+		{
+			name: "selects subset with category preserved",
+			selected: []SelectedDiscoveredSkill{
+				{Name: "Go", Category: domain.SkillCategoryTechnical},
+			},
+			expected: 1,
+		},
+		{
+			name: "overrides category",
+			selected: []SelectedDiscoveredSkill{
+				{Name: "Mentoring", Category: domain.SkillCategoryDomain}, // User changed from SOFT to DOMAIN
+			},
+			expected:      1,
+			checkCategory: true,
+			checkName:     "Mentoring",
+			checkCat:      domain.SkillCategoryDomain,
+		},
+		{
+			name:     "empty selection",
+			selected: []SelectedDiscoveredSkill{},
+			expected: 0,
+		},
+		{
+			name: "case insensitive matching",
+			selected: []SelectedDiscoveredSkill{
+				{Name: "go", Category: domain.SkillCategoryTechnical},
+				{Name: "MENTORING", Category: domain.SkillCategorySoft},
+			},
+			expected: 2,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := FilterDiscoveredSkillsWithCategory(skills, tc.selected)
+			if len(result) != tc.expected {
+				t.Fatalf("expected %d skills, got %d", tc.expected, len(result))
+			}
+			if tc.checkCategory {
+				for _, r := range result {
+					if r.Skill == tc.checkName && r.Category != tc.checkCat {
+						t.Errorf("expected category %q for %q, got %q", tc.checkCat, tc.checkName, r.Category)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestCrossReferenceValidationsMatchesSkills(t *testing.T) {
 	profileRepo := newMockProfileRepository()
 	expRepo := newMockProfileExperienceRepository()
@@ -1547,9 +1756,9 @@ func TestCrossReferenceValidationsMatchesDiscoveredSkills(t *testing.T) {
 	letterData := &domain.ExtractedLetterData{
 		SkillMentions: []domain.ExtractedSkillMention{},
 		DiscoveredSkills: []domain.DiscoveredSkill{
-			{Skill: "mentoring", Quote: "excellent mentor"},
-			{Skill: "Technical Documentation", Quote: "introduced Diátaxis framework"},
-			{Skill: "cloud cost optimization", Quote: "reduced AWS costs"}, // no match
+			{Skill: "mentoring", Quote: "excellent mentor", Category: domain.SkillCategorySoft},
+			{Skill: "Technical Documentation", Quote: "introduced Diátaxis framework", Category: domain.SkillCategoryTechnical},
+			{Skill: "cloud cost optimization", Quote: "reduced AWS costs", Category: domain.SkillCategoryDomain}, // no match
 		},
 	}
 
@@ -1586,7 +1795,7 @@ func TestCrossReferenceValidationsDeduplicatesAcrossSources(t *testing.T) {
 			{Skill: "Go", Quote: "Expert Go developer"},
 		},
 		DiscoveredSkills: []domain.DiscoveredSkill{
-			{Skill: "Go", Quote: "Strong Go skills"},
+			{Skill: "Go", Quote: "Strong Go skills", Category: domain.SkillCategoryTechnical},
 		},
 	}
 
@@ -1628,11 +1837,11 @@ func TestCrossReferenceValidationsSubstringMatching(t *testing.T) {
 	// Reference letter uses more verbose/descriptive skill names
 	letterData := &domain.ExtractedLetterData{
 		DiscoveredSkills: []domain.DiscoveredSkill{
-			{Skill: "technical documentation (Diátaxis framework)", Quote: "introduced the Diátaxis framework"},
-			{Skill: "incident response program design", Quote: "designed the incident response program"},
-			{Skill: "search engine optimization (SEO)", Quote: "doubled organic traffic"},
-			{Skill: "interim team leadership", Quote: "served as interim leader"},
-			{Skill: "cross-functional collaboration", Quote: "contributed across multiple dimensions"}, // no match
+			{Skill: "technical documentation (Diátaxis framework)", Quote: "introduced the Diátaxis framework", Category: domain.SkillCategoryTechnical},
+			{Skill: "incident response program design", Quote: "designed the incident response program", Category: domain.SkillCategoryTechnical},
+			{Skill: "search engine optimization (SEO)", Quote: "doubled organic traffic", Category: domain.SkillCategoryDomain},
+			{Skill: "interim team leadership", Quote: "served as interim leader", Category: domain.SkillCategorySoft},
+			{Skill: "cross-functional collaboration", Quote: "contributed across multiple dimensions", Category: domain.SkillCategorySoft}, // no match
 		},
 	}
 

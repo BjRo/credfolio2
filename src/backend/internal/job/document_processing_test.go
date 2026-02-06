@@ -209,6 +209,13 @@ func (r *mockProfileSkillRepository) Create(_ context.Context, skill *domain.Pro
 }
 
 func (r *mockProfileSkillRepository) CreateIgnoreDuplicate(_ context.Context, skill *domain.ProfileSkill) error {
+	// Simulate ON CONFLICT DO UPDATE RETURNING * — return existing row's ID on duplicate
+	for _, existing := range r.skills {
+		if existing.ProfileID == skill.ProfileID && existing.NormalizedName == skill.NormalizedName {
+			skill.ID = existing.ID
+			return nil
+		}
+	}
 	r.skills[skill.ID] = skill
 	return nil
 }

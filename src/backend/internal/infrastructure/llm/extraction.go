@@ -602,10 +602,15 @@ var letterOutputSchema = map[string]any{
 					},
 					"context": map[string]any{
 						"type":        "string",
-						"description": "Brief category like 'technical skills', 'leadership', 'communication'",
+						"description": "Brief description of how the skill was demonstrated",
+					},
+					"category": map[string]any{
+						"type":        "string",
+						"description": "Skill category: TECHNICAL (tools, languages, methodologies), SOFT (interpersonal, leadership), or DOMAIN (industry knowledge)",
+						"enum":        []string{"TECHNICAL", "SOFT", "DOMAIN"},
 					},
 				},
-				"required": []string{"skill", "quote", "context"},
+				"required": []string{"skill", "quote", "context", "category"},
 			},
 		},
 	},
@@ -688,9 +693,10 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 			Quote   string `json:"quote"`
 		} `json:"experienceMentions"`
 		DiscoveredSkills []struct {
-			Skill   string `json:"skill"`
-			Quote   string `json:"quote"`
-			Context string `json:"context"`
+			Skill    string `json:"skill"`
+			Quote    string `json:"quote"`
+			Context  string `json:"context"`
+			Category string `json:"category"`
 		} `json:"discoveredSkills"`
 	}
 
@@ -750,8 +756,9 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 	// Convert discovered skills
 	for _, ds := range rawData.DiscoveredSkills {
 		skill := domain.DiscoveredSkill{
-			Skill: ds.Skill,
-			Quote: ds.Quote,
+			Skill:    ds.Skill,
+			Quote:    ds.Quote,
+			Category: mapDiscoveredSkillCategory(ds.Category),
 		}
 		if ds.Context != "" {
 			skill.Context = &ds.Context
@@ -890,6 +897,21 @@ func (e *DocumentExtractor) DetectDocumentContent(ctx context.Context, text stri
 	}
 
 	return result, nil
+}
+
+// mapDiscoveredSkillCategory maps a raw category string from LLM output to domain.SkillCategory.
+// Defaults to SOFT if the category is not recognized.
+func mapDiscoveredSkillCategory(raw string) domain.SkillCategory {
+	switch strings.ToUpper(strings.TrimSpace(raw)) {
+	case "TECHNICAL":
+		return domain.SkillCategoryTechnical
+	case "SOFT":
+		return domain.SkillCategorySoft
+	case "DOMAIN":
+		return domain.SkillCategoryDomain
+	default:
+		return domain.SkillCategorySoft
+	}
 }
 
 // Verify DocumentExtractor implements domain.DocumentExtractor interface.

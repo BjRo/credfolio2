@@ -94,9 +94,10 @@ type ComplexityRoot struct {
 	}
 
 	DiscoveredSkill struct {
-		Context func(childComplexity int) int
-		Quote   func(childComplexity int) int
-		Skill   func(childComplexity int) int
+		Category func(childComplexity int) int
+		Context  func(childComplexity int) int
+		Quote    func(childComplexity int) int
+		Skill    func(childComplexity int) int
 	}
 
 	DocumentDetectionResult struct {
@@ -708,6 +709,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.DeleteResult.Success(childComplexity), true
 
+	case "DiscoveredSkill.category":
+		if e.complexity.DiscoveredSkill.Category == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredSkill.Category(childComplexity), true
 	case "DiscoveredSkill.context":
 		if e.complexity.DiscoveredSkill.Context == nil {
 			break
@@ -2476,6 +2483,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputImportDocumentResultsInput,
 		ec.unmarshalInputNewSkillInput,
 		ec.unmarshalInputProcessDocumentInput,
+		ec.unmarshalInputSelectedDiscoveredSkillInput,
 		ec.unmarshalInputSkillValidationInput,
 		ec.unmarshalInputTestimonialInput,
 		ec.unmarshalInputUpdateAuthorInput,
@@ -2722,6 +2730,8 @@ type DiscoveredSkill {
   quote: String!
   """Context for the skill mention (e.g., 'technical skills', 'leadership')."""
   context: String
+  """Category assigned by the LLM (TECHNICAL, SOFT, or DOMAIN)."""
+  category: SkillCategory!
 }
 
 """
@@ -2951,6 +2961,8 @@ enum ExperienceSource {
   MANUAL
   """Extracted from an uploaded resume."""
   RESUME_EXTRACTED
+  """Discovered in a reference letter."""
+  LETTER_DISCOVERED
 }
 
 """
@@ -3632,8 +3644,18 @@ input ImportDocumentResultsInput {
   selectedSkills: [String!]
   """Indices of testimonials to import. Null = import all."""
   selectedTestimonialIndices: [Int!]
-  """Discovered skill names to import from reference letter. Null = import all."""
-  selectedDiscoveredSkills: [String!]
+  """Discovered skills to import from reference letter with per-skill category. Null = import all."""
+  selectedDiscoveredSkills: [SelectedDiscoveredSkillInput!]
+}
+
+"""
+Input for a discovered skill selected for import, carrying both name and category.
+"""
+input SelectedDiscoveredSkillInput {
+  """The skill name."""
+  name: String!
+  """The skill category (user may override the LLM-assigned category)."""
+  category: SkillCategory!
 }
 
 """
@@ -5579,6 +5601,35 @@ func (ec *executionContext) fieldContext_DiscoveredSkill_context(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _DiscoveredSkill_category(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredSkill) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DiscoveredSkill_category,
+		func(ctx context.Context) (any, error) {
+			return obj.Category, nil
+		},
+		nil,
+		ec.marshalNSkillCategory2backendᚋinternalᚋdomainᚐSkillCategory,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredSkill_category(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredSkill",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SkillCategory does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DocumentDetectionResult_hasCareerInfo(ctx context.Context, field graphql.CollectedField, obj *model.DocumentDetectionResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7277,6 +7328,8 @@ func (ec *executionContext) fieldContext_ExtractedLetterData_discoveredSkills(_ 
 				return ec.fieldContext_DiscoveredSkill_quote(ctx, field)
 			case "context":
 				return ec.fieldContext_DiscoveredSkill_context(ctx, field)
+			case "category":
+				return ec.fieldContext_DiscoveredSkill_category(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type DiscoveredSkill", field.Name)
 		},
@@ -16529,7 +16582,7 @@ func (ec *executionContext) unmarshalInputImportDocumentResultsInput(ctx context
 			it.SelectedTestimonialIndices = data
 		case "selectedDiscoveredSkills":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedDiscoveredSkills"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			data, err := ec.unmarshalOSelectedDiscoveredSkillInput2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐSelectedDiscoveredSkillInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -16616,6 +16669,40 @@ func (ec *executionContext) unmarshalInputProcessDocumentInput(ctx context.Conte
 				return it, err
 			}
 			it.ExtractTestimonial = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSelectedDiscoveredSkillInput(ctx context.Context, obj any) (model.SelectedDiscoveredSkillInput, error) {
+	var it model.SelectedDiscoveredSkillInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "category"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "category":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("category"))
+			data, err := ec.unmarshalNSkillCategory2backendᚋinternalᚋdomainᚐSkillCategory(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Category = data
 		}
 	}
 
@@ -17676,6 +17763,11 @@ func (ec *executionContext) _DiscoveredSkill(ctx context.Context, sel ast.Select
 			}
 		case "context":
 			out.Values[i] = ec._DiscoveredSkill_context(ctx, field, obj)
+		case "category":
+			out.Values[i] = ec._DiscoveredSkill_category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -22514,6 +22606,11 @@ func (ec *executionContext) marshalNResumeStatus2backendᚋinternalᚋgraphqlᚋ
 	return v
 }
 
+func (ec *executionContext) unmarshalNSelectedDiscoveredSkillInput2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐSelectedDiscoveredSkillInput(ctx context.Context, v any) (*model.SelectedDiscoveredSkillInput, error) {
+	res, err := ec.unmarshalInputSelectedDiscoveredSkillInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNSkillCategory2backendᚋinternalᚋdomainᚐSkillCategory(ctx context.Context, v any) (domain.SkillCategory, error) {
 	tmp, err := graphql.UnmarshalString(v)
 	res := domain.SkillCategory(tmp)
@@ -23315,6 +23412,24 @@ func (ec *executionContext) marshalOResumeExtractedData2ᚖbackendᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._ResumeExtractedData(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOSelectedDiscoveredSkillInput2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐSelectedDiscoveredSkillInputᚄ(ctx context.Context, v any) ([]*model.SelectedDiscoveredSkillInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.SelectedDiscoveredSkillInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSelectedDiscoveredSkillInput2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐSelectedDiscoveredSkillInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) unmarshalOSkillCategory2ᚖbackendᚋinternalᚋdomainᚐSkillCategory(ctx context.Context, v any) (*domain.SkillCategory, error) {

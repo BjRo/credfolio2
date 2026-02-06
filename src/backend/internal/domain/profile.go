@@ -16,8 +16,9 @@ type ExperienceSource string
 
 // Experience source constants.
 const (
-	ExperienceSourceManual          ExperienceSource = "manual"
-	ExperienceSourceResumeExtracted ExperienceSource = "resume_extracted"
+	ExperienceSourceManual            ExperienceSource = "manual"
+	ExperienceSourceResumeExtracted   ExperienceSource = "resume_extracted"
+	ExperienceSourceLetterDiscovered  ExperienceSource = "letter_discovered"
 )
 
 // Profile represents a user's profile containing manually editable data.

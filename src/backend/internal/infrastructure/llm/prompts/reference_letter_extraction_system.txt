@@ -43,9 +43,13 @@ This extraction validates a professional profile. Extracted data will be matched
    - Include the quote/context for each discovered skill so it can be linked to the source
    - skill: The skill name (normalized)
    - quote: The exact sentence(s) mentioning this skill
-   - context: Brief category like "technical skills", "leadership", "communication"
-   - Focus on soft skills, leadership qualities, and less obvious technical skills
-   - Examples: "mentoring", "cross-functional collaboration", "strategic thinking"
+   - context: Brief description of how the skill was demonstrated
+   - category: Must be one of "TECHNICAL", "SOFT", or "DOMAIN"
+     * "TECHNICAL" — programming languages, frameworks, tools, methodologies (e.g., Go, AWS, CI/CD, TDD)
+     * "SOFT" — interpersonal, leadership, communication skills (e.g., mentoring, cross-functional collaboration, strategic thinking)
+     * "DOMAIN" — industry or business domain knowledge (e.g., financial modeling, healthcare compliance, e-commerce)
+   - Extract ALL types of skills (technical, soft, and domain), not just soft skills
+   - Examples: "mentoring" (SOFT), "Kubernetes" (TECHNICAL), "regulatory compliance" (DOMAIN)
 </extraction-rules>
 
 <quote-rules>
