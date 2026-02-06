@@ -1,11 +1,11 @@
 ---
 # credfolio2-5j3j
 title: Speed up document upload/detection/extraction pipeline
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-02-05T23:11:46Z
-updated_at: 2026-02-06T12:51:06Z
+updated_at: 2026-02-06T12:58:04Z
 parent: credfolio2-3ram
 blocking:
     - credfolio2-1g6t
