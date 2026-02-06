@@ -3,8 +3,9 @@
 title: Extract CheckboxCard to shared @/components/ui/ component
 status: in-progress
 type: task
+priority: normal
 created_at: 2026-02-06T14:37:19Z
-updated_at: 2026-02-06T14:37:19Z
+updated_at: 2026-02-06T20:32:15Z
 ---
 
 ## Summary
@@ -20,14 +21,15 @@ The `ExtractionReview.tsx` version is already a clean abstraction with `Checkbox
 
 ## Checklist
 
-- [ ] Create `@/components/ui/checkbox-card.tsx` based on ExtractionReview's CheckboxCard
-- [ ] Update ExtractionReview.tsx to import from shared location
-- [ ] Update CorroborationsSection.tsx to use shared CheckboxCard
-- [ ] Update TestimonialsSection.tsx to use shared CheckboxCard
-- [ ] Update DiscoveredSkillsSection.tsx to use shared CheckboxCard
+- [x] Create `@/components/ui/checkbox-card.tsx` based on ExtractionReview's CheckboxCard
+- [x] Update ExtractionReview.tsx to import from shared location
+- [x] Update CorroborationsSection.tsx to use shared CheckboxCard
+- [x] Update TestimonialsSection.tsx to use shared CheckboxCard
+- [x] Update DiscoveredSkillsSection.tsx to use shared CheckboxCard
 
 ## Definition of Done
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR updated
+- [ ] Branch pushed and PR created for human review
+- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
