@@ -9,12 +9,6 @@ export function SiteHeader() {
           Credfolio
         </Link>
         <nav className="flex items-center gap-4">
-          <Link
-            href="/upload"
-            className="text-sm text-background/80 hover:text-background transition-colors"
-          >
-            Upload
-          </Link>
           <ThemeToggle invertColors />
         </nav>
       </div>
