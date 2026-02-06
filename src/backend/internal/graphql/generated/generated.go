@@ -3632,6 +3632,8 @@ input ImportDocumentResultsInput {
   selectedSkills: [String!]
   """Indices of testimonials to import. Null = import all."""
   selectedTestimonialIndices: [Int!]
+  """Discovered skill names to import from reference letter. Null = import all."""
+  selectedDiscoveredSkills: [String!]
 }
 
 """
@@ -16476,7 +16478,7 @@ func (ec *executionContext) unmarshalInputImportDocumentResultsInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"resumeId", "referenceLetterID", "selectedExperienceIndices", "selectedEducationIndices", "selectedSkills", "selectedTestimonialIndices"}
+	fieldsInOrder := [...]string{"resumeId", "referenceLetterID", "selectedExperienceIndices", "selectedEducationIndices", "selectedSkills", "selectedTestimonialIndices", "selectedDiscoveredSkills"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -16525,6 +16527,13 @@ func (ec *executionContext) unmarshalInputImportDocumentResultsInput(ctx context
 				return it, err
 			}
 			it.SelectedTestimonialIndices = data
+		case "selectedDiscoveredSkills":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedDiscoveredSkills"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelectedDiscoveredSkills = data
 		}
 	}
 

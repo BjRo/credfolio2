@@ -973,9 +973,12 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 				return nil, fmt.Errorf("failed to parse extracted reference letter data: %w", jsonErr)
 			}
 
-			// Apply item-level selection filter for testimonials (nil = import all)
+			// Apply item-level selection filters (nil = import all)
 			if input.SelectedTestimonialIndices != nil {
 				extractedData.Testimonials = service.FilterByIndices(extractedData.Testimonials, input.SelectedTestimonialIndices)
+			}
+			if input.SelectedDiscoveredSkills != nil {
+				extractedData.DiscoveredSkills = service.FilterDiscoveredSkillsByName(extractedData.DiscoveredSkills, input.SelectedDiscoveredSkills)
 			}
 
 			// Materialize into profile tables

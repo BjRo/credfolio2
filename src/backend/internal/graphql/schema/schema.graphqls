@@ -1050,6 +1050,8 @@ input ImportDocumentResultsInput {
   selectedSkills: [String!]
   """Indices of testimonials to import. Null = import all."""
   selectedTestimonialIndices: [Int!]
+  """Discovered skill names to import from reference letter. Null = import all."""
+  selectedDiscoveredSkills: [String!]
 }
 
 """

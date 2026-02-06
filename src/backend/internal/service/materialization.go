@@ -512,11 +512,13 @@ func findMatchingSkill(refNorm string, skillByNorm map[string]*domain.ProfileSki
 	return nil
 }
 
-// FilterByIndices returns a subset of items at the given indices, skipping out-of-range indices.
+// FilterByIndices returns a subset of items at the given indices, skipping out-of-range and duplicate indices.
 func FilterByIndices[T any](items []T, indices []int) []T {
+	seen := make(map[int]bool, len(indices))
 	result := make([]T, 0, len(indices))
 	for _, idx := range indices {
-		if idx >= 0 && idx < len(items) {
+		if idx >= 0 && idx < len(items) && !seen[idx] {
+			seen[idx] = true
 			result = append(result, items[idx])
 		}
 	}
@@ -532,6 +534,21 @@ func FilterSkillsByName(skills []string, selected []string) []string {
 	result := make([]string, 0, len(selected))
 	for _, skill := range skills {
 		if set[strings.ToLower(strings.TrimSpace(skill))] {
+			result = append(result, skill)
+		}
+	}
+	return result
+}
+
+// FilterDiscoveredSkillsByName returns only discovered skills whose names appear in the selected set (case-insensitive).
+func FilterDiscoveredSkillsByName(skills []domain.DiscoveredSkill, selected []string) []domain.DiscoveredSkill {
+	set := make(map[string]bool, len(selected))
+	for _, s := range selected {
+		set[strings.ToLower(strings.TrimSpace(s))] = true
+	}
+	result := make([]domain.DiscoveredSkill, 0, len(selected))
+	for _, skill := range skills {
+		if set[strings.ToLower(strings.TrimSpace(skill.Skill))] {
 			result = append(result, skill)
 		}
 	}

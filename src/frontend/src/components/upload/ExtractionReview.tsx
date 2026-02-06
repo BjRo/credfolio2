@@ -159,6 +159,7 @@ export function ExtractionReview({
               selectedEducationIndices: hasResumeData ? [...selectedEducation] : null,
               selectedSkills: hasResumeData ? [...selectedSkills] : null,
               selectedTestimonialIndices: hasLetterData ? [...selectedTestimonials] : null,
+              selectedDiscoveredSkills: hasLetterData ? [...selectedDiscoveredSkills] : null,
             },
           },
         }),
@@ -188,6 +189,7 @@ export function ExtractionReview({
     selectedEducation,
     selectedSkills,
     selectedTestimonials,
+    selectedDiscoveredSkills,
   ]);
 
   return (

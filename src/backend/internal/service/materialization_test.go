@@ -1670,7 +1670,7 @@ func TestFilterByIndices(t *testing.T) {
 		{name: "out of range ignored", indices: []int{0, 10, -1, 2}, expected: []string{"a", "c"}},
 		{name: "all indices", indices: []int{0, 1, 2, 3, 4}, expected: []string{"a", "b", "c", "d", "e"}},
 		{name: "single index", indices: []int{3}, expected: []string{"d"}},
-		{name: "duplicate indices", indices: []int{1, 1, 1}, expected: []string{"b", "b", "b"}},
+		{name: "duplicate indices deduplicated", indices: []int{1, 1, 1}, expected: []string{"b"}},
 	}
 
 	for _, tc := range tests {

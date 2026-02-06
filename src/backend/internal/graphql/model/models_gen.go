@@ -436,6 +436,8 @@ type ImportDocumentResultsInput struct {
 	SelectedSkills []string `json:"selectedSkills,omitempty"`
 	// Indices of testimonials to import. Null = import all.
 	SelectedTestimonialIndices []int `json:"selectedTestimonialIndices,omitempty"`
+	// Discovered skill names to import from reference letter. Null = import all.
+	SelectedDiscoveredSkills []string `json:"selectedDiscoveredSkills,omitempty"`
 }
 
 // Result of importing document results into profile tables.
