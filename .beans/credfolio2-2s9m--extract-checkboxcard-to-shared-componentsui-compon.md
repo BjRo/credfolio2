@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-02-06T14:37:19Z
-updated_at: 2026-02-06T20:32:15Z
+updated_at: 2026-02-06T20:34:49Z
 ---
 
 ## Summary
@@ -30,6 +30,6 @@ The `ExtractionReview.tsx` version is already a clean abstraction with `Checkbox
 ## Definition of Done
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed (`@review-frontend`)
