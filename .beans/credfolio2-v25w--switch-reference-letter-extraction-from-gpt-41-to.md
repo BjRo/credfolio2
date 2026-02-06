@@ -1,10 +1,11 @@
 ---
 # credfolio2-v25w
 title: Switch reference letter extraction from GPT-4.1 to GPT-4.1-mini
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-02-06T13:06:21Z
-updated_at: 2026-02-06T13:06:21Z
+updated_at: 2026-02-06T13:27:47Z
 parent: credfolio2-3ram
 ---
 
@@ -22,16 +23,16 @@ Change the default model for reference letter extraction from `openai/gpt-4o` (w
 
 ## Checklist
 
-- [ ] Update the default model for reference letter extraction in config (or env var)
+- [x] Update the default model for reference letter extraction in config (or env var)
 - [ ] Run a comparison test: upload the fixture resume/letter with GPT-4.1 vs GPT-4.1-mini and compare extraction quality
 - [ ] Verify structured output schema compliance with the new model
 - [ ] Check that testimonial quotes, skill mentions, and discovered skills are extracted accurately
-- [ ] Update any hardcoded model references (e.g. the `ModelVersion` in document_processing.go:318)
+- [x] Update any hardcoded model references (e.g. the `ModelVersion` in document_processing.go:318)
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)

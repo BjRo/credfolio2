@@ -773,6 +773,9 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 		data.DiscoveredSkills = []domain.DiscoveredSkill{}
 	}
 
+	// Set model version from the actual LLM response so callers don't need to hardcode it
+	data.Metadata.ModelVersion = resp.Model
+
 	return data, nil
 }
 

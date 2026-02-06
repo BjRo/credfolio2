@@ -316,6 +316,40 @@ func TestDocumentExtractor_ExtractLetterData(t *testing.T) {
 	if result.DiscoveredSkills[0].Context == nil || *result.DiscoveredSkills[0].Context != "leadership" {
 		t.Errorf("DiscoveredSkills[0].Context = %v, want %q", result.DiscoveredSkills[0].Context, "leadership")
 	}
+
+	// Verify model version is set from LLM response
+	if result.Metadata.ModelVersion != "claude-sonnet-4-20250514" {
+		t.Errorf("Metadata.ModelVersion = %q, want %q", result.Metadata.ModelVersion, "claude-sonnet-4-20250514")
+	}
+}
+
+func TestDocumentExtractor_ExtractLetterData_ModelVersionFromResponse(t *testing.T) {
+	jsonResponse := `{
+		"author": {"name": "Author", "title": "", "company": "", "relationship": "peer"},
+		"testimonials": [],
+		"skillMentions": [],
+		"experienceMentions": [],
+		"discoveredSkills": []
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content: jsonResponse,
+			Model:   "gpt-4.1-mini",
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractLetterData(context.Background(), "Letter text", nil)
+
+	if err != nil {
+		t.Fatalf("ExtractLetterData() error = %v", err)
+	}
+
+	if result.Metadata.ModelVersion != "gpt-4.1-mini" {
+		t.Errorf("Metadata.ModelVersion = %q, want %q", result.Metadata.ModelVersion, "gpt-4.1-mini")
+	}
 }
 
 func TestDocumentExtractor_ExtractLetterData_MarkdownCodeBlock(t *testing.T) {
