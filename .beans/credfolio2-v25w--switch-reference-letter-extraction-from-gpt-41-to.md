@@ -34,5 +34,5 @@ Change the default model for reference letter extraction from `openai/gpt-4o` (w
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [x] Branch pushed and PR created for human review (PR #94)
+- [x] Automated code review passed (`@review-backend` — LGTM, no blocking issues)
