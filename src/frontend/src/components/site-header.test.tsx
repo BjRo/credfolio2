@@ -27,9 +27,8 @@ describe("SiteHeader", () => {
     expect(screen.getByRole("banner")).toBeInTheDocument();
   });
 
-  it("renders upload navigation link", () => {
+  it("does not render upload navigation link", () => {
     render(<SiteHeader />);
-    const link = screen.getByRole("link", { name: "Upload" });
-    expect(link).toHaveAttribute("href", "/upload");
+    expect(screen.queryByRole("link", { name: "Upload" })).not.toBeInTheDocument();
   });
 });
