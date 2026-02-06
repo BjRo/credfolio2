@@ -38,14 +38,14 @@ This gives users the opportunity to review and confirm extraction results before
 
 ## Checklist
 - [x] Homepage redirects to `/upload` instead of showing `ResumeUpload` inline
-- [ ] Verify the unified flow works end-to-end for resume-only documents (visual)
-- [ ] Verify import redirects correctly to the profile page after review (visual)
+- [x] Verify homepage redirects to `/upload` with unified flow (visual)
+- [ ] Verify full upload→review→import→profile flow (requires LLM API keys)
 
 ## Definition of Done
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
+- [x] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
