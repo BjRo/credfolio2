@@ -1,11 +1,11 @@
 ---
 # credfolio2-fap7
 title: Explore splitting resume extraction into focused LLM steps
-status: draft
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-02-05T17:40:18Z
-updated_at: 2026-02-06T07:31:07Z
+updated_at: 2026-02-06T14:01:51Z
 parent: credfolio2-3ram
 ---
 
