@@ -10,6 +10,7 @@
 4. **Visual verification** (for ANY UI changes): Use `/skill agent-browser` to verify the feature works in the browser
 5. **Bean checklist**: Ensure ALL checklist items in the bean are checked off
 6. **Push and create PR**: Push your branch and create a PR for human review
+7. **Run automated code reviews**: Launch `@review-backend` and/or `@review-frontend` as subagents via Task tool — address any critical findings
 
 **DO NOT skip these steps.**
 **DO NOT commit directly to main.**
@@ -208,6 +209,7 @@ This project follows a strict workflow. See `/skill dev-workflow` for the full p
 - [ ] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
+- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
 ```
 
 You cannot mark a bean as completed while it has unchecked items.

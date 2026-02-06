@@ -412,6 +412,8 @@ type ImportedCount struct {
 	Educations int `json:"educations"`
 	// Number of skills materialized.
 	Skills int `json:"skills"`
+	// Number of testimonials materialized from reference letters.
+	Testimonials int `json:"testimonials"`
 }
 
 type Mutation struct {

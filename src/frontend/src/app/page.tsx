@@ -4,26 +4,26 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useQuery } from "urql";
 import { ResumeUpload } from "@/components";
-import { GetUserResumesDocument, ResumeStatus } from "@/graphql/generated/graphql";
+import { GetProfileDocument } from "@/graphql/generated/graphql";
 
 const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";
 
 export default function Home() {
   const router = useRouter();
   const [result] = useQuery({
-    query: GetUserResumesDocument,
+    query: GetProfileDocument,
     variables: { userId: DEMO_USER_ID },
   });
 
   const { fetching, data } = result;
 
-  const completedResume = data?.resumes?.find((r) => r.status === ResumeStatus.Completed);
+  const profile = data?.profileByUserId;
 
   useEffect(() => {
-    if (completedResume) {
-      router.push(`/profile/${completedResume.id}`);
+    if (profile) {
+      router.push(`/profile/${profile.id}`);
     }
-  }, [completedResume, router]);
+  }, [profile, router]);
 
   if (fetching) {
     return (
@@ -33,7 +33,7 @@ export default function Home() {
     );
   }
 
-  if (completedResume) {
+  if (profile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/50">
         <p className="text-muted-foreground">Redirecting to your profile...</p>

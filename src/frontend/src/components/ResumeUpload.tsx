@@ -96,6 +96,7 @@ export function ResumeUpload({
                 resume(id: $id) {
                   id
                   status
+                  user { id }
                 }
               }
             `,
@@ -109,8 +110,24 @@ export function ResumeUpload({
         if (resumeStatus === "COMPLETED") {
           setStatus("success");
           onProcessingComplete?.(uploadedResume.resume.id);
-          // Auto-redirect to profile page
-          router.push(`/profile/${uploadedResume.resume.id}`);
+          // Look up profile by userId and redirect
+          try {
+            const profileResponse = await fetch(GRAPHQL_ENDPOINT, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                query: `query GetProfileForRedirect($userId: ID!) { profileByUserId(userId: $userId) { id } }`,
+                variables: { userId },
+              }),
+            });
+            const profileResult = await profileResponse.json();
+            const profileId = profileResult.data?.profileByUserId?.id;
+            if (profileId) {
+              router.push(`/profile/${profileId}`);
+            }
+          } catch (err) {
+            console.error("Failed to fetch profile for redirect:", err);
+          }
         } else if (resumeStatus === "FAILED") {
           setStatus("error");
           setError("Resume processing failed. Please try again.");
@@ -123,7 +140,7 @@ export function ResumeUpload({
 
     const intervalId = setInterval(pollStatus, POLL_INTERVAL_MS);
     return () => clearInterval(intervalId);
-  }, [status, uploadedResume, router, onProcessingComplete, onError]);
+  }, [status, uploadedResume, router, onProcessingComplete, onError, userId]);
 
   const uploadFile = useCallback(
     async (file: File, forceReimport = false) => {
@@ -275,11 +292,25 @@ export function ResumeUpload({
     }
   }, [pendingFile, uploadFile]);
 
-  const handleViewExisting = useCallback(() => {
-    if (duplicateInfo?.existingResume) {
-      router.push(`/profile/${duplicateInfo.existingResume.id}`);
+  const handleViewExisting = useCallback(async () => {
+    try {
+      const response = await fetch(GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `query GetProfileForRedirect($userId: ID!) { profileByUserId(userId: $userId) { id } }`,
+          variables: { userId },
+        }),
+      });
+      const result = await response.json();
+      const profileId = result.data?.profileByUserId?.id;
+      if (profileId) {
+        router.push(`/profile/${profileId}`);
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile for redirect:", err);
     }
-  }, [duplicateInfo, router]);
+  }, [userId, router]);
 
   const handleDragOver = useCallback((e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault();

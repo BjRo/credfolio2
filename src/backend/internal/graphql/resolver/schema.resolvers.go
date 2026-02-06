@@ -859,6 +859,10 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 
 	imported := &model.ImportedCount{}
 
+	// Track reference letter data for cross-referencing after both materializations
+	var refLetterIDForXRef *uuid.UUID
+	var refLetterDataForXRef *domain.ExtractedLetterData
+
 	// Materialize resume data if resume ID is provided
 	if input.ResumeID != nil {
 		resumeID, err := uuid.Parse(*input.ResumeID)
@@ -917,10 +921,88 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 		)
 	}
 
+	// Materialize reference letter data if reference letter ID is provided
+	if input.ReferenceLetterID != nil {
+		refLetterID, parseErr := uuid.Parse(*input.ReferenceLetterID)
+		if parseErr != nil {
+			return &model.ImportDocumentResultsError{
+				Message: "invalid reference letter ID format",
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+
+		refLetter, getErr := r.refLetterRepo.GetByID(ctx, refLetterID)
+		if getErr != nil {
+			return nil, fmt.Errorf("failed to get reference letter: %w", getErr)
+		}
+		if refLetter == nil {
+			return &model.ImportDocumentResultsError{
+				Message: "reference letter not found",
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+		if refLetter.UserID != uid {
+			return &model.ImportDocumentResultsError{
+				Message: "reference letter does not belong to user",
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+		if refLetter.Status != domain.ReferenceLetterStatusCompleted {
+			return &model.ImportDocumentResultsError{
+				Message: fmt.Sprintf("reference letter is not ready for import (status: %s)", refLetter.Status),
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+
+		// Parse extracted data
+		if len(refLetter.ExtractedData) > 0 && string(refLetter.ExtractedData) != jsonNull {
+			var extractedData domain.ExtractedLetterData
+			if jsonErr := json.Unmarshal(refLetter.ExtractedData, &extractedData); jsonErr != nil {
+				return nil, fmt.Errorf("failed to parse extracted reference letter data: %w", jsonErr)
+			}
+
+			// Materialize into profile tables
+			matResult, matErr := r.materializationSvc.MaterializeReferenceLetterData(ctx, refLetterID, uid, &extractedData)
+			if matErr != nil {
+				return nil, fmt.Errorf("failed to materialize reference letter data: %w", matErr)
+			}
+
+			imported.Testimonials = matResult.Testimonials
+
+			// Save for cross-referencing with resume skills/experiences
+			refLetterIDForXRef = &refLetterID
+			refLetterDataForXRef = &extractedData
+
+			r.log.Info("Reference letter data materialized",
+				logger.Feature("document-processing"),
+				logger.String("reference_letter_id", refLetterID.String()),
+				logger.Int("testimonials", matResult.Testimonials),
+			)
+		}
+	}
+
 	// Get or create the profile to return
 	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get profile: %w", err)
+	}
+
+	// Cross-reference reference letter mentions with profile skills/experiences
+	if refLetterIDForXRef != nil && refLetterDataForXRef != nil {
+		xrefResult, xrefErr := r.materializationSvc.CrossReferenceValidations(ctx, profile.ID, *refLetterIDForXRef, refLetterDataForXRef)
+		if xrefErr != nil {
+			r.log.Error("Failed to cross-reference validations",
+				logger.Feature("document-processing"),
+				logger.Err(xrefErr),
+			)
+			// Non-fatal — the import itself succeeded
+		} else {
+			r.log.Info("Cross-referenced validations",
+				logger.Feature("document-processing"),
+				logger.Int("skill_validations", xrefResult.SkillValidations),
+				logger.Int("experience_validations", xrefResult.ExperienceValidations),
+			)
+		}
 	}
 
 	// Build profile response with current data
@@ -3155,13 +3237,30 @@ func (r *queryResolver) Resumes(ctx context.Context, userID string) ([]*model.Re
 }
 
 // Profile is the resolver for the profile field.
-func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Profile, error) {
+func (r *queryResolver) Profile(ctx context.Context, id string) (*model.Profile, error) {
+	pid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid profile ID: %w", err)
+	}
+
+	profile, err := r.profileRepo.GetByID(ctx, pid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile: %w", err)
+	}
+	if profile == nil {
+		return nil, nil
+	}
+
+	return r.loadProfileData(ctx, profile)
+}
+
+// ProfileByUserID is the resolver for the profileByUserId field.
+func (r *queryResolver) ProfileByUserID(ctx context.Context, userID string) (*model.Profile, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	// Get the profile
 	profile, err := r.profileRepo.GetByUserID(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get profile: %w", err)
@@ -3170,47 +3269,7 @@ func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Prof
 		return nil, nil
 	}
 
-	// Fetch the user
-	user, err := r.userRepo.GetByID(ctx, uid)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user for profile: %w", err)
-	}
-	gqlUser := toGraphQLUser(user)
-
-	// Fetch experiences
-	experiences, err := r.profileExpRepo.GetByProfileID(ctx, profile.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get experiences for profile: %w", err)
-	}
-	gqlExperiences := toGraphQLProfileExperiences(experiences)
-
-	// Fetch educations
-	educations, err := r.profileEduRepo.GetByProfileID(ctx, profile.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get educations for profile: %w", err)
-	}
-	gqlEducations := toGraphQLProfileEducations(educations)
-
-	// Fetch skills
-	skills, err := r.profileSkillRepo.GetByProfileID(ctx, profile.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get skills for profile: %w", err)
-	}
-	gqlSkills := toGraphQLProfileSkills(skills)
-
-	// Get photo URL if present
-	var photoURL *string
-	if profile.ProfilePhotoFileID != nil {
-		photoFile, fileErr := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
-		if fileErr == nil && photoFile != nil {
-			url, urlErr := r.storage.GetPublicURL(ctx, photoFile.StorageKey, 24*time.Hour)
-			if urlErr == nil {
-				photoURL = &url
-			}
-		}
-	}
-
-	return toGraphQLProfile(profile, gqlUser, gqlExperiences, gqlEducations, gqlSkills, photoURL), nil
+	return r.loadProfileData(ctx, profile)
 }
 
 // ProfileExperience is the resolver for the profileExperience field.
@@ -3973,5 +4032,3 @@ type profileSkillResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type skillValidationResolver struct{ *Resolver }
 type testimonialResolver struct{ *Resolver }
-
-// !!! WARNING !!!

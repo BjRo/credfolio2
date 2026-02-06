@@ -77,7 +77,7 @@ describe("ExtractionReview", () => {
             importDocumentResults: {
               __typename: "ImportDocumentResultsResult",
               profile: { id: "profile-1" },
-              importedCount: { experiences: 3, educations: 2, skills: 5 },
+              importedCount: { experiences: 3, educations: 2, skills: 5, testimonials: 2 },
             },
           },
         }),

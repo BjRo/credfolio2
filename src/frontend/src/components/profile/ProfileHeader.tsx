@@ -19,20 +19,16 @@ import { Button } from "@/components/ui/button";
 import { DeleteProfilePhotoDocument } from "@/graphql/generated/graphql";
 import { GRAPHQL_UPLOAD_ENDPOINT } from "@/lib/urql/client";
 import { ProfileHeaderFormDialog } from "./ProfileHeaderFormDialog";
-import type { ProfileData } from "./types";
-
-interface ProfileHeaderOverrides {
-  name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  location?: string | null;
-  summary?: string | null;
-  profilePhotoUrl?: string | null;
-}
 
 interface ProfileHeaderProps {
-  data: ProfileData;
-  profileOverrides?: ProfileHeaderOverrides;
+  profile: {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    location?: string | null;
+    summary?: string | null;
+    profilePhotoUrl?: string | null;
+  };
   userId?: string;
   onMutationSuccess?: () => void;
 }
@@ -311,21 +307,15 @@ function ProfileAvatar({ name, photoUrl, userId, onUploadSuccess }: ProfileAvata
   );
 }
 
-export function ProfileHeader({
-  data,
-  profileOverrides,
-  userId,
-  onMutationSuccess,
-}: ProfileHeaderProps) {
+export function ProfileHeader({ profile, userId, onMutationSuccess }: ProfileHeaderProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Merge profile overrides with extracted data (profile overrides take precedence if set)
-  const displayName = profileOverrides?.name || data.name;
-  const displayEmail = profileOverrides?.email ?? data.email;
-  const displayPhone = profileOverrides?.phone ?? data.phone;
-  const displayLocation = profileOverrides?.location ?? data.location;
-  const displaySummary = profileOverrides?.summary ?? data.summary;
-  const displayPhotoUrl = profileOverrides?.profilePhotoUrl;
+  const displayName = profile.name || "Unknown";
+  const displayEmail = profile.email;
+  const displayPhone = profile.phone;
+  const displayLocation = profile.location;
+  const displaySummary = profile.summary;
+  const displayPhotoUrl = profile.profilePhotoUrl;
 
   const handleEditSuccess = () => {
     onMutationSuccess?.();

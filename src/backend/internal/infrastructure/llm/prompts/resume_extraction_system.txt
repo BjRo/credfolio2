@@ -47,6 +47,11 @@ DATE RULES:
 - If year is missing or unclear → null
 - "Present"/"Current" for jobs → isCurrent: true, endDate: null
 
+SUMMARY:
+- If the resume contains an explicit professional summary or objective section, extract it verbatim
+- If no explicit summary exists, synthesize a brief 2-3 sentence professional summary from the candidate's experience, skills, and seniority level
+- Never return an empty string — always provide a meaningful summary
+
 SKILLS:
 - Extract as individual skill names: ["JavaScript", "Python", "React"]
 - NOT descriptions or full sentences

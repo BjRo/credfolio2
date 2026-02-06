@@ -274,7 +274,7 @@ var resumeOutputSchema = map[string]any{
 		},
 		"summary": map[string]any{
 			"type":        "string",
-			"description": "Professional summary or objective if found",
+			"description": "Professional summary or objective. If none is explicitly present, synthesize a brief 2-3 sentence summary from the candidate's experience and skills.",
 		},
 		"experience": map[string]any{
 			"type":        "array",

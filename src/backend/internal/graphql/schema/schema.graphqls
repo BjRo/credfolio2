@@ -1008,6 +1008,8 @@ type ImportedCount {
   educations: Int!
   """Number of skills materialized."""
   skills: Int!
+  """Number of testimonials materialized from reference letters."""
+  testimonials: Int!
 }
 
 """
@@ -1102,10 +1104,16 @@ type Query {
   resumes(userId: ID!): [Resume!]!
 
   """
+  Get a profile by its ID.
+  Returns null if no profile exists.
+  """
+  profile(id: ID!): Profile
+
+  """
   Get a user's profile by user ID.
   Returns null if no profile exists.
   """
-  profile(userId: ID!): Profile
+  profileByUserId(userId: ID!): Profile
 
   """
   Get a single profile experience by ID.

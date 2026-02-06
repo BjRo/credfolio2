@@ -30,68 +30,49 @@ describe("Home Page", () => {
     vi.clearAllMocks();
   });
 
-  it("shows loading state while fetching resumes", () => {
+  it("shows loading state while fetching profile", () => {
     mockUseQuery.mockReturnValue([{ fetching: true, data: undefined, error: undefined }]);
     render(<Home />);
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
-  it("shows upload form when user has no resumes", () => {
-    mockUseQuery.mockReturnValue([{ fetching: false, data: { resumes: [] }, error: undefined }]);
+  it("shows upload form when user has no profile", () => {
+    mockUseQuery.mockReturnValue([
+      { fetching: false, data: { profileByUserId: null }, error: undefined },
+    ]);
     render(<Home />);
     expect(screen.getByTestId("resume-upload")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Upload Your Resume/i })).toBeInTheDocument();
   });
 
-  it("shows upload form when user has no completed resumes", () => {
-    mockUseQuery.mockReturnValue([
-      {
-        fetching: false,
-        data: {
-          resumes: [
-            { id: "resume-1", status: "PENDING" },
-            { id: "resume-2", status: "FAILED" },
-          ],
-        },
-        error: undefined,
-      },
-    ]);
+  it("shows upload form when profile query returns no data", () => {
+    mockUseQuery.mockReturnValue([{ fetching: false, data: undefined, error: undefined }]);
     render(<Home />);
     expect(screen.getByTestId("resume-upload")).toBeInTheDocument();
   });
 
-  it("redirects to profile page when a completed resume exists", () => {
+  it("redirects to profile page when profile exists", () => {
     mockUseQuery.mockReturnValue([
       {
         fetching: false,
-        data: {
-          resumes: [
-            { id: "resume-1", status: "PENDING" },
-            { id: "resume-completed", status: "COMPLETED" },
-          ],
-        },
+        data: { profileByUserId: { id: "profile-123" } },
         error: undefined,
       },
     ]);
     render(<Home />);
-    expect(mockPush).toHaveBeenCalledWith("/profile/resume-completed");
+    expect(mockPush).toHaveBeenCalledWith("/profile/profile-123");
   });
 
-  it("redirects to the first completed resume when multiple exist", () => {
+  it("shows redirecting message when profile exists", () => {
     mockUseQuery.mockReturnValue([
       {
         fetching: false,
-        data: {
-          resumes: [
-            { id: "resume-first", status: "COMPLETED" },
-            { id: "resume-second", status: "COMPLETED" },
-          ],
-        },
+        data: { profileByUserId: { id: "profile-456" } },
         error: undefined,
       },
     ]);
     render(<Home />);
-    expect(mockPush).toHaveBeenCalledWith("/profile/resume-first");
+    expect(screen.getByText(/Redirecting to your profile/i)).toBeInTheDocument();
   });
 
   it("shows upload form when query returns an error", () => {
@@ -103,7 +84,9 @@ describe("Home Page", () => {
   });
 
   it("passes the demo user ID to ResumeUpload", () => {
-    mockUseQuery.mockReturnValue([{ fetching: false, data: { resumes: [] }, error: undefined }]);
+    mockUseQuery.mockReturnValue([
+      { fetching: false, data: { profileByUserId: null }, error: undefined },
+    ]);
     render(<Home />);
     expect(screen.getByTestId("resume-upload")).toHaveAttribute(
       "data-user-id",
