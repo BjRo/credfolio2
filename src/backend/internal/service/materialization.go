@@ -460,16 +460,22 @@ func (s *MaterializationService) matchExperienceValidations(
 		return 0, fmt.Errorf("failed to get profile experiences: %w", err)
 	}
 
-	expByCompany := make(map[string]*domain.ProfileExperience, len(experiences))
+	// Build company -> experiences lookup (multiple roles at the same company)
+	expsByCompany := make(map[string][]*domain.ProfileExperience, len(experiences))
 	for _, exp := range experiences {
 		norm := strings.ToLower(strings.TrimSpace(exp.Company))
-		expByCompany[norm] = exp
+		expsByCompany[norm] = append(expsByCompany[norm], exp)
 	}
 
 	count := 0
 	for _, mention := range letterData.ExperienceMentions {
 		normalized := strings.ToLower(strings.TrimSpace(mention.Company))
-		if exp, ok := expByCompany[normalized]; ok {
+		exps, ok := expsByCompany[normalized]
+		if !ok {
+			continue
+		}
+		// Validate all roles at the matching company
+		for _, exp := range exps {
 			quote := mention.Quote
 			validation := &domain.ExperienceValidation{
 				ID:                  uuid.New(),

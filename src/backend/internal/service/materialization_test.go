@@ -1656,3 +1656,53 @@ func TestCrossReferenceValidationsSubstringMatching(t *testing.T) {
 		}
 	}
 }
+
+func TestCrossReferenceValidationsMultipleRolesAtSameCompany(t *testing.T) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	skillRepo := newMockProfileSkillRepository()
+	skillValRepo := newMockSkillValidationRepository()
+	expValRepo := newMockExpValidationRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+
+	profileID := uuid.New()
+
+	// Three roles at the same company (like the Wellfound case)
+	exp1 := &domain.ProfileExperience{ID: uuid.New(), ProfileID: profileID, Company: "AL Talent, Inc. DBA Wellfound", Title: "Principal Engineer"}
+	exp2 := &domain.ProfileExperience{ID: uuid.New(), ProfileID: profileID, Company: "AL Talent, Inc. DBA Wellfound", Title: "Senior Engineering Manager, Infrastructure"}
+	exp3 := &domain.ProfileExperience{ID: uuid.New(), ProfileID: profileID, Company: "AL Talent, Inc. DBA Wellfound", Title: "Senior Engineering Manager, Infra + Product"}
+	expRepo.experiences[exp1.ID] = exp1
+	expRepo.experiences[exp2.ID] = exp2
+	expRepo.experiences[exp3.ID] = exp3
+
+	refLetterID := uuid.New()
+	letterData := &domain.ExtractedLetterData{
+		ExperienceMentions: []domain.ExtractedExperienceMention{
+			{Company: "AL Talent, Inc. DBA Wellfound", Role: "Engineering Manager", Quote: "outstanding work at Wellfound"},
+		},
+	}
+
+	result, err := svc.CrossReferenceValidations(context.Background(), profileID, refLetterID, letterData)
+	if err != nil {
+		t.Fatalf("CrossReferenceValidations returned error: %v", err)
+	}
+
+	// All 3 roles at the same company should be validated
+	if result.ExperienceValidations != 3 {
+		t.Errorf("expected 3 experience validations (all roles at same company), got %d", result.ExperienceValidations)
+	}
+	if len(expValRepo.validations) != 3 {
+		t.Errorf("expected 3 experience validation records, got %d", len(expValRepo.validations))
+	}
+
+	// Verify all 3 experience IDs are covered
+	matchedExpIDs := make(map[uuid.UUID]bool)
+	for _, ev := range expValRepo.validations {
+		matchedExpIDs[ev.ProfileExperienceID] = true
+	}
+	for _, expected := range []*domain.ProfileExperience{exp1, exp2, exp3} {
+		if !matchedExpIDs[expected.ID] {
+			t.Errorf("expected experience %q to be validated, but it wasn't", expected.Title)
+		}
+	}
+}
