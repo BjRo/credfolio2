@@ -160,15 +160,57 @@ EOF
 )"
 ```
 
-### 8. Wait for Human Review
+### 8. Run Automated Code Reviews
+
+After creating the PR, launch the two code review agents as **separate subagents** so they don't pollute the main conversation context. You MUST use the Task tool to run them.
+
+**Determine which reviewers to run** based on changed files:
+
+```bash
+# Check which areas have changes
+gh pr diff --name-only
+```
+
+- If `src/backend/` files changed → launch **@review-backend**
+- If `src/frontend/` files changed → launch **@review-frontend**
+- If both changed → launch **both in parallel**
+
+**Launch the reviewers using the Task tool** (use exactly these parameters):
+
+For **@review-backend**:
+```
+Task tool call:
+  subagent_type: "general-purpose"
+  description: "Backend code review"
+  prompt: "You are the @review-backend agent. Read the skill definition at .claude/skills/review-backend/SKILL.md and follow its instructions to review the current PR. Post your findings as PR comments using the gh CLI."
+```
+
+For **@review-frontend**:
+```
+Task tool call:
+  subagent_type: "general-purpose"
+  description: "Frontend code review"
+  prompt: "You are the @review-frontend agent. Read the skill definition at .claude/skills/review-frontend/SKILL.md and follow its instructions to review the current PR. Post your findings as PR comments using the gh CLI."
+```
+
+**IMPORTANT**: Always launch these as subagents via the Task tool. Never invoke `/skill review-backend` or `/skill review-frontend` directly in the main conversation — that defeats the purpose of keeping the context clean.
+
+**After the reviews complete:**
+- Read the review summaries returned by the subagents
+- If either finds `🔴 CRITICAL` issues, address them before requesting human review
+- `🟡 WARNING` items should generally be addressed but use your judgment
+- `🔵 SUGGESTION` items are optional improvements
+- Report the review outcomes to the user
+
+### 9. Wait for Human Review
 
 **IMPORTANT**: Do NOT merge the PR yourself.
 
 - PRs require human review before merging
-- Address review feedback with additional commits
+- Address review feedback (both automated and human) with additional commits
 - Wait for explicit approval
 
-### 9. After Merge: Complete the Bean
+### 10. After Merge: Complete the Bean
 
 Once the PR is merged by a human, use the automated post-merge script:
 
@@ -220,7 +262,10 @@ agent-browser close
 # Finish work
 git push -u origin <branch-name>
 gh pr create --title "..." --body "..."
-# WAIT for human review and merge
+
+# Run automated code reviews (as parallel subagents)
+# Launch @review-backend and @review-frontend via Task tool
+# Address any CRITICAL findings, then WAIT for human review and merge
 
 # After merge (from feature branch)
 ./scripts/post-merge.sh <bean-id>
@@ -248,6 +293,7 @@ gh pr create --title "..." --body "..."
 - [ ] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
+- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
 ```
 
 **You CANNOT mark a bean as completed while it has unchecked items.** This structurally enforces compliance.
