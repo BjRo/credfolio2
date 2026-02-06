@@ -1603,3 +1603,56 @@ func TestCrossReferenceValidationsDeduplicatesAcrossSources(t *testing.T) {
 		t.Errorf("expected 1 skill validation record, got %d", len(skillValRepo.validations))
 	}
 }
+
+func TestCrossReferenceValidationsSubstringMatching(t *testing.T) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	skillRepo := newMockProfileSkillRepository()
+	skillValRepo := newMockSkillValidationRepository()
+	expValRepo := newMockExpValidationRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+
+	profileID := uuid.New()
+
+	// Profile skills with concise names (from resume extraction)
+	techDoc := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "Technical Documentation", NormalizedName: "technical documentation"}
+	incResp := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "Incident Response", NormalizedName: "incident response"}
+	seo := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "SEO", NormalizedName: "seo"}
+	teamLead := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "Team Leadership", NormalizedName: "team leadership"}
+	skillRepo.skills[techDoc.ID] = techDoc
+	skillRepo.skills[incResp.ID] = incResp
+	skillRepo.skills[seo.ID] = seo
+	skillRepo.skills[teamLead.ID] = teamLead
+
+	refLetterID := uuid.New()
+	// Reference letter uses more verbose/descriptive skill names
+	letterData := &domain.ExtractedLetterData{
+		DiscoveredSkills: []domain.DiscoveredSkill{
+			{Skill: "technical documentation (Diátaxis framework)", Quote: "introduced the Diátaxis framework"},
+			{Skill: "incident response program design", Quote: "designed the incident response program"},
+			{Skill: "search engine optimization (SEO)", Quote: "doubled organic traffic"},
+			{Skill: "interim team leadership", Quote: "served as interim leader"},
+			{Skill: "cross-functional collaboration", Quote: "contributed across multiple dimensions"}, // no match
+		},
+	}
+
+	result, err := svc.CrossReferenceValidations(context.Background(), profileID, refLetterID, letterData)
+	if err != nil {
+		t.Fatalf("CrossReferenceValidations returned error: %v", err)
+	}
+
+	if result.SkillValidations != 4 {
+		t.Errorf("expected 4 skill validations (substring matches), got %d", result.SkillValidations)
+	}
+
+	// Verify the correct profile skills were matched
+	matchedSkillIDs := make(map[uuid.UUID]bool)
+	for _, sv := range skillValRepo.validations {
+		matchedSkillIDs[sv.ProfileSkillID] = true
+	}
+	for _, expected := range []*domain.ProfileSkill{techDoc, incResp, seo, teamLead} {
+		if !matchedSkillIDs[expected.ID] {
+			t.Errorf("expected skill %q to be matched, but it wasn't", expected.Name)
+		}
+	}
+}

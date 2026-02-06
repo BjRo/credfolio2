@@ -426,8 +426,8 @@ func (s *MaterializationService) matchSkillValidations(
 	count := 0
 	for _, ref := range refs {
 		normalized := strings.ToLower(strings.TrimSpace(ref.Skill))
-		sk, ok := skillByNorm[normalized]
-		if !ok || matched[sk.ID] {
+		sk := findMatchingSkill(normalized, skillByNorm)
+		if sk == nil || matched[sk.ID] {
 			continue
 		}
 		quote := ref.Quote
@@ -487,6 +487,23 @@ func (s *MaterializationService) matchExperienceValidations(
 		}
 	}
 	return count, nil
+}
+
+// findMatchingSkill looks up a profile skill by normalized name.
+// It tries exact match first, then falls back to substring matching
+// (e.g. "incident response" matches "incident response program design").
+func findMatchingSkill(refNorm string, skillByNorm map[string]*domain.ProfileSkill) *domain.ProfileSkill {
+	// Exact match
+	if sk, ok := skillByNorm[refNorm]; ok {
+		return sk
+	}
+	// Substring match: check if either name contains the other
+	for norm, sk := range skillByNorm {
+		if strings.Contains(refNorm, norm) || strings.Contains(norm, refNorm) {
+			return sk
+		}
+	}
+	return nil
 }
 
 // mapAuthorRelationship maps an AuthorRelationship to a TestimonialRelationship.
