@@ -1,3 +1,5 @@
-Extract the structured profile data from this resume:
+<task>Extract the structured profile data from this resume.</task>
 
+<input>
 {{.Text}}
+</input>

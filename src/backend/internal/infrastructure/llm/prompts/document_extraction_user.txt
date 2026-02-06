@@ -1,1 +1,1 @@
-Please extract all text from this document image and return only the extracted text content.
+<task>Extract all text from this document image and return only the extracted text content.</task>

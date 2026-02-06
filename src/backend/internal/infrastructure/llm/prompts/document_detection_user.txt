@@ -1,3 +1,5 @@
-Classify this document:
+<task>Classify this document.</task>
 
+<input>
 {{.Text}}
+</input>

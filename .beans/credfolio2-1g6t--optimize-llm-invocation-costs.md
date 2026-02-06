@@ -1,11 +1,11 @@
 ---
 # credfolio2-1g6t
 title: Optimize LLM invocation costs
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-02-06T12:05:19Z
-updated_at: 2026-02-06T12:34:09Z
+updated_at: 2026-02-06T20:15:39Z
 parent: credfolio2-3ram
 ---
 
