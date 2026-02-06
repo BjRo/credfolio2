@@ -1,11 +1,11 @@
 ---
 # credfolio2-2s9m
 title: Extract CheckboxCard to shared @/components/ui/ component
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-06T14:37:19Z
-updated_at: 2026-02-06T20:34:49Z
+updated_at: 2026-02-06T20:35:16Z
 ---
 
 ## Summary
