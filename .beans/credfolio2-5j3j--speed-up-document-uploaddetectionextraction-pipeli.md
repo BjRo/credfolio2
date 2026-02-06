@@ -3,9 +3,9 @@
 title: Speed up document upload/detection/extraction pipeline
 status: todo
 type: task
-priority: normal
+priority: high
 created_at: 2026-02-05T23:11:46Z
-updated_at: 2026-02-06T07:31:28Z
+updated_at: 2026-02-06T10:30:52Z
 parent: credfolio2-3ram
 ---
 

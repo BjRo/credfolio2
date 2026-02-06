@@ -1,11 +1,11 @@
 ---
 # credfolio2-z41m
 title: Materialize reference letter data during import
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-02-05T23:06:50Z
-updated_at: 2026-02-06T08:10:25Z
+updated_at: 2026-02-06T10:30:32Z
 parent: credfolio2-3ram
 ---
 
