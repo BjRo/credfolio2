@@ -1,11 +1,11 @@
 ---
 # credfolio2-v25w
 title: Switch reference letter extraction to Claude Haiku 4.5
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-06T13:06:21Z
-updated_at: 2026-02-06T13:27:47Z
+updated_at: 2026-02-06T14:04:51Z
 parent: credfolio2-3ram
 ---
 
