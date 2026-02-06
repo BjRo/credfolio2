@@ -3211,13 +3211,30 @@ func (r *queryResolver) Resumes(ctx context.Context, userID string) ([]*model.Re
 }
 
 // Profile is the resolver for the profile field.
-func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Profile, error) {
+func (r *queryResolver) Profile(ctx context.Context, id string) (*model.Profile, error) {
+	pid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid profile ID: %w", err)
+	}
+
+	profile, err := r.profileRepo.GetByID(ctx, pid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile: %w", err)
+	}
+	if profile == nil {
+		return nil, nil
+	}
+
+	return r.loadProfileData(ctx, profile)
+}
+
+// ProfileByUserID is the resolver for the profileByUserId field.
+func (r *queryResolver) ProfileByUserID(ctx context.Context, userID string) (*model.Profile, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	// Get the profile
 	profile, err := r.profileRepo.GetByUserID(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get profile: %w", err)
@@ -3226,47 +3243,7 @@ func (r *queryResolver) Profile(ctx context.Context, userID string) (*model.Prof
 		return nil, nil
 	}
 
-	// Fetch the user
-	user, err := r.userRepo.GetByID(ctx, uid)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user for profile: %w", err)
-	}
-	gqlUser := toGraphQLUser(user)
-
-	// Fetch experiences
-	experiences, err := r.profileExpRepo.GetByProfileID(ctx, profile.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get experiences for profile: %w", err)
-	}
-	gqlExperiences := toGraphQLProfileExperiences(experiences)
-
-	// Fetch educations
-	educations, err := r.profileEduRepo.GetByProfileID(ctx, profile.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get educations for profile: %w", err)
-	}
-	gqlEducations := toGraphQLProfileEducations(educations)
-
-	// Fetch skills
-	skills, err := r.profileSkillRepo.GetByProfileID(ctx, profile.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get skills for profile: %w", err)
-	}
-	gqlSkills := toGraphQLProfileSkills(skills)
-
-	// Get photo URL if present
-	var photoURL *string
-	if profile.ProfilePhotoFileID != nil {
-		photoFile, fileErr := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
-		if fileErr == nil && photoFile != nil {
-			url, urlErr := r.storage.GetPublicURL(ctx, photoFile.StorageKey, 24*time.Hour)
-			if urlErr == nil {
-				photoURL = &url
-			}
-		}
-	}
-
-	return toGraphQLProfile(profile, gqlUser, gqlExperiences, gqlEducations, gqlSkills, photoURL), nil
+	return r.loadProfileData(ctx, profile)
 }
 
 // ProfileExperience is the resolver for the profileExperience field.

@@ -347,7 +347,8 @@ type ComplexityRoot struct {
 		ExperienceValidations    func(childComplexity int, experienceID string) int
 		File                     func(childComplexity int, id string) int
 		Files                    func(childComplexity int, userID string) int
-		Profile                  func(childComplexity int, userID string) int
+		Profile                  func(childComplexity int, id string) int
+		ProfileByUserID          func(childComplexity int, userID string) int
 		ProfileEducation         func(childComplexity int, id string) int
 		ProfileExperience        func(childComplexity int, id string) int
 		ProfileSkill             func(childComplexity int, id string) int
@@ -506,7 +507,8 @@ type QueryResolver interface {
 	ReferenceLetters(ctx context.Context, userID string) ([]*model.ReferenceLetter, error)
 	Resume(ctx context.Context, id string) (*model.Resume, error)
 	Resumes(ctx context.Context, userID string) ([]*model.Resume, error)
-	Profile(ctx context.Context, userID string) (*model.Profile, error)
+	Profile(ctx context.Context, id string) (*model.Profile, error)
+	ProfileByUserID(ctx context.Context, userID string) (*model.Profile, error)
 	ProfileExperience(ctx context.Context, id string) (*model.ProfileExperience, error)
 	ProfileEducation(ctx context.Context, id string) (*model.ProfileEducation, error)
 	ProfileSkill(ctx context.Context, id string) (*model.ProfileSkill, error)
@@ -1834,7 +1836,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Profile(childComplexity, args["userId"].(string)), true
+		return e.complexity.Query.Profile(childComplexity, args["id"].(string)), true
+	case "Query.profileByUserId":
+		if e.complexity.Query.ProfileByUserID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_profileByUserId_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ProfileByUserID(childComplexity, args["userId"].(string)), true
 	case "Query.profileEducation":
 		if e.complexity.Query.ProfileEducation == nil {
 			break
@@ -3546,10 +3559,16 @@ type Query {
   resumes(userId: ID!): [Resume!]!
 
   """
+  Get a profile by its ID.
+  Returns null if no profile exists.
+  """
+  profile(id: ID!): Profile
+
+  """
   Get a user's profile by user ID.
   Returns null if no profile exists.
   """
-  profile(userId: ID!): Profile
+  profileByUserId(userId: ID!): Profile
 
   """
   Get a single profile experience by ID.
@@ -4409,6 +4428,17 @@ func (ec *executionContext) field_Query_files_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_profileByUserId_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_profileEducation_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4445,11 +4475,11 @@ func (ec *executionContext) field_Query_profileSkill_args(ctx context.Context, r
 func (ec *executionContext) field_Query_profile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
-	args["userId"] = arg0
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -10928,7 +10958,7 @@ func (ec *executionContext) _Query_profile(ctx context.Context, field graphql.Co
 		ec.fieldContext_Query_profile,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().Profile(ctx, fc.Args["userId"].(string))
+			return ec.resolvers.Query().Profile(ctx, fc.Args["id"].(string))
 		},
 		nil,
 		ec.marshalOProfile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐProfile,
@@ -10983,6 +11013,75 @@ func (ec *executionContext) fieldContext_Query_profile(ctx context.Context, fiel
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_profile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_profileByUserId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_profileByUserId,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().ProfileByUserID(ctx, fc.Args["userId"].(string))
+		},
+		nil,
+		ec.marshalOProfile2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐProfile,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_profileByUserId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Profile_id(ctx, field)
+			case "user":
+				return ec.fieldContext_Profile_user(ctx, field)
+			case "name":
+				return ec.fieldContext_Profile_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Profile_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_Profile_phone(ctx, field)
+			case "location":
+				return ec.fieldContext_Profile_location(ctx, field)
+			case "summary":
+				return ec.fieldContext_Profile_summary(ctx, field)
+			case "profilePhotoUrl":
+				return ec.fieldContext_Profile_profilePhotoUrl(ctx, field)
+			case "experiences":
+				return ec.fieldContext_Profile_experiences(ctx, field)
+			case "educations":
+				return ec.fieldContext_Profile_educations(ctx, field)
+			case "skills":
+				return ec.fieldContext_Profile_skills(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Profile_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Profile_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Profile", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_profileByUserId_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -18914,6 +19013,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_profile(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "profileByUserId":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_profileByUserId(ctx, field)
 				return res
 			}
 

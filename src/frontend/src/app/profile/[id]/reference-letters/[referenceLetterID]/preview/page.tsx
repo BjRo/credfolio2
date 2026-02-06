@@ -6,7 +6,7 @@ import { useMutation, useQuery } from "urql";
 import { Button } from "@/components/ui/button";
 import {
   ApplyReferenceLetterValidationsDocument,
-  GetProfileDocument,
+  GetProfileByIdDocument,
   GetReferenceLetterDocument,
   ReferenceLetterStatus,
   SkillCategory,
@@ -43,7 +43,7 @@ export interface DiscoveredSkill {
 export default function ValidationPreviewPage() {
   const params = useParams();
   const router = useRouter();
-  const resumeId = params.id as string;
+  const profileId = params.id as string;
   const referenceLetterID = params.referenceLetterID as string;
 
   // Selection state
@@ -67,11 +67,10 @@ export default function ValidationPreviewPage() {
   // Get user ID from reference letter
   const userId = referenceLetterResult.data?.referenceLetter?.user?.id;
 
-  // Query user's profile to get current skills and experiences
+  // Query profile by ID to get current skills and experiences
   const [profileResult] = useQuery({
-    query: GetProfileDocument,
-    variables: { userId: userId || "" },
-    pause: !userId,
+    query: GetProfileByIdDocument,
+    variables: { id: profileId },
     requestPolicy: "network-only",
   });
 
@@ -314,12 +313,12 @@ export default function ValidationPreviewPage() {
 
     if (result.data?.applyReferenceLetterValidations?.__typename === "ApplyValidationsResult") {
       // Navigate back to profile page
-      router.push(`/profile/${resumeId}`);
+      router.push(`/profile/${profileId}`);
     }
   }, [
     userId,
     referenceLetterID,
-    resumeId,
+    profileId,
     skillCorroborations,
     selectedSkillCorroborations,
     experienceCorroborations,
@@ -334,11 +333,11 @@ export default function ValidationPreviewPage() {
 
   // Handle cancel
   const handleCancel = useCallback(() => {
-    router.push(`/profile/${resumeId}`);
-  }, [router, resumeId]);
+    router.push(`/profile/${profileId}`);
+  }, [router, profileId]);
 
   // Loading state
-  if (referenceLetterResult.fetching || (userId && profileResult.fetching)) {
+  if (referenceLetterResult.fetching || profileResult.fetching) {
     return (
       <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
@@ -357,7 +356,7 @@ export default function ValidationPreviewPage() {
             Error Loading Reference Letter
           </h1>
           <p className="text-muted-foreground mb-6">{referenceLetterResult.error.message}</p>
-          <Button onClick={() => router.push(`/profile/${resumeId}`)}>Back to Profile</Button>
+          <Button onClick={() => router.push(`/profile/${profileId}`)}>Back to Profile</Button>
         </div>
       </div>
     );
@@ -372,7 +371,7 @@ export default function ValidationPreviewPage() {
           <p className="text-muted-foreground mb-6">
             The reference letter you&apos;re looking for doesn&apos;t exist.
           </p>
-          <Button onClick={() => router.push(`/profile/${resumeId}`)}>Back to Profile</Button>
+          <Button onClick={() => router.push(`/profile/${profileId}`)}>Back to Profile</Button>
         </div>
       </div>
     );
@@ -405,7 +404,7 @@ export default function ValidationPreviewPage() {
           <p className="text-muted-foreground mb-6">
             Failed to extract information from your reference letter.
           </p>
-          <Button onClick={() => router.push(`/profile/${resumeId}`)}>Back to Profile</Button>
+          <Button onClick={() => router.push(`/profile/${profileId}`)}>Back to Profile</Button>
         </div>
       </div>
     );
@@ -420,7 +419,7 @@ export default function ValidationPreviewPage() {
           <p className="text-muted-foreground mb-6">
             No information could be extracted from your reference letter.
           </p>
-          <Button onClick={() => router.push(`/profile/${resumeId}`)}>Back to Profile</Button>
+          <Button onClick={() => router.push(`/profile/${profileId}`)}>Back to Profile</Button>
         </div>
       </div>
     );

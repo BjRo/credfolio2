@@ -78,8 +78,7 @@ export function ExtractionReview({
       }
 
       setImportStatus("success");
-      // Profile page routes by resume ID, not profile ID
-      onImportComplete(processDocumentIds.resumeId ?? data.profile.id);
+      onImportComplete(data.profile.id);
     } catch {
       setImportStatus("error");
       setImportError("Import failed. Please try again.");

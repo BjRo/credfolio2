@@ -2,9 +2,15 @@
 package resolver
 
 import (
+	"context"
+	"fmt"
+	"time"
+
 	"backend/internal/domain"
 	"backend/internal/logger"
 	"backend/internal/service"
+
+	model "backend/internal/graphql/model"
 )
 
 // This file will not be regenerated automatically.
@@ -73,4 +79,44 @@ func NewResolver(
 		materializationSvc:    materializationSvc,
 		log:                   log,
 	}
+}
+
+// loadProfileData fetches all nested data for a profile and returns the GraphQL model.
+func (r *queryResolver) loadProfileData(ctx context.Context, profile *domain.Profile) (*model.Profile, error) {
+	user, err := r.userRepo.GetByID(ctx, profile.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user for profile: %w", err)
+	}
+	gqlUser := toGraphQLUser(user)
+
+	experiences, err := r.profileExpRepo.GetByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get experiences for profile: %w", err)
+	}
+	gqlExperiences := toGraphQLProfileExperiences(experiences)
+
+	educations, err := r.profileEduRepo.GetByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get educations for profile: %w", err)
+	}
+	gqlEducations := toGraphQLProfileEducations(educations)
+
+	skills, err := r.profileSkillRepo.GetByProfileID(ctx, profile.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get skills for profile: %w", err)
+	}
+	gqlSkills := toGraphQLProfileSkills(skills)
+
+	var photoURL *string
+	if profile.ProfilePhotoFileID != nil {
+		photoFile, fileErr := r.fileRepo.GetByID(ctx, *profile.ProfilePhotoFileID)
+		if fileErr == nil && photoFile != nil {
+			url, urlErr := r.storage.GetPublicURL(ctx, photoFile.StorageKey, 24*time.Hour)
+			if urlErr == nil {
+				photoURL = &url
+			}
+		}
+	}
+
+	return toGraphQLProfile(profile, gqlUser, gqlExperiences, gqlEducations, gqlSkills, photoURL), nil
 }

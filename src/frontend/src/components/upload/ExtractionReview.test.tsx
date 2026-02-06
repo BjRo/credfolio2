@@ -194,13 +194,13 @@ describe("ExtractionReview", () => {
       });
     });
 
-    it("calls onImportComplete with resume ID on success", async () => {
+    it("calls onImportComplete with profile ID on success", async () => {
       render(<ExtractionReview {...defaultProps} />);
 
       fireEvent.click(screen.getByRole("button", { name: /Import to profile/i }));
 
       await waitFor(() => {
-        expect(defaultProps.onImportComplete).toHaveBeenCalledWith("resume-1");
+        expect(defaultProps.onImportComplete).toHaveBeenCalledWith("profile-1");
       });
     });
 
