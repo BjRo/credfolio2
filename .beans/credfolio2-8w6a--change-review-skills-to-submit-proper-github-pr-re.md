@@ -1,10 +1,11 @@
 ---
 # credfolio2-8w6a
 title: Change review skills to submit proper GitHub PR reviews
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-02-06T22:24:30Z
-updated_at: 2026-02-06T22:24:30Z
+updated_at: 2026-02-06T22:26:24Z
 ---
 
 Update /review-frontend and /review-backend skills to submit a proper (non-blocking) GitHub Pull Request Review instead of posting individual standalone comments.
