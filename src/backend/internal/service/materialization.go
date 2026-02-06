@@ -512,6 +512,32 @@ func findMatchingSkill(refNorm string, skillByNorm map[string]*domain.ProfileSki
 	return nil
 }
 
+// FilterByIndices returns a subset of items at the given indices, skipping out-of-range indices.
+func FilterByIndices[T any](items []T, indices []int) []T {
+	result := make([]T, 0, len(indices))
+	for _, idx := range indices {
+		if idx >= 0 && idx < len(items) {
+			result = append(result, items[idx])
+		}
+	}
+	return result
+}
+
+// FilterSkillsByName returns only skills whose names appear in the selected set.
+func FilterSkillsByName(skills []string, selected []string) []string {
+	set := make(map[string]bool, len(selected))
+	for _, s := range selected {
+		set[strings.ToLower(strings.TrimSpace(s))] = true
+	}
+	result := make([]string, 0, len(selected))
+	for _, skill := range skills {
+		if set[strings.ToLower(strings.TrimSpace(skill))] {
+			result = append(result, skill)
+		}
+	}
+	return result
+}
+
 // mapAuthorRelationship maps an AuthorRelationship to a TestimonialRelationship.
 func mapAuthorRelationship(ar domain.AuthorRelationship) domain.TestimonialRelationship {
 	switch ar {

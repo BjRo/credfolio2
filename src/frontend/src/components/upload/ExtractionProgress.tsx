@@ -36,6 +36,9 @@ const DOCUMENT_PROCESSING_STATUS_QUERY = `
           phone
           location
           summary
+          experiences { company title location startDate endDate isCurrent description }
+          educations { institution degree field startDate endDate gpa achievements }
+          skills
           extractedAt
           confidence
         }

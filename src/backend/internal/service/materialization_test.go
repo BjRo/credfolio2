@@ -1657,6 +1657,84 @@ func TestCrossReferenceValidationsSubstringMatching(t *testing.T) {
 	}
 }
 
+func TestFilterByIndices(t *testing.T) {
+	items := []string{"a", "b", "c", "d", "e"}
+
+	tests := []struct {
+		name     string
+		indices  []int
+		expected []string
+	}{
+		{name: "select subset", indices: []int{0, 2, 4}, expected: []string{"a", "c", "e"}},
+		{name: "empty indices", indices: []int{}, expected: []string{}},
+		{name: "out of range ignored", indices: []int{0, 10, -1, 2}, expected: []string{"a", "c"}},
+		{name: "all indices", indices: []int{0, 1, 2, 3, 4}, expected: []string{"a", "b", "c", "d", "e"}},
+		{name: "single index", indices: []int{3}, expected: []string{"d"}},
+		{name: "duplicate indices", indices: []int{1, 1, 1}, expected: []string{"b", "b", "b"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := FilterByIndices(items, tc.indices)
+			if len(result) != len(tc.expected) {
+				t.Fatalf("expected %d items, got %d: %v", len(tc.expected), len(result), result)
+			}
+			for i, exp := range tc.expected {
+				if result[i] != exp {
+					t.Errorf("at index %d: expected %q, got %q", i, exp, result[i])
+				}
+			}
+		})
+	}
+}
+
+func TestFilterByIndicesWithStructs(t *testing.T) {
+	type item struct{ Name string }
+	items := []item{{Name: "first"}, {Name: "second"}, {Name: "third"}}
+
+	result := FilterByIndices(items, []int{2, 0})
+	if len(result) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(result))
+	}
+	if result[0].Name != "third" {
+		t.Errorf("expected 'third', got %q", result[0].Name)
+	}
+	if result[1].Name != "first" {
+		t.Errorf("expected 'first', got %q", result[1].Name)
+	}
+}
+
+func TestFilterSkillsByName(t *testing.T) {
+	skills := []string{"Go", "Python", "TypeScript", "Rust", "PostgreSQL"}
+
+	tests := []struct {
+		name     string
+		selected []string
+		expected []string
+	}{
+		{name: "exact match", selected: []string{"Go", "Rust"}, expected: []string{"Go", "Rust"}},
+		{name: "case insensitive", selected: []string{"go", "PYTHON"}, expected: []string{"Go", "Python"}},
+		{name: "empty selection", selected: []string{}, expected: []string{}},
+		{name: "no matches", selected: []string{"Java", "C++"}, expected: []string{}},
+		{name: "all skills", selected: []string{"Go", "Python", "TypeScript", "Rust", "PostgreSQL"}, expected: []string{"Go", "Python", "TypeScript", "Rust", "PostgreSQL"}},
+		{name: "whitespace handling", selected: []string{"  Go  ", "Rust "}, expected: []string{"Go", "Rust"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := FilterSkillsByName(skills, tc.selected)
+			if len(result) != len(tc.expected) {
+				t.Fatalf("expected %d skills, got %d: %v", len(tc.expected), len(result), result)
+			}
+			for i, exp := range tc.expected {
+				if result[i] != exp {
+					t.Errorf("at index %d: expected %q, got %q", i, exp, result[i])
+				}
+			}
+		})
+	}
+}
+
 func TestCrossReferenceValidationsMultipleRolesAtSameCompany(t *testing.T) {
 	profileRepo := newMockProfileRepository()
 	expRepo := newMockProfileExperienceRepository()

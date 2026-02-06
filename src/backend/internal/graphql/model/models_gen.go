@@ -343,6 +343,42 @@ type ExperienceValidationInput struct {
 	QuoteSnippet string `json:"quoteSnippet"`
 }
 
+// An education entry extracted from a resume.
+type ExtractedEducation struct {
+	// Institution name.
+	Institution string `json:"institution"`
+	// Degree earned.
+	Degree *string `json:"degree,omitempty"`
+	// Field of study.
+	Field *string `json:"field,omitempty"`
+	// Start date.
+	StartDate *string `json:"startDate,omitempty"`
+	// End date.
+	EndDate *string `json:"endDate,omitempty"`
+	// Grade point average.
+	Gpa *string `json:"gpa,omitempty"`
+	// Achievements or honors.
+	Achievements *string `json:"achievements,omitempty"`
+}
+
+// A work experience entry extracted from a resume.
+type ExtractedWorkExperience struct {
+	// Company or organization name.
+	Company string `json:"company"`
+	// Job title or role.
+	Title string `json:"title"`
+	// Location of the role.
+	Location *string `json:"location,omitempty"`
+	// Start date (YYYY-MM format).
+	StartDate *string `json:"startDate,omitempty"`
+	// End date (YYYY-MM format), null if current.
+	EndDate *string `json:"endDate,omitempty"`
+	// Whether this is the current position.
+	IsCurrent bool `json:"isCurrent"`
+	// Role description or achievements.
+	Description *string `json:"description,omitempty"`
+}
+
 // An uploaded file stored in object storage.
 type File struct {
 	ID          string `json:"id"`
@@ -392,6 +428,14 @@ type ImportDocumentResultsInput struct {
 	ResumeID *string `json:"resumeId,omitempty"`
 	// Reference letter ID whose validations should be applied (null to skip).
 	ReferenceLetterID *string `json:"referenceLetterID,omitempty"`
+	// Indices of experiences to import. Null = import all.
+	SelectedExperienceIndices []int `json:"selectedExperienceIndices,omitempty"`
+	// Indices of education entries to import. Null = import all.
+	SelectedEducationIndices []int `json:"selectedEducationIndices,omitempty"`
+	// Skill names to import. Null = import all.
+	SelectedSkills []string `json:"selectedSkills,omitempty"`
+	// Indices of testimonials to import. Null = import all.
+	SelectedTestimonialIndices []int `json:"selectedTestimonialIndices,omitempty"`
 }
 
 // Result of importing document results into profile tables.
@@ -637,6 +681,12 @@ type ResumeExtractedData struct {
 	Location *string `json:"location,omitempty"`
 	// Professional summary or objective.
 	Summary *string `json:"summary,omitempty"`
+	// Work experience entries.
+	Experiences []*ExtractedWorkExperience `json:"experiences"`
+	// Education entries.
+	Educations []*ExtractedEducation `json:"educations"`
+	// Skill names.
+	Skills []string `json:"skills"`
 	// When the extraction was performed.
 	ExtractedAt time.Time `json:"extractedAt"`
 	// Overall confidence score (0.0 to 1.0).

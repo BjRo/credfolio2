@@ -2,8 +2,8 @@
 
 import { Sparkles } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SelectionControls } from "@/components/ui/selection-controls";
 import type { DiscoveredSkill } from "./page";
-import { SelectionControls } from "./SelectionControls";
 
 interface DiscoveredSkillsSectionProps {
   discoveredSkills: DiscoveredSkill[];
