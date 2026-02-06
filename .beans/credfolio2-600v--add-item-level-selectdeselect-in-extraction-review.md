@@ -1,11 +1,11 @@
 ---
 # credfolio2-600v
 title: Add item-level select/deselect in extraction review step
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-05T23:09:37Z
-updated_at: 2026-02-06T14:35:36Z
+updated_at: 2026-02-06T20:11:34Z
 parent: credfolio2-3ram
 ---
 
