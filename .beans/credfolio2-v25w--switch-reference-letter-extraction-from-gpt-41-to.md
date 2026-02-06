@@ -1,6 +1,6 @@
 ---
 # credfolio2-v25w
-title: Switch reference letter extraction from GPT-4.1 to GPT-4.1-mini
+title: Switch reference letter extraction to Claude Haiku 4.5
 status: in-progress
 type: task
 priority: normal
@@ -11,20 +11,27 @@ parent: credfolio2-3ram
 
 ## Summary
 
-The letter_data_extraction step currently uses GPT-4.1 and takes ~19.5s (TTFT: 19.55s) with 3,928 tokens at $0.017. The long time-to-first-token suggests the model is spending excessive time reasoning before generating output.
+The letter_data_extraction step was using GPT-4.1 and taking ~19.5s at $0.023. After benchmarking four models, Claude Haiku 4.5 was chosen as the winner.
 
-GPT-4.1-mini is significantly faster for structured output tasks. Since reference letter extraction is fundamentally an **extraction** task (not a reasoning task), a smaller model should maintain quality while dramatically reducing latency.
+### Benchmark Results
+
+| Model | Duration | Cost |
+|-------|----------|------|
+| GPT-4.1 | 18.69s | $0.023 |
+| Claude Sonnet 4.5 | 19.92s | $0.034 |
+| GPT-4.1 mini | 26.62s | $0.003 |
+| **Claude Haiku 4.5** | **10.85s** | **$0.012** |
 
 ## Approach
 
-Change the default model for reference letter extraction from `openai/gpt-4o` (which resolves to GPT-4.1 via Braintrust/routing) to `openai/gpt-4.1-mini`. This is a configuration change in `config.go` defaults, overridable via the `REFERENCE_EXTRACTION_MODEL` env var.
+Changed the default model for reference letter extraction to `anthropic/claude-haiku-4-5-20251001`. This is a configuration change in `config.go` defaults, overridable via the `REFERENCE_EXTRACTION_MODEL` env var.
 
-**Expected impact:** ~19.5s → ~5-8s. Low quality risk — the task is extraction with structured output, not complex reasoning.
+**Achieved impact:** ~19.5s → ~10.8s (44% faster). Good cost at $0.012.
 
 ## Checklist
 
 - [x] Update the default model for reference letter extraction in config (or env var)
-- [ ] Run a comparison test: upload the fixture resume/letter with GPT-4.1 vs GPT-4.1-mini and compare extraction quality
+- [x] Run a comparison test: benchmarked GPT-4.1, GPT-4.1-mini, Claude Sonnet 4.5, Claude Haiku 4.5 via Braintrust traces
 - [ ] Verify structured output schema compliance with the new model
 - [ ] Check that testimonial quotes, skill mentions, and discovered skills are extracted accurately
 - [x] Update any hardcoded model references (e.g. the `ModelVersion` in document_processing.go:318)
