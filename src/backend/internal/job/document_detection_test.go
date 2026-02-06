@@ -141,6 +141,14 @@ func TestDocumentDetectionWorker_Success(t *testing.T) {
 	if stored.DocumentTypeHint != domain.DocumentTypeResume {
 		t.Errorf("stored DocumentTypeHint = %q, want %q", stored.DocumentTypeHint, domain.DocumentTypeResume)
 	}
+
+	// Verify extracted text was stored for reuse by processing worker
+	if file.ExtractedText == nil {
+		t.Fatal("extracted_text is nil, want non-nil")
+	}
+	if *file.ExtractedText != "John Doe, Software Engineer" {
+		t.Errorf("extracted_text = %q, want %q", *file.ExtractedText, "John Doe, Software Engineer")
+	}
 }
 
 func TestDocumentDetectionWorker_StorageDownloadFailure(t *testing.T) {
@@ -190,6 +198,9 @@ func TestDocumentDetectionWorker_StorageDownloadFailure(t *testing.T) {
 	}
 	if file.DetectionError == nil {
 		t.Error("detection_error is nil, want non-nil")
+	}
+	if file.ExtractedText != nil {
+		t.Errorf("extracted_text = %q, want nil on failure", *file.ExtractedText)
 	}
 }
 

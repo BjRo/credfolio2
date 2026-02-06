@@ -354,12 +354,14 @@ func TestDocumentProcessingWorker_Timeout_TenMinutes(t *testing.T) {
 func TestDocumentProcessingWorker_ResumeOnly(t *testing.T) {
 	ctx := context.Background()
 	resumeRepo := newMockResumeRepository()
+	fileRepo := newMockFileRepository()
 
 	resumeID := uuid.New()
 	userID := uuid.New()
 	fileID := uuid.New()
 
 	_ = resumeRepo.Create(ctx, &domain.Resume{ID: resumeID, UserID: userID, FileID: fileID, Status: domain.ResumeStatusPending}) //nolint:errcheck // test setup
+	_ = fileRepo.Create(ctx, &domain.File{ID: fileID, ContentType: "application/pdf"})                                          //nolint:errcheck // test setup
 
 	extractor := &mockDocExtractor{
 		extractTextResult: "John Doe, Software Engineer",
@@ -372,7 +374,7 @@ func TestDocumentProcessingWorker_ResumeOnly(t *testing.T) {
 	}
 
 	worker := job.NewDocumentProcessingWorker(
-		resumeRepo, newMockRefLetterRepository(), newMockFileRepository(),
+		resumeRepo, newMockRefLetterRepository(), fileRepo,
 		newMockProfileRepository(), newMockProfileSkillRepository(),
 		newMockDownloadStorage([]byte("pdf data")), extractor, testLogger(),
 	)
@@ -417,12 +419,14 @@ func TestDocumentProcessingWorker_ResumeOnly(t *testing.T) {
 func TestDocumentProcessingWorker_LetterOnly(t *testing.T) {
 	ctx := context.Background()
 	refLetterRepo := newMockRefLetterRepository()
+	fileRepo := newMockFileRepository()
 
 	letterID := uuid.New()
 	userID := uuid.New()
 	fileID := uuid.New()
 
 	_ = refLetterRepo.Create(ctx, &domain.ReferenceLetter{ID: letterID, UserID: userID, FileID: &fileID, Status: domain.ReferenceLetterStatusPending}) //nolint:errcheck // test setup
+	_ = fileRepo.Create(ctx, &domain.File{ID: fileID, ContentType: "application/pdf"})                                                                //nolint:errcheck // test setup
 
 	authorName := "Jane Smith"
 	authorTitle := "VP Engineering"
@@ -440,7 +444,7 @@ func TestDocumentProcessingWorker_LetterOnly(t *testing.T) {
 	}
 
 	worker := job.NewDocumentProcessingWorker(
-		newMockResumeRepository(), refLetterRepo, newMockFileRepository(),
+		newMockResumeRepository(), refLetterRepo, fileRepo,
 		newMockProfileRepository(), newMockProfileSkillRepository(),
 		newMockDownloadStorage([]byte("pdf data")), extractor, testLogger(),
 	)
@@ -482,6 +486,7 @@ func TestDocumentProcessingWorker_DualExtraction(t *testing.T) {
 	ctx := context.Background()
 	resumeRepo := newMockResumeRepository()
 	refLetterRepo := newMockRefLetterRepository()
+	fileRepo := newMockFileRepository()
 
 	resumeID := uuid.New()
 	letterID := uuid.New()
@@ -490,6 +495,7 @@ func TestDocumentProcessingWorker_DualExtraction(t *testing.T) {
 
 	_ = resumeRepo.Create(ctx, &domain.Resume{ID: resumeID, UserID: userID, FileID: fileID, Status: domain.ResumeStatusPending})           //nolint:errcheck // test setup
 	_ = refLetterRepo.Create(ctx, &domain.ReferenceLetter{ID: letterID, UserID: userID, FileID: &fileID, Status: domain.ReferenceLetterStatusPending}) //nolint:errcheck // test setup
+	_ = fileRepo.Create(ctx, &domain.File{ID: fileID, ContentType: "application/pdf"})                                                                //nolint:errcheck // test setup
 
 	extractor := &mockDocExtractor{
 		extractTextResult: "Combined document text",
@@ -498,7 +504,7 @@ func TestDocumentProcessingWorker_DualExtraction(t *testing.T) {
 	}
 
 	worker := job.NewDocumentProcessingWorker(
-		resumeRepo, refLetterRepo, newMockFileRepository(),
+		resumeRepo, refLetterRepo, fileRepo,
 		newMockProfileRepository(), newMockProfileSkillRepository(),
 		newMockDownloadStorage([]byte("pdf data")), extractor, testLogger(),
 	)
@@ -540,6 +546,7 @@ func TestDocumentProcessingWorker_TextExtractionFails_MarksBothFailed(t *testing
 	ctx := context.Background()
 	resumeRepo := newMockResumeRepository()
 	refLetterRepo := newMockRefLetterRepository()
+	fileRepo := newMockFileRepository()
 
 	resumeID := uuid.New()
 	letterID := uuid.New()
@@ -548,11 +555,12 @@ func TestDocumentProcessingWorker_TextExtractionFails_MarksBothFailed(t *testing
 
 	_ = resumeRepo.Create(ctx, &domain.Resume{ID: resumeID, UserID: userID, FileID: fileID, Status: domain.ResumeStatusPending})           //nolint:errcheck // test setup
 	_ = refLetterRepo.Create(ctx, &domain.ReferenceLetter{ID: letterID, UserID: userID, FileID: &fileID, Status: domain.ReferenceLetterStatusPending}) //nolint:errcheck // test setup
+	_ = fileRepo.Create(ctx, &domain.File{ID: fileID, ContentType: "application/pdf"})                                                                //nolint:errcheck // test setup
 
 	extractor := &mockDocExtractor{extractTextErr: errors.New("OCR failure")}
 
 	worker := job.NewDocumentProcessingWorker(
-		resumeRepo, refLetterRepo, newMockFileRepository(),
+		resumeRepo, refLetterRepo, fileRepo,
 		newMockProfileRepository(), newMockProfileSkillRepository(),
 		newMockDownloadStorage([]byte("corrupt data")), extractor, testLogger(),
 	)
@@ -594,6 +602,7 @@ func TestDocumentProcessingWorker_ResumeExtractFails_LetterSucceeds(t *testing.T
 	ctx := context.Background()
 	resumeRepo := newMockResumeRepository()
 	refLetterRepo := newMockRefLetterRepository()
+	fileRepo := newMockFileRepository()
 
 	resumeID := uuid.New()
 	letterID := uuid.New()
@@ -602,6 +611,7 @@ func TestDocumentProcessingWorker_ResumeExtractFails_LetterSucceeds(t *testing.T
 
 	_ = resumeRepo.Create(ctx, &domain.Resume{ID: resumeID, UserID: userID, FileID: fileID, Status: domain.ResumeStatusPending})           //nolint:errcheck // test setup
 	_ = refLetterRepo.Create(ctx, &domain.ReferenceLetter{ID: letterID, UserID: userID, FileID: &fileID, Status: domain.ReferenceLetterStatusPending}) //nolint:errcheck // test setup
+	_ = fileRepo.Create(ctx, &domain.File{ID: fileID, ContentType: "application/pdf"})                                                                //nolint:errcheck // test setup
 
 	extractor := &mockDocExtractor{
 		extractTextResult: "Some text",
@@ -610,7 +620,7 @@ func TestDocumentProcessingWorker_ResumeExtractFails_LetterSucceeds(t *testing.T
 	}
 
 	worker := job.NewDocumentProcessingWorker(
-		resumeRepo, refLetterRepo, newMockFileRepository(),
+		resumeRepo, refLetterRepo, fileRepo,
 		newMockProfileRepository(), newMockProfileSkillRepository(),
 		newMockDownloadStorage([]byte("pdf data")), extractor, testLogger(),
 	)
@@ -653,18 +663,20 @@ func TestDocumentProcessingWorker_ResumeExtractFails_LetterSucceeds(t *testing.T
 func TestDocumentProcessingWorker_DownloadFails(t *testing.T) {
 	ctx := context.Background()
 	resumeRepo := newMockResumeRepository()
+	fileRepo := newMockFileRepository()
 
 	resumeID := uuid.New()
 	userID := uuid.New()
 	fileID := uuid.New()
 
 	_ = resumeRepo.Create(ctx, &domain.Resume{ID: resumeID, UserID: userID, FileID: fileID, Status: domain.ResumeStatusPending}) //nolint:errcheck // test setup
+	_ = fileRepo.Create(ctx, &domain.File{ID: fileID, ContentType: "application/pdf"})                                          //nolint:errcheck // test setup
 
 	storage := newMockDownloadStorage(nil)
 	storage.dlErr = fmt.Errorf("network error")
 
 	worker := job.NewDocumentProcessingWorker(
-		resumeRepo, newMockRefLetterRepository(), newMockFileRepository(),
+		resumeRepo, newMockRefLetterRepository(), fileRepo,
 		newMockProfileRepository(), newMockProfileSkillRepository(),
 		storage, &mockDocExtractor{}, testLogger(),
 	)
@@ -724,6 +736,111 @@ func TestDocumentProcessingWorker_FallbackToFileContentType(t *testing.T) {
 			FileID:     fileID,
 			UserID:     userID,
 			ResumeID:   uuidPtr(resumeID),
+		},
+	}
+
+	err := worker.Work(ctx, riverJob)
+	if err != nil {
+		t.Fatalf("Work() error = %v", err)
+	}
+
+	updated, err := resumeRepo.GetByID(ctx, resumeID)
+	if err != nil {
+		t.Fatalf("GetByID failed: %v", err)
+	}
+	if updated.Status != domain.ResumeStatusCompleted {
+		t.Errorf("resume status = %s, want %s", updated.Status, domain.ResumeStatusCompleted)
+	}
+}
+
+func TestDocumentProcessingWorker_UsesStoredExtractedText(t *testing.T) {
+	ctx := context.Background()
+	resumeRepo := newMockResumeRepository()
+	fileRepo := newMockFileRepository()
+
+	resumeID := uuid.New()
+	userID := uuid.New()
+	fileID := uuid.New()
+
+	_ = resumeRepo.Create(ctx, &domain.Resume{ID: resumeID, UserID: userID, FileID: fileID, Status: domain.ResumeStatusPending}) //nolint:errcheck // test setup
+
+	// File record has extracted_text already set (from detection worker)
+	storedText := "John Doe, Software Engineer at Acme Corp"
+	_ = fileRepo.Create(ctx, &domain.File{ID: fileID, ContentType: "application/pdf", ExtractedText: &storedText}) //nolint:errcheck // test setup
+
+	// Extractor's ExtractText should NOT be called — use a sentinel error to detect it
+	extractor := &mockDocExtractor{
+		extractTextErr: errors.New("ExtractText should not be called when stored text exists"),
+		resumeData:     &domain.ResumeExtractedData{Name: "John Doe", Skills: []string{"Go"}},
+	}
+
+	// Storage download should NOT be called — use a sentinel error to detect it
+	storage := newMockDownloadStorage(nil)
+	storage.dlErr = errors.New("Download should not be called when stored text exists")
+
+	worker := job.NewDocumentProcessingWorker(
+		resumeRepo, newMockRefLetterRepository(), fileRepo,
+		newMockProfileRepository(), newMockProfileSkillRepository(),
+		storage, extractor, testLogger(),
+	)
+
+	riverJob := &river.Job[job.DocumentProcessingArgs]{
+		Args: job.DocumentProcessingArgs{
+			StorageKey:  "test/key.pdf",
+			FileID:      fileID,
+			ContentType: "application/pdf",
+			UserID:      userID,
+			ResumeID:    uuidPtr(resumeID),
+		},
+	}
+
+	err := worker.Work(ctx, riverJob)
+	if err != nil {
+		t.Fatalf("Work() error = %v", err)
+	}
+
+	// Verify resume was processed successfully using stored text
+	updated, err := resumeRepo.GetByID(ctx, resumeID)
+	if err != nil {
+		t.Fatalf("GetByID failed: %v", err)
+	}
+	if updated.Status != domain.ResumeStatusCompleted {
+		t.Errorf("resume status = %s, want %s", updated.Status, domain.ResumeStatusCompleted)
+	}
+}
+
+func TestDocumentProcessingWorker_FallsBackToExtractionWhenNoStoredText(t *testing.T) {
+	ctx := context.Background()
+	resumeRepo := newMockResumeRepository()
+	fileRepo := newMockFileRepository()
+
+	resumeID := uuid.New()
+	userID := uuid.New()
+	fileID := uuid.New()
+
+	_ = resumeRepo.Create(ctx, &domain.Resume{ID: resumeID, UserID: userID, FileID: fileID, Status: domain.ResumeStatusPending}) //nolint:errcheck // test setup
+
+	// File record has NO extracted_text (legacy flow)
+	_ = fileRepo.Create(ctx, &domain.File{ID: fileID, ContentType: "application/pdf"}) //nolint:errcheck // test setup
+
+	extractor := &mockDocExtractor{
+		extractTextResult: "Extracted from LLM",
+		resumeData:        &domain.ResumeExtractedData{Name: "Fallback User"},
+	}
+
+	worker := job.NewDocumentProcessingWorker(
+		resumeRepo, newMockRefLetterRepository(), fileRepo,
+		newMockProfileRepository(), newMockProfileSkillRepository(),
+		newMockDownloadStorage([]byte("pdf data")), extractor, testLogger(),
+	)
+
+	riverJob := &river.Job[job.DocumentProcessingArgs]{
+		Args: job.DocumentProcessingArgs{
+			StorageKey:  "test/key.pdf",
+			FileID:      fileID,
+			ContentType: "application/pdf",
+			UserID:      userID,
+			ResumeID:    uuidPtr(resumeID),
 		},
 	}
 

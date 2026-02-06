@@ -43,6 +43,7 @@ type File struct { //nolint:govet // Field ordering prioritizes readability over
 	SizeBytes       int64            `bun:"size_bytes,notnull"`
 	StorageKey      string           `bun:"storage_key,notnull,unique"`
 	ContentHash     *string          `bun:"content_hash"`
+	ExtractedText   *string          `bun:"extracted_text"`
 	DetectionStatus *DetectionStatus `bun:"detection_status"`
 	DetectionResult json.RawMessage  `bun:"detection_result,type:jsonb"`
 	DetectionError  *string          `bun:"detection_error"`

@@ -103,51 +103,63 @@ func (w *DocumentProcessingWorker) Work(ctx context.Context, job *river.Job[Docu
 		return err
 	}
 
-	// Get content type from file record if not provided in args
+	// Load file record to check for stored extracted text and resolve content type
+	file, err := w.fileRepo.GetByID(ctx, args.FileID)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to get file record: %v", err)
+		w.markAllFailed(ctx, args, errMsg)
+		return fmt.Errorf("failed to get file record: %w", err)
+	}
+	if file == nil {
+		errMsg := "file record not found" //nolint:goconst // same string in different workers, not worth extracting
+		w.markAllFailed(ctx, args, errMsg)
+		return fmt.Errorf("file record not found: %s", args.FileID) //nolint:goconst // see above
+	}
+
 	contentType := args.ContentType
 	if contentType == "" {
-		file, err := w.fileRepo.GetByID(ctx, args.FileID)
-		if err != nil {
-			errMsg := fmt.Sprintf("failed to get file record: %v", err)
-			w.markAllFailed(ctx, args, errMsg)
-			return fmt.Errorf("failed to get file record: %w", err)
-		}
-		if file == nil {
-			errMsg := "file record not found" //nolint:goconst // same string in different workers, not worth extracting
-			w.markAllFailed(ctx, args, errMsg)
-			return fmt.Errorf("file record not found: %s", args.FileID) //nolint:goconst // see above
-		}
 		contentType = file.ContentType
 	}
 
-	// Download file from storage (once for all extractors)
-	reader, err := w.storage.Download(ctx, args.StorageKey)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to download file: %v", err)
-		w.log.Error("Storage download failed",
+	// Use stored extracted text if available (set by detection worker), otherwise download and extract
+	var text string
+	if file.ExtractedText != nil && *file.ExtractedText != "" {
+		text = *file.ExtractedText
+		w.log.Info("Using stored extracted text, skipping download and LLM extraction",
 			logger.Feature("jobs"),
-			logger.String("storage_key", args.StorageKey),
-			logger.Err(err),
+			logger.String("file_id", args.FileID.String()),
 		)
-		w.markAllFailed(ctx, args, errMsg)
-		return fmt.Errorf("failed to download file: %w", err)
-	}
-	defer reader.Close() //nolint:errcheck // Best effort cleanup
+	} else {
+		// Download file from storage (once for all extractors)
+		reader, dlErr := w.storage.Download(ctx, args.StorageKey)
+		if dlErr != nil {
+			errMsg := fmt.Sprintf("failed to download file: %v", dlErr)
+			w.log.Error("Storage download failed",
+				logger.Feature("jobs"),
+				logger.String("storage_key", args.StorageKey),
+				logger.Err(dlErr),
+			)
+			w.markAllFailed(ctx, args, errMsg)
+			return fmt.Errorf("failed to download file: %w", dlErr)
+		}
+		defer reader.Close() //nolint:errcheck // Best effort cleanup
 
-	// Read file data
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to read file data: %v", err)
-		w.markAllFailed(ctx, args, errMsg)
-		return fmt.Errorf("failed to read file data: %w", err)
-	}
+		// Read file data
+		data, readErr := io.ReadAll(reader)
+		if readErr != nil {
+			errMsg := fmt.Sprintf("failed to read file data: %v", readErr)
+			w.markAllFailed(ctx, args, errMsg)
+			return fmt.Errorf("failed to read file data: %w", readErr)
+		}
 
-	// Extract text once for all extractors
-	text, err := w.extractText(ctx, data, contentType)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to extract text: %v", err)
-		w.markAllFailed(ctx, args, errMsg)
-		return fmt.Errorf("failed to extract text: %w", err)
+		// Extract text via LLM
+		extracted, extractErr := w.extractText(ctx, data, contentType)
+		if extractErr != nil {
+			errMsg := fmt.Sprintf("failed to extract text: %v", extractErr)
+			w.markAllFailed(ctx, args, errMsg)
+			return fmt.Errorf("failed to extract text: %w", extractErr)
+		}
+		text = extracted
 	}
 
 	// Run extractors sequentially — resume first so we can pass its skills to the letter extractor
