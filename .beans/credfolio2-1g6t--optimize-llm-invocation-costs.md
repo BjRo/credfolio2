@@ -5,10 +5,8 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-02-06T12:05:19Z
-updated_at: 2026-02-06T12:05:22Z
+updated_at: 2026-02-06T12:34:09Z
 parent: credfolio2-3ram
-blocking:
-    - credfolio2-5j3j
 ---
 
 After completing the pipeline speed optimizations (credfolio2-5j3j), review and optimize the cost of LLM invocations across the document processing pipeline.

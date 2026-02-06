@@ -72,7 +72,7 @@ func (w *DocumentDetectionWorker) Work(ctx context.Context, job *river.Job[Docum
 	)
 
 	// Mark as processing
-	if err := w.updateDetectionStatus(ctx, args.FileID, domain.DetectionStatusProcessing, nil, nil); err != nil {
+	if err := w.updateDetectionStatus(ctx, args.FileID, domain.DetectionStatusProcessing, nil, nil, nil); err != nil {
 		return fmt.Errorf("failed to mark as processing: %w", err)
 	}
 
@@ -116,8 +116,8 @@ func (w *DocumentDetectionWorker) Work(ctx context.Context, job *river.Job[Docum
 		return fmt.Errorf("failed to marshal detection result: %w", err)
 	}
 
-	// Save completed result
-	if err := w.updateDetectionStatus(ctx, args.FileID, domain.DetectionStatusCompleted, resultJSON, nil); err != nil {
+	// Save completed result with extracted text for reuse by processing worker
+	if err := w.updateDetectionStatus(ctx, args.FileID, domain.DetectionStatusCompleted, resultJSON, nil, &text); err != nil {
 		return fmt.Errorf("failed to save detection result: %w", err)
 	}
 
@@ -129,7 +129,9 @@ func (w *DocumentDetectionWorker) Work(ctx context.Context, job *river.Job[Docum
 }
 
 // updateDetectionStatus updates the detection fields on the file record.
-func (w *DocumentDetectionWorker) updateDetectionStatus(ctx context.Context, fileID uuid.UUID, status domain.DetectionStatus, result json.RawMessage, errMsg *string) error {
+// When extractedText is non-nil, the text is stored for reuse by the processing worker,
+// eliminating a redundant LLM text extraction call.
+func (w *DocumentDetectionWorker) updateDetectionStatus(ctx context.Context, fileID uuid.UUID, status domain.DetectionStatus, result json.RawMessage, errMsg *string, extractedText *string) error {
 	file, err := w.fileRepo.GetByID(ctx, fileID)
 	if err != nil {
 		return fmt.Errorf("failed to get file: %w", err)
@@ -141,6 +143,7 @@ func (w *DocumentDetectionWorker) updateDetectionStatus(ctx context.Context, fil
 	file.DetectionStatus = &status
 	file.DetectionResult = result
 	file.DetectionError = errMsg
+	file.ExtractedText = extractedText
 
 	return w.fileRepo.Update(ctx, file)
 }
@@ -153,7 +156,7 @@ func (w *DocumentDetectionWorker) markFailed(ctx context.Context, fileID uuid.UU
 		logger.String("error", errMsg),
 	)
 
-	if updateErr := w.updateDetectionStatus(ctx, fileID, domain.DetectionStatusFailed, nil, &errMsg); updateErr != nil {
+	if updateErr := w.updateDetectionStatus(ctx, fileID, domain.DetectionStatusFailed, nil, &errMsg, nil); updateErr != nil {
 		w.log.Error("Failed to update detection status",
 			logger.Feature("jobs"),
 			logger.Err(updateErr),
