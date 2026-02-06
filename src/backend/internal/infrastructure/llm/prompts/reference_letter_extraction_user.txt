@@ -1,15 +1,22 @@
-Extract the structured credibility data from this reference letter.
+<task>Extract the structured credibility data from this reference letter.</task>
 
 {{if .ProfileSkills}}
-## Existing Profile Skills
+<context>
+<existing-profile-skills>
 The candidate already has these skills on their profile. For SKILL MENTIONS, only include skills that match these existing skills. Any other skills mentioned should go in DISCOVERED SKILLS.
 
 {{range .ProfileSkills}}- {{.Name}} ({{.Category}})
 {{end}}
+</existing-profile-skills>
+</context>
 {{else}}
-## Existing Profile Skills
+<context>
+<existing-profile-skills>
 No existing skills on profile. All skills mentioned should go in DISCOVERED SKILLS.
+</existing-profile-skills>
+</context>
 {{end}}
 
-## Reference Letter Text
+<input>
 {{.Text}}
+</input>
