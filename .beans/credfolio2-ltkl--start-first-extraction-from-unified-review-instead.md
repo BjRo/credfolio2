@@ -1,38 +1,47 @@
 ---
 # credfolio2-ltkl
 title: Start first extraction from unified review instead of resume review
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-02-06T12:02:52Z
-updated_at: 2026-02-06T12:02:52Z
+updated_at: 2026-02-06T12:17:50Z
 parent: credfolio2-dwid
 ---
 
-Change the reference letter extraction flow so that the first extraction starts from the unified review UI (ExtractionReview) rather than the resume-specific review flow.
+Change the first-time document upload to use the unified upload flow (`UploadFlow` with `ExtractionReview`) instead of the resume-only flow (`ResumeUpload`) that skips review entirely.
 
 ### Current behavior
-When a reference letter is uploaded from the profile page via `ReferenceLetterUploadModal`:
-1. Modal uploads file → backend extracts data → returns reference letter ID
-2. Redirects to `/profile/{id}/reference-letters/{letterID}/preview` (ValidationPreviewPage)
-3. ValidationPreviewPage shows corroborations, testimonials, discovered skills
-4. User applies validations via `ApplyReferenceLetterValidations` mutation
+When a user first uploads a document via `/upload-resume`:
+1. `ResumeUpload` component calls `uploadResume` mutation
+2. Polls backend for extraction completion
+3. Auto-redirects to profile page — **no review step**
+4. User never sees or approves the extracted data before it's applied
 
 ### Desired behavior
-The first extraction for a reference letter should go through the unified review flow (`ExtractionReview` component in `src/frontend/src/components/upload/ExtractionReview.tsx`) instead of the separate resume-specific `ValidationPreviewPage`. This consolidates the review experience so all document types use the same extraction review UI.
+The first-time extraction should go through the unified upload flow at `/upload` which uses `UploadFlow`:
+1. Upload document → `uploadForDetection` mutation
+2. Backend detects content type (career info, testimonial, or both)
+3. User reviews detection results and selects what to extract
+4. Extraction runs via `processDocument` mutation
+5. User reviews extracted data in `ExtractionReview` before importing
+6. User explicitly imports results via `importDocumentResults`
+
+This gives users the opportunity to review and confirm extraction results before they're applied to their profile.
 
 ### Key files
+- `src/frontend/src/app/upload-resume/page.tsx` — current first-time upload entry point (to be changed)
+- `src/frontend/src/components/ResumeUpload.tsx` — current resume-only flow (no review)
+- `src/frontend/src/app/upload/page.tsx` — unified upload page (target flow)
+- `src/frontend/src/components/upload/UploadFlow.tsx` — unified flow orchestrator
 - `src/frontend/src/components/upload/ExtractionReview.tsx` — unified review UI
-- `src/frontend/src/components/profile/ReferenceLetterUploadModal.tsx` — current modal flow
-- `src/frontend/src/app/profile/[id]/reference-letters/[referenceLetterID]/preview/page.tsx` — current reference letter preview
-- `src/frontend/src/app/profile/[id]/page.tsx` — profile page handler for upload success
 
 ## Checklist
-- [ ] Route reference letter uploads through the unified review flow
-- [ ] Ensure ExtractionReview handles reference-letter-only data (no career info section)
-- [ ] Update redirect after reference letter upload to point to unified review
-- [ ] Verify import flow works correctly for reference letters through unified review
-- [ ] Consider whether the standalone ValidationPreviewPage is still needed or can be removed
+- [ ] Make `/upload-resume` use the unified `UploadFlow` instead of `ResumeUpload`
+- [ ] Verify the unified flow works end-to-end for resume-only documents
+- [ ] Determine whether `/upload-resume` and `/upload` should be consolidated into a single route
+- [ ] Determine whether `ResumeUpload` component can be removed or if it's still needed elsewhere
+- [ ] Verify import redirects correctly to the profile page after review
 
 ## Definition of Done
 - [ ] Tests written (TDD: write tests before implementation)
