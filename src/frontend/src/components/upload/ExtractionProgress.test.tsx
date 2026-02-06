@@ -293,4 +293,26 @@ describe("ExtractionProgress", () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
+
+  it("does not call processDocument mutation again if effect re-fires", async () => {
+    // Provide two responses in case the mutation fires twice
+    const onError1 = vi.fn();
+    const onError2 = vi.fn();
+    mockFetchSequence(PROCESS_RESULT, PROCESS_RESULT);
+
+    const { rerender } = render(<ExtractionProgress {...makeProps({ onError: onError1 })} />);
+    await act(async () => {});
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    // Re-render with a new onError reference causes startProcessing to get
+    // a new reference, which re-fires the mount effect. The isStartedRef
+    // guard should prevent a second mutation call.
+    await act(async () => {
+      rerender(<ExtractionProgress {...makeProps({ onError: onError2 })} />);
+    });
+    await act(async () => {});
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
 });

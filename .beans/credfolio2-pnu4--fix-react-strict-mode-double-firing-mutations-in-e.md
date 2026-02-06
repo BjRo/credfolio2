@@ -1,11 +1,11 @@
 ---
 # credfolio2-pnu4
 title: Fix React Strict Mode double-firing mutations in ExtractionProgress
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-05T23:08:28Z
-updated_at: 2026-02-06T07:29:27Z
+updated_at: 2026-02-06T08:07:45Z
 parent: credfolio2-3ram
 ---
 
@@ -52,13 +52,13 @@ useEffect(() => {
 
 ## Checklist
 
-- [ ] Add `isStartedRef` guard to `ExtractionProgress.tsx` `startProcessing` effect
-- [ ] Audit `DetectionProgress.tsx` for same pattern
-- [ ] Add test verifying mutation is only called once
+- [x] Add `isStartedRef` guard to `ExtractionProgress.tsx` `startProcessing` effect
+- [x] Audit `DetectionProgress.tsx` for same pattern
+- [x] Add test verifying mutation is only called once
 
 ### Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review

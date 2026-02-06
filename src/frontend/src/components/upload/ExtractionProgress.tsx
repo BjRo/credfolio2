@@ -72,6 +72,7 @@ export function ExtractionProgress({
   const [processIds, setProcessIds] = useState<ProcessDocumentIds | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
+  const isStartedRef = useRef(false);
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -183,7 +184,10 @@ export function ExtractionProgress({
   // Mount trigger + cleanup
   useEffect(() => {
     mountedRef.current = true;
-    startProcessing();
+    if (!isStartedRef.current) {
+      isStartedRef.current = true;
+      startProcessing();
+    }
 
     return () => {
       mountedRef.current = false;
