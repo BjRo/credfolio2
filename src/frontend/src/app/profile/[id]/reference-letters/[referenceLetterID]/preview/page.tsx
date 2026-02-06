@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { Button } from "@/components/ui/button";
 import {
@@ -154,7 +154,7 @@ export default function ValidationPreviewPage() {
   }, [extractedData?.discoveredSkills]);
 
   // Initialize selections when data loads (select all corroborations and testimonials by default)
-  useMemo(() => {
+  useEffect(() => {
     if (isInitialized || !extractedData || !profile) return;
 
     // Pre-select all skill corroborations

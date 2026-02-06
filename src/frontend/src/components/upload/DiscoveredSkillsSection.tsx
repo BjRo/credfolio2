@@ -24,6 +24,13 @@ const CATEGORY_ORDER: SkillCategory[] = [
   SkillCategory.Domain,
 ];
 
+const VALID_CATEGORIES = new Set<string>(CATEGORY_ORDER);
+
+function normalizeCategory(category: string): SkillCategory {
+  if (VALID_CATEGORIES.has(category)) return category as SkillCategory;
+  return SkillCategory.Soft;
+}
+
 interface DiscoveredSkillsSectionProps {
   discoveredSkills: DiscoveredSkillItem[];
   selected: Map<string, { selected: boolean; category: SkillCategory }>;
@@ -50,10 +57,12 @@ export function DiscoveredSkillsSection({
   const selectedCount = [...selected.values()].filter((v) => v.selected).length;
 
   // Group skills by their current category (may be overridden by user)
+  // normalizeCategory handles empty/unknown categories from pre-existing extractions
   const grouped = useMemo(() => {
     const groups = new Map<SkillCategory, DiscoveredSkillItem[]>();
     for (const skill of discoveredSkills) {
-      const category = selected.get(skill.name)?.category ?? skill.category;
+      const raw = selected.get(skill.name)?.category ?? skill.category;
+      const category = normalizeCategory(raw);
       const group = groups.get(category) ?? [];
       group.push(skill);
       groups.set(category, group);
@@ -93,7 +102,7 @@ export function DiscoveredSkillsSection({
             {grouped.get(cat)?.map((skill) => {
               const entry = selected.get(skill.name);
               const isSelected = entry?.selected ?? false;
-              const currentCategory = entry?.category ?? skill.category;
+              const currentCategory = normalizeCategory(entry?.category ?? skill.category);
               return (
                 <CheckboxCard
                   key={skill.name}
