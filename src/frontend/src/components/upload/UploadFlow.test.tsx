@@ -295,7 +295,7 @@ describe("UploadFlow", () => {
       expect(importStep).toHaveAttribute("aria-current", "step");
     });
 
-    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/profile/"));
+    expect(mockPush).toHaveBeenCalledWith("/profile/profile-1");
   });
 
   it("returns to review-detection when back is clicked from review-results", async () => {

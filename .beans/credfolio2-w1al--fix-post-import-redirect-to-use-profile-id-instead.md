@@ -1,11 +1,11 @@
 ---
 # credfolio2-w1al
 title: Fix post-import redirect to use profile ID instead of user ID
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-02-05T23:16:29Z
-updated_at: 2026-02-06T07:29:15Z
+updated_at: 2026-02-06T07:59:13Z
 parent: credfolio2-3ram
 ---
 
@@ -32,11 +32,11 @@ const handleImportComplete = (profileId: string) => {
 
 ## Checklist
 
-- [ ] Use `profileId` parameter in `handleImportComplete` instead of `DEMO_USER_ID`
-- [ ] Update test assertion to verify correct profile ID in redirect URL
+- [x] Use `profileId` parameter in `handleImportComplete` instead of `DEMO_USER_ID`
+- [x] Update test assertion to verify correct profile ID in redirect URL
 
 ### Definition of Done
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review

@@ -67,9 +67,9 @@ export function UploadFlow() {
     // Error is displayed by ExtractionProgress component
   };
 
-  const handleImportComplete = (_profileId: string) => {
+  const handleImportComplete = (profileId: string) => {
     setCurrentStep("import");
-    router.push(`/profile/${DEMO_USER_ID}`);
+    router.push(`/profile/${profileId}`);
   };
 
   const handleBackFromReview = () => {
