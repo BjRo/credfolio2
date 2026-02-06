@@ -1525,3 +1525,81 @@ func TestCrossReferenceValidationsCaseInsensitive(t *testing.T) {
 		t.Errorf("expected 1 experience validation (case-insensitive match), got %d", result.ExperienceValidations)
 	}
 }
+
+func TestCrossReferenceValidationsMatchesDiscoveredSkills(t *testing.T) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	skillRepo := newMockProfileSkillRepository()
+	skillValRepo := newMockSkillValidationRepository()
+	expValRepo := newMockExpValidationRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+
+	profileID := uuid.New()
+
+	// Pre-populate profile skills
+	mentoring := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "Mentoring", NormalizedName: "mentoring"}
+	techDoc := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "Technical Documentation", NormalizedName: "technical documentation"}
+	skillRepo.skills[mentoring.ID] = mentoring
+	skillRepo.skills[techDoc.ID] = techDoc
+
+	refLetterID := uuid.New()
+	// SkillMentions is empty; skills are in DiscoveredSkills (as the LLM often produces)
+	letterData := &domain.ExtractedLetterData{
+		SkillMentions: []domain.ExtractedSkillMention{},
+		DiscoveredSkills: []domain.DiscoveredSkill{
+			{Skill: "mentoring", Quote: "excellent mentor"},
+			{Skill: "Technical Documentation", Quote: "introduced Diátaxis framework"},
+			{Skill: "cloud cost optimization", Quote: "reduced AWS costs"}, // no match
+		},
+	}
+
+	result, err := svc.CrossReferenceValidations(context.Background(), profileID, refLetterID, letterData)
+	if err != nil {
+		t.Fatalf("CrossReferenceValidations returned error: %v", err)
+	}
+
+	if result.SkillValidations != 2 {
+		t.Errorf("expected 2 skill validations from discovered skills, got %d", result.SkillValidations)
+	}
+	if len(skillValRepo.validations) != 2 {
+		t.Errorf("expected 2 skill validation records, got %d", len(skillValRepo.validations))
+	}
+}
+
+func TestCrossReferenceValidationsDeduplicatesAcrossSources(t *testing.T) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	skillRepo := newMockProfileSkillRepository()
+	skillValRepo := newMockSkillValidationRepository()
+	expValRepo := newMockExpValidationRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+
+	profileID := uuid.New()
+
+	goSkill := &domain.ProfileSkill{ID: uuid.New(), ProfileID: profileID, Name: "Go", NormalizedName: "go"}
+	skillRepo.skills[goSkill.ID] = goSkill
+
+	refLetterID := uuid.New()
+	// Same skill appears in both SkillMentions and DiscoveredSkills
+	letterData := &domain.ExtractedLetterData{
+		SkillMentions: []domain.ExtractedSkillMention{
+			{Skill: "Go", Quote: "Expert Go developer"},
+		},
+		DiscoveredSkills: []domain.DiscoveredSkill{
+			{Skill: "Go", Quote: "Strong Go skills"},
+		},
+	}
+
+	result, err := svc.CrossReferenceValidations(context.Background(), profileID, refLetterID, letterData)
+	if err != nil {
+		t.Fatalf("CrossReferenceValidations returned error: %v", err)
+	}
+
+	// Should only create 1 validation, not 2 (deduplication)
+	if result.SkillValidations != 1 {
+		t.Errorf("expected 1 skill validation (deduplicated), got %d", result.SkillValidations)
+	}
+	if len(skillValRepo.validations) != 1 {
+		t.Errorf("expected 1 skill validation record, got %d", len(skillValRepo.validations))
+	}
+}
