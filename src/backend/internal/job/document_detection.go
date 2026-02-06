@@ -143,7 +143,9 @@ func (w *DocumentDetectionWorker) updateDetectionStatus(ctx context.Context, fil
 	file.DetectionStatus = &status
 	file.DetectionResult = result
 	file.DetectionError = errMsg
-	file.ExtractedText = extractedText
+	if extractedText != nil {
+		file.ExtractedText = extractedText
+	}
 
 	return w.fileRepo.Update(ctx, file)
 }
