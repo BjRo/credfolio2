@@ -1,10 +1,11 @@
 ---
 # credfolio2-3hz3
 title: Add code review agent skills and integrate into dev-workflow
-status: in-progress
+status: completed
 type: feature
+priority: normal
 created_at: 2026-02-06T08:24:44Z
-updated_at: 2026-02-06T08:24:44Z
+updated_at: 2026-02-06T09:01:39Z
 ---
 
 ## Summary
