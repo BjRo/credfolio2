@@ -5,7 +5,12 @@ import { useMemo } from "react";
 import { CheckboxCard } from "@/components/ui/checkbox-card";
 import { SelectionControls } from "@/components/ui/selection-controls";
 import { SkillCategory } from "@/graphql/generated/graphql";
-import type { DiscoveredSkill } from "./page";
+
+export interface DiscoveredSkillItem {
+  name: string;
+  quote: string;
+  category: SkillCategory;
+}
 
 const CATEGORY_LABELS: Record<SkillCategory, string> = {
   [SkillCategory.Technical]: "Technical",
@@ -20,13 +25,15 @@ const CATEGORY_ORDER: SkillCategory[] = [
 ];
 
 interface DiscoveredSkillsSectionProps {
-  discoveredSkills: DiscoveredSkill[];
+  discoveredSkills: DiscoveredSkillItem[];
   selected: Map<string, { selected: boolean; category: SkillCategory }>;
   onToggle: (skillName: string) => void;
   onCategoryChange: (skillName: string, category: SkillCategory) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
   disabled?: boolean;
+  description?: string;
+  unselectedClassName?: string;
 }
 
 export function DiscoveredSkillsSection({
@@ -37,12 +44,14 @@ export function DiscoveredSkillsSection({
   onSelectAll,
   onDeselectAll,
   disabled = false,
+  description = "These skills were mentioned in the reference letter but aren\u2019t in your profile yet. Select any you want to add.",
+  unselectedClassName,
 }: DiscoveredSkillsSectionProps) {
   const selectedCount = [...selected.values()].filter((v) => v.selected).length;
 
   // Group skills by their current category (may be overridden by user)
   const grouped = useMemo(() => {
-    const groups = new Map<SkillCategory, DiscoveredSkill[]>();
+    const groups = new Map<SkillCategory, DiscoveredSkillItem[]>();
     for (const skill of discoveredSkills) {
       const category = selected.get(skill.name)?.category ?? skill.category;
       const group = groups.get(category) ?? [];
@@ -68,10 +77,7 @@ export function DiscoveredSkillsSection({
         />
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        These skills were mentioned in the reference letter but aren&apos;t in your profile yet.
-        Select any you want to add.
-      </p>
+      <p className="text-sm text-muted-foreground">{description}</p>
 
       {CATEGORY_ORDER.filter((cat) => grouped.has(cat)).map((cat) => (
         <div key={cat} className="space-y-3">
@@ -96,7 +102,7 @@ export function DiscoveredSkillsSection({
                   disabled={disabled}
                   selectedClassName="bg-warning/5 border-warning/50"
                   borderStyle="border-2 border-dashed"
-                  unselectedClassName="bg-card border-warning/20 hover:bg-warning/5"
+                  unselectedClassName={unselectedClassName}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">

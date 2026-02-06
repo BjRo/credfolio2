@@ -1,3 +1,5 @@
+import type { SkillCategory } from "@/graphql/generated/graphql";
+
 export interface DocumentDetectionResult {
   hasCareerInfo: boolean;
   hasTestimonial: boolean;
@@ -124,7 +126,7 @@ export interface ReferenceLetterExtractionData {
       skill: string;
       quote: string;
       context: string | null;
-      category: "TECHNICAL" | "SOFT" | "DOMAIN";
+      category: SkillCategory;
     }>;
     metadata: {
       extractedAt: string;

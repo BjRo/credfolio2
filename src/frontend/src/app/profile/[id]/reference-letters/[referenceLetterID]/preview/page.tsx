@@ -5,6 +5,10 @@ import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { Button } from "@/components/ui/button";
 import {
+  type DiscoveredSkillItem,
+  DiscoveredSkillsSection,
+} from "@/components/upload/DiscoveredSkillsSection";
+import {
   ApplyReferenceLetterValidationsDocument,
   GetProfileByIdDocument,
   GetReferenceLetterDocument,
@@ -12,7 +16,6 @@ import {
   type SkillCategory,
 } from "@/graphql/generated/graphql";
 import { CorroborationsSection } from "./CorroborationsSection";
-import { DiscoveredSkillsSection } from "./DiscoveredSkillsSection";
 import { TestimonialsSection } from "./TestimonialsSection";
 import { ValidationPreviewSkeleton } from "./ValidationPreviewSkeleton";
 
@@ -35,11 +38,7 @@ export interface TestimonialItem {
   skillsMentioned: string[];
 }
 
-export interface DiscoveredSkill {
-  name: string;
-  quote: string;
-  category: SkillCategory;
-}
+export type DiscoveredSkill = DiscoveredSkillItem;
 
 export default function ValidationPreviewPage() {
   const params = useParams();
@@ -549,6 +548,7 @@ export default function ValidationPreviewPage() {
             onSelectAll={handleSelectAllDiscoveredSkills}
             onDeselectAll={handleDeselectAllDiscoveredSkills}
             disabled={isAlreadyApplied}
+            unselectedClassName="bg-card border-warning/20 hover:bg-warning/5"
           />
         )}
 

@@ -1,13 +1,15 @@
 "use client";
 
-import { Briefcase, GraduationCap, Quote, Sparkles, Wrench } from "lucide-react";
+import { Briefcase, GraduationCap, Quote, Wrench } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckboxCard } from "@/components/ui/checkbox-card";
 import { SelectionControls } from "@/components/ui/selection-controls";
+import type { SkillCategory } from "@/graphql/generated/graphql";
 import { GRAPHQL_ENDPOINT } from "@/lib/urql/client";
+import { DiscoveredSkillsSection } from "./DiscoveredSkillsSection";
 import { FeedbackForm } from "./FeedbackForm";
 import type {
   ExtractionResults,
@@ -73,9 +75,9 @@ export function ExtractionReview({
     () => new Set(testimonials.map((_, i) => i))
   );
   const [selectedDiscoveredSkills, setSelectedDiscoveredSkills] = useState<
-    Map<string, { selected: boolean; category: "TECHNICAL" | "SOFT" | "DOMAIN" }>
+    Map<string, { selected: boolean; category: SkillCategory }>
   >(() => {
-    const map = new Map<string, { selected: boolean; category: "TECHNICAL" | "SOFT" | "DOMAIN" }>();
+    const map = new Map<string, { selected: boolean; category: SkillCategory }>();
     for (const ds of discoveredSkills) {
       map.set(ds.skill, { selected: false, category: ds.category });
     }
@@ -130,19 +132,16 @@ export function ExtractionReview({
     });
   }, []);
 
-  const changeDiscoveredSkillCategory = useCallback(
-    (name: string, category: "TECHNICAL" | "SOFT" | "DOMAIN") => {
-      setSelectedDiscoveredSkills((prev) => {
-        const next = new Map(prev);
-        const entry = next.get(name);
-        if (entry) {
-          next.set(name, { ...entry, category });
-        }
-        return next;
-      });
-    },
-    []
-  );
+  const changeDiscoveredSkillCategory = useCallback((name: string, category: SkillCategory) => {
+    setSelectedDiscoveredSkills((prev) => {
+      const next = new Map(prev);
+      const entry = next.get(name);
+      if (entry) {
+        next.set(name, { ...entry, category });
+      }
+      return next;
+    });
+  }, []);
 
   // Count selected discovered skills
   const selectedDiscoveredCount = useMemo(
@@ -285,7 +284,11 @@ export function ExtractionReview({
 
       {discoveredSkills.length > 0 && (
         <DiscoveredSkillsSection
-          discoveredSkills={discoveredSkills}
+          discoveredSkills={discoveredSkills.map((ds) => ({
+            name: ds.skill,
+            quote: ds.quote,
+            category: ds.category,
+          }))}
           selected={selectedDiscoveredSkills}
           onToggle={toggleDiscoveredSkill}
           onCategoryChange={changeDiscoveredSkillCategory}
@@ -308,6 +311,7 @@ export function ExtractionReview({
             })
           }
           disabled={isImporting}
+          description="These skills were mentioned in the reference letter but aren&apos;t in the resume. Select any you want to add."
         />
       )}
 
@@ -693,133 +697,6 @@ function TestimonialsSection({
           </CheckboxCard>
         ))}
       </div>
-    </section>
-  );
-}
-
-type SkillCategoryValue = "TECHNICAL" | "SOFT" | "DOMAIN";
-
-const CATEGORY_LABELS: Record<SkillCategoryValue, string> = {
-  TECHNICAL: "Technical",
-  SOFT: "Soft Skills",
-  DOMAIN: "Domain Knowledge",
-};
-
-const CATEGORY_ORDER: SkillCategoryValue[] = ["TECHNICAL", "SOFT", "DOMAIN"];
-
-function DiscoveredSkillsSection({
-  discoveredSkills,
-  selected,
-  onToggle,
-  onCategoryChange,
-  onSelectAll,
-  onDeselectAll,
-  disabled,
-}: {
-  discoveredSkills: Array<{
-    skill: string;
-    quote: string;
-    context: string | null;
-    category: SkillCategoryValue;
-  }>;
-  selected: Map<string, { selected: boolean; category: SkillCategoryValue }>;
-  onToggle: (name: string) => void;
-  onCategoryChange: (name: string, category: SkillCategoryValue) => void;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
-  disabled: boolean;
-}) {
-  const selectedCount = [...selected.values()].filter((v) => v.selected).length;
-
-  // Group skills by their current category (from selection state, which may be overridden)
-  const grouped = useMemo(() => {
-    const groups = new Map<SkillCategoryValue, typeof discoveredSkills>();
-    for (const skill of discoveredSkills) {
-      const category = selected.get(skill.skill)?.category ?? skill.category;
-      const group = groups.get(category) ?? [];
-      group.push(skill);
-      groups.set(category, group);
-    }
-    return groups;
-  }, [discoveredSkills, selected]);
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-warning" />
-          <h2 className="text-xl font-semibold text-foreground">Skills Your Reference Noticed</h2>
-        </div>
-        <SelectionControls
-          selectedCount={selectedCount}
-          totalCount={discoveredSkills.length}
-          onSelectAll={onSelectAll}
-          onDeselectAll={onDeselectAll}
-          disabled={disabled}
-        />
-      </div>
-      <p className="text-sm text-muted-foreground">
-        These skills were mentioned in the reference letter but aren&apos;t in the resume. Select
-        any you want to add.
-      </p>
-      {CATEGORY_ORDER.filter((cat) => grouped.has(cat)).map((cat) => (
-        <div key={cat} className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            {CATEGORY_LABELS[cat]}
-          </h3>
-          {/* biome-ignore lint/a11y/useSemanticElements: Using role="group" for checkbox group semantics */}
-          <div
-            className="space-y-3"
-            role="group"
-            aria-label={`${CATEGORY_LABELS[cat]} discovered skills`}
-          >
-            {grouped.get(cat)?.map((skill) => {
-              const entry = selected.get(skill.skill);
-              const isSelected = entry?.selected ?? false;
-              const currentCategory = entry?.category ?? skill.category;
-              return (
-                <CheckboxCard
-                  key={skill.skill}
-                  checked={isSelected}
-                  onToggle={() => onToggle(skill.skill)}
-                  disabled={disabled}
-                  selectedClassName="bg-warning/5 border-warning/50"
-                  borderStyle="border-2 border-dashed"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground">{skill.skill}</p>
-                      {skill.quote && (
-                        <blockquote className="mt-2 pl-3 border-l-2 border-warning/30 text-sm text-muted-foreground italic">
-                          &ldquo;{skill.quote}&rdquo;
-                        </blockquote>
-                      )}
-                    </div>
-                    <select
-                      value={currentCategory}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        onCategoryChange(skill.skill, e.target.value as SkillCategoryValue);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => e.stopPropagation()}
-                      disabled={disabled}
-                      className="text-xs px-2 py-1 rounded border border-border bg-background text-foreground shrink-0"
-                      aria-label={`Category for ${skill.skill}`}
-                    >
-                      {CATEGORY_ORDER.map((c) => (
-                        <option key={c} value={c}>
-                          {CATEGORY_LABELS[c]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </CheckboxCard>
-              );
-            })}
-          </div>
-        </div>
-      ))}
     </section>
   );
 }
