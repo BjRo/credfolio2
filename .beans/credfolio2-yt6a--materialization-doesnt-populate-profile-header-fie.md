@@ -1,10 +1,11 @@
 ---
 # credfolio2-yt6a
 title: Materialization doesn't populate profile header fields
-status: in-progress
+status: completed
 type: bug
+priority: normal
 created_at: 2026-02-06T09:40:33Z
-updated_at: 2026-02-06T09:40:33Z
+updated_at: 2026-02-06T09:43:43Z
 ---
 
 ## Problem
