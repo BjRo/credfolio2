@@ -226,9 +226,10 @@ type ComplexityRoot struct {
 	}
 
 	ImportedCount struct {
-		Educations  func(childComplexity int) int
-		Experiences func(childComplexity int) int
-		Skills      func(childComplexity int) int
+		Educations   func(childComplexity int) int
+		Experiences  func(childComplexity int) int
+		Skills       func(childComplexity int) int
+		Testimonials func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -1135,6 +1136,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ImportedCount.Skills(childComplexity), true
+	case "ImportedCount.testimonials":
+		if e.complexity.ImportedCount.Testimonials == nil {
+			break
+		}
+
+		return e.complexity.ImportedCount.Testimonials(childComplexity), true
 
 	case "Mutation.applyReferenceLetterValidations":
 		if e.complexity.Mutation.ApplyReferenceLetterValidations == nil {
@@ -3443,6 +3450,8 @@ type ImportedCount {
   educations: Int!
   """Number of skills materialized."""
   skills: Int!
+  """Number of testimonials materialized from reference letters."""
+  testimonials: Int!
 }
 
 """
@@ -7604,6 +7613,8 @@ func (ec *executionContext) fieldContext_ImportDocumentResultsResult_importedCou
 				return ec.fieldContext_ImportedCount_educations(ctx, field)
 			case "skills":
 				return ec.fieldContext_ImportedCount_skills(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_ImportedCount_testimonials(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ImportedCount", field.Name)
 		},
@@ -7686,6 +7697,35 @@ func (ec *executionContext) _ImportedCount_skills(ctx context.Context, field gra
 }
 
 func (ec *executionContext) fieldContext_ImportedCount_skills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImportedCount",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImportedCount_testimonials(ctx context.Context, field graphql.CollectedField, obj *model.ImportedCount) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ImportedCount_testimonials,
+		func(ctx context.Context) (any, error) {
+			return obj.Testimonials, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ImportedCount_testimonials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ImportedCount",
 		Field:      field,
@@ -17886,6 +17926,11 @@ func (ec *executionContext) _ImportedCount(ctx context.Context, sel ast.Selectio
 			}
 		case "skills":
 			out.Values[i] = ec._ImportedCount_skills(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "testimonials":
+			out.Values[i] = ec._ImportedCount_testimonials(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

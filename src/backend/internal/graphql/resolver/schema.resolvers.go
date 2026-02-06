@@ -4029,5 +4029,3 @@ type profileSkillResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type skillValidationResolver struct{ *Resolver }
 type testimonialResolver struct{ *Resolver }
-
-// !!! WARNING !!!

@@ -238,9 +238,9 @@ function TestimonialSection({ data }: { data: ReferenceLetterExtractionData }) {
         <div className="space-y-2">
           <h4 className="text-sm font-medium">Discovered Skills</h4>
           <div className="flex flex-wrap gap-2">
-            {discoveredSkills.map((s) => (
+            {discoveredSkills.map((s, i) => (
               <span
-                key={s.skill}
+                key={`${s.skill}-${i}`}
                 className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium"
               >
                 {s.skill}
