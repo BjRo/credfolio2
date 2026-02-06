@@ -211,8 +211,8 @@ function TestimonialSection({ data }: { data: ReferenceLetterExtractionData }) {
       {skillMentions.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium">Skill Mentions</h4>
-          {skillMentions.map((s) => (
-            <div key={s.skill} className="text-sm">
+          {skillMentions.map((s, i) => (
+            <div key={`${s.skill}-${i}`} className="text-sm">
               <span className="font-medium">{s.skill}</span>
               <span className="text-muted-foreground"> &mdash; &ldquo;{s.quote}&rdquo;</span>
             </div>
@@ -223,8 +223,8 @@ function TestimonialSection({ data }: { data: ReferenceLetterExtractionData }) {
       {experienceMentions.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium">Experience Mentions</h4>
-          {experienceMentions.map((e) => (
-            <div key={`${e.company}-${e.role}`} className="text-sm">
+          {experienceMentions.map((e, i) => (
+            <div key={`${e.company}-${e.role}-${i}`} className="text-sm">
               <span className="font-medium">
                 {e.role} at {e.company}
               </span>
