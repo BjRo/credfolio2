@@ -21,18 +21,32 @@ type User struct { //nolint:govet // Field ordering prioritizes readability over
 	UpdatedAt    time.Time `bun:"updated_at,notnull,default:current_timestamp"`
 }
 
+// DetectionStatus represents the processing status of document content detection.
+type DetectionStatus string
+
+// Detection status constants.
+const (
+	DetectionStatusPending    DetectionStatus = "pending"
+	DetectionStatusProcessing DetectionStatus = "processing"
+	DetectionStatusCompleted  DetectionStatus = "completed"
+	DetectionStatusFailed     DetectionStatus = "failed"
+)
+
 // File represents an uploaded file stored in object storage.
 type File struct { //nolint:govet // Field ordering prioritizes readability over memory alignment
 	bun.BaseModel `bun:"table:files,alias:f"`
 
-	ID          uuid.UUID `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
-	UserID      uuid.UUID `bun:"user_id,notnull,type:uuid"`
-	Filename    string    `bun:"filename,notnull"`
-	ContentType string    `bun:"content_type,notnull"`
-	SizeBytes   int64     `bun:"size_bytes,notnull"`
-	StorageKey  string    `bun:"storage_key,notnull,unique"`
-	ContentHash *string   `bun:"content_hash"` // SHA-256 hash for duplicate detection
-	CreatedAt   time.Time `bun:"created_at,notnull,default:current_timestamp"`
+	ID              uuid.UUID        `bun:"id,pk,type:uuid,default:uuid_generate_v4()"`
+	UserID          uuid.UUID        `bun:"user_id,notnull,type:uuid"`
+	Filename        string           `bun:"filename,notnull"`
+	ContentType     string           `bun:"content_type,notnull"`
+	SizeBytes       int64            `bun:"size_bytes,notnull"`
+	StorageKey      string           `bun:"storage_key,notnull,unique"`
+	ContentHash     *string          `bun:"content_hash"`
+	DetectionStatus *DetectionStatus `bun:"detection_status"`
+	DetectionResult json.RawMessage  `bun:"detection_result,type:jsonb"`
+	DetectionError  *string          `bun:"detection_error"`
+	CreatedAt       time.Time        `bun:"created_at,notnull,default:current_timestamp"`
 
 	// Relations
 	User *User `bun:"rel:belongs-to,join:user_id=id"`

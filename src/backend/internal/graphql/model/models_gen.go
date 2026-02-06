@@ -21,11 +21,6 @@ type DeleteProfilePhotoResponse interface {
 	IsDeleteProfilePhotoResponse()
 }
 
-// Union type for detect document content result.
-type DetectDocumentContentResponse interface {
-	IsDetectDocumentContentResponse()
-}
-
 // Union type for education create/update result.
 type EducationResponse interface {
 	IsEducationResponse()
@@ -64,6 +59,11 @@ type UploadAuthorImageResponse interface {
 // Union type for upload result - either success, validation error, or duplicate detected.
 type UploadFileResponse interface {
 	IsUploadFileResponse()
+}
+
+// Union type for upload for detection result.
+type UploadForDetectionResponse interface {
+	IsUploadForDetectionResponse()
 }
 
 // Union type for profile photo upload result.
@@ -211,14 +211,6 @@ type DeleteResult struct {
 	DeletedID string `json:"deletedId"`
 }
 
-// Result of a successful document detection.
-type DetectDocumentContentResult struct {
-	// The detection results.
-	Detection *DocumentDetectionResult `json:"detection"`
-}
-
-func (DetectDocumentContentResult) IsDetectDocumentContentResponse() {}
-
 // Result of lightweight document content detection.
 // Used to quickly classify a document before running full extraction.
 type DocumentDetectionResult struct {
@@ -236,6 +228,19 @@ type DocumentDetectionResult struct {
 	DocumentTypeHint DocumentTypeHint `json:"documentTypeHint"`
 	// ID of the stored file for subsequent processing.
 	FileID string `json:"fileId"`
+}
+
+// Status of a document detection job.
+// Poll this query to track detection progress after uploadForDetection.
+type DocumentDetectionStatus struct {
+	// The file ID being detected.
+	FileID string `json:"fileId"`
+	// Current detection status.
+	Status DetectionStatus `json:"status"`
+	// Detection results, available when status is COMPLETED.
+	Detection *DocumentDetectionResult `json:"detection,omitempty"`
+	// Error message, set when status is FAILED.
+	Error *string `json:"error,omitempty"`
 }
 
 // Input for reporting feedback about document detection or extraction.
@@ -361,7 +366,7 @@ type FileValidationError struct {
 	Field string `json:"field"`
 }
 
-func (FileValidationError) IsDetectDocumentContentResponse() {}
+func (FileValidationError) IsUploadForDetectionResponse() {}
 
 func (FileValidationError) IsUploadProfilePhotoResponse() {}
 
@@ -433,9 +438,9 @@ type ProcessDocumentError struct {
 func (ProcessDocumentError) IsProcessDocumentResponse() {}
 
 // Input for processing a previously uploaded document.
-// The fileId must reference a file previously stored via detectDocumentContent.
+// The fileId must reference a file previously stored via uploadForDetection.
 type ProcessDocumentInput struct {
-	// ID of the file already stored via detectDocumentContent.
+	// ID of the file already stored via uploadForDetection.
 	FileID string `json:"fileId"`
 	// Whether to extract career/resume information from the document.
 	ExtractCareerInfo bool `json:"extractCareerInfo"`
@@ -806,6 +811,15 @@ type UploadFileResult struct {
 
 func (UploadFileResult) IsUploadFileResponse() {}
 
+// Result of a successful document upload for detection.
+// Returns the file ID for polling detection status.
+type UploadForDetectionResult struct {
+	// The ID of the uploaded file.
+	FileID string `json:"fileId"`
+}
+
+func (UploadForDetectionResult) IsUploadForDetectionResponse() {}
+
 // Result of a successful profile photo upload.
 type UploadProfilePhotoResult struct {
 	// The updated profile with photo URL.
@@ -831,6 +845,66 @@ type User struct {
 	Name      *string   `json:"name,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// Status of asynchronous document detection.
+type DetectionStatus string
+
+const (
+	DetectionStatusPending    DetectionStatus = "PENDING"
+	DetectionStatusProcessing DetectionStatus = "PROCESSING"
+	DetectionStatusCompleted  DetectionStatus = "COMPLETED"
+	DetectionStatusFailed     DetectionStatus = "FAILED"
+)
+
+var AllDetectionStatus = []DetectionStatus{
+	DetectionStatusPending,
+	DetectionStatusProcessing,
+	DetectionStatusCompleted,
+	DetectionStatusFailed,
+}
+
+func (e DetectionStatus) IsValid() bool {
+	switch e {
+	case DetectionStatusPending, DetectionStatusProcessing, DetectionStatusCompleted, DetectionStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e DetectionStatus) String() string {
+	return string(e)
+}
+
+func (e *DetectionStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DetectionStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DetectionStatus", str)
+	}
+	return nil
+}
+
+func (e DetectionStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *DetectionStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e DetectionStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 // The type of feedback being reported about document processing.

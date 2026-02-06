@@ -32,7 +32,7 @@ vi.stubGlobal("XMLHttpRequest", MockXHR);
 describe("DocumentUpload", () => {
   const defaultProps = {
     userId: "test-user-id",
-    onDetectionComplete: vi.fn(),
+    onUploadComplete: vi.fn(),
   };
 
   beforeEach(() => {
@@ -101,7 +101,7 @@ describe("DocumentUpload", () => {
     });
   });
 
-  it("initiates XHR upload with detectDocumentContent mutation", async () => {
+  it("initiates XHR upload with uploadForDetection mutation", async () => {
     render(<DocumentUpload {...defaultProps} />);
 
     const input = screen.getByTestId("file-input");
@@ -116,16 +116,16 @@ describe("DocumentUpload", () => {
       expect(xhr.send).toHaveBeenCalled();
     });
 
-    // Verify the mutation is detectDocumentContent
+    // Verify the mutation is uploadForDetection
     const xhr = MockXHR.getLastInstance();
     const sentFormData = xhr.send.mock.calls[0][0] as FormData;
     const operations = sentFormData.get("operations") as string;
-    expect(operations).toContain("detectDocumentContent");
+    expect(operations).toContain("uploadForDetection");
   });
 
-  it("calls onDetectionComplete with detection result on success", async () => {
-    const onDetectionComplete = vi.fn();
-    render(<DocumentUpload {...defaultProps} onDetectionComplete={onDetectionComplete} />);
+  it("calls onUploadComplete with fileId on success", async () => {
+    const onUploadComplete = vi.fn();
+    render(<DocumentUpload {...defaultProps} onUploadComplete={onUploadComplete} />);
 
     const input = screen.getByTestId("file-input");
     const validFile = new File(["test content"], "resume.pdf", { type: "application/pdf" });
@@ -142,17 +142,9 @@ describe("DocumentUpload", () => {
     xhr.status = 200;
     xhr.responseText = JSON.stringify({
       data: {
-        detectDocumentContent: {
-          __typename: "DetectDocumentContentResult",
-          detection: {
-            hasCareerInfo: true,
-            hasTestimonial: false,
-            testimonialAuthor: null,
-            confidence: 0.95,
-            summary: "A professional resume",
-            documentTypeHint: "RESUME",
-            fileId: "file-123",
-          },
+        uploadForDetection: {
+          __typename: "UploadForDetectionResult",
+          fileId: "file-123",
         },
       },
     });
@@ -164,18 +156,7 @@ describe("DocumentUpload", () => {
     loadHandler();
 
     await waitFor(() => {
-      expect(onDetectionComplete).toHaveBeenCalledWith(
-        {
-          hasCareerInfo: true,
-          hasTestimonial: false,
-          testimonialAuthor: null,
-          confidence: 0.95,
-          summary: "A professional resume",
-          documentTypeHint: "RESUME",
-          fileId: "file-123",
-        },
-        "resume.pdf"
-      );
+      expect(onUploadComplete).toHaveBeenCalledWith("file-123", "resume.pdf");
     });
   });
 
@@ -197,7 +178,7 @@ describe("DocumentUpload", () => {
     xhr.status = 200;
     xhr.responseText = JSON.stringify({
       data: {
-        detectDocumentContent: {
+        uploadForDetection: {
           __typename: "FileValidationError",
           message: "File content is corrupted",
           field: "file",

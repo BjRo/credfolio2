@@ -3,7 +3,7 @@
 import { Upload } from "lucide-react";
 import { type ChangeEvent, type DragEvent, useCallback, useState } from "react";
 import { GRAPHQL_ENDPOINT } from "@/lib/urql/client";
-import type { DocumentDetectionResult, DocumentUploadProps } from "./types";
+import type { DocumentUploadProps } from "./types";
 
 const ALLOWED_TYPES = {
   "application/pdf": ".pdf",
@@ -22,12 +22,12 @@ interface FileValidationError {
   field: string;
 }
 
-interface DetectDocumentContentResult {
-  __typename: "DetectDocumentContentResult";
-  detection: DocumentDetectionResult;
+interface UploadForDetectionResult {
+  __typename: "UploadForDetectionResult";
+  fileId: string;
 }
 
-export function DocumentUpload({ userId, onDetectionComplete, onError }: DocumentUploadProps) {
+export function DocumentUpload({ userId, onUploadComplete, onError }: DocumentUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [progress, setProgress] = useState(0);
@@ -59,19 +59,11 @@ export function DocumentUpload({ userId, onDetectionComplete, onError }: Documen
 
       const operations = JSON.stringify({
         query: `
-          mutation DetectDocumentContent($userId: ID!, $file: Upload!) {
-            detectDocumentContent(userId: $userId, file: $file) {
-              ... on DetectDocumentContentResult {
+          mutation UploadForDetection($userId: ID!, $file: Upload!) {
+            uploadForDetection(userId: $userId, file: $file) {
+              ... on UploadForDetectionResult {
                 __typename
-                detection {
-                  hasCareerInfo
-                  hasTestimonial
-                  testimonialAuthor
-                  confidence
-                  summary
-                  documentTypeHint
-                  fileId
-                }
+                fileId
               }
               ... on FileValidationError {
                 __typename
@@ -97,7 +89,7 @@ export function DocumentUpload({ userId, onDetectionComplete, onError }: Documen
       formData.append("0", file);
 
       try {
-        const result = await new Promise<DetectDocumentContentResult>((resolve, reject) => {
+        const result = await new Promise<UploadForDetectionResult>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
 
           xhr.upload.addEventListener("progress", (event) => {
@@ -115,9 +107,9 @@ export function DocumentUpload({ userId, onDetectionComplete, onError }: Documen
                   reject(new Error(response.errors[0].message));
                   return;
                 }
-                const data = response.data?.detectDocumentContent;
+                const data = response.data?.uploadForDetection;
                 if (!data) {
-                  reject(new Error("No data returned from detection"));
+                  reject(new Error("No data returned from upload"));
                   return;
                 }
                 if (data.__typename === "FileValidationError") {
@@ -125,7 +117,7 @@ export function DocumentUpload({ userId, onDetectionComplete, onError }: Documen
                   reject(new Error(validationErr.message));
                   return;
                 }
-                resolve(data as DetectDocumentContentResult);
+                resolve(data as UploadForDetectionResult);
               } catch (_parseError) {
                 reject(new Error("Failed to parse response"));
               }
@@ -146,7 +138,7 @@ export function DocumentUpload({ userId, onDetectionComplete, onError }: Documen
           xhr.send(formData);
         });
 
-        onDetectionComplete(result.detection, file.name);
+        onUploadComplete(result.fileId, file.name);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Upload failed";
         setError(errorMessage);
@@ -154,7 +146,7 @@ export function DocumentUpload({ userId, onDetectionComplete, onError }: Documen
         onError?.(errorMessage);
       }
     },
-    [userId, validateFile, onDetectionComplete, onError]
+    [userId, validateFile, onUploadComplete, onError]
   );
 
   const handleDragOver = useCallback((e: DragEvent<HTMLLabelElement>) => {
@@ -250,9 +242,7 @@ export function DocumentUpload({ userId, onDetectionComplete, onError }: Documen
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              <p className="mt-4 text-sm font-medium text-foreground">
-                Uploading & analyzing... {progress}%
-              </p>
+              <p className="mt-4 text-sm font-medium text-foreground">Uploading... {progress}%</p>
               <div className="w-full bg-muted rounded-full h-2 mt-2">
                 <div
                   className="bg-warning h-2 rounded-full transition-all duration-300"

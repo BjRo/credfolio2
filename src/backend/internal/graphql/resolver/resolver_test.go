@@ -175,6 +175,11 @@ func (r *mockFileRepository) GetByUserID(_ context.Context, userID uuid.UUID) ([
 	return result, nil
 }
 
+func (r *mockFileRepository) Update(_ context.Context, file *domain.File) error {
+	r.files[file.ID] = file
+	return nil
+}
+
 func (r *mockFileRepository) Delete(_ context.Context, id uuid.UUID) error {
 	delete(r.files, id)
 	return nil
@@ -326,6 +331,10 @@ func (e *mockJobEnqueuer) EnqueueResumeProcessing(_ context.Context, req domain.
 }
 
 func (e *mockJobEnqueuer) EnqueueUnifiedDocumentProcessing(_ context.Context, _ domain.UnifiedDocumentProcessingRequest) error {
+	return nil
+}
+
+func (e *mockJobEnqueuer) EnqueueDocumentDetection(_ context.Context, _ domain.DocumentDetectionRequest) error {
 	return nil
 }
 
@@ -3113,7 +3122,7 @@ func TestDeleteTestimonial(t *testing.T) {
 	})
 }
 
-func TestMutation_DetectDocumentContent(t *testing.T) {
+func TestMutation_UploadForDetection(t *testing.T) {
 	ctx := context.Background()
 
 	userRepo := newMockUserRepository()
@@ -3126,59 +3135,38 @@ func TestMutation_DetectDocumentContent(t *testing.T) {
 	}
 	mustCreateUser(userRepo, user)
 
-	author := "Jane Smith"
-	extractor := &mockDocumentExtractor{
-		extractTextResult: "Extracted document text here",
-		detectResult: &domain.DocumentDetectionResult{
-			HasCareerInfo:     true,
-			HasTestimonial:    true,
-			TestimonialAuthor: &author,
-			Confidence:        0.92,
-			Summary:           "A reference letter with career details.",
-			DocumentTypeHint:  domain.DocumentTypeHybrid,
-		},
-	}
+	extractor := &mockDocumentExtractor{}
 
 	r := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), extractor, nil, testLogger())
 	mutation := r.Mutation()
 
-	t.Run("detects hybrid document successfully", func(t *testing.T) {
+	t.Run("uploads file and returns fileId", func(t *testing.T) {
 		file := createTestUpload("test.pdf", "application/pdf", "fake pdf content")
-		result, err := mutation.DetectDocumentContent(ctx, user.ID.String(), file)
+		result, err := mutation.UploadForDetection(ctx, user.ID.String(), file)
 		if err != nil {
-			t.Fatalf("DetectDocumentContent() error = %v", err)
+			t.Fatalf("UploadForDetection() error = %v", err)
 		}
 
-		detectResult, ok := result.(*model.DetectDocumentContentResult)
+		uploadResult, ok := result.(*model.UploadForDetectionResult)
 		if !ok {
-			t.Fatalf("expected DetectDocumentContentResult, got %T", result)
+			t.Fatalf("expected UploadForDetectionResult, got %T", result)
 		}
 
-		if !detectResult.Detection.HasCareerInfo {
-			t.Error("HasCareerInfo = false, want true")
-		}
-		if !detectResult.Detection.HasTestimonial {
-			t.Error("HasTestimonial = false, want true")
-		}
-		if detectResult.Detection.TestimonialAuthor == nil || *detectResult.Detection.TestimonialAuthor != "Jane Smith" {
-			t.Errorf("TestimonialAuthor = %v, want %q", detectResult.Detection.TestimonialAuthor, "Jane Smith")
-		}
-		if detectResult.Detection.Confidence != 0.92 {
-			t.Errorf("Confidence = %v, want 0.92", detectResult.Detection.Confidence)
-		}
-		if detectResult.Detection.DocumentTypeHint != model.DocumentTypeHintHybrid {
-			t.Errorf("DocumentTypeHint = %q, want %q", detectResult.Detection.DocumentTypeHint, model.DocumentTypeHintHybrid)
-		}
-		if detectResult.Detection.FileID == "" {
+		if uploadResult.FileID == "" {
 			t.Error("FileID should not be empty")
+		}
+
+		// Verify it's a valid UUID
+		if _, err := uuid.Parse(uploadResult.FileID); err != nil {
+			t.Errorf("FileID is not a valid UUID: %v", err)
 		}
 	})
 
 	t.Run("rejects invalid file type", func(t *testing.T) {
 		file := createTestUpload("test.exe", "application/octet-stream", "not a document")
-		result, err := mutation.DetectDocumentContent(ctx, user.ID.String(), file)
+		result, err := mutation.UploadForDetection(ctx, user.ID.String(), file)
 		if err != nil {
-			t.Fatalf("DetectDocumentContent() error = %v", err)
+			t.Fatalf("UploadForDetection() error = %v", err)
 		}
 
 		validationErr, ok := result.(*model.FileValidationError)
@@ -3193,9 +3181,9 @@ func TestMutation_DetectDocumentContent(t *testing.T) {
 	t.Run("rejects file too large", func(t *testing.T) {
 		file := createTestUpload("large.pdf", "application/pdf", "x")
 		file.Size = 11 * 1024 * 1024 // 11MB
-		result, err := mutation.DetectDocumentContent(ctx, user.ID.String(), file)
+		result, err := mutation.UploadForDetection(ctx, user.ID.String(), file)
 		if err != nil {
-			t.Fatalf("DetectDocumentContent() error = %v", err)
+			t.Fatalf("UploadForDetection() error = %v", err)
 		}
 
 		validationErr, ok := result.(*model.FileValidationError)
@@ -3209,7 +3197,7 @@ func TestMutation_DetectDocumentContent(t *testing.T) {
 
 	t.Run("returns error for invalid user ID", func(t *testing.T) {
 		file := createTestUpload("test.pdf", "application/pdf", "content")
-		_, err := mutation.DetectDocumentContent(ctx, "not-a-uuid", file)
+		_, err := mutation.UploadForDetection(ctx, "not-a-uuid", file)
 		if err == nil {
 			t.Error("expected error for invalid user ID")
 		}
@@ -3217,43 +3205,133 @@ func TestMutation_DetectDocumentContent(t *testing.T) {
 
 	t.Run("returns error for non-existent user", func(t *testing.T) {
 		file := createTestUpload("test.pdf", "application/pdf", "content")
-		_, err := mutation.DetectDocumentContent(ctx, uuid.New().String(), file)
+		_, err := mutation.UploadForDetection(ctx, uuid.New().String(), file)
 		if err == nil {
 			t.Error("expected error for non-existent user")
 		}
 	})
+}
 
-	t.Run("returns error when extractor is nil", func(t *testing.T) {
-		rNoExtractor := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, nil, testLogger())
-		file := createTestUpload("test.pdf", "application/pdf", "content")
-		_, err := rNoExtractor.Mutation().DetectDocumentContent(ctx, user.ID.String(), file)
-		if err == nil {
-			t.Error("expected error when extractor is nil")
+func TestQuery_DocumentDetectionStatus(t *testing.T) {
+	ctx := context.Background()
+
+	userRepo := newMockUserRepository()
+	fileRepo := newMockFileRepository()
+
+	r := resolver.NewResolver(userRepo, fileRepo, newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, nil, testLogger())
+	query := r.Query()
+
+	t.Run("returns pending status", func(t *testing.T) {
+		pendingStatus := domain.DetectionStatusPending
+		file := &domain.File{
+			ID:              uuid.New(),
+			UserID:          uuid.New(),
+			Filename:        "test.pdf",
+			ContentType:     "application/pdf",
+			SizeBytes:       1024,
+			StorageKey:      "uploads/test/test.pdf",
+			DetectionStatus: &pendingStatus,
+		}
+		if err := fileRepo.Create(ctx, file); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+
+		result, err := query.DocumentDetectionStatus(ctx, file.ID.String())
+		if err != nil {
+			t.Fatalf("DocumentDetectionStatus() error = %v", err)
+		}
+
+		if result.Status != model.DetectionStatusPending {
+			t.Errorf("Status = %q, want %q", result.Status, model.DetectionStatusPending)
+		}
+		if result.Detection != nil {
+			t.Error("Detection should be nil for pending status")
 		}
 	})
 
-	t.Run("returns error when text extraction fails", func(t *testing.T) {
-		failExtractor := &mockDocumentExtractor{
-			extractTextError: errors.New("text extraction failed"),
+	t.Run("returns completed status with detection result", func(t *testing.T) {
+		completedStatus := domain.DetectionStatusCompleted
+		detectionJSON := []byte(`{"hasCareerInfo":true,"hasTestimonial":false,"confidence":0.95,"summary":"A resume document.","documentTypeHint":"resume"}`)
+		file := &domain.File{
+			ID:              uuid.New(),
+			UserID:          uuid.New(),
+			Filename:        "resume.pdf",
+			ContentType:     "application/pdf",
+			SizeBytes:       2048,
+			StorageKey:      "uploads/test/resume.pdf",
+			DetectionStatus: &completedStatus,
+			DetectionResult: detectionJSON,
 		}
-		rFail := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), failExtractor, nil, testLogger())
-		file := createTestUpload("test.pdf", "application/pdf", "content")
-		_, err := rFail.Mutation().DetectDocumentContent(ctx, user.ID.String(), file)
-		if err == nil {
-			t.Error("expected error when text extraction fails")
+		if err := fileRepo.Create(ctx, file); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+
+		result, err := query.DocumentDetectionStatus(ctx, file.ID.String())
+		if err != nil {
+			t.Fatalf("DocumentDetectionStatus() error = %v", err)
+		}
+
+		if result.Status != model.DetectionStatusCompleted {
+			t.Errorf("Status = %q, want %q", result.Status, model.DetectionStatusCompleted)
+		}
+		if result.Detection == nil {
+			t.Fatal("Detection should not be nil for completed status")
+		}
+		if !result.Detection.HasCareerInfo {
+			t.Error("HasCareerInfo = false, want true")
+		}
+		if result.Detection.HasTestimonial {
+			t.Error("HasTestimonial = true, want false")
+		}
+		if result.Detection.Confidence != 0.95 {
+			t.Errorf("Confidence = %v, want 0.95", result.Detection.Confidence)
+		}
+		if result.Detection.DocumentTypeHint != model.DocumentTypeHintResume {
+			t.Errorf("DocumentTypeHint = %q, want %q", result.Detection.DocumentTypeHint, model.DocumentTypeHintResume)
 		}
 	})
 
-	t.Run("returns error when detection fails", func(t *testing.T) {
-		failExtractor := &mockDocumentExtractor{
-			extractTextResult: "some text",
-			detectError:       errors.New("detection failed"),
+	t.Run("returns failed status with error", func(t *testing.T) {
+		failedStatus := domain.DetectionStatusFailed
+		errMsg := "text extraction failed"
+		file := &domain.File{
+			ID:              uuid.New(),
+			UserID:          uuid.New(),
+			Filename:        "bad.pdf",
+			ContentType:     "application/pdf",
+			SizeBytes:       512,
+			StorageKey:      "uploads/test/bad.pdf",
+			DetectionStatus: &failedStatus,
+			DetectionError:  &errMsg,
 		}
-		rFail := resolver.NewResolver(userRepo, newMockFileRepository(), newMockReferenceLetterRepository(), newMockResumeRepository(), newMockProfileRepository(), newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), failExtractor, nil, testLogger())
-		file := createTestUpload("test.pdf", "application/pdf", "content")
-		_, err := rFail.Mutation().DetectDocumentContent(ctx, user.ID.String(), file)
+		if err := fileRepo.Create(ctx, file); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+
+		result, err := query.DocumentDetectionStatus(ctx, file.ID.String())
+		if err != nil {
+			t.Fatalf("DocumentDetectionStatus() error = %v", err)
+		}
+
+		if result.Status != model.DetectionStatusFailed {
+			t.Errorf("Status = %q, want %q", result.Status, model.DetectionStatusFailed)
+		}
+		if result.Error == nil || *result.Error != errMsg {
+			t.Errorf("Error = %v, want %q", result.Error, errMsg)
+		}
+	})
+
+	t.Run("returns error for non-existent file", func(t *testing.T) {
+		_, err := query.DocumentDetectionStatus(ctx, uuid.New().String())
 		if err == nil {
-			t.Error("expected error when detection fails")
+			t.Error("expected error for non-existent file")
+		}
+	})
+
+	t.Run("returns error for invalid file ID", func(t *testing.T) {
+		_, err := query.DocumentDetectionStatus(ctx, "not-a-uuid")
+		if err == nil {
+			t.Error("expected error for invalid file ID")
 		}
 	})
 }

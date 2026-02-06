@@ -155,5 +155,22 @@ func (c *Client) EnqueueUnifiedDocumentProcessing(ctx context.Context, req domai
 	return nil
 }
 
+// EnqueueDocumentDetection adds a document detection job to the queue.
+func (c *Client) EnqueueDocumentDetection(ctx context.Context, req domain.DocumentDetectionRequest) error {
+	args := job.DocumentDetectionArgs{
+		StorageKey:  req.StorageKey,
+		FileID:      req.FileID,
+		ContentType: req.ContentType,
+		UserID:      req.UserID,
+	}
+
+	_, err := c.riverClient.Insert(ctx, args, nil)
+	if err != nil {
+		return fmt.Errorf("failed to enqueue document detection job: %w", err)
+	}
+
+	return nil
+}
+
 // Verify Client implements domain.JobEnqueuer.
 var _ domain.JobEnqueuer = (*Client)(nil)

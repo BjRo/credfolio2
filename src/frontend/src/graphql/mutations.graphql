@@ -327,19 +327,11 @@ mutation UploadAuthorImage($authorId: ID!, $file: Upload!) {
   }
 }
 
-mutation DetectDocumentContent($userId: ID!, $file: Upload!) {
-  detectDocumentContent(userId: $userId, file: $file) {
-    ... on DetectDocumentContentResult {
+mutation UploadForDetection($userId: ID!, $file: Upload!) {
+  uploadForDetection(userId: $userId, file: $file) {
+    ... on UploadForDetectionResult {
       __typename
-      detection {
-        hasCareerInfo
-        hasTestimonial
-        testimonialAuthor
-        confidence
-        summary
-        documentTypeHint
-        fileId
-      }
+      fileId
     }
     ... on FileValidationError {
       __typename
@@ -352,5 +344,41 @@ mutation DetectDocumentContent($userId: ID!, $file: Upload!) {
 mutation ReportDocumentFeedback($userId: ID!, $input: DocumentFeedbackInput!) {
   reportDocumentFeedback(userId: $userId, input: $input) {
     success
+  }
+}
+
+mutation ProcessDocument($userId: ID!, $input: ProcessDocumentInput!) {
+  processDocument(userId: $userId, input: $input) {
+    ... on ProcessDocumentResult {
+      __typename
+      resumeId
+      referenceLetterID
+    }
+    ... on ProcessDocumentError {
+      __typename
+      message
+      field
+    }
+  }
+}
+
+mutation ImportDocumentResults($userId: ID!, $input: ImportDocumentResultsInput!) {
+  importDocumentResults(userId: $userId, input: $input) {
+    ... on ImportDocumentResultsResult {
+      __typename
+      profile {
+        id
+      }
+      importedCount {
+        experiences
+        educations
+        skills
+      }
+    }
+    ... on ImportDocumentResultsError {
+      __typename
+      message
+      field
+    }
   }
 }
