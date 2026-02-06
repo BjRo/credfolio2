@@ -1,11 +1,11 @@
 ---
 # credfolio2-pnu4
 title: Fix React Strict Mode double-firing mutations in ExtractionProgress
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-05T23:08:28Z
-updated_at: 2026-02-06T08:03:11Z
+updated_at: 2026-02-06T08:07:45Z
 parent: credfolio2-3ram
 ---
 
@@ -61,4 +61,4 @@ useEffect(() => {
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
