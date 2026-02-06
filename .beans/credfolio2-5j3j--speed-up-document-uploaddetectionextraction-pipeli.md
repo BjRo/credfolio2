@@ -2,10 +2,11 @@
 # credfolio2-5j3j
 title: Speed up document upload/detection/extraction pipeline
 status: todo
-type: feature
-priority: high
+type: task
+priority: normal
 created_at: 2026-02-05T23:11:46Z
-updated_at: 2026-02-05T23:11:46Z
+updated_at: 2026-02-06T07:31:28Z
+parent: credfolio2-3ram
 ---
 
 ## Summary
