@@ -1,11 +1,11 @@
 ---
 # credfolio2-ltkl
 title: Start first extraction from unified review instead of resume review
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-06T12:02:52Z
-updated_at: 2026-02-06T12:17:50Z
+updated_at: 2026-02-06T12:25:58Z
 parent: credfolio2-dwid
 ---
 
