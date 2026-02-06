@@ -1,11 +1,11 @@
 ---
 # credfolio2-oz72
 title: Replace LLM vision PDF text extraction with pdftotext
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-06T13:06:11Z
-updated_at: 2026-02-06T13:10:46Z
+updated_at: 2026-02-06T13:26:37Z
 parent: credfolio2-3ram
 ---
 
