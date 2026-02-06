@@ -14,15 +14,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// Mock the ResumeUpload component to avoid rendering its internals
-vi.mock("@/components", () => ({
-  ResumeUpload: ({ userId }: { userId: string }) => (
-    <div data-testid="resume-upload" data-user-id={userId}>
-      Resume Upload Mock
-    </div>
-  ),
-}));
-
 const mockUseQuery = useQuery as Mock;
 
 describe("Home Page", () => {
@@ -36,19 +27,18 @@ describe("Home Page", () => {
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
-  it("shows upload form when user has no profile", () => {
+  it("redirects to upload page when user has no profile", () => {
     mockUseQuery.mockReturnValue([
       { fetching: false, data: { profileByUserId: null }, error: undefined },
     ]);
     render(<Home />);
-    expect(screen.getByTestId("resume-upload")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Upload Your Resume/i })).toBeInTheDocument();
+    expect(mockPush).toHaveBeenCalledWith("/upload");
   });
 
-  it("shows upload form when profile query returns no data", () => {
+  it("redirects to upload page when profile query returns no data", () => {
     mockUseQuery.mockReturnValue([{ fetching: false, data: undefined, error: undefined }]);
     render(<Home />);
-    expect(screen.getByTestId("resume-upload")).toBeInTheDocument();
+    expect(mockPush).toHaveBeenCalledWith("/upload");
   });
 
   it("redirects to profile page when profile exists", () => {
@@ -72,25 +62,14 @@ describe("Home Page", () => {
       },
     ]);
     render(<Home />);
-    expect(screen.getByText(/Redirecting to your profile/i)).toBeInTheDocument();
+    expect(screen.getByText(/Redirecting/i)).toBeInTheDocument();
   });
 
-  it("shows upload form when query returns an error", () => {
+  it("redirects to upload page when query returns an error", () => {
     mockUseQuery.mockReturnValue([
       { fetching: false, data: undefined, error: new Error("Network error") },
     ]);
     render(<Home />);
-    expect(screen.getByTestId("resume-upload")).toBeInTheDocument();
-  });
-
-  it("passes the demo user ID to ResumeUpload", () => {
-    mockUseQuery.mockReturnValue([
-      { fetching: false, data: { profileByUserId: null }, error: undefined },
-    ]);
-    render(<Home />);
-    expect(screen.getByTestId("resume-upload")).toHaveAttribute(
-      "data-user-id",
-      "00000000-0000-0000-0000-000000000001"
-    );
+    expect(mockPush).toHaveBeenCalledWith("/upload");
   });
 });
