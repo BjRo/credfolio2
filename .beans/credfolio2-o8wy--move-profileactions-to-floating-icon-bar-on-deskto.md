@@ -1,11 +1,11 @@
 ---
 # credfolio2-o8wy
 title: Move ProfileActions to floating icon bar on desktop
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-06T22:44:25Z
-updated_at: 2026-02-06T22:54:56Z
+updated_at: 2026-02-06T23:02:15Z
 ---
 
 ## Context
@@ -29,6 +29,8 @@ To ensure the floating bar has room at the `lg` breakpoint (1024px), increase th
 
 CSS-only tooltips (no new dependencies) using the `group`/`group-hover` pattern already used throughout the codebase.
 
+PR: https://github.com/BjRo/credfolio2/pull/101
+
 ## Checklist
 
 ### Implementation
@@ -43,5 +45,5 @@ CSS-only tooltips (no new dependencies) using the `group`/`group-hover` pattern 
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed (`@review-backend` and/or `@review-frontend`)
