@@ -1,11 +1,11 @@
 ---
 # credfolio2-w1al
 title: Fix post-import redirect to use profile ID instead of user ID
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-05T23:16:29Z
-updated_at: 2026-02-06T07:59:13Z
+updated_at: 2026-02-06T08:02:15Z
 parent: credfolio2-3ram
 ---
 
