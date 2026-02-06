@@ -7,29 +7,88 @@ interface ProfileActionsProps {
   onUploadAnother?: () => void;
 }
 
-export function ProfileActions({ onAddReference, onExport, onUploadAnother }: ProfileActionsProps) {
+interface ActionItem {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  onClick: () => void;
+  variant: "outline" | "ghost";
+}
+
+function buildActions({
+  onAddReference,
+  onExport,
+  onUploadAnother,
+}: ProfileActionsProps): ActionItem[] {
+  const actions: ActionItem[] = [];
+
+  if (onAddReference) {
+    actions.push({
+      label: "Add Reference Letter",
+      icon: Plus,
+      onClick: onAddReference,
+      variant: "outline",
+    });
+  }
+  if (onExport) {
+    actions.push({ label: "Export PDF", icon: FileText, onClick: onExport, variant: "outline" });
+  }
+  if (onUploadAnother) {
+    actions.push({
+      label: "Upload Another Resume",
+      icon: Upload,
+      onClick: onUploadAnother,
+      variant: "ghost",
+    });
+  }
+
+  return actions;
+}
+
+export function ProfileActions(props: ProfileActionsProps) {
+  const actions = buildActions(props);
+
+  if (actions.length === 0) return null;
+
   return (
-    <div className="bg-card border rounded-lg p-6">
+    <div className="lg:hidden bg-card border rounded-lg p-6">
       <div className="flex flex-wrap justify-center gap-4">
-        {onAddReference && (
-          <Button variant="outline" onClick={onAddReference}>
-            <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
-            Add Reference Letter
+        {actions.map((action) => (
+          <Button key={action.label} variant={action.variant} onClick={action.onClick}>
+            <action.icon className="w-4 h-4 mr-2" aria-hidden="true" />
+            {action.label}
           </Button>
-        )}
-        {onExport && (
-          <Button variant="outline" onClick={onExport}>
-            <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
-            Export PDF
-          </Button>
-        )}
-        {onUploadAnother && (
-          <Button variant="ghost" onClick={onUploadAnother}>
-            <Upload className="w-4 h-4 mr-2" aria-hidden="true" />
-            Upload Another Resume
-          </Button>
-        )}
+        ))}
       </div>
+    </div>
+  );
+}
+
+export function ProfileActionsBar(props: ProfileActionsProps) {
+  const actions = buildActions(props);
+
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="hidden lg:flex flex-col gap-2 bg-card border rounded-lg p-2">
+      {actions.map((action) => (
+        <div key={action.label} className="group relative">
+          <Button
+            variant={action.variant}
+            size="icon"
+            onClick={action.onClick}
+            aria-label={action.label}
+            className="transition-transform duration-150 hover:scale-110"
+          >
+            <action.icon className="w-4 h-4" aria-hidden="true" />
+          </Button>
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute right-full top-1/2 -translate-y-1/2 mr-2 whitespace-nowrap rounded-md bg-popover text-popover-foreground border px-2 py-1 text-xs font-medium shadow-md opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100 transition-all duration-150"
+          >
+            {action.label}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
