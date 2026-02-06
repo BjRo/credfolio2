@@ -307,12 +307,43 @@ func toGraphQLResumeExtractedData(raw json.RawMessage) *model.ResumeExtractedDat
 		return nil
 	}
 
+	// Convert experiences
+	experiences := make([]*model.ExtractedWorkExperience, len(data.Experience))
+	for i, exp := range data.Experience {
+		experiences[i] = &model.ExtractedWorkExperience{
+			Company:     exp.Company,
+			Title:       exp.Title,
+			Location:    exp.Location,
+			StartDate:   exp.StartDate,
+			EndDate:     exp.EndDate,
+			IsCurrent:   exp.IsCurrent,
+			Description: exp.Description,
+		}
+	}
+
+	// Convert education
+	educations := make([]*model.ExtractedEducation, len(data.Education))
+	for i, edu := range data.Education {
+		educations[i] = &model.ExtractedEducation{
+			Institution:  edu.Institution,
+			Degree:       edu.Degree,
+			Field:        edu.Field,
+			StartDate:    edu.StartDate,
+			EndDate:      edu.EndDate,
+			Gpa:          edu.GPA,
+			Achievements: edu.Achievements,
+		}
+	}
+
 	return &model.ResumeExtractedData{
 		Name:        data.Name,
 		Email:       data.Email,
 		Phone:       data.Phone,
 		Location:    data.Location,
 		Summary:     data.Summary,
+		Experiences: experiences,
+		Educations:  educations,
+		Skills:      data.Skills,
 		ExtractedAt: data.ExtractedAt,
 		Confidence:  data.Confidence,
 	}

@@ -10,6 +10,7 @@ import (
 	"backend/internal/graphql/generated"
 	"backend/internal/graphql/model"
 	"backend/internal/logger"
+	"backend/internal/service"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -902,6 +903,17 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 			return nil, fmt.Errorf("failed to parse extracted resume data: %w", err)
 		}
 
+		// Apply item-level selection filters (nil = import all)
+		if input.SelectedExperienceIndices != nil {
+			extractedData.Experience = service.FilterByIndices(extractedData.Experience, input.SelectedExperienceIndices)
+		}
+		if input.SelectedEducationIndices != nil {
+			extractedData.Education = service.FilterByIndices(extractedData.Education, input.SelectedEducationIndices)
+		}
+		if input.SelectedSkills != nil {
+			extractedData.Skills = service.FilterSkillsByName(extractedData.Skills, input.SelectedSkills)
+		}
+
 		// Materialize into profile tables
 		matResult, err := r.materializationSvc.MaterializeResumeData(ctx, resumeID, uid, &extractedData)
 		if err != nil {
@@ -959,6 +971,14 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 			var extractedData domain.ExtractedLetterData
 			if jsonErr := json.Unmarshal(refLetter.ExtractedData, &extractedData); jsonErr != nil {
 				return nil, fmt.Errorf("failed to parse extracted reference letter data: %w", jsonErr)
+			}
+
+			// Apply item-level selection filters (nil = import all)
+			if input.SelectedTestimonialIndices != nil {
+				extractedData.Testimonials = service.FilterByIndices(extractedData.Testimonials, input.SelectedTestimonialIndices)
+			}
+			if input.SelectedDiscoveredSkills != nil {
+				extractedData.DiscoveredSkills = service.FilterDiscoveredSkillsByName(extractedData.DiscoveredSkills, input.SelectedDiscoveredSkills)
 			}
 
 			// Materialize into profile tables

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ExtractionReview } from "./ExtractionReview";
 import type { ExtractionResults, ProcessDocumentIds } from "./types";
@@ -20,6 +20,38 @@ const RESUME_DATA: ExtractionResults["resume"] = {
     phone: "+49 123 456",
     location: "Berlin, Germany",
     summary: "Experienced software engineer with 10 years of experience.",
+    experiences: [
+      {
+        company: "Acme Corp",
+        title: "Senior Engineer",
+        location: "Berlin",
+        startDate: "2020-01",
+        endDate: null,
+        isCurrent: true,
+        description: "Led the backend team",
+      },
+      {
+        company: "StartupCo",
+        title: "Software Engineer",
+        location: "Munich",
+        startDate: "2018-06",
+        endDate: "2019-12",
+        isCurrent: false,
+        description: null,
+      },
+    ],
+    educations: [
+      {
+        institution: "MIT",
+        degree: "Bachelor of Science",
+        field: "Computer Science",
+        startDate: "2014-09",
+        endDate: "2018-05",
+        gpa: "3.9",
+        achievements: null,
+      },
+    ],
+    skills: ["Go", "TypeScript", "PostgreSQL"],
     extractedAt: "2025-01-01T00:00:00Z",
     confidence: 0.95,
   },
@@ -30,9 +62,17 @@ const LETTER_DATA: ExtractionResults["referenceLetter"] = {
   id: "letter-1",
   status: "COMPLETED",
   extractedData: {
-    author: { name: "Jane Smith", title: "CTO", company: "TechCo", relationship: "Former Manager" },
+    author: {
+      name: "Jane Smith",
+      title: "CTO",
+      company: "TechCo",
+      relationship: "Former Manager",
+    },
     testimonials: [
-      { quote: "John is an exceptional engineer.", skillsMentioned: ["Go", "TypeScript"] },
+      {
+        quote: "John is an exceptional engineer.",
+        skillsMentioned: ["Go", "TypeScript"],
+      },
       { quote: "He excels at problem-solving.", skillsMentioned: null },
     ],
     skillMentions: [
@@ -77,7 +117,7 @@ describe("ExtractionReview", () => {
             importDocumentResults: {
               __typename: "ImportDocumentResultsResult",
               profile: { id: "profile-1" },
-              importedCount: { experiences: 3, educations: 2, skills: 5, testimonials: 2 },
+              importedCount: { experiences: 2, educations: 1, skills: 3, testimonials: 2 },
             },
           },
         }),
@@ -123,32 +163,81 @@ describe("ExtractionReview", () => {
     });
   });
 
+  describe("Experiences section", () => {
+    it("renders each experience with a checkbox", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      expect(screen.getByText("Senior Engineer")).toBeInTheDocument();
+      expect(screen.getByText("Software Engineer")).toBeInTheDocument();
+
+      const group = screen.getByRole("group", { name: "Work experiences" });
+      const checkboxes = within(group).getAllByRole("checkbox");
+      // 2 card checkboxes + 2 inner Checkbox elements (aria-hidden)
+      expect(checkboxes.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("shows experiences pre-selected", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      const group = screen.getByRole("group", { name: "Work experiences" });
+      const cards = within(group).getAllByRole("checkbox", { checked: true });
+      expect(cards.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("toggles experience selection on click", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      const group = screen.getByRole("group", { name: "Work experiences" });
+      const firstCard = within(group).getAllByRole("checkbox")[0];
+
+      fireEvent.click(firstCard);
+      expect(firstCard).toHaveAttribute("aria-checked", "false");
+
+      fireEvent.click(firstCard);
+      expect(firstCard).toHaveAttribute("aria-checked", "true");
+    });
+  });
+
+  describe("Education section", () => {
+    it("renders education entries with checkboxes", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      expect(screen.getByText("MIT")).toBeInTheDocument();
+      expect(screen.getByText(/Bachelor of Science/)).toBeInTheDocument();
+    });
+  });
+
+  describe("Skills section", () => {
+    it("renders each skill as a selectable chip", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      const group = screen.getByRole("group", { name: "Skills" });
+      expect(within(group).getByText("Go")).toBeInTheDocument();
+      expect(within(group).getByText("TypeScript")).toBeInTheDocument();
+      expect(within(group).getByText("PostgreSQL")).toBeInTheDocument();
+    });
+
+    it("toggles skill selection on click", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      const group = screen.getByRole("group", { name: "Skills" });
+      const goChip = within(group)
+        .getAllByRole("checkbox")
+        .find((el) => el.textContent?.includes("Go") && !el.textContent?.includes("TypeScript"));
+      expect(goChip).toBeDefined();
+
+      if (goChip) {
+        fireEvent.click(goChip);
+        expect(goChip).toHaveAttribute("aria-checked", "false");
+      }
+    });
+  });
+
   describe("Testimonial section", () => {
     it("shows author name and relationship", () => {
       render(<ExtractionReview {...defaultProps} />);
       expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-      expect(screen.getByText(/Former Manager/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Former Manager/).length).toBeGreaterThanOrEqual(1);
     });
 
-    it("shows testimonial quotes", () => {
+    it("shows testimonial quotes with checkboxes", () => {
       render(<ExtractionReview {...defaultProps} />);
       expect(screen.getByText(/John is an exceptional engineer/)).toBeInTheDocument();
       expect(screen.getByText(/He excels at problem-solving/)).toBeInTheDocument();
-    });
-
-    it("shows skill mentions", () => {
-      render(<ExtractionReview {...defaultProps} />);
-      expect(screen.getByText(/Expert-level Go programming/)).toBeInTheDocument();
-    });
-
-    it("shows experience mentions", () => {
-      render(<ExtractionReview {...defaultProps} />);
-      expect(screen.getByText(/Led the backend team/)).toBeInTheDocument();
-    });
-
-    it("shows discovered skills", () => {
-      render(<ExtractionReview {...defaultProps} />);
-      expect(screen.getByText("System Design")).toBeInTheDocument();
     });
 
     it("does not show testimonial section when referenceLetter is null", () => {
@@ -162,16 +251,50 @@ describe("ExtractionReview", () => {
     });
   });
 
-  describe("Import action", () => {
-    it("shows import button", () => {
+  describe("Discovered skills section", () => {
+    it("shows discovered skills", () => {
       render(<ExtractionReview {...defaultProps} />);
-      expect(screen.getByRole("button", { name: /Import to profile/i })).toBeInTheDocument();
+      expect(screen.getByText("System Design")).toBeInTheDocument();
     });
 
-    it("calls importDocumentResults mutation when import button is clicked", async () => {
+    it("discovered skills are NOT pre-selected", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      const group = screen.getByRole("group", { name: "Discovered skills" });
+      const card = within(group).getByRole("checkbox");
+      expect(card).toHaveAttribute("aria-checked", "false");
+    });
+  });
+
+  describe("Selection counter", () => {
+    it("shows total selected item count", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      // 2 experiences + 1 education + 3 skills + 2 testimonials + 0 discovered = 8
+      expect(screen.getByText("8 item(s) selected")).toBeInTheDocument();
+    });
+
+    it("updates count when items are deselected", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      expect(screen.getByText("8 item(s) selected")).toBeInTheDocument();
+
+      // Deselect first experience
+      const expGroup = screen.getByRole("group", { name: "Work experiences" });
+      const firstExpCard = within(expGroup).getAllByRole("checkbox")[0];
+      fireEvent.click(firstExpCard);
+
+      expect(screen.getByText("7 item(s) selected")).toBeInTheDocument();
+    });
+  });
+
+  describe("Import action", () => {
+    it("shows Import Selected button", () => {
+      render(<ExtractionReview {...defaultProps} />);
+      expect(screen.getByRole("button", { name: /Import Selected/i })).toBeInTheDocument();
+    });
+
+    it("sends selection indices in mutation", async () => {
       render(<ExtractionReview {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole("button", { name: /Import to profile/i }));
+      fireEvent.click(screen.getByRole("button", { name: /Import Selected/i }));
 
       await waitFor(() => {
         expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -181,13 +304,26 @@ describe("ExtractionReview", () => {
       expect(callBody.variables.userId).toBe("user-1");
       expect(callBody.variables.input.resumeId).toBe("resume-1");
       expect(callBody.variables.input.referenceLetterID).toBe("letter-1");
+      // Selection indices should be arrays
+      expect(callBody.variables.input.selectedExperienceIndices).toEqual(
+        expect.arrayContaining([0, 1])
+      );
+      expect(callBody.variables.input.selectedEducationIndices).toEqual(
+        expect.arrayContaining([0])
+      );
+      expect(callBody.variables.input.selectedSkills).toEqual(
+        expect.arrayContaining(["Go", "TypeScript", "PostgreSQL"])
+      );
+      expect(callBody.variables.input.selectedTestimonialIndices).toEqual(
+        expect.arrayContaining([0, 1])
+      );
     });
 
     it("shows loading state during import", async () => {
       fetchSpy.mockReturnValueOnce(new Promise(() => {})); // never resolves
       render(<ExtractionReview {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole("button", { name: /Import to profile/i }));
+      fireEvent.click(screen.getByRole("button", { name: /Import Selected/i }));
 
       await waitFor(() => {
         expect(screen.getByRole("button", { name: /Importing/i })).toBeDisabled();
@@ -197,7 +333,7 @@ describe("ExtractionReview", () => {
     it("calls onImportComplete with profile ID on success", async () => {
       render(<ExtractionReview {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole("button", { name: /Import to profile/i }));
+      fireEvent.click(screen.getByRole("button", { name: /Import Selected/i }));
 
       await waitFor(() => {
         expect(defaultProps.onImportComplete).toHaveBeenCalledWith("profile-1");
@@ -219,7 +355,7 @@ describe("ExtractionReview", () => {
       });
 
       render(<ExtractionReview {...defaultProps} />);
-      fireEvent.click(screen.getByRole("button", { name: /Import to profile/i }));
+      fireEvent.click(screen.getByRole("button", { name: /Import Selected/i }));
 
       await waitFor(() => {
         expect(screen.getByText("Resume not in completed state")).toBeInTheDocument();
@@ -234,7 +370,34 @@ describe("ExtractionReview", () => {
 
       render(<ExtractionReview {...defaultProps} results={failedResults} />);
 
-      expect(screen.getByRole("button", { name: /Import to profile/i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /Import Selected/i })).toBeDisabled();
+    });
+
+    it("disables import when nothing is selected", () => {
+      // Resume-only with empty arrays
+      const emptyResume: ExtractionResults = {
+        resume: {
+          id: "resume-1",
+          status: "COMPLETED",
+          extractedData: {
+            name: "John",
+            email: null,
+            phone: null,
+            location: null,
+            summary: null,
+            experiences: [],
+            educations: [],
+            skills: [],
+            extractedAt: "2025-01-01",
+            confidence: 0.9,
+          },
+          errorMessage: null,
+        },
+        referenceLetter: null,
+      };
+
+      render(<ExtractionReview {...defaultProps} results={emptyResume} />);
+      expect(screen.getByRole("button", { name: /Import Selected/i })).toBeDisabled();
     });
   });
 
@@ -259,7 +422,7 @@ describe("ExtractionReview", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /Something doesn't look right/i }));
 
-      expect(screen.getByRole("button", { name: /Import to profile/i })).toBeEnabled();
+      expect(screen.getByRole("button", { name: /Import Selected/i })).toBeEnabled();
     });
   });
 
@@ -306,7 +469,7 @@ describe("ExtractionReview", () => {
 
       render(<ExtractionReview {...defaultProps} results={partialResults} />);
 
-      expect(screen.getByRole("button", { name: /Import to profile/i })).toBeEnabled();
+      expect(screen.getByRole("button", { name: /Import Selected/i })).toBeEnabled();
     });
   });
 });

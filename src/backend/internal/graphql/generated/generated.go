@@ -166,6 +166,16 @@ type ComplexityRoot struct {
 		Title        func(childComplexity int) int
 	}
 
+	ExtractedEducation struct {
+		Achievements func(childComplexity int) int
+		Degree       func(childComplexity int) int
+		EndDate      func(childComplexity int) int
+		Field        func(childComplexity int) int
+		Gpa          func(childComplexity int) int
+		Institution  func(childComplexity int) int
+		StartDate    func(childComplexity int) int
+	}
+
 	ExtractedExperienceMention struct {
 		Company func(childComplexity int) int
 		Quote   func(childComplexity int) int
@@ -190,6 +200,16 @@ type ComplexityRoot struct {
 	ExtractedTestimonial struct {
 		Quote           func(childComplexity int) int
 		SkillsMentioned func(childComplexity int) int
+	}
+
+	ExtractedWorkExperience struct {
+		Company     func(childComplexity int) int
+		Description func(childComplexity int) int
+		EndDate     func(childComplexity int) int
+		IsCurrent   func(childComplexity int) int
+		Location    func(childComplexity int) int
+		StartDate   func(childComplexity int) int
+		Title       func(childComplexity int) int
 	}
 
 	ExtractionMetadata struct {
@@ -390,11 +410,14 @@ type ComplexityRoot struct {
 
 	ResumeExtractedData struct {
 		Confidence  func(childComplexity int) int
+		Educations  func(childComplexity int) int
 		Email       func(childComplexity int) int
+		Experiences func(childComplexity int) int
 		ExtractedAt func(childComplexity int) int
 		Location    func(childComplexity int) int
 		Name        func(childComplexity int) int
 		Phone       func(childComplexity int) int
+		Skills      func(childComplexity int) int
 		Summary     func(childComplexity int) int
 	}
 
@@ -919,6 +942,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ExtractedAuthor.Title(childComplexity), true
 
+	case "ExtractedEducation.achievements":
+		if e.complexity.ExtractedEducation.Achievements == nil {
+			break
+		}
+
+		return e.complexity.ExtractedEducation.Achievements(childComplexity), true
+	case "ExtractedEducation.degree":
+		if e.complexity.ExtractedEducation.Degree == nil {
+			break
+		}
+
+		return e.complexity.ExtractedEducation.Degree(childComplexity), true
+	case "ExtractedEducation.endDate":
+		if e.complexity.ExtractedEducation.EndDate == nil {
+			break
+		}
+
+		return e.complexity.ExtractedEducation.EndDate(childComplexity), true
+	case "ExtractedEducation.field":
+		if e.complexity.ExtractedEducation.Field == nil {
+			break
+		}
+
+		return e.complexity.ExtractedEducation.Field(childComplexity), true
+	case "ExtractedEducation.gpa":
+		if e.complexity.ExtractedEducation.Gpa == nil {
+			break
+		}
+
+		return e.complexity.ExtractedEducation.Gpa(childComplexity), true
+	case "ExtractedEducation.institution":
+		if e.complexity.ExtractedEducation.Institution == nil {
+			break
+		}
+
+		return e.complexity.ExtractedEducation.Institution(childComplexity), true
+	case "ExtractedEducation.startDate":
+		if e.complexity.ExtractedEducation.StartDate == nil {
+			break
+		}
+
+		return e.complexity.ExtractedEducation.StartDate(childComplexity), true
+
 	case "ExtractedExperienceMention.company":
 		if e.complexity.ExtractedExperienceMention.Company == nil {
 			break
@@ -1006,6 +1072,49 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ExtractedTestimonial.SkillsMentioned(childComplexity), true
+
+	case "ExtractedWorkExperience.company":
+		if e.complexity.ExtractedWorkExperience.Company == nil {
+			break
+		}
+
+		return e.complexity.ExtractedWorkExperience.Company(childComplexity), true
+	case "ExtractedWorkExperience.description":
+		if e.complexity.ExtractedWorkExperience.Description == nil {
+			break
+		}
+
+		return e.complexity.ExtractedWorkExperience.Description(childComplexity), true
+	case "ExtractedWorkExperience.endDate":
+		if e.complexity.ExtractedWorkExperience.EndDate == nil {
+			break
+		}
+
+		return e.complexity.ExtractedWorkExperience.EndDate(childComplexity), true
+	case "ExtractedWorkExperience.isCurrent":
+		if e.complexity.ExtractedWorkExperience.IsCurrent == nil {
+			break
+		}
+
+		return e.complexity.ExtractedWorkExperience.IsCurrent(childComplexity), true
+	case "ExtractedWorkExperience.location":
+		if e.complexity.ExtractedWorkExperience.Location == nil {
+			break
+		}
+
+		return e.complexity.ExtractedWorkExperience.Location(childComplexity), true
+	case "ExtractedWorkExperience.startDate":
+		if e.complexity.ExtractedWorkExperience.StartDate == nil {
+			break
+		}
+
+		return e.complexity.ExtractedWorkExperience.StartDate(childComplexity), true
+	case "ExtractedWorkExperience.title":
+		if e.complexity.ExtractedWorkExperience.Title == nil {
+			break
+		}
+
+		return e.complexity.ExtractedWorkExperience.Title(childComplexity), true
 
 	case "ExtractionMetadata.extractedAt":
 		if e.complexity.ExtractionMetadata.ExtractedAt == nil {
@@ -2093,12 +2202,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ResumeExtractedData.Confidence(childComplexity), true
+	case "ResumeExtractedData.educations":
+		if e.complexity.ResumeExtractedData.Educations == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Educations(childComplexity), true
 	case "ResumeExtractedData.email":
 		if e.complexity.ResumeExtractedData.Email == nil {
 			break
 		}
 
 		return e.complexity.ResumeExtractedData.Email(childComplexity), true
+	case "ResumeExtractedData.experiences":
+		if e.complexity.ResumeExtractedData.Experiences == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Experiences(childComplexity), true
 	case "ResumeExtractedData.extractedAt":
 		if e.complexity.ResumeExtractedData.ExtractedAt == nil {
 			break
@@ -2123,6 +2244,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ResumeExtractedData.Phone(childComplexity), true
+	case "ResumeExtractedData.skills":
+		if e.complexity.ResumeExtractedData.Skills == nil {
+			break
+		}
+
+		return e.complexity.ResumeExtractedData.Skills(childComplexity), true
 	case "ResumeExtractedData.summary":
 		if e.complexity.ResumeExtractedData.Summary == nil {
 			break
@@ -2728,6 +2855,46 @@ enum ResumeStatus {
 }
 
 """
+A work experience entry extracted from a resume.
+"""
+type ExtractedWorkExperience {
+  """Company or organization name."""
+  company: String!
+  """Job title or role."""
+  title: String!
+  """Location of the role."""
+  location: String
+  """Start date (YYYY-MM format)."""
+  startDate: String
+  """End date (YYYY-MM format), null if current."""
+  endDate: String
+  """Whether this is the current position."""
+  isCurrent: Boolean!
+  """Role description or achievements."""
+  description: String
+}
+
+"""
+An education entry extracted from a resume.
+"""
+type ExtractedEducation {
+  """Institution name."""
+  institution: String!
+  """Degree earned."""
+  degree: String
+  """Field of study."""
+  field: String
+  """Start date."""
+  startDate: String
+  """End date."""
+  endDate: String
+  """Grade point average."""
+  gpa: String
+  """Achievements or honors."""
+  achievements: String
+}
+
+"""
 Structured data extracted from a resume.
 Education and work experience are materialized into profile tables
 and exposed via ProfileEducation/ProfileExperience types.
@@ -2743,6 +2910,12 @@ type ResumeExtractedData {
   location: String
   """Professional summary or objective."""
   summary: String
+  """Work experience entries."""
+  experiences: [ExtractedWorkExperience!]!
+  """Education entries."""
+  educations: [ExtractedEducation!]!
+  """Skill names."""
+  skills: [String!]!
   """When the extraction was performed."""
   extractedAt: DateTime!
   """Overall confidence score (0.0 to 1.0)."""
@@ -3451,6 +3624,16 @@ input ImportDocumentResultsInput {
   resumeId: ID
   """Reference letter ID whose validations should be applied (null to skip)."""
   referenceLetterID: ID
+  """Indices of experiences to import. Null = import all."""
+  selectedExperienceIndices: [Int!]
+  """Indices of education entries to import. Null = import all."""
+  selectedEducationIndices: [Int!]
+  """Skill names to import. Null = import all."""
+  selectedSkills: [String!]
+  """Indices of testimonials to import. Null = import all."""
+  selectedTestimonialIndices: [Int!]
+  """Discovered skill names to import from reference letter. Null = import all."""
+  selectedDiscoveredSkills: [String!]
 }
 
 """
@@ -6626,6 +6809,209 @@ func (ec *executionContext) fieldContext_ExtractedAuthor_relationship(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _ExtractedEducation_institution(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedEducation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedEducation_institution,
+		func(ctx context.Context) (any, error) {
+			return obj.Institution, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedEducation_institution(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedEducation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedEducation_degree(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedEducation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedEducation_degree,
+		func(ctx context.Context) (any, error) {
+			return obj.Degree, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedEducation_degree(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedEducation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedEducation_field(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedEducation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedEducation_field,
+		func(ctx context.Context) (any, error) {
+			return obj.Field, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedEducation_field(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedEducation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedEducation_startDate(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedEducation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedEducation_startDate,
+		func(ctx context.Context) (any, error) {
+			return obj.StartDate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedEducation_startDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedEducation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedEducation_endDate(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedEducation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedEducation_endDate,
+		func(ctx context.Context) (any, error) {
+			return obj.EndDate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedEducation_endDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedEducation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedEducation_gpa(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedEducation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedEducation_gpa,
+		func(ctx context.Context) (any, error) {
+			return obj.Gpa, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedEducation_gpa(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedEducation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedEducation_achievements(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedEducation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedEducation_achievements,
+		func(ctx context.Context) (any, error) {
+			return obj.Achievements, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedEducation_achievements(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedEducation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ExtractedExperienceMention_company(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedExperienceMention) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7070,6 +7456,209 @@ func (ec *executionContext) _ExtractedTestimonial_skillsMentioned(ctx context.Co
 func (ec *executionContext) fieldContext_ExtractedTestimonial_skillsMentioned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ExtractedTestimonial",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedWorkExperience_company(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedWorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedWorkExperience_company,
+		func(ctx context.Context) (any, error) {
+			return obj.Company, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedWorkExperience_company(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedWorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedWorkExperience_title(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedWorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedWorkExperience_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedWorkExperience_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedWorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedWorkExperience_location(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedWorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedWorkExperience_location,
+		func(ctx context.Context) (any, error) {
+			return obj.Location, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedWorkExperience_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedWorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedWorkExperience_startDate(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedWorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedWorkExperience_startDate,
+		func(ctx context.Context) (any, error) {
+			return obj.StartDate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedWorkExperience_startDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedWorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedWorkExperience_endDate(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedWorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedWorkExperience_endDate,
+		func(ctx context.Context) (any, error) {
+			return obj.EndDate, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedWorkExperience_endDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedWorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedWorkExperience_isCurrent(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedWorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedWorkExperience_isCurrent,
+		func(ctx context.Context) (any, error) {
+			return obj.IsCurrent, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedWorkExperience_isCurrent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedWorkExperience",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ExtractedWorkExperience_description(ctx context.Context, field graphql.CollectedField, obj *model.ExtractedWorkExperience) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ExtractedWorkExperience_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ExtractedWorkExperience_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExtractedWorkExperience",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -12358,6 +12947,12 @@ func (ec *executionContext) fieldContext_Resume_extractedData(_ context.Context,
 				return ec.fieldContext_ResumeExtractedData_location(ctx, field)
 			case "summary":
 				return ec.fieldContext_ResumeExtractedData_summary(ctx, field)
+			case "experiences":
+				return ec.fieldContext_ResumeExtractedData_experiences(ctx, field)
+			case "educations":
+				return ec.fieldContext_ResumeExtractedData_educations(ctx, field)
+			case "skills":
+				return ec.fieldContext_ResumeExtractedData_skills(ctx, field)
 			case "extractedAt":
 				return ec.fieldContext_ResumeExtractedData_extractedAt(ctx, field)
 			case "confidence":
@@ -12679,6 +13274,125 @@ func (ec *executionContext) _ResumeExtractedData_summary(ctx context.Context, fi
 }
 
 func (ec *executionContext) fieldContext_ResumeExtractedData_summary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_experiences(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_experiences,
+		func(ctx context.Context) (any, error) {
+			return obj.Experiences, nil
+		},
+		nil,
+		ec.marshalNExtractedWorkExperience2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedWorkExperienceᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_experiences(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "company":
+				return ec.fieldContext_ExtractedWorkExperience_company(ctx, field)
+			case "title":
+				return ec.fieldContext_ExtractedWorkExperience_title(ctx, field)
+			case "location":
+				return ec.fieldContext_ExtractedWorkExperience_location(ctx, field)
+			case "startDate":
+				return ec.fieldContext_ExtractedWorkExperience_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_ExtractedWorkExperience_endDate(ctx, field)
+			case "isCurrent":
+				return ec.fieldContext_ExtractedWorkExperience_isCurrent(ctx, field)
+			case "description":
+				return ec.fieldContext_ExtractedWorkExperience_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ExtractedWorkExperience", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_educations(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_educations,
+		func(ctx context.Context) (any, error) {
+			return obj.Educations, nil
+		},
+		nil,
+		ec.marshalNExtractedEducation2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedEducationᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_educations(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResumeExtractedData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "institution":
+				return ec.fieldContext_ExtractedEducation_institution(ctx, field)
+			case "degree":
+				return ec.fieldContext_ExtractedEducation_degree(ctx, field)
+			case "field":
+				return ec.fieldContext_ExtractedEducation_field(ctx, field)
+			case "startDate":
+				return ec.fieldContext_ExtractedEducation_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_ExtractedEducation_endDate(ctx, field)
+			case "gpa":
+				return ec.fieldContext_ExtractedEducation_gpa(ctx, field)
+			case "achievements":
+				return ec.fieldContext_ExtractedEducation_achievements(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ExtractedEducation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResumeExtractedData_skills(ctx context.Context, field graphql.CollectedField, obj *model.ResumeExtractedData) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ResumeExtractedData_skills,
+		func(ctx context.Context) (any, error) {
+			return obj.Skills, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ResumeExtractedData_skills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ResumeExtractedData",
 		Field:      field,
@@ -15764,7 +16478,7 @@ func (ec *executionContext) unmarshalInputImportDocumentResultsInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"resumeId", "referenceLetterID"}
+	fieldsInOrder := [...]string{"resumeId", "referenceLetterID", "selectedExperienceIndices", "selectedEducationIndices", "selectedSkills", "selectedTestimonialIndices", "selectedDiscoveredSkills"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15785,6 +16499,41 @@ func (ec *executionContext) unmarshalInputImportDocumentResultsInput(ctx context
 				return it, err
 			}
 			it.ReferenceLetterID = data
+		case "selectedExperienceIndices":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedExperienceIndices"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelectedExperienceIndices = data
+		case "selectedEducationIndices":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedEducationIndices"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelectedEducationIndices = data
+		case "selectedSkills":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedSkills"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelectedSkills = data
+		case "selectedTestimonialIndices":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedTestimonialIndices"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelectedTestimonialIndices = data
+		case "selectedDiscoveredSkills":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedDiscoveredSkills"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SelectedDiscoveredSkills = data
 		}
 	}
 
@@ -17520,6 +18269,57 @@ func (ec *executionContext) _ExtractedAuthor(ctx context.Context, sel ast.Select
 	return out
 }
 
+var extractedEducationImplementors = []string{"ExtractedEducation"}
+
+func (ec *executionContext) _ExtractedEducation(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedEducation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, extractedEducationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ExtractedEducation")
+		case "institution":
+			out.Values[i] = ec._ExtractedEducation_institution(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "degree":
+			out.Values[i] = ec._ExtractedEducation_degree(ctx, field, obj)
+		case "field":
+			out.Values[i] = ec._ExtractedEducation_field(ctx, field, obj)
+		case "startDate":
+			out.Values[i] = ec._ExtractedEducation_startDate(ctx, field, obj)
+		case "endDate":
+			out.Values[i] = ec._ExtractedEducation_endDate(ctx, field, obj)
+		case "gpa":
+			out.Values[i] = ec._ExtractedEducation_gpa(ctx, field, obj)
+		case "achievements":
+			out.Values[i] = ec._ExtractedEducation_achievements(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var extractedExperienceMentionImplementors = []string{"ExtractedExperienceMention"}
 
 func (ec *executionContext) _ExtractedExperienceMention(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedExperienceMention) graphql.Marshaler {
@@ -17697,6 +18497,63 @@ func (ec *executionContext) _ExtractedTestimonial(ctx context.Context, sel ast.S
 			}
 		case "skillsMentioned":
 			out.Values[i] = ec._ExtractedTestimonial_skillsMentioned(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var extractedWorkExperienceImplementors = []string{"ExtractedWorkExperience"}
+
+func (ec *executionContext) _ExtractedWorkExperience(ctx context.Context, sel ast.SelectionSet, obj *model.ExtractedWorkExperience) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, extractedWorkExperienceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ExtractedWorkExperience")
+		case "company":
+			out.Values[i] = ec._ExtractedWorkExperience_company(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._ExtractedWorkExperience_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "location":
+			out.Values[i] = ec._ExtractedWorkExperience_location(ctx, field, obj)
+		case "startDate":
+			out.Values[i] = ec._ExtractedWorkExperience_startDate(ctx, field, obj)
+		case "endDate":
+			out.Values[i] = ec._ExtractedWorkExperience_endDate(ctx, field, obj)
+		case "isCurrent":
+			out.Values[i] = ec._ExtractedWorkExperience_isCurrent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._ExtractedWorkExperience_description(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -19460,6 +20317,21 @@ func (ec *executionContext) _ResumeExtractedData(ctx context.Context, sel ast.Se
 			out.Values[i] = ec._ResumeExtractedData_location(ctx, field, obj)
 		case "summary":
 			out.Values[i] = ec._ResumeExtractedData_summary(ctx, field, obj)
+		case "experiences":
+			out.Values[i] = ec._ResumeExtractedData_experiences(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "educations":
+			out.Values[i] = ec._ResumeExtractedData_educations(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "skills":
+			out.Values[i] = ec._ResumeExtractedData_skills(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "extractedAt":
 			out.Values[i] = ec._ResumeExtractedData_extractedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -20878,6 +21750,60 @@ func (ec *executionContext) marshalNExtractedAuthor2ᚖbackendᚋinternalᚋgrap
 	return ec._ExtractedAuthor(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNExtractedEducation2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedEducationᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedEducation) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNExtractedEducation2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedEducation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNExtractedEducation2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedEducation(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedEducation) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ExtractedEducation(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNExtractedExperienceMention2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedExperienceMentionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedExperienceMention) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -21038,6 +21964,60 @@ func (ec *executionContext) marshalNExtractedTestimonial2ᚖbackendᚋinternal�
 		return graphql.Null
 	}
 	return ec._ExtractedTestimonial(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNExtractedWorkExperience2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedWorkExperienceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ExtractedWorkExperience) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNExtractedWorkExperience2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedWorkExperience(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNExtractedWorkExperience2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractedWorkExperience(ctx context.Context, sel ast.SelectionSet, v *model.ExtractedWorkExperience) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ExtractedWorkExperience(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNExtractionMetadata2ᚖbackendᚋinternalᚋgraphqlᚋmodelᚐExtractionMetadata(ctx context.Context, sel ast.SelectionSet, v *model.ExtractionMetadata) graphql.Marshaler {
@@ -22232,6 +23212,42 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	_ = ctx
 	res := graphql.MarshalID(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOInt2ᚕintᚄ(ctx context.Context, v any) ([]int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]int, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNInt2int(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOInt2ᚕintᚄ(ctx context.Context, sel ast.SelectionSet, v []int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNInt2int(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v any) (*int, error) {

@@ -3,8 +3,8 @@
 import { Quote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SelectionControls } from "@/components/ui/selection-controls";
 import type { TestimonialItem } from "./page";
-import { SelectionControls } from "./SelectionControls";
 
 interface TestimonialsSectionProps {
   testimonials: TestimonialItem[];

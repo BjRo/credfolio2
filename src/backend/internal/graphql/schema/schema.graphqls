@@ -273,6 +273,46 @@ enum ResumeStatus {
 }
 
 """
+A work experience entry extracted from a resume.
+"""
+type ExtractedWorkExperience {
+  """Company or organization name."""
+  company: String!
+  """Job title or role."""
+  title: String!
+  """Location of the role."""
+  location: String
+  """Start date (YYYY-MM format)."""
+  startDate: String
+  """End date (YYYY-MM format), null if current."""
+  endDate: String
+  """Whether this is the current position."""
+  isCurrent: Boolean!
+  """Role description or achievements."""
+  description: String
+}
+
+"""
+An education entry extracted from a resume.
+"""
+type ExtractedEducation {
+  """Institution name."""
+  institution: String!
+  """Degree earned."""
+  degree: String
+  """Field of study."""
+  field: String
+  """Start date."""
+  startDate: String
+  """End date."""
+  endDate: String
+  """Grade point average."""
+  gpa: String
+  """Achievements or honors."""
+  achievements: String
+}
+
+"""
 Structured data extracted from a resume.
 Education and work experience are materialized into profile tables
 and exposed via ProfileEducation/ProfileExperience types.
@@ -288,6 +328,12 @@ type ResumeExtractedData {
   location: String
   """Professional summary or objective."""
   summary: String
+  """Work experience entries."""
+  experiences: [ExtractedWorkExperience!]!
+  """Education entries."""
+  educations: [ExtractedEducation!]!
+  """Skill names."""
+  skills: [String!]!
   """When the extraction was performed."""
   extractedAt: DateTime!
   """Overall confidence score (0.0 to 1.0)."""
@@ -996,6 +1042,16 @@ input ImportDocumentResultsInput {
   resumeId: ID
   """Reference letter ID whose validations should be applied (null to skip)."""
   referenceLetterID: ID
+  """Indices of experiences to import. Null = import all."""
+  selectedExperienceIndices: [Int!]
+  """Indices of education entries to import. Null = import all."""
+  selectedEducationIndices: [Int!]
+  """Skill names to import. Null = import all."""
+  selectedSkills: [String!]
+  """Indices of testimonials to import. Null = import all."""
+  selectedTestimonialIndices: [Int!]
+  """Discovered skill names to import from reference letter. Null = import all."""
+  selectedDiscoveredSkills: [String!]
 }
 
 """

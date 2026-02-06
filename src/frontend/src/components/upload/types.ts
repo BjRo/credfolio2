@@ -58,6 +58,26 @@ export interface ProcessDocumentIds {
   referenceLetterID: string | null;
 }
 
+export interface ExtractedWorkExperience {
+  company: string;
+  title: string;
+  location: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  isCurrent: boolean;
+  description: string | null;
+}
+
+export interface ExtractedEducation {
+  institution: string;
+  degree: string | null;
+  field: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  gpa: string | null;
+  achievements: string | null;
+}
+
 export interface ResumeExtractionData {
   id: string;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
@@ -67,6 +87,9 @@ export interface ResumeExtractionData {
     phone: string | null;
     location: string | null;
     summary: string | null;
+    experiences: ExtractedWorkExperience[];
+    educations: ExtractedEducation[];
+    skills: string[];
     extractedAt: string;
     confidence: number;
   } | null;

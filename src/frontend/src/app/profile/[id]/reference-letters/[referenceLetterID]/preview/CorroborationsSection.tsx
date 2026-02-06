@@ -2,8 +2,8 @@
 
 import { CheckCircle2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SelectionControls } from "@/components/ui/selection-controls";
 import type { ExperienceCorroboration, SkillCorroboration } from "./page";
-import { SelectionControls } from "./SelectionControls";
 
 interface CorroborationsSectionProps {
   skillCorroborations: SkillCorroboration[];
