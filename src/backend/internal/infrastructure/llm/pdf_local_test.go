@@ -2,6 +2,7 @@ package llm
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -42,6 +43,18 @@ func TestExtractTextFromPDF_EmptyData(t *testing.T) {
 	}
 }
 
+func TestExtractTextFromPDF_PanicRecovery(t *testing.T) {
+	// This tests that if the PDF library panics internally (e.g., on a crafted
+	// malformed PDF), the function recovers and returns an error instead of crashing.
+	// We can't easily trigger an internal panic, but we verify the function handles
+	// random binary data without panicking.
+	randomData := []byte("%PDF-1.4 " + strings.Repeat("\x00\xFF\xFE", 1000))
+	_, err := extractTextFromPDF(randomData)
+	// We expect either an error or empty text — but never a panic.
+	// Log the result for visibility.
+	t.Logf("extractTextFromPDF with random data: err=%v", err)
+}
+
 func TestIsUsableText_GoodText(t *testing.T) {
 	tests := []struct {
 		name string
@@ -56,6 +69,11 @@ func TestIsUsableText_GoodText(t *testing.T) {
 		{
 			name: "text with reasonable word density",
 			text: "This is a well-formed document with proper English text that contains meaningful content about work experience and professional skills.",
+			want: true,
+		},
+		{
+			name: "exactly at minimum length boundary",
+			text: strings.Repeat("ab ", 17)[:minUsableTextLength],
 			want: true,
 		},
 	}

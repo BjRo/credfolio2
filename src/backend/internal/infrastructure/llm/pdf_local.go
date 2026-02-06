@@ -16,14 +16,28 @@ const minUsableTextLength = 50
 
 // minASCIIWordRatio is the minimum fraction of whitespace-separated tokens that must consist
 // of ASCII-only characters. Scanned/garbled PDFs produce many non-ASCII tokens.
+// NOTE: This heuristic is biased toward English-language documents. Non-English PDFs
+// (German, French, Japanese, etc.) will typically fall through to the LLM path, which is
+// acceptable since Credfolio currently targets English-language resumes and letters.
 const minASCIIWordRatio = 0.5
 
 // extractTextFromPDF extracts plain text from a PDF using a Go-native library.
 // Returns the extracted text or an error if the PDF cannot be parsed.
-func extractTextFromPDF(data []byte) (string, error) {
+// Includes panic recovery since the underlying library can panic on malformed PDFs.
+func extractTextFromPDF(data []byte) (result string, err error) {
 	if len(data) == 0 {
 		return "", fmt.Errorf("empty PDF data")
 	}
+
+	// The ledongthuc/pdf library can panic on malformed PDFs (e.g., index out of range
+	// during cross-reference parsing). Since this processes user-uploaded data, we must
+	// recover to prevent a single bad PDF from crashing the server.
+	defer func() {
+		if r := recover(); r != nil {
+			result = ""
+			err = fmt.Errorf("PDF parsing panicked: %v", r)
+		}
+	}()
 
 	reader := bytes.NewReader(data)
 	pdfReader, err := pdf.NewReader(reader, int64(len(data)))
