@@ -986,6 +986,60 @@ func (r *mutationResolver) ImportDocumentResults(ctx context.Context, userID str
 		)
 	}
 
+	// Materialize reference letter data if reference letter ID is provided
+	if input.ReferenceLetterID != nil {
+		refLetterID, err := uuid.Parse(*input.ReferenceLetterID)
+		if err != nil {
+			return &model.ImportDocumentResultsError{
+				Message: "invalid reference letter ID format",
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+
+		refLetter, err := r.refLetterRepo.GetByID(ctx, refLetterID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get reference letter: %w", err)
+		}
+		if refLetter == nil {
+			return &model.ImportDocumentResultsError{
+				Message: "reference letter not found",
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+		if refLetter.UserID != uid {
+			return &model.ImportDocumentResultsError{
+				Message: "reference letter does not belong to user",
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+		if refLetter.Status != domain.ReferenceLetterStatusCompleted {
+			return &model.ImportDocumentResultsError{
+				Message: fmt.Sprintf("reference letter is not ready for import (status: %s)", refLetter.Status),
+				Field:   stringPtr("referenceLetterID"),
+			}, nil
+		}
+
+		// Parse extracted data
+		var extractedData domain.ExtractedLetterData
+		if err := json.Unmarshal(refLetter.ExtractedData, &extractedData); err != nil {
+			return nil, fmt.Errorf("failed to parse extracted reference letter data: %w", err)
+		}
+
+		// Materialize into profile tables
+		matResult, err := r.materializationSvc.MaterializeReferenceLetterData(ctx, refLetterID, uid, &extractedData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to materialize reference letter data: %w", err)
+		}
+
+		imported.Testimonials = matResult.Testimonials
+
+		r.log.Info("Reference letter data materialized",
+			logger.Feature("document-processing"),
+			logger.String("reference_letter_id", refLetterID.String()),
+			logger.Int("testimonials", matResult.Testimonials),
+		)
+	}
+
 	// Get or create the profile to return
 	profile, err := r.profileRepo.GetOrCreateByUserID(ctx, uid)
 	if err != nil {

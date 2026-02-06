@@ -349,6 +349,28 @@ mutation DetectDocumentContent($userId: ID!, $file: Upload!) {
   }
 }
 
+mutation ImportDocumentResults($userId: ID!, $input: ImportDocumentResultsInput!) {
+  importDocumentResults(userId: $userId, input: $input) {
+    ... on ImportDocumentResultsResult {
+      __typename
+      profile {
+        id
+      }
+      importedCount {
+        experiences
+        educations
+        skills
+        testimonials
+      }
+    }
+    ... on ImportDocumentResultsError {
+      __typename
+      message
+      field
+    }
+  }
+}
+
 mutation ReportDocumentFeedback($userId: ID!, $input: DocumentFeedbackInput!) {
   reportDocumentFeedback(userId: $userId, input: $input) {
     success

@@ -982,6 +982,8 @@ type ImportedCount {
   educations: Int!
   """Number of skills materialized."""
   skills: Int!
+  """Number of testimonials materialized from reference letters."""
+  testimonials: Int!
 }
 
 """

@@ -15,6 +15,7 @@ import (
 	"backend/internal/graphql/resolver"
 	"backend/internal/infrastructure/storage"
 	"backend/internal/logger"
+	"backend/internal/service"
 
 	"github.com/99designs/gqlgen/graphql"
 )
@@ -3254,6 +3255,187 @@ func TestMutation_DetectDocumentContent(t *testing.T) {
 		_, err := rFail.Mutation().DetectDocumentContent(ctx, user.ID.String(), file)
 		if err == nil {
 			t.Error("expected error when detection fails")
+		}
+	})
+}
+
+func TestImportDocumentResults_ReferenceLetterMaterialization(t *testing.T) {
+	userRepo := newMockUserRepository()
+	refLetterRepo := newMockReferenceLetterRepository()
+	profileRepo := newMockProfileRepository()
+	authorRepo := newMockAuthorRepository()
+	testimonialRepo := newMockTestimonialRepository()
+
+	ctx := context.Background()
+
+	// Create a test user
+	name := testUserName
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        "import-test@example.com",
+		PasswordHash: "hashed",
+		Name:         &name,
+	}
+	mustCreateUser(userRepo, user)
+
+	// Create a profile for the user
+	profile := &domain.Profile{
+		ID:     uuid.New(),
+		UserID: user.ID,
+	}
+	if err := profileRepo.Create(ctx, profile); err != nil {
+		t.Fatalf("setup: failed to create profile: %v", err)
+	}
+
+	// Create extracted data for reference letter
+	extractedData := domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "Jane Manager",
+			Title:        stringPtr("VP of Engineering"),
+			Company:      stringPtr("Acme Corp"),
+			Relationship: domain.AuthorRelationshipManager,
+		},
+		Testimonials: []domain.ExtractedTestimonial{
+			{Quote: "Outstanding engineer with deep expertise.", SkillsMentioned: []string{"Go", "Architecture"}},
+			{Quote: "Excellent communicator and team player.", SkillsMentioned: []string{"Communication"}},
+		},
+	}
+	extractedDataJSON, err := json.Marshal(extractedData)
+	if err != nil {
+		t.Fatalf("setup: failed to marshal extracted data: %v", err)
+	}
+
+	// Create a completed reference letter
+	refLetter := &domain.ReferenceLetter{
+		ID:            uuid.New(),
+		UserID:        user.ID,
+		Status:        domain.ReferenceLetterStatusCompleted,
+		ExtractedData: extractedDataJSON,
+	}
+	mustCreateReferenceLetter(refLetterRepo, refLetter)
+
+	// Create materialization service with mock repos
+	matSvc := service.NewMaterializationService(
+		profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(),
+		newMockProfileSkillRepository(), authorRepo, testimonialRepo,
+	)
+
+	r := resolver.NewResolver(userRepo, newMockFileRepository(), refLetterRepo, newMockResumeRepository(), profileRepo, newMockProfileExperienceRepository(), newMockProfileEducationRepository(), newMockProfileSkillRepository(), authorRepo, testimonialRepo, newMockSkillValidationRepository(), newMockExperienceValidationRepository(), storage.NewMockStorage(), newMockJobEnqueuer(), nil, matSvc, testLogger())
+	mutation := r.Mutation()
+
+	t.Run("materializes reference letter testimonials", func(t *testing.T) {
+		refLetterIDStr := refLetter.ID.String()
+		input := model.ImportDocumentResultsInput{
+			ReferenceLetterID: &refLetterIDStr,
+		}
+
+		resp, err := mutation.ImportDocumentResults(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("ImportDocumentResults returned error: %v", err)
+		}
+
+		result, ok := resp.(*model.ImportDocumentResultsResult)
+		if !ok {
+			t.Fatalf("expected ImportDocumentResultsResult, got %T: %+v", resp, resp)
+		}
+
+		if result.ImportedCount.Testimonials != 2 {
+			t.Errorf("expected 2 testimonials imported, got %d", result.ImportedCount.Testimonials)
+		}
+		if result.ImportedCount.Experiences != 0 {
+			t.Errorf("expected 0 experiences imported, got %d", result.ImportedCount.Experiences)
+		}
+
+		// Verify testimonials were created
+		testimonials, err := testimonialRepo.GetByReferenceLetterID(ctx, refLetter.ID)
+		if err != nil {
+			t.Fatalf("failed to get testimonials: %v", err)
+		}
+		if len(testimonials) != 2 {
+			t.Fatalf("expected 2 testimonials in repo, got %d", len(testimonials))
+		}
+
+		// Verify author was created
+		authors, err := authorRepo.GetByProfileID(ctx, profile.ID)
+		if err != nil {
+			t.Fatalf("failed to get authors: %v", err)
+		}
+		if len(authors) != 1 {
+			t.Fatalf("expected 1 author in repo, got %d", len(authors))
+		}
+		if authors[0].Name != "Jane Manager" {
+			t.Errorf("expected author name 'Jane Manager', got %q", authors[0].Name)
+		}
+	})
+
+	t.Run("returns error for non-completed reference letter", func(t *testing.T) {
+		pendingLetter := &domain.ReferenceLetter{
+			ID:     uuid.New(),
+			UserID: user.ID,
+			Status: domain.ReferenceLetterStatusPending,
+		}
+		mustCreateReferenceLetter(refLetterRepo, pendingLetter)
+
+		pendingID := pendingLetter.ID.String()
+		input := model.ImportDocumentResultsInput{
+			ReferenceLetterID: &pendingID,
+		}
+
+		resp, err := mutation.ImportDocumentResults(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("ImportDocumentResults returned unexpected error: %v", err)
+		}
+
+		errResp, ok := resp.(*model.ImportDocumentResultsError)
+		if !ok {
+			t.Fatalf("expected ImportDocumentResultsError, got %T", resp)
+		}
+		if !strings.Contains(errResp.Message, "not ready for import") {
+			t.Errorf("expected 'not ready for import' in error message, got %q", errResp.Message)
+		}
+	})
+
+	t.Run("returns error for reference letter belonging to another user", func(t *testing.T) {
+		otherUserLetter := &domain.ReferenceLetter{
+			ID:     uuid.New(),
+			UserID: uuid.New(), // Different user
+			Status: domain.ReferenceLetterStatusCompleted,
+		}
+		mustCreateReferenceLetter(refLetterRepo, otherUserLetter)
+
+		otherID := otherUserLetter.ID.String()
+		input := model.ImportDocumentResultsInput{
+			ReferenceLetterID: &otherID,
+		}
+
+		resp, err := mutation.ImportDocumentResults(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("ImportDocumentResults returned unexpected error: %v", err)
+		}
+
+		errResp, ok := resp.(*model.ImportDocumentResultsError)
+		if !ok {
+			t.Fatalf("expected ImportDocumentResultsError, got %T", resp)
+		}
+		if !strings.Contains(errResp.Message, "does not belong to user") {
+			t.Errorf("expected 'does not belong to user' in error message, got %q", errResp.Message)
+		}
+	})
+
+	t.Run("returns error when no IDs provided", func(t *testing.T) {
+		input := model.ImportDocumentResultsInput{}
+
+		resp, err := mutation.ImportDocumentResults(ctx, user.ID.String(), input)
+		if err != nil {
+			t.Fatalf("ImportDocumentResults returned unexpected error: %v", err)
+		}
+
+		errResp, ok := resp.(*model.ImportDocumentResultsError)
+		if !ok {
+			t.Fatalf("expected ImportDocumentResultsError, got %T", resp)
+		}
+		if !strings.Contains(errResp.Message, "at least one") {
+			t.Errorf("expected 'at least one' in error message, got %q", errResp.Message)
 		}
 	})
 }
