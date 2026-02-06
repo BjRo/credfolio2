@@ -492,6 +492,8 @@ export type ImportedCount = {
   experiences: Scalars['Int']['output'];
   /** Number of skills materialized. */
   skills: Scalars['Int']['output'];
+  /** Number of testimonials materialized from reference letters. */
+  testimonials: Scalars['Int']['output'];
 };
 
 export type Mutation = {
@@ -1585,7 +1587,7 @@ export type ImportDocumentResultsMutationVariables = Exact<{
 
 export type ImportDocumentResultsMutation = { __typename?: 'Mutation', importDocumentResults:
     | { __typename: 'ImportDocumentResultsError', message: string, field?: string | null }
-    | { __typename: 'ImportDocumentResultsResult', profile: { __typename?: 'Profile', id: string }, importedCount: { __typename?: 'ImportedCount', experiences: number, educations: number, skills: number } }
+    | { __typename: 'ImportDocumentResultsResult', profile: { __typename?: 'Profile', id: string }, importedCount: { __typename?: 'ImportedCount', experiences: number, educations: number, skills: number, testimonials: number } }
    };
 
 export type GetReferenceLetterQueryVariables = Exact<{

@@ -13,9 +13,10 @@ import (
 
 // MaterializationResult contains counts of materialized items.
 type MaterializationResult struct {
-	Experiences int
-	Educations  int
-	Skills      int
+	Experiences  int
+	Educations   int
+	Skills       int
+	Testimonials int
 }
 
 // MaterializationService handles materializing extracted data into profile tables.
@@ -26,6 +27,8 @@ type MaterializationService struct {
 	profileExpRepo   domain.ProfileExperienceRepository
 	profileEduRepo   domain.ProfileEducationRepository
 	profileSkillRepo domain.ProfileSkillRepository
+	authorRepo       domain.AuthorRepository
+	testimonialRepo  domain.TestimonialRepository
 }
 
 // NewMaterializationService creates a new MaterializationService.
@@ -34,12 +37,16 @@ func NewMaterializationService(
 	profileExpRepo domain.ProfileExperienceRepository,
 	profileEduRepo domain.ProfileEducationRepository,
 	profileSkillRepo domain.ProfileSkillRepository,
+	authorRepo domain.AuthorRepository,
+	testimonialRepo domain.TestimonialRepository,
 ) *MaterializationService {
 	return &MaterializationService{
 		profileRepo:      profileRepo,
 		profileExpRepo:   profileExpRepo,
 		profileEduRepo:   profileEduRepo,
 		profileSkillRepo: profileSkillRepo,
+		authorRepo:       authorRepo,
+		testimonialRepo:  testimonialRepo,
 	}
 }
 
@@ -216,4 +223,104 @@ func DeduplicateSkills(skills []string) []string {
 		}
 	}
 	return result
+}
+
+// MaterializeReferenceLetterData creates testimonial rows from extracted reference letter data.
+// It finds or creates an Author entity, then creates Testimonial records for each extracted testimonial.
+// Idempotent: deletes existing testimonials from the same reference letter before re-creating.
+func (s *MaterializationService) MaterializeReferenceLetterData(
+	ctx context.Context,
+	referenceLetterID uuid.UUID,
+	userID uuid.UUID,
+	data *domain.ExtractedLetterData,
+) (*MaterializationResult, error) {
+	// Get or create the user's profile
+	profile, err := s.profileRepo.GetOrCreateByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get or create profile: %w", err)
+	}
+
+	// Delete any existing testimonials from this reference letter (idempotent re-processing)
+	if delErr := s.testimonialRepo.DeleteByReferenceLetterID(ctx, referenceLetterID); delErr != nil {
+		return nil, fmt.Errorf("failed to delete existing testimonials for reference letter: %w", delErr)
+	}
+
+	result := &MaterializationResult{}
+
+	if len(data.Testimonials) == 0 {
+		return result, nil
+	}
+
+	// Find or create the Author entity
+	author, err := s.findOrCreateAuthor(ctx, profile.ID, &data.Author)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find or create author: %w", err)
+	}
+
+	// Create testimonial records
+	for _, extracted := range data.Testimonials {
+		testimonial := &domain.Testimonial{
+			ID:                uuid.New(),
+			ProfileID:         profile.ID,
+			ReferenceLetterID: referenceLetterID,
+			Quote:             extracted.Quote,
+			Relationship:      mapAuthorRelationship(data.Author.Relationship),
+			SkillsMentioned:   extracted.SkillsMentioned,
+			AuthorName:        &data.Author.Name,
+			AuthorTitle:       data.Author.Title,
+			AuthorCompany:     data.Author.Company,
+		}
+
+		if author != nil {
+			testimonial.AuthorID = &author.ID
+		}
+
+		if createErr := s.testimonialRepo.Create(ctx, testimonial); createErr != nil {
+			return result, fmt.Errorf("failed to create testimonial: %w", createErr)
+		}
+		result.Testimonials++
+	}
+
+	return result, nil
+}
+
+// findOrCreateAuthor finds an existing author by name and company, or creates a new one.
+func (s *MaterializationService) findOrCreateAuthor(ctx context.Context, profileID uuid.UUID, extracted *domain.ExtractedAuthor) (*domain.Author, error) {
+	// Try to find existing author with same name and company
+	existing, err := s.authorRepo.FindByNameAndCompany(ctx, profileID, extracted.Name, extracted.Company)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find existing author: %w", err)
+	}
+	if existing != nil {
+		return existing, nil
+	}
+
+	// Create new author
+	author := &domain.Author{
+		ID:        uuid.New(),
+		ProfileID: profileID,
+		Name:      extracted.Name,
+		Title:     extracted.Title,
+		Company:   extracted.Company,
+	}
+	if createErr := s.authorRepo.Create(ctx, author); createErr != nil {
+		return nil, fmt.Errorf("failed to create author: %w", createErr)
+	}
+	return author, nil
+}
+
+// mapAuthorRelationship maps an AuthorRelationship to a TestimonialRelationship.
+func mapAuthorRelationship(ar domain.AuthorRelationship) domain.TestimonialRelationship {
+	switch ar {
+	case domain.AuthorRelationshipManager:
+		return domain.TestimonialRelationshipManager
+	case domain.AuthorRelationshipPeer, domain.AuthorRelationshipColleague:
+		return domain.TestimonialRelationshipPeer
+	case domain.AuthorRelationshipDirectReport:
+		return domain.TestimonialRelationshipDirectReport
+	case domain.AuthorRelationshipClient:
+		return domain.TestimonialRelationshipClient
+	default:
+		return domain.TestimonialRelationshipOther
+	}
 }

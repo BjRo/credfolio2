@@ -271,13 +271,142 @@ func (r *mockProfileSkillRepository) DeleteBySourceResumeID(_ context.Context, s
 
 func stringPtr(s string) *string { return &s }
 
+type mockAuthorRepository struct {
+	authors map[uuid.UUID]*domain.Author
+}
+
+func newMockAuthorRepository() *mockAuthorRepository {
+	return &mockAuthorRepository{authors: make(map[uuid.UUID]*domain.Author)}
+}
+
+func (r *mockAuthorRepository) Create(_ context.Context, author *domain.Author) error {
+	if author.ID == uuid.Nil {
+		author.ID = uuid.New()
+	}
+	r.authors[author.ID] = author
+	return nil
+}
+
+func (r *mockAuthorRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Author, error) {
+	a, ok := r.authors[id]
+	if !ok {
+		return nil, nil
+	}
+	return a, nil
+}
+
+func (r *mockAuthorRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.Author, error) {
+	var result []*domain.Author
+	for _, a := range r.authors {
+		if a.ProfileID == profileID {
+			result = append(result, a)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockAuthorRepository) FindByNameAndCompany(_ context.Context, profileID uuid.UUID, name string, company *string) (*domain.Author, error) {
+	for _, a := range r.authors {
+		if a.ProfileID == profileID && a.Name == name {
+			if company == nil && a.Company == nil {
+				return a, nil
+			}
+			if company != nil && a.Company != nil && *company == *a.Company {
+				return a, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (r *mockAuthorRepository) Update(_ context.Context, author *domain.Author) error {
+	r.authors[author.ID] = author
+	return nil
+}
+
+func (r *mockAuthorRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.authors, id)
+	return nil
+}
+
+type mockTestimonialRepository struct {
+	testimonials map[uuid.UUID]*domain.Testimonial
+}
+
+func newMockTestimonialRepository() *mockTestimonialRepository {
+	return &mockTestimonialRepository{testimonials: make(map[uuid.UUID]*domain.Testimonial)}
+}
+
+func (r *mockTestimonialRepository) Create(_ context.Context, testimonial *domain.Testimonial) error {
+	if testimonial.ID == uuid.Nil {
+		testimonial.ID = uuid.New()
+	}
+	r.testimonials[testimonial.ID] = testimonial
+	return nil
+}
+
+func (r *mockTestimonialRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Testimonial, error) {
+	t, ok := r.testimonials[id]
+	if !ok {
+		return nil, nil
+	}
+	return t, nil
+}
+
+func (r *mockTestimonialRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.Testimonial, error) {
+	var result []*domain.Testimonial
+	for _, t := range r.testimonials {
+		if t.ProfileID == profileID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockTestimonialRepository) GetByReferenceLetterID(_ context.Context, referenceLetterID uuid.UUID) ([]*domain.Testimonial, error) {
+	var result []*domain.Testimonial
+	for _, t := range r.testimonials {
+		if t.ReferenceLetterID == referenceLetterID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (r *mockTestimonialRepository) Delete(_ context.Context, id uuid.UUID) error {
+	delete(r.testimonials, id)
+	return nil
+}
+
+func (r *mockTestimonialRepository) DeleteByReferenceLetterID(_ context.Context, referenceLetterID uuid.UUID) error {
+	for id, t := range r.testimonials {
+		if t.ReferenceLetterID == referenceLetterID {
+			delete(r.testimonials, id)
+		}
+	}
+	return nil
+}
+
 func newTestService() (*MaterializationService, *mockProfileRepository, *mockProfileExperienceRepository, *mockProfileEducationRepository, *mockProfileSkillRepository) {
 	profileRepo := newMockProfileRepository()
 	expRepo := newMockProfileExperienceRepository()
 	eduRepo := newMockProfileEducationRepository()
 	skillRepo := newMockProfileSkillRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo)
+	authorRepo := newMockAuthorRepository()
+	testimonialRepo := newMockTestimonialRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo)
 	return svc, profileRepo, expRepo, eduRepo, skillRepo
+}
+
+func newTestServiceWithRefs() (*MaterializationService, *mockProfileRepository, *mockAuthorRepository, *mockTestimonialRepository) {
+	profileRepo := newMockProfileRepository()
+	expRepo := newMockProfileExperienceRepository()
+	eduRepo := newMockProfileEducationRepository()
+	skillRepo := newMockProfileSkillRepository()
+	authorRepo := newMockAuthorRepository()
+	testimonialRepo := newMockTestimonialRepository()
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo)
+	return svc, profileRepo, authorRepo, testimonialRepo
 }
 
 func testExtractedData() *domain.ResumeExtractedData {
@@ -696,7 +825,7 @@ func TestMaterializePartialSuccess_ExperiencesFail(t *testing.T) {
 	expRepo := &mockFailingProfileExperienceRepository{newMockProfileExperienceRepository()}
 	eduRepo := newMockProfileEducationRepository()
 	skillRepo := newMockProfileSkillRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo)
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository())
 
 	data := &domain.ResumeExtractedData{
 		Experience: []domain.WorkExperience{
@@ -743,7 +872,7 @@ func TestMaterializePartialSuccess_SkillsFail(t *testing.T) {
 	expRepo := newMockProfileExperienceRepository()
 	eduRepo := newMockProfileEducationRepository()
 	skillRepo := &mockFailingProfileSkillRepository{newMockProfileSkillRepository()}
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo)
+	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository())
 
 	data := &domain.ResumeExtractedData{
 		Experience: []domain.WorkExperience{
@@ -820,5 +949,261 @@ func TestDeduplicateSkills(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Reference letter materialization tests
+
+func testExtractedLetterData() *domain.ExtractedLetterData {
+	return &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "Jane Smith",
+			Title:        stringPtr("CTO"),
+			Company:      stringPtr("TechCo"),
+			Relationship: domain.AuthorRelationshipManager,
+		},
+		Testimonials: []domain.ExtractedTestimonial{
+			{
+				Quote:           "John is an exceptional engineer.",
+				SkillsMentioned: []string{"Go", "TypeScript"},
+			},
+			{
+				Quote:           "He excels at problem-solving.",
+				SkillsMentioned: nil,
+			},
+		},
+	}
+}
+
+func TestMaterializeReferenceLetterCreatesTestimonials(t *testing.T) {
+	svc, _, _, testimonialRepo := newTestServiceWithRefs()
+
+	refLetterID := uuid.New()
+	result, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, uuid.New(), testExtractedLetterData())
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	if result.Testimonials != 2 {
+		t.Errorf("expected 2 testimonials, got %d", result.Testimonials)
+	}
+	if len(testimonialRepo.testimonials) != 2 {
+		t.Fatalf("expected 2 testimonials in repo, got %d", len(testimonialRepo.testimonials))
+	}
+
+	var quotes []string
+	for _, t := range testimonialRepo.testimonials {
+		quotes = append(quotes, t.Quote)
+	}
+	for _, expected := range []string{"John is an exceptional engineer.", "He excels at problem-solving."} {
+		found := false
+		for _, q := range quotes {
+			if q == expected {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected quote %q to be created", expected)
+		}
+	}
+}
+
+func TestMaterializeReferenceLetterCreatesAuthor(t *testing.T) {
+	svc, _, authorRepo, testimonialRepo := newTestServiceWithRefs()
+
+	refLetterID := uuid.New()
+	_, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, uuid.New(), testExtractedLetterData())
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	if len(authorRepo.authors) != 1 {
+		t.Fatalf("expected 1 author, got %d", len(authorRepo.authors))
+	}
+
+	var author *domain.Author
+	for _, a := range authorRepo.authors {
+		author = a
+	}
+	if author.Name != "Jane Smith" {
+		t.Errorf("expected author name 'Jane Smith', got %q", author.Name)
+	}
+	if author.Title == nil || *author.Title != "CTO" {
+		t.Errorf("expected author title 'CTO', got %v", author.Title)
+	}
+	if author.Company == nil || *author.Company != "TechCo" {
+		t.Errorf("expected author company 'TechCo', got %v", author.Company)
+	}
+
+	// Verify testimonials are linked to author
+	for _, testimonial := range testimonialRepo.testimonials {
+		if testimonial.AuthorID == nil || *testimonial.AuthorID != author.ID {
+			t.Error("expected testimonial to be linked to author")
+		}
+	}
+}
+
+func TestMaterializeReferenceLetterReusesExistingAuthor(t *testing.T) {
+	svc, profileRepo, authorRepo, _ := newTestServiceWithRefs()
+
+	userID := uuid.New()
+	refLetterID := uuid.New()
+
+	// Pre-create a profile and author
+	profile := &domain.Profile{ID: uuid.New(), UserID: userID}
+	profileRepo.profiles[profile.ID] = profile
+
+	existingAuthor := &domain.Author{
+		ID:        uuid.New(),
+		ProfileID: profile.ID,
+		Name:      "Jane Smith",
+		Company:   stringPtr("TechCo"),
+	}
+	authorRepo.authors[existingAuthor.ID] = existingAuthor
+
+	_, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, userID, testExtractedLetterData())
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	// Should still have exactly 1 author (reused existing)
+	if len(authorRepo.authors) != 1 {
+		t.Errorf("expected 1 author (reused), got %d", len(authorRepo.authors))
+	}
+}
+
+func TestMaterializeReferenceLetterSetsRelationship(t *testing.T) {
+	svc, _, _, testimonialRepo := newTestServiceWithRefs()
+
+	refLetterID := uuid.New()
+	_, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, uuid.New(), testExtractedLetterData())
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	for _, testimonial := range testimonialRepo.testimonials {
+		if testimonial.Relationship != domain.TestimonialRelationshipManager {
+			t.Errorf("expected relationship 'manager', got %q", testimonial.Relationship)
+		}
+	}
+}
+
+func TestMaterializeReferenceLetterSetsAuthorFields(t *testing.T) {
+	svc, _, _, testimonialRepo := newTestServiceWithRefs()
+
+	refLetterID := uuid.New()
+	_, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, uuid.New(), testExtractedLetterData())
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	for _, testimonial := range testimonialRepo.testimonials {
+		if testimonial.AuthorName == nil || *testimonial.AuthorName != "Jane Smith" {
+			t.Errorf("expected author name 'Jane Smith', got %v", testimonial.AuthorName)
+		}
+		if testimonial.AuthorTitle == nil || *testimonial.AuthorTitle != "CTO" {
+			t.Errorf("expected author title 'CTO', got %v", testimonial.AuthorTitle)
+		}
+		if testimonial.AuthorCompany == nil || *testimonial.AuthorCompany != "TechCo" {
+			t.Errorf("expected author company 'TechCo', got %v", testimonial.AuthorCompany)
+		}
+	}
+}
+
+func TestMaterializeReferenceLetterSetsSkillsMentioned(t *testing.T) {
+	svc, _, _, testimonialRepo := newTestServiceWithRefs()
+
+	refLetterID := uuid.New()
+	_, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, uuid.New(), testExtractedLetterData())
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	var foundWithSkills bool
+	for _, testimonial := range testimonialRepo.testimonials {
+		if testimonial.Quote == "John is an exceptional engineer." {
+			if len(testimonial.SkillsMentioned) != 2 {
+				t.Errorf("expected 2 skills mentioned, got %d", len(testimonial.SkillsMentioned))
+			}
+			foundWithSkills = true
+		}
+	}
+	if !foundWithSkills {
+		t.Error("expected to find testimonial with skills mentioned")
+	}
+}
+
+func TestMaterializeReferenceLetterIdempotent(t *testing.T) {
+	svc, _, _, testimonialRepo := newTestServiceWithRefs()
+
+	userID := uuid.New()
+	refLetterID := uuid.New()
+
+	// First materialization
+	_, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, userID, testExtractedLetterData())
+	if err != nil {
+		t.Fatalf("first materialization failed: %v", err)
+	}
+	if len(testimonialRepo.testimonials) != 2 {
+		t.Fatalf("expected 2 testimonials after first run, got %d", len(testimonialRepo.testimonials))
+	}
+
+	// Second materialization with different data
+	data2 := &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "Jane Smith",
+			Company:      stringPtr("TechCo"),
+			Relationship: domain.AuthorRelationshipManager,
+		},
+		Testimonials: []domain.ExtractedTestimonial{
+			{Quote: "New testimonial quote."},
+		},
+	}
+
+	result, err := svc.MaterializeReferenceLetterData(context.Background(), refLetterID, userID, data2)
+	if err != nil {
+		t.Fatalf("second materialization failed: %v", err)
+	}
+
+	if result.Testimonials != 1 {
+		t.Errorf("expected 1 testimonial after re-processing, got %d", result.Testimonials)
+	}
+	if len(testimonialRepo.testimonials) != 1 {
+		t.Errorf("expected 1 testimonial in repo after re-processing, got %d", len(testimonialRepo.testimonials))
+	}
+
+	for _, testimonial := range testimonialRepo.testimonials {
+		if testimonial.Quote != "New testimonial quote." {
+			t.Errorf("expected new quote, got %q", testimonial.Quote)
+		}
+	}
+}
+
+func TestMaterializeReferenceLetterWithNoTestimonials(t *testing.T) {
+	svc, _, authorRepo, testimonialRepo := newTestServiceWithRefs()
+
+	data := &domain.ExtractedLetterData{
+		Author: domain.ExtractedAuthor{
+			Name:         "Jane Smith",
+			Relationship: domain.AuthorRelationshipOther,
+		},
+		Testimonials: []domain.ExtractedTestimonial{},
+	}
+
+	result, err := svc.MaterializeReferenceLetterData(context.Background(), uuid.New(), uuid.New(), data)
+	if err != nil {
+		t.Fatalf("MaterializeReferenceLetterData returned error: %v", err)
+	}
+
+	if result.Testimonials != 0 {
+		t.Errorf("expected 0 testimonials, got %d", result.Testimonials)
+	}
+	if len(testimonialRepo.testimonials) != 0 {
+		t.Errorf("expected 0 testimonials in repo, got %d", len(testimonialRepo.testimonials))
+	}
+	// Should not create an author when there are no testimonials
+	if len(authorRepo.authors) != 0 {
+		t.Errorf("expected 0 authors when no testimonials, got %d", len(authorRepo.authors))
 	}
 }

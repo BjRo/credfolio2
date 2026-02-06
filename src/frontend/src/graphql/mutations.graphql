@@ -373,6 +373,7 @@ mutation ImportDocumentResults($userId: ID!, $input: ImportDocumentResultsInput!
         experiences
         educations
         skills
+        testimonials
       }
     }
     ... on ImportDocumentResultsError {

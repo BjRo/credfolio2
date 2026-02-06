@@ -17,7 +17,7 @@ const IMPORT_MUTATION = `
       ... on ImportDocumentResultsResult {
         __typename
         profile { id }
-        importedCount { experiences educations skills }
+        importedCount { experiences educations skills testimonials }
       }
       ... on ImportDocumentResultsError {
         __typename

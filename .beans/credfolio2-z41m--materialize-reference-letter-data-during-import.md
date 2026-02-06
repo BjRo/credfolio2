@@ -1,11 +1,11 @@
 ---
 # credfolio2-z41m
 title: Materialize reference letter data during import
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-02-05T23:06:50Z
-updated_at: 2026-02-06T07:28:10Z
+updated_at: 2026-02-06T08:10:25Z
 parent: credfolio2-3ram
 ---
 
@@ -25,19 +25,19 @@ Additionally:
 ## What needs to happen
 
 ### Backend
-- [ ] Add `MaterializeReferenceLetterData` to `MaterializationService` — create testimonial rows from `ReferenceLetterExtractedData` (author info, testimonial quotes, skill mentions)
-- [ ] Add `testimonials` field to `ImportedCount` GraphQL type
-- [ ] Add reference letter materialization block to `ImportDocumentResults` resolver (after resume block)
-- [ ] Add resolver tests for import with reference letter data
+- [x] Add `MaterializeReferenceLetterData` to `MaterializationService` — create testimonial rows from `ReferenceLetterExtractedData` (author info, testimonial quotes, skill mentions)
+- [x] Add `testimonials` field to `ImportedCount` GraphQL type
+- [x] Add reference letter materialization block to `ImportDocumentResults` resolver (after resume block)
+- [x] Add resolver tests for import with reference letter data
 
 ### Frontend
-- [ ] Update `ImportedCount` display to show testimonial count when present
-- [ ] Verify testimonials section on profile page renders imported data
+- [x] Update `ImportedCount` display to show testimonial count when present
+- [x] Verify testimonials section on profile page renders imported data
 
 ### Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (for UI changes)
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
