@@ -184,7 +184,7 @@ func toGraphQLDiscoveredSkills(skills []domain.DiscoveredSkill) []*model.Discove
 			Skill:    s.Skill,
 			Quote:    s.Quote,
 			Context:  s.Context,
-			Category: s.Category,
+			Category: domain.SkillCategory(strings.ToUpper(string(s.Category))),
 		}
 	}
 	return result
