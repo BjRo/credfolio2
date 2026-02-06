@@ -162,6 +162,9 @@ func (e *DocumentExtractor) getProviderForChain(chain ProviderChain) domain.LLMP
 }
 
 // ExtractTextWithRequest extracts text from a document image or PDF using a detailed request.
+// For PDFs, it first attempts local (Go-native) text extraction which is nearly instant.
+// If the local extraction produces usable text, the LLM vision call is skipped entirely.
+// For scanned/image-based PDFs or non-PDF documents, the LLM vision path is used as before.
 func (e *DocumentExtractor) ExtractTextWithRequest(ctx context.Context, req ExtractionRequest) (*ExtractionResult, error) {
 	ctx, span := otel.Tracer(tracerName).Start(ctx, "pdf_text_extraction",
 		otelTrace.WithAttributes(
@@ -169,6 +172,19 @@ func (e *DocumentExtractor) ExtractTextWithRequest(ctx context.Context, req Extr
 		),
 	)
 	defer span.End()
+
+	// For PDFs without a custom prompt, try fast local extraction first.
+	if req.MediaType == domain.ImageMediaTypePDF && req.CustomPrompt == "" {
+		text, localErr := extractTextFromPDF(req.Document)
+		if localErr == nil && isUsableText(text) {
+			span.SetAttributes(attribute.String("extraction_method", "local"))
+			return &ExtractionResult{Text: text}, nil
+		}
+		// Local extraction failed or produced unusable text — fall through to LLM.
+		span.SetAttributes(attribute.String("local_extraction_skipped_reason", localFallbackReason(localErr, text)))
+	}
+
+	span.SetAttributes(attribute.String("extraction_method", "llm"))
 
 	// Get the appropriate provider for document extraction
 	provider := e.getProviderForChain(e.config.DocumentExtractionChain)
@@ -209,6 +225,17 @@ func (e *DocumentExtractor) ExtractTextWithRequest(ctx context.Context, req Extr
 		InputTokens:  resp.InputTokens,
 		OutputTokens: resp.OutputTokens,
 	}, nil
+}
+
+// localFallbackReason returns a human-readable reason why local PDF extraction was skipped.
+func localFallbackReason(err error, text string) string {
+	if err != nil {
+		return "parse_error"
+	}
+	if strings.TrimSpace(text) == "" {
+		return "empty_text"
+	}
+	return "low_quality_text"
 }
 
 // ExtractText implements domain.DocumentExtractor interface.
