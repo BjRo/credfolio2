@@ -2,7 +2,6 @@
 
 import { Briefcase, GraduationCap, Quote, Wrench } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckboxCard } from "@/components/ui/checkbox-card";
@@ -682,16 +681,6 @@ function TestimonialsSection({
                   &mdash; {authorName}
                   {authorAttribution && `, ${authorAttribution}`}
                 </p>
-                {testimonial.skillsMentioned && testimonial.skillsMentioned.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    <span className="text-xs text-muted-foreground mr-1">Skills mentioned:</span>
-                    {testimonial.skillsMentioned.map((skill) => (
-                      <Badge key={skill} variant="secondary" className="text-xs">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </CheckboxCard>

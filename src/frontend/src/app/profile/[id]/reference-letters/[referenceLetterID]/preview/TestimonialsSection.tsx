@@ -1,7 +1,6 @@
 "use client";
 
 import { Quote } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { CheckboxCard } from "@/components/ui/checkbox-card";
 import { SelectionControls } from "@/components/ui/selection-controls";
 import type { TestimonialItem } from "./page";
@@ -60,16 +59,6 @@ export function TestimonialsSection({
                   &mdash; {authorName}
                   {authorAttribution && `, ${authorAttribution}`}
                 </p>
-                {testimonial.skillsMentioned.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    <span className="text-xs text-muted-foreground mr-1">Skills validated:</span>
-                    {testimonial.skillsMentioned.map((skill) => (
-                      <Badge key={skill} variant="secondary" className="text-xs">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </CheckboxCard>
