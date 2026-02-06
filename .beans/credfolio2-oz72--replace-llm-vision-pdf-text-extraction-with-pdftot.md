@@ -1,11 +1,11 @@
 ---
 # credfolio2-oz72
 title: Replace LLM vision PDF text extraction with pdftotext
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-02-06T13:06:11Z
-updated_at: 2026-02-06T13:08:09Z
+updated_at: 2026-02-06T13:10:46Z
 parent: credfolio2-3ram
 ---
 
@@ -23,19 +23,19 @@ This keeps the solution pure Go with no external binary dependencies, simplifyin
 
 ## Checklist
 
-- [ ] Evaluate and add a Go PDF text extraction library (e.g. `github.com/ledongthuc/pdf`)
-- [ ] Create a local PDF text extraction function that uses the Go library
-- [ ] Add a quality heuristic to detect if extracted text is usable (non-empty, contains real words, reasonable length)
-- [ ] If local extraction succeeds quality check, use it directly and skip the LLM vision call
-- [ ] If local extraction fails or returns garbage (scanned PDF), fall back to existing LLM vision extraction
-- [ ] Preserve the existing OCR normalization rules in the LLM fallback path
-- [ ] Add telemetry/span attributes to track which path was used (local vs LLM)
-- [ ] Write tests for the local extraction path and the fallback logic
+- [x] Evaluate and add a Go PDF text extraction library (e.g. `github.com/ledongthuc/pdf`)
+- [x] Create a local PDF text extraction function that uses the Go library
+- [x] Add a quality heuristic to detect if extracted text is usable (non-empty, contains real words, reasonable length)
+- [x] If local extraction succeeds quality check, use it directly and skip the LLM vision call
+- [x] If local extraction fails or returns garbage (scanned PDF), fall back to existing LLM vision extraction
+- [x] Preserve the existing OCR normalization rules in the LLM fallback path
+- [x] Add telemetry/span attributes to track which path was used (local vs LLM)
+- [x] Write tests for the local extraction path and the fallback logic
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed (`@review-backend` and/or `@review-frontend`)

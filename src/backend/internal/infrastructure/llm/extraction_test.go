@@ -1,4 +1,4 @@
-//nolint:errcheck,revive // Test file - error checks and unused params are OK in test helpers
+//nolint:errcheck,revive,goconst // Test file - error checks, unused params, and string constants are OK
 package llm_test
 
 import (
