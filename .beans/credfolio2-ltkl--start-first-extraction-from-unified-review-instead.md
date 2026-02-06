@@ -47,5 +47,5 @@ This gives users the opportunity to review and confirm extraction results before
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed (`@review-frontend` — no critical findings)
