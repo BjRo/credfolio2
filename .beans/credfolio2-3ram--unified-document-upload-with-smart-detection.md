@@ -1,11 +1,11 @@
 ---
 # credfolio2-3ram
 title: Unified document upload with smart detection
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-02-03T12:34:56Z
-updated_at: 2026-02-05T19:58:07Z
+updated_at: 2026-02-06T20:26:17Z
 parent: credfolio2-dwid
 ---
 
