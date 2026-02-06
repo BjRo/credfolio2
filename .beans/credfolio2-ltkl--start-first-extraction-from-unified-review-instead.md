@@ -37,16 +37,14 @@ This gives users the opportunity to review and confirm extraction results before
 - `src/frontend/src/components/upload/ExtractionReview.tsx` — unified review UI
 
 ## Checklist
-- [ ] Make `/upload-resume` use the unified `UploadFlow` instead of `ResumeUpload`
-- [ ] Verify the unified flow works end-to-end for resume-only documents
-- [ ] Determine whether `/upload-resume` and `/upload` should be consolidated into a single route
-- [ ] Determine whether `ResumeUpload` component can be removed or if it's still needed elsewhere
-- [ ] Verify import redirects correctly to the profile page after review
+- [x] Homepage redirects to `/upload` instead of showing `ResumeUpload` inline
+- [ ] Verify the unified flow works end-to-end for resume-only documents (visual)
+- [ ] Verify import redirects correctly to the profile page after review (visual)
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Visual verification with agent-browser (for UI changes)
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
