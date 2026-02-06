@@ -17,10 +17,10 @@ The `skillsMentioned` field displayed in testimonial preview and extraction revi
 The profile page's `validatedSkills` display (which uses real ProfileSkill objects) remains unchanged — that's the correct, functional display.
 
 ## Definition of Done
-- [ ] Remove skillsMentioned display from preview/TestimonialsSection.tsx
-- [ ] Remove skillsMentioned display from ExtractionReview.tsx
-- [ ] Update tests for both components
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-frontend`)
+- [x] Remove skillsMentioned display from preview/TestimonialsSection.tsx
+- [x] Remove skillsMentioned display from ExtractionReview.tsx
+- [x] Update tests for both components
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed (`@review-frontend`)
