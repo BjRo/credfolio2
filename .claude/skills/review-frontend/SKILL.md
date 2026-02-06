@@ -90,39 +90,61 @@ Reference the Vercel React Best Practices (`/skill vercel-react-best-practices`)
 
 ### 4. Post Review Comments
 
-Post findings as **PR review comments** using the GitHub CLI. Use **inline comments** on specific lines where possible, and a general review comment for cross-cutting concerns.
+Submit all findings as a **single GitHub Pull Request Review**. This groups inline comments and the summary together under one review in the PR UI.
 
-**For inline comments on specific files/lines:**
+**Step 1: Collect findings**
+
+As you review, collect all inline comments. For each finding, note:
+- `path`: File path relative to the repo root (e.g., `src/frontend/src/app/profile/page.tsx`)
+- `line`: Line number in the **new** version of the file (from the PR diff)
+- `body`: The comment text with severity prefix
+
+**Step 2: Get PR context**
 
 ```bash
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
+REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
+PR_NUMBER=$(gh pr view --json number -q '.number')
+COMMIT_ID=$(gh pr view --json headRefOid -q '.headRefOid')
+```
+
+**Step 3: Build and submit the review**
+
+Write a JSON payload with the summary body and all inline comments, then submit it as a single review via the GitHub API:
+
+```bash
+cat > /tmp/review-payload.json <<'REVIEW_EOF'
+{
+  "commit_id": "<COMMIT_ID from step 2>",
+  "event": "COMMENT",
+  "body": "## Frontend Review — Staff React/Next.js Engineer\n\n### Summary\n<1-2 sentence overall assessment>\n\n### Findings\n<List findings that aren't tied to specific lines>\n\n### Verdict\n<LGTM / Minor issues / Needs changes>\n\n🤖 Automated review by Frontend Review Agent",
+  "comments": [
+    {
+      "path": "src/frontend/src/app/example/page.tsx",
+      "line": 42,
+      "side": "RIGHT",
+      "body": "🔴 CRITICAL: <description>"
+    },
+    {
+      "path": "src/frontend/src/components/example.tsx",
+      "line": 15,
+      "side": "RIGHT",
+      "body": "🟡 WARNING: <description>"
+    }
+  ]
+}
+REVIEW_EOF
+
+# Extract owner/repo from REPO variable
+gh api "repos/${REPO}/pulls/${PR_NUMBER}/reviews" \
   --method POST \
-  -f body="comment text" \
-  -f commit_id="$(gh pr view --json headRefOid -q '.headRefOid')" \
-  -f path="src/frontend/path/to/file.tsx" \
-  -f line=42 \
-  -f side="RIGHT"
+  --input /tmp/review-payload.json
 ```
 
-**For a summary review:**
-
-```bash
-gh pr review {pr_number} --comment --body "$(cat <<'EOF'
-## Frontend Review — Staff React/Next.js Engineer
-
-### Summary
-[1-2 sentence overall assessment]
-
-### Findings
-[List findings that aren't tied to specific lines]
-
-### Verdict
-[LGTM / Minor issues / Needs changes]
-
-🤖 Automated review by Frontend Review Agent
-EOF
-)"
-```
+**Important:**
+- Use `"event": "COMMENT"` — this makes the review **non-blocking** (no approval or rejection).
+- The `comments` array can be empty if all findings are cross-cutting concerns with no specific line references.
+- Each comment's `line` must correspond to a line that appears in the PR diff. If a finding spans multiple lines, use the last line of the relevant range.
+- Build valid JSON — escape newlines and quotes in comment bodies properly.
 
 ### Comment Guidelines
 
