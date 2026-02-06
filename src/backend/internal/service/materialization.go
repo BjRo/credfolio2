@@ -67,6 +67,11 @@ func (s *MaterializationService) MaterializeResumeData(
 		return nil, fmt.Errorf("failed to get or create profile: %w", err)
 	}
 
+	// Populate empty profile header fields from extracted data (preserves user edits)
+	if err := s.populateProfileHeader(ctx, profile, data); err != nil {
+		return nil, err
+	}
+
 	// Delete any existing entries from this resume (idempotent re-processing)
 	if delErr := s.profileExpRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
 		return nil, fmt.Errorf("failed to delete existing experiences for resume: %w", delErr)
@@ -314,6 +319,38 @@ func (s *MaterializationService) findOrCreateAuthor(ctx context.Context, profile
 		return nil, fmt.Errorf("failed to create author: %w", createErr)
 	}
 	return author, nil
+}
+
+// populateProfileHeader fills empty profile header fields from extracted resume data.
+// Fields that already have values (e.g., from user edits) are preserved.
+func (s *MaterializationService) populateProfileHeader(ctx context.Context, profile *domain.Profile, data *domain.ResumeExtractedData) error {
+	updated := false
+	if profile.Name == nil && data.Name != "" {
+		profile.Name = &data.Name
+		updated = true
+	}
+	if profile.Email == nil && data.Email != nil {
+		profile.Email = data.Email
+		updated = true
+	}
+	if profile.Phone == nil && data.Phone != nil {
+		profile.Phone = data.Phone
+		updated = true
+	}
+	if profile.Location == nil && data.Location != nil {
+		profile.Location = data.Location
+		updated = true
+	}
+	if profile.Summary == nil && data.Summary != nil {
+		profile.Summary = data.Summary
+		updated = true
+	}
+	if updated {
+		if err := s.profileRepo.Update(ctx, profile); err != nil {
+			return fmt.Errorf("failed to update profile header: %w", err)
+		}
+	}
+	return nil
 }
 
 // mapAuthorRelationship maps an AuthorRelationship to a TestimonialRelationship.

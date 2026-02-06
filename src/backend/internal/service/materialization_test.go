@@ -411,6 +411,11 @@ func newTestServiceWithRefs() (*MaterializationService, *mockProfileRepository, 
 
 func testExtractedData() *domain.ResumeExtractedData {
 	return &domain.ResumeExtractedData{
+		Name:     "Jane Doe",
+		Email:    stringPtr("jane@example.com"),
+		Phone:    stringPtr("+1 555-0100"),
+		Location: stringPtr("San Francisco, CA"),
+		Summary:  stringPtr("Experienced engineer"),
 		Experience: []domain.WorkExperience{
 			{
 				Company:     "Acme Corp",
@@ -458,6 +463,70 @@ func TestMaterializeCreatesProfile(t *testing.T) {
 	}
 	if result.Skills != 3 {
 		t.Errorf("expected 3 skills count, got %d", result.Skills)
+	}
+}
+
+func TestMaterializePopulatesProfileHeader(t *testing.T) {
+	svc, profileRepo, _, _, _ := newTestService()
+
+	_, err := svc.MaterializeResumeData(context.Background(), uuid.New(), uuid.New(), testExtractedData())
+	if err != nil {
+		t.Fatalf("MaterializeResumeData returned error: %v", err)
+	}
+
+	for _, profile := range profileRepo.profiles {
+		if profile.Name == nil || *profile.Name != "Jane Doe" {
+			t.Errorf("expected name 'Jane Doe', got %v", profile.Name)
+		}
+		if profile.Email == nil || *profile.Email != "jane@example.com" {
+			t.Errorf("expected email 'jane@example.com', got %v", profile.Email)
+		}
+		if profile.Phone == nil || *profile.Phone != "+1 555-0100" {
+			t.Errorf("expected phone '+1 555-0100', got %v", profile.Phone)
+		}
+		if profile.Location == nil || *profile.Location != "San Francisco, CA" {
+			t.Errorf("expected location 'San Francisco, CA', got %v", profile.Location)
+		}
+		if profile.Summary == nil || *profile.Summary != "Experienced engineer" {
+			t.Errorf("expected summary 'Experienced engineer', got %v", profile.Summary)
+		}
+	}
+}
+
+func TestMaterializePreservesExistingProfileHeader(t *testing.T) {
+	svc, profileRepo, _, _, _ := newTestService()
+
+	// Pre-create a profile with existing header data (simulates user-edited profile)
+	userID := uuid.New()
+	existingName := "Existing Name"
+	existingEmail := "existing@example.com"
+	profile := &domain.Profile{
+		ID:     uuid.New(),
+		UserID: userID,
+		Name:   &existingName,
+		Email:  &existingEmail,
+	}
+	profileRepo.profiles[profile.ID] = profile
+
+	_, err := svc.MaterializeResumeData(context.Background(), uuid.New(), userID, testExtractedData())
+	if err != nil {
+		t.Fatalf("MaterializeResumeData returned error: %v", err)
+	}
+
+	updated := profileRepo.profiles[profile.ID]
+	// Existing fields should NOT be overwritten
+	if *updated.Name != "Existing Name" {
+		t.Errorf("expected name to be preserved as 'Existing Name', got %q", *updated.Name)
+	}
+	if *updated.Email != "existing@example.com" {
+		t.Errorf("expected email to be preserved as 'existing@example.com', got %q", *updated.Email)
+	}
+	// Nil fields should be populated from extraction
+	if updated.Phone == nil || *updated.Phone != "+1 555-0100" {
+		t.Errorf("expected phone to be filled from extraction, got %v", updated.Phone)
+	}
+	if updated.Location == nil || *updated.Location != "San Francisco, CA" {
+		t.Errorf("expected location to be filled from extraction, got %v", updated.Location)
 	}
 }
 
