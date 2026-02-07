@@ -1,37 +1,60 @@
 ---
 # credfolio2-0gh5
 title: Deep Link from Skill Validation Popover
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-02-07T09:29:33Z
-updated_at: 2026-02-07T09:29:33Z
+updated_at: 2026-02-07T13:18:01Z
 parent: credfolio2-klgo
 ---
 
-Add a "View in source document" link to the skill validation popover that opens the PDF viewer with the validating quote highlighted.
+Add a per-validation "View in source →" link to the skill/experience validation popover that opens the PDF viewer with the validating quote highlighted.
+
+## Context
+
+Currently, the ValidationPopover shows validation details (author, quote snippet) with a single "View full testimonials →" link at the bottom that scrolls to the testimonials section. This isn't very useful because:
+1. It doesn't link to the specific source document
+2. It groups all validations under one link, rather than linking each individually
+
+The testimonials section (credfolio2-kahb) already deep-links each testimonial to the PDF viewer with quote highlighting. We need to bring the same pattern to the validation popover.
+
+## Design Decision
+
+- **Per-validation text link**: Each validation entry gets a small "View in source →" text link below its quote snippet
+- **Remove bottom link**: The "View full testimonials →" link at the bottom is removed entirely (redundant once per-validation links exist)
+- **Consistent with testimonials**: Uses the same `buildViewerUrl()` utility and link styling as TestimonialsSection
 
 ## Checklist
 
-- [ ] Identify the validation popover component in SkillsSection.tsx
-- [ ] Verify the GraphQL query for skill validations includes:
-  - `referenceLetterID` (or `referenceLetter.id`)
-  - `quoteSnippet` (the text used for validation)
-  - If not available, extend the query/schema
-- [ ] Add a "View in source" link/button to the validation popover:
-  - Icon: `ExternalLink` or `FileText` from lucide-react
-  - Text: "View in source" or just an icon with tooltip
-  - Opens in new tab: `target="_blank"`
-  - URL: `/viewer?letterId={referenceLetterID}&highlight={encodeURIComponent(quoteSnippet)}`
-- [ ] Only show the link when a reference letter is available (some validations may not have a source document)
-- [ ] Style consistently with existing popover content
+### Backend / GraphQL Query Changes
+- [ ] Update `GetSkillValidations` query in `queries.graphql` to include `referenceLetter { id file { id url } }` (file sub-selection is missing today)
+- [ ] Update `GetExperienceValidations` query similarly to include `referenceLetter.file { id url }`
+- [ ] Run GraphQL codegen (`pnpm --filter frontend codegen`) to regenerate types
+
+### Frontend: ValidationPopover Changes
+- [ ] Import `buildViewerUrl` from `@/lib/viewer` in `ValidationPopover.tsx`
+- [ ] Add per-validation "View in source →" link after each validation's quote snippet:
+  - Compute URL: `buildViewerUrl(referenceLetter.id, validation.quoteSnippet)`
+  - Only show when `referenceLetter?.id` and `referenceLetter?.file?.url` both exist
+  - Style: small text link (`text-xs text-primary hover:underline`), opens in new tab
+  - Place it after the blockquote, within the validation entry div
+- [ ] Remove the bottom "View full testimonials →" anchor link entirely
+- [ ] Handle edge case: if a validation has no quote snippet, link to the viewer without highlight
+
+### Tests
+- [ ] Add/update tests in `ValidationPopover.test.tsx`:
+  - Test that "View in source →" link appears for validations with reference letter + file
+  - Test that link is absent when no file exists
+  - Test that the old "View full testimonials →" link is gone
+  - Test correct URL construction with `buildViewerUrl`
 
 ## Technical Notes
 
-- The skill validation popover currently shows: author name, author title/company, quote snippet
-- The popover data comes from the `GetProfileSkills` query which includes validation details
-- Check if `reference_letter_id` is exposed in the GraphQL response for skill validations
-- If not, extend `SkillValidation` GraphQL type to include `referenceLetter { id }`
+- The `referenceLetter` type in GraphQL already exposes `file { id url }` — we just aren't querying it in `GetSkillValidations`/`GetExperienceValidations`
+- `buildViewerUrl(letterId, highlightText)` already handles URL encoding and truncation (max 500 chars)
+- The `quoteSnippet` field is the short validation quote — shorter than full testimonial quotes, but should work fine with the PDF text search
+- Pattern reference: `TestimonialsSection.tsx` lines 328-334 show how `getSourceUrl` uses `buildViewerUrl`
 
 ## Definition of Done
 - [ ] Tests written (TDD: write tests before implementation)
