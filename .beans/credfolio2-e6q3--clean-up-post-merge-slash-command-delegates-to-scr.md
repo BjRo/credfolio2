@@ -1,11 +1,11 @@
 ---
 # credfolio2-e6q3
 title: 'Clean up post-merge: slash command delegates to script'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T17:36:16Z
-updated_at: 2026-02-07T19:51:26Z
+updated_at: 2026-02-07T19:56:14Z
 parent: credfolio2-ynmd
 ---
 
