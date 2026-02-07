@@ -16,6 +16,7 @@ const ZOOM_STEP = 0.25;
 
 interface PDFViewerProps {
   fileUrl: string;
+  // Used by Phase 2 (Text Search & Highlight) - accepted now to stabilize the interface
   highlightText?: string;
   onHighlightResult?: (found: boolean) => void;
 }
@@ -55,6 +56,7 @@ export function PDFViewer({
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
+    pageRefs.current.clear();
     setNumPages(numPages);
   }, []);
 
@@ -193,7 +195,7 @@ export function PDFViewer({
                   }
                 }}
                 className={cn(
-                  "shadow-md bg-white",
+                  "shadow-md bg-white", // Intentionally bg-white: PDF pages are white documents even in dark mode
                   pageNumber === currentPage && "ring-2 ring-primary/30"
                 )}
               >

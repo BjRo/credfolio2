@@ -215,9 +215,8 @@ describe("PDFViewer", () => {
     expect(pageInput).toHaveValue(3);
   });
 
-  it("shows loading skeleton while PDF loads", () => {
+  it("renders the document container", () => {
     render(<PDFViewer fileUrl="https://example.com/test.pdf" />);
-    // The Document component is passed a loading prop
     const document = screen.getByTestId("pdf-document");
     expect(document).toBeInTheDocument();
   });
