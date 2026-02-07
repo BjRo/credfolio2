@@ -1,11 +1,11 @@
 ---
 # credfolio2-tvaj
 title: PDF Viewer Infrastructure
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-07T09:29:03Z
-updated_at: 2026-02-07T09:43:47Z
+updated_at: 2026-02-07T10:01:32Z
 parent: credfolio2-klgo
 blocking:
     - credfolio2-5mkd
@@ -42,4 +42,4 @@ Set up the foundational PDF viewing capability in the frontend.
 - [x] Visual verification with agent-browser (for UI changes)
 - [x] All other checklist items above are completed
 - [x] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [x] Automated code review passed (`@review-backend` and/or `@review-frontend`)

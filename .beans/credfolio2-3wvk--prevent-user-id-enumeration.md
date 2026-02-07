@@ -1,10 +1,11 @@
 ---
 # credfolio2-3wvk
 title: Prevent user ID enumeration
-status: draft
+status: scrapped
 type: task
+priority: normal
 created_at: 2026-01-30T15:59:57Z
-updated_at: 2026-01-30T15:59:57Z
+updated_at: 2026-02-06T23:14:26Z
 parent: credfolio2-abtx
 ---
 
