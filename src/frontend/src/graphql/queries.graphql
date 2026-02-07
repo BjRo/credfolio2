@@ -1,3 +1,19 @@
+query GetReferenceLetterForViewer($id: ID!) {
+  referenceLetter(id: $id) {
+    id
+    title
+    authorName
+    authorTitle
+    organization
+    file {
+      id
+      url
+      filename
+      contentType
+    }
+  }
+}
+
 query GetReferenceLetter($id: ID!) {
   referenceLetter(id: $id) {
     id
