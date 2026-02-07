@@ -262,18 +262,7 @@ gh pr create --title "..." --body "..."
 
 ## Mandatory Definition of Done
 
-**Every bean MUST include a "Definition of Done" checklist at the end of its body.** Add this when creating the bean:
-
-```markdown
-## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
-```
+**Every bean MUST include a "Definition of Done" checklist at the end of its body.** When creating a bean, copy the canonical template from the "Mandatory Bean Checklist" section in `CLAUDE.md`.
 
 **You CANNOT mark a bean as completed while it has unchecked items.** This structurally enforces compliance.
 
