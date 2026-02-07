@@ -39,7 +39,7 @@ An "implement" agent fills the gap: **refine → implement → qa → review**.
 - [x] Research existing subagent configurations (refine, qa, review-backend, review-frontend) for patterns
 - [x] Design the implement agent prompt template
 - [x] Create the agent configuration in `.claude/agents/`
-- [ ] Create a skill (`/implement`) that invokes the agent with a bean ID
+- [x] Create a skill (`/implement`) that invokes the agent with a bean ID
 - [ ] Test with a real bean implementation
 - [ ] Document usage in CLAUDE.md or relevant rules file
 
