@@ -55,10 +55,10 @@ Delete the original `Agents.md` after migration.
 This overlaps with credfolio2-zsm2 (Refactor CLAUDE.md into modular rules). Can be done as part of that task or independently — the fix is small and self-contained.
 
 ## Definition of Done
-- [ ] `.claude/rules/golang.md` created with path-scoped Go instructions
-- [ ] Content from `Agents.md` migrated
-- [ ] Original `Agents.md` deleted
-- [ ] Verified rules load when working on `src/backend/` files
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `.claude/rules/golang.md` created with path-scoped Go instructions
+- [x] Content from `Agents.md` migrated
+- [x] Original `Agents.md` deleted
+- [x] Verified rules load when working on `src/backend/` files
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
