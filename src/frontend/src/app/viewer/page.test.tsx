@@ -220,8 +220,8 @@ describe("ViewerPage", () => {
         letterId: "550e8400-e29b-41d4-a716-446655440000",
       });
       mockUseQuery.mockReturnValue([{ fetching: false, data: mockLetterData, error: undefined }]);
-      const { container } = render(<ViewerPage />);
-      const viewerContainer = container.querySelector(".flex.flex-col");
+      render(<ViewerPage />);
+      const viewerContainer = screen.getByTestId("viewer-container");
       expect(viewerContainer).not.toHaveClass("h-screen");
     });
 
