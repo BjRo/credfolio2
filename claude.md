@@ -39,6 +39,15 @@
 └── package.json            # Root with Turborepo scripts
 ```
 
+## Key Files (auto-imported)
+
+@src/frontend/src/app/layout.tsx
+@src/frontend/next.config.ts
+@src/frontend/codegen.ts
+@src/frontend/src/lib/urql/client.ts
+@src/backend/gqlgen.yml
+@src/backend/internal/domain/repository.go
+
 ## Key Technical Decisions
 
 ### Package Manager
@@ -94,70 +103,6 @@ cd src/backend && pnpm build   # Compiles to bin/server
 # Cleanup
 pnpm clean                     # Clean all packages
 rm -rf .turbo                  # Clear Turborepo cache
-
-# Database (run from host, not devcontainer)
-docker-compose up -d           # Start PostgreSQL and MinIO
-docker-compose down            # Stop services
-
-# Migrations (run from src/backend/)
-cd src/backend
-make help                      # Show all migration commands
-make migration name=create_users  # Create new migration
-make migrate-up                # Run pending migrations (on credfolio_dev)
-make migrate-down              # Rollback last migration
-CREDFOLIO_ENV=test make migrate-up   # Run migrations on test database
-make migrate-status            # Show migration status for all environments
-
-# Database debugging with psql (from devcontainer)
-psql -h credfolio2-postgres -U credfolio -d credfolio_dev   # Connect to dev database
-psql -h credfolio2-postgres -U credfolio -d credfolio_test  # Connect to test database
-# Password: credfolio_dev
-```
-
-## Database Debugging with psql
-
-The devcontainer includes `postgresql-client` for direct database access. This is useful for debugging data issues, inspecting table contents, and running ad-hoc queries.
-
-### Connection Details
-
-| Setting | Value |
-|---------|-------|
-| Host | `credfolio2-postgres` |
-| Port | `5432` |
-| User | `credfolio` |
-| Password | `credfolio_dev` |
-| Dev Database | `credfolio_dev` |
-| Test Database | `credfolio_test` |
-
-### Quick Commands
-
-```bash
-# Connect to dev database (interactive)
-psql -h credfolio2-postgres -U credfolio -d credfolio_dev
-
-# Connect to test database
-PGPASSWORD=credfolio_dev psql -h credfolio2-postgres -U credfolio -d credfolio_test
-
-# Run a single query
-PGPASSWORD=credfolio_dev psql -h credfolio2-postgres -U credfolio -d credfolio_dev -c "SELECT * FROM users;"
-
-# List all tables
-PGPASSWORD=credfolio_dev psql -h credfolio2-postgres -U credfolio -d credfolio_dev -c "\dt"
-
-# Describe a table structure
-PGPASSWORD=credfolio_dev psql -h credfolio2-postgres -U credfolio -d credfolio_dev -c "\d users"
-
-# Export query results to file
-PGPASSWORD=credfolio_dev psql -h credfolio2-postgres -U credfolio -d credfolio_dev -c "SELECT * FROM users;" > /tmp/users.txt
-```
-
-### Environment Variable for Password
-
-To avoid typing the password repeatedly, set `PGPASSWORD`:
-
-```bash
-export PGPASSWORD=credfolio_dev
-psql -h credfolio2-postgres -U credfolio -d credfolio_dev
 ```
 
 ## Important Context
@@ -182,16 +127,91 @@ psql -h credfolio2-postgres -U credfolio -d credfolio_dev
 
 ### File Locations to Remember
 
-- Backend entry point: `src/backend/cmd/server/main.go`
-- Backend config: `src/backend/internal/config/config.go`
-- Backend Makefile: `src/backend/Makefile`
-- Migrations: `src/backend/migrations/`
-- Frontend layout: `src/frontend/src/app/layout.tsx`
-- Frontend homepage: `src/frontend/src/app/page.tsx`
-- Next.js config: `src/frontend/next.config.ts`
+**Backend (Go)**
+- Entry point: `src/backend/cmd/server/main.go` -- HTTP server setup with chi router, middleware (logger, recoverer, CORS), route registration (REST + GraphQL), LLM provider initialization, River job queue setup
+- Config: `src/backend/internal/config/config.go` -- Loads all env vars (database, MinIO, LLM providers, queue); see struct fields for available env var names
+- Domain entities: `src/backend/internal/domain/entities.go` -- Bun ORM structs (User, File, ReferenceLetter, Author, Testimonial, SkillValidation, ExperienceValidation)
+- Domain profile: `src/backend/internal/domain/profile.go` -- Profile, ProfileExperience, ProfileEducation, ProfileSkill entities
+- Repository interfaces: `src/backend/internal/domain/repository.go` -- All repository interfaces (UserRepository, FileRepository, etc.)
+- Repository implementations: `src/backend/internal/repository/postgres/` -- One file per repository (e.g., `resume_repository.go`, `profile_skill_repository.go`)
+- GraphQL schema: `src/backend/internal/graphql/schema/schema.graphqls` -- All type definitions, queries, mutations (1591 lines)
+- GraphQL resolvers: `src/backend/internal/graphql/resolver/schema.resolvers.go` -- All query/mutation implementations (auto-generated method stubs, manually implemented bodies)
+- GraphQL converter: `src/backend/internal/graphql/resolver/converter.go` -- Domain-to-GraphQL model mapping functions
+- GraphQL handler: `src/backend/internal/graphql/handler.go` -- gqlgen server setup and dependency injection
+- GraphQL config: `src/backend/gqlgen.yml` -- Code generation config (schema paths, output locations, model mappings)
+- Background jobs: `src/backend/internal/job/` -- River queue workers (document_detection, document_processing, reference_letter_processing, resume_processing)
+- LLM infrastructure: `src/backend/internal/infrastructure/llm/` -- Anthropic/OpenAI providers, document extraction, resilience wrappers, prompts
+- Materialization service: `src/backend/internal/service/materialization.go` -- Converts extracted resume/letter data into profile entities
+- Migrations: `src/backend/migrations/` -- Timestamped up/down SQL files (golang-migrate format)
+- Makefile: `src/backend/Makefile` -- Migration commands (make migrate-up, make migration name=X)
+
+**Frontend (Next.js/React)**
+- Layout: `src/frontend/src/app/layout.tsx` -- Root layout with ThemeProvider, UrqlProvider, SiteHeader
+- Pages: `src/frontend/src/app/` -- App Router pages: `/` (home), `/upload` (document upload flow), `/upload-resume` (resume upload), `/profile/[id]` (profile view), `/viewer` (PDF viewer)
+- Components by feature: `src/frontend/src/components/profile/` -- Profile display/edit components (ProfileHeader, EducationSection, SkillsSection, TestimonialsSection, etc.)
+- Upload flow: `src/frontend/src/components/upload/` -- Multi-step upload wizard (DocumentUpload, DetectionProgress, ExtractionProgress, ExtractionReview)
+- UI primitives: `src/frontend/src/components/ui/` -- shadcn/ui components (button, dialog, input, badge, etc.)
+- GraphQL queries: `src/frontend/src/graphql/queries.graphql` -- All frontend query definitions
+- GraphQL mutations: `src/frontend/src/graphql/mutations.graphql` -- All frontend mutation definitions
+- Generated types: `src/frontend/src/graphql/generated/` -- graphql-codegen output (types + typed document nodes)
+- urql client: `src/frontend/src/lib/urql/client.ts` -- GraphQL client setup, endpoint configuration
+- urql provider: `src/frontend/src/lib/urql/provider.tsx` -- React context provider for urql
+- Codegen config: `src/frontend/codegen.ts` -- graphql-codegen configuration (schema source, output, scalar mappings)
+- Test setup: `src/frontend/vitest.config.ts` -- Vitest config with happy-dom, path aliases, @urql/next mock
+- Test mocks: `src/frontend/src/test/mocks/` -- Test mock for @urql/next
+
+**Project-level**
 - Turborepo config: `turbo.json`
 - Workspace definition: `pnpm-workspace.yaml`
 - Docker services: `docker-compose.yml`
+- Next.js config: `src/frontend/next.config.ts` -- Proxy rewrites for GraphQL and MinIO storage
+
+## Key Patterns
+
+### Data Flow: GraphQL Request
+
+1. Frontend sends query/mutation via urql client to `/api/graphql` (proxied by Next.js to `localhost:8080/graphql`)
+2. gqlgen routes to resolver method in `schema.resolvers.go`
+3. Resolver calls domain repository interfaces (defined in `domain/repository.go`)
+4. Repository implementations in `internal/repository/postgres/` execute SQL via Bun ORM
+5. Resolver uses converter functions (`converter.go`) to map domain entities to GraphQL models
+6. Response flows back through urql to the React component
+
+### Data Flow: Document Upload and Extraction
+
+1. Frontend uploads file via GraphQL `uploadDocument` mutation
+2. Backend stores file in MinIO (object storage), creates File record, enqueues River job
+3. Detection worker (`job/document_detection.go`) classifies document type using LLM
+4. Processing worker (`job/document_processing.go` or `job/reference_letter_processing.go`) extracts structured data using LLM
+5. Materialization service (`service/materialization.go`) converts extracted data into Profile entities (experiences, education, skills, testimonials)
+6. Frontend polls for status updates via GraphQL queries
+
+### GraphQL Code Generation
+
+- **Backend**: gqlgen (Go) -- Schema in `internal/graphql/schema/schema.graphqls`, config in `gqlgen.yml`. Run `go generate ./internal/graphql/` to regenerate. Produces `generated/generated.go` (executable schema) and `model/models_gen.go` (Go types). Resolver stubs in `resolver/schema.resolvers.go`.
+- **Frontend**: graphql-codegen (TypeScript) -- Config in `codegen.ts`, reads schema from backend path. Run `pnpm codegen` in frontend. Produces typed document nodes in `src/graphql/generated/`.
+
+### Domain Layer Structure
+
+- `internal/domain/` contains pure business types and interfaces (no infrastructure dependencies)
+- `internal/domain/entities.go` -- Core entities with Bun ORM tags (User, File, ReferenceLetter, etc.)
+- `internal/domain/profile.go` -- Profile aggregate (Profile, ProfileExperience, ProfileEducation, ProfileSkill)
+- `internal/domain/repository.go` -- Repository interfaces (one per entity)
+- `internal/domain/llm.go` -- LLM provider and extractor interfaces
+- `internal/domain/storage.go` -- Object storage interface
+- `internal/domain/job.go` -- Job enqueuer interface
+
+### Test Organization
+
+- **Go tests**: Co-located with source (`*_test.go` files next to implementation). Repository tests use real PostgreSQL (`credfolio_test` database). Job/service tests use mocks.
+- **Frontend tests**: Co-located with source (`*.test.tsx` / `*.test.ts`). Use vitest with happy-dom. urql mocked via `src/test/mocks/urql-next.tsx` (aliased in vitest.config.ts). Run with `pnpm test` from frontend or root.
+
+### Migration Conventions
+
+- Timestamp-prefixed pairs: `YYYYMMDDHHMMSS_name.up.sql` / `YYYYMMDDHHMMSS_name.down.sql`
+- Created via `make migration name=X` in `src/backend/`
+- Applied via `make migrate-up` (dev) or `CREDFOLIO_ENV=test make migrate-up` (test)
+- Tool: golang-migrate CLI
 
 ## Development Workflow
 
@@ -211,84 +231,6 @@ You cannot mark a bean as completed while it has unchecked items.
 - Remote: `github.com:BjRo/credfolio2.git`
 - Commits use `--no-gpg-sign` flag
 - Co-authored by: `Claude <noreply@anthropic.com>`
-
-## Starting Dev Servers
-
-Before running `pnpm dev`, ensure no stale processes are occupying ports:
-
-```bash
-# Kill dev server processes (both the orchestrator and spawned processes)
-pkill -f "turbo run dev" 2>/dev/null
-pkill -f "go run cmd/server" 2>/dev/null
-pkill -f "next dev" 2>/dev/null
-fuser -k 8080/tcp 3000/tcp 2>/dev/null
-sleep 2
-
-# Verify ports are free (re-run the above if this shows processes)
-lsof -i :8080 -i :3000 2>/dev/null || echo "Ports are free"
-
-# Clear Turbopack cache if Next.js hangs (connects but never responds)
-rm -rf src/frontend/.next
-
-# Then start
-pnpm dev
-```
-
-**Why this approach:**
-- **`pkill -f`** kills by command pattern, catching both parent and child processes
-- **Three-pronged kill**: turbo (orchestrator), go run (backend), and next dev (frontend)
-- **`fuser -k`** as fallback catches anything else holding the ports
-- **Verification step** with `lsof` confirms ports are actually free before starting
-
-**Common issues:**
-- **Port already in use**: Turborepo spawns a process tree; killing just the port holder can leave orphans. Use the full pkill sequence above.
-- **Frontend connects but never responds**: Turbopack's cache (`.next/`) can become corrupted. Fix: `rm -rf src/frontend/.next`
-- **Backend failure kills frontend**: Turborepo tears down all tasks if one fails, but zombie processes may remain. Always run the full cleanup sequence before retrying.
-
-## Visual Verification with Fixture Resume
-
-> **Note:** For routine visual verification during development, use the `@qa` subagent (via Task tool) instead of running these commands manually. The QA subagent handles dev server management, browser automation, and error checking automatically. The commands below are reference documentation for the underlying `agent-browser` CLI.
-
-A fixture resume is available at `fixtures/CV_TEMPLATE_0004.pdf` for testing the resume upload and profile display flow.
-
-### How to upload via agent-browser
-
-```bash
-# 1. Start dev servers (ensure ports are free first)
-pnpm dev &
-
-# 2. Navigate to the upload page
-agent-browser open http://localhost:3000/upload-resume
-
-# 3. Upload the fixture resume using CSS selector for the hidden file input
-agent-browser upload 'input[type="file"]' /workspace/fixtures/CV_TEMPLATE_0004.pdf
-
-# 4. Wait for extraction to complete (redirects to profile page)
-agent-browser wait --load networkidle
-# If not auto-redirected, wait ~30s and re-snapshot:
-sleep 30 && agent-browser snapshot -c
-
-# 5. Verify the profile page renders correctly
-agent-browser screenshot --full /path/to/screenshot.png
-agent-browser errors  # Check for JS errors
-```
-
-### Key points
-
-- The upload page's file input is hidden (opacity: 0). Use the CSS selector `'input[type="file"]'` with `agent-browser upload` — do **not** try to click it or use a ref.
-- The profile page URL is `/profile/{resumeId}` — it takes a **resume ID** (not user ID). After upload, the page auto-redirects.
-- Resume extraction takes ~15-30 seconds (LLM processing). Wait before checking the profile.
-- The demo user ID is `00000000-0000-0000-0000-000000000001` (seeded automatically on server start).
-- You can also create test data directly via GraphQL mutations (`createEducation`, `createExperience`) without uploading a resume.
-
-## Devcontainer Notes
-
-- Based on `debian:bookworm-slim` image
-- **Tool management via mise**: Go 1.24.1 and Node 20 installed using mise (defined in mise.toml)
-- Mise provides version consistency between local dev and devcontainer
-- Other tools installed manually: golangci-lint, migrate, beans, delta, agent-browser
-- Includes: git, gh, fzf, zsh, postgresql-client, and development tools
-- Rebuild required when Dockerfile changes
 
 ## Decision Documentation
 
