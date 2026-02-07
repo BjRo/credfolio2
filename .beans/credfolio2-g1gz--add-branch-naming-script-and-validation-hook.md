@@ -1,11 +1,11 @@
 ---
 # credfolio2-g1gz
 title: Add branch naming script and validation hook
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:13:03Z
-updated_at: 2026-02-07T18:10:08Z
+updated_at: 2026-02-07T18:19:06Z
 parent: credfolio2-ynmd
 ---
 
