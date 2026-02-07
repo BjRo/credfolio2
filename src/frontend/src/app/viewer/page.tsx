@@ -3,7 +3,7 @@
 import { ArrowLeft, Info, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useQuery } from "urql";
 import { Button } from "@/components/ui/button";
 import { GetReferenceLetterForViewerDocument } from "@/graphql/generated/graphql";
@@ -57,7 +57,7 @@ function ErrorPage({
 
 function LoadingSkeleton() {
   return (
-    <output className="min-h-screen bg-background flex items-center justify-center block">
+    <output className="min-h-screen bg-background flex items-center justify-center">
       <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
     </output>
   );
@@ -79,6 +79,12 @@ function ViewerPageContent() {
 
   const [highlightNotFound, setHighlightNotFound] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset state when highlight param changes
+  useEffect(() => {
+    setHighlightNotFound(false);
+    setBannerDismissed(false);
+  }, [highlight]);
 
   const isValidId = letterId !== null && UUID_REGEX.test(letterId);
 

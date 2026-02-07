@@ -275,6 +275,34 @@ describe("ViewerPage", () => {
       ).not.toBeInTheDocument();
     });
 
+    it("resets banner when highlight param changes", () => {
+      mockSearchParams = new URLSearchParams({
+        letterId: "550e8400-e29b-41d4-a716-446655440000",
+        highlight: "some text",
+      });
+      mockUseQuery.mockReturnValue([{ fetching: false, data: mockLetterData, error: undefined }]);
+      const { rerender } = render(<ViewerPage />);
+
+      act(() => {
+        capturedOnHighlightResult?.(false);
+      });
+
+      expect(
+        screen.getByText("Could not locate exact quote — showing full document")
+      ).toBeInTheDocument();
+
+      // Simulate highlight param change
+      mockSearchParams = new URLSearchParams({
+        letterId: "550e8400-e29b-41d4-a716-446655440000",
+        highlight: "different text",
+      });
+      rerender(<ViewerPage />);
+
+      expect(
+        screen.queryByText("Could not locate exact quote — showing full document")
+      ).not.toBeInTheDocument();
+    });
+
     it("dismisses banner when X is clicked", async () => {
       const user = userEvent.setup();
       mockSearchParams = new URLSearchParams({
