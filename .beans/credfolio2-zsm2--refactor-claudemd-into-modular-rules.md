@@ -273,4 +273,4 @@ None -- the scope is well-defined and all decisions are resolved.
 - [x] No information lost — all content preserved across files
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
