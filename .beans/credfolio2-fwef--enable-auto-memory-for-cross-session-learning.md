@@ -38,7 +38,7 @@ This complements CLAUDE.md (what we write for Claude) with what Claude learns on
 - [x] Documented in devcontainer README that auto-memory is enabled
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review (PR #126)
 
 ## Implementation Plan
 
