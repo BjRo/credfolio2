@@ -14,10 +14,14 @@ const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3.0;
 const ZOOM_STEP = 0.25;
 
+const MOBILE_BREAKPOINT = 768;
+const MOBILE_DEFAULT_SCALE = 0.5;
+
 interface PDFViewerProps {
   fileUrl: string;
   highlightText?: string;
   onHighlightResult?: (found: boolean) => void;
+  toolbarLeft?: React.ReactNode;
 }
 
 function LoadingSkeleton() {
@@ -42,10 +46,20 @@ function ErrorDisplay({ error }: { error?: Error }) {
   );
 }
 
-export function PDFViewer({ fileUrl, highlightText, onHighlightResult }: PDFViewerProps) {
+function getInitialScale() {
+  if (typeof window === "undefined") return 1.0;
+  return window.innerWidth < MOBILE_BREAKPOINT ? MOBILE_DEFAULT_SCALE : 1.0;
+}
+
+export function PDFViewer({
+  fileUrl,
+  highlightText,
+  onHighlightResult,
+  toolbarLeft,
+}: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [scale, setScale] = useState(1.0);
+  const [scale, setScale] = useState(getInitialScale);
   const [pageInputValue, setPageInputValue] = useState("1");
   const [loadError, setLoadError] = useState<Error | null>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -131,75 +145,85 @@ export function PDFViewer({ fileUrl, highlightText, onHighlightResult }: PDFView
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b bg-background px-4 py-2 sticky top-0 z-10">
-        {/* Page navigation */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage <= 1}
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
+      <div className="flex flex-wrap items-center border-b bg-background px-4 py-2 sticky top-0 z-10 gap-y-1">
+        {/* Left: back button + title (passed from parent) */}
+        {toolbarLeft && (
+          <div className="flex items-center gap-3 basis-full md:basis-auto md:flex-none md:mr-4 min-w-0">
+            {toolbarLeft}
+          </div>
+        )}
 
-          <div className="flex items-center gap-1 text-sm">
-            <input
-              type="number"
-              min={1}
-              max={numPages || 1}
-              value={pageInputValue}
-              onChange={handlePageInputChange}
-              onKeyDown={handlePageInputSubmit}
-              onBlur={handlePageInputSubmit}
-              aria-label="Current page"
-              className="w-12 h-7 text-center text-sm border rounded bg-background tabular-nums"
-            />
-            <span className="text-muted-foreground">of {numPages || "..."}</span>
+        {/* Right: page nav + zoom — pushed right on desktop */}
+        <div className="flex items-center justify-between md:justify-end flex-1 gap-2">
+          {/* Page navigation */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage <= 1}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+
+            <div className="flex items-center gap-1 text-sm">
+              <input
+                type="number"
+                min={1}
+                max={numPages || 1}
+                value={pageInputValue}
+                onChange={handlePageInputChange}
+                onKeyDown={handlePageInputSubmit}
+                onBlur={handlePageInputSubmit}
+                aria-label="Current page"
+                className="w-12 h-7 text-center text-sm border rounded bg-background tabular-nums"
+              />
+              <span className="text-muted-foreground">of {numPages || "..."}</span>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage >= numPages}
+              aria-label="Next page"
+            >
+              <ChevronRight className="size-4" />
+            </Button>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage >= numPages}
-            aria-label="Next page"
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
+          {/* Zoom controls */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={zoomOut}
+              disabled={scale <= MIN_ZOOM}
+              aria-label="Zoom out"
+            >
+              <Minus className="size-4" />
+            </Button>
 
-        {/* Zoom controls */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={zoomOut}
-            disabled={scale <= MIN_ZOOM}
-            aria-label="Zoom out"
-          >
-            <Minus className="size-4" />
-          </Button>
+            <span className="text-sm text-muted-foreground w-12 text-center tabular-nums">
+              {zoomPercent}%
+            </span>
 
-          <span className="text-sm text-muted-foreground w-12 text-center tabular-nums">
-            {zoomPercent}%
-          </span>
-
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={zoomIn}
-            disabled={scale >= MAX_ZOOM}
-            aria-label="Zoom in"
-          >
-            <Plus className="size-4" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={zoomIn}
+              disabled={scale >= MAX_ZOOM}
+              aria-label="Zoom in"
+            >
+              <Plus className="size-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* PDF Content */}
-      <div className="flex-1 overflow-auto bg-muted/30">
+      <div className="flex-1 overflow-auto bg-neutral-700">
         <Document
           file={fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}

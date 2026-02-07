@@ -168,21 +168,25 @@ function ViewerPageContent() {
       ? `${letter.authorTitle}, ${letter.organization}`
       : letter.authorTitle || letter.organization || null;
 
-  return (
-    <div className="flex flex-col h-screen">
-      {/* Page toolbar */}
-      <div className="flex items-center gap-3 border-b bg-background px-4 py-2">
-        <Button variant="ghost" size="icon-sm" onClick={handleBack} aria-label="Go back">
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-medium truncate">{documentTitle}</h1>
-          {documentSubtitle && (
-            <p className="text-xs text-muted-foreground truncate">{documentSubtitle}</p>
-          )}
-        </div>
+  const toolbarLeft = (
+    <>
+      <Button variant="ghost" size="icon-sm" onClick={handleBack} aria-label="Go back">
+        <ArrowLeft className="size-4" />
+      </Button>
+      <div className="flex-1 min-w-0">
+        <h1 className="text-sm font-medium truncate">{documentTitle}</h1>
+        {documentSubtitle && (
+          <p className="text-xs text-muted-foreground truncate">{documentSubtitle}</p>
+        )}
       </div>
+    </>
+  );
 
+  return (
+    <div
+      data-testid="viewer-container"
+      className="flex flex-col h-[calc(100dvh-var(--header-height))]"
+    >
       {/* Info banner for highlight not found */}
       {highlight && highlightNotFound && !bannerDismissed && (
         <InfoBanner onDismiss={() => setBannerDismissed(true)} />
@@ -194,6 +198,7 @@ function ViewerPageContent() {
           fileUrl={letter.file.url}
           highlightText={highlight || undefined}
           onHighlightResult={handleHighlightResult}
+          toolbarLeft={toolbarLeft}
         />
       </div>
     </div>

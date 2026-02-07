@@ -1,5 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type React from "react";
 import { useQuery } from "urql";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import ViewerPage from "./page";
@@ -30,6 +31,7 @@ vi.mock("next/dynamic", () => ({
       fileUrl: string;
       highlightText?: string;
       onHighlightResult?: (found: boolean) => void;
+      toolbarLeft?: React.ReactNode;
     }) {
       capturedOnHighlightResult = props.onHighlightResult;
       return (
@@ -37,7 +39,9 @@ vi.mock("next/dynamic", () => ({
           data-testid="pdf-viewer"
           data-file-url={props.fileUrl}
           data-highlight={props.highlightText || ""}
-        />
+        >
+          {props.toolbarLeft}
+        </div>
       );
     };
   },
@@ -213,6 +217,16 @@ describe("ViewerPage", () => {
       await user.click(screen.getByLabelText("Go back"));
       expect(mockBack).toHaveBeenCalled();
       Object.defineProperty(window.history, "length", { value: 1, writable: true });
+    });
+
+    it("viewer container accounts for header height", () => {
+      mockSearchParams = new URLSearchParams({
+        letterId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockUseQuery.mockReturnValue([{ fetching: false, data: mockLetterData, error: undefined }]);
+      render(<ViewerPage />);
+      const viewerContainer = screen.getByTestId("viewer-container");
+      expect(viewerContainer).not.toHaveClass("h-screen");
     });
 
     it("navigates to home when back button is clicked with no history", async () => {
