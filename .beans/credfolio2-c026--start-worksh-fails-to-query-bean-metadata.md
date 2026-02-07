@@ -1,11 +1,11 @@
 ---
 # credfolio2-c026
 title: start-work.sh fails to query bean metadata
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-07T18:43:13Z
-updated_at: 2026-02-07T18:58:43Z
+updated_at: 2026-02-07T19:02:40Z
 ---
 
 ## Problem
@@ -45,4 +45,4 @@ Script errors with "Bean 'credfolio2-o624' not found" at step 2/5.
 - [x] Visual verification via `@qa` subagent (via Task tool, for UI changes) — N/A, no UI changes
 - [x] All other checklist items above are completed
 - [x] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
+- [x] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
