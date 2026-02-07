@@ -65,7 +65,7 @@ If no bean can be identified, exit 0 (allow completion — don't block non-bean 
 # Hook reads bean, finds unchecked items:
 
 stderr: "Cannot complete bean credfolio2-abc1 — 3 unchecked items remain:
-  - [ ] Visual verification with agent-browser
+  - [ ] Visual verification via `@qa` subagent (via Task tool)
   - [ ] Branch pushed and PR created
   - [ ] Automated code review passed
 "

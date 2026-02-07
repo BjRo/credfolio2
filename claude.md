@@ -206,10 +206,10 @@ This project follows a strict workflow. See `/skill dev-workflow` for the full p
 - [ ] Tests written (TDD: write tests before implementation)
 - [ ] `pnpm lint` passes with no errors
 - [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with `@qa` subagent (for UI changes)
+- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
 ```
 
 You cannot mark a bean as completed while it has unchecked items.
@@ -255,6 +255,8 @@ pnpm dev
 - **Backend failure kills frontend**: Turborepo tears down all tasks if one fails, but zombie processes may remain. Always run the full cleanup sequence before retrying.
 
 ## Visual Verification with Fixture Resume
+
+> **Note:** For routine visual verification during development, use the `@qa` subagent (via Task tool) instead of running these commands manually. The QA subagent handles dev server management, browser automation, and error checking automatically. The commands below are reference documentation for the underlying `agent-browser` CLI.
 
 A fixture resume is available at `fixtures/CV_TEMPLATE_0004.pdf` for testing the resume upload and profile display flow.
 

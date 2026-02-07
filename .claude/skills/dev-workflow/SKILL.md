@@ -69,47 +69,30 @@ Follow the TDD skill (`/skill tdd`):
 
 Commit frequently with meaningful messages.
 
-### 5. Smoke Test with Browser Automation
+### 5. Visual Verification via QA Subagent
 
-After implementation is complete, verify the feature works end-to-end:
+After implementation is complete, verify the feature works end-to-end by launching the `@qa` subagent. This keeps verbose browser automation output out of the main conversation context.
 
-1. **Start the dev servers** (if not already running):
-   ```bash
-   pnpm dev  # Starts frontend on :3000, backend on :8080
-   ```
+**Launch the QA subagent using the Task tool** (use exactly these parameters):
 
-2. **Run browser smoke tests** using `agent-browser`:
-   ```bash
-   # Open the app
-   agent-browser open http://localhost:3000
+```
+Task tool call:
+  subagent_type: "qa"
+  description: "Visual verification of <feature>"
+  prompt: "Verify <feature description>. Start dev servers if needed, navigate to <URL>, test <interactions>, check for errors, and report pass/fail."
+```
 
-   # Get interactive elements
-   agent-browser snapshot -i
+**IMPORTANT**: Always launch as a subagent via the Task tool. The `@qa` subagent handles dev server management, browser automation, and error checking automatically.
 
-   # Interact and verify (example)
-   agent-browser click @e1
-   agent-browser wait --load networkidle
-   agent-browser snapshot -i  # Check result
+**After the QA subagent returns:**
+- Read the summary to confirm the feature works
+- If it reports failures, fix the issues and re-run
+- If it reports console errors, investigate and address them
 
-   # Take screenshot as evidence (optional)
-   agent-browser screenshot ./smoke-test.png
-
-   # Close when done
-   agent-browser close
-   ```
-
-3. **What to verify**:
-   - Page loads without errors
-   - Key elements render correctly
-   - User interactions work as expected
-   - Backend integration functions (API calls succeed)
-   - No console errors (`agent-browser errors`)
-
-4. **For backend-only changes**, verify the API:
-   ```bash
-   agent-browser open http://localhost:8080/health
-   agent-browser snapshot
-   ```
+**For backend-only changes**, verify the API by including API endpoint checks in the QA subagent prompt:
+```
+prompt: "Verify the health endpoint. Start dev servers if needed, navigate to http://localhost:8080/health, confirm it returns a valid response."
+```
 
 This self-verification catches integration issues before human review.
 
@@ -252,12 +235,8 @@ git add .beans/ && git commit -m "chore: Mark <bean-id> as completed" && git pus
 # 4. Update bean checklist
 # 5. Commit with bean file
 
-# After implementation - smoke test
-pnpm dev  # Start servers if not running
-agent-browser open http://localhost:3000
-agent-browser snapshot -i
-# Interact and verify feature works
-agent-browser close
+# After implementation - visual verification
+# Launch @qa subagent via Task tool to verify feature works
 
 # Finish work
 git push -u origin <branch-name>
@@ -283,18 +262,7 @@ gh pr create --title "..." --body "..."
 
 ## Mandatory Definition of Done
 
-**Every bean MUST include a "Definition of Done" checklist at the end of its body.** Add this when creating the bean:
-
-```markdown
-## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
-```
+**Every bean MUST include a "Definition of Done" checklist at the end of its body.** When creating a bean, copy the canonical template from the "Mandatory Bean Checklist" section in `CLAUDE.md`.
 
 **You CANNOT mark a bean as completed while it has unchecked items.** This structurally enforces compliance.
 
@@ -310,8 +278,7 @@ pnpm lint
 pnpm test
 
 # 3. Visual verification (for UI changes)
-pnpm dev  # if not running
-# Then use /skill agent-browser to verify
+# Launch @qa subagent via Task tool to verify
 
 # 4. Check off all Definition of Done items in the bean
 # 5. Only then: beans update <bean-id> --status completed

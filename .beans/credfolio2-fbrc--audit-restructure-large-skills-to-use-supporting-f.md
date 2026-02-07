@@ -21,10 +21,10 @@ Large skills consume significant context when loaded. Claude Code's documentatio
 | `vercel-react-best-practices` | 45 rules across 8 categories — likely well over 500 lines |
 | `agent-browser` | 60+ commands with detailed usage — very large |
 | `web-design-guidelines` | Fetches external content, review size |
-| `review-backend` | Detailed review checklist, may be large |
-| `review-frontend` | Detailed review checklist, may be large |
 | `dev-workflow` | Automated workflow with scripts, review size |
 | Others | Quick check, likely fine |
+
+> **Note:** `review-backend` and `review-frontend` have been converted from skills to subagents (`.claude/agents/`). They no longer need to be audited as skills. The `agent-browser` skill is preloaded by the `@qa` subagent but still exists as a standalone skill and should be audited for size.
 
 ## What
 
@@ -45,7 +45,7 @@ For each oversized skill:
 
 ## Note
 
-Some of these skills may become subagent-preloaded (review-backend, review-frontend, agent-browser) as part of sibling tasks. Coordinate — restructuring should happen regardless, since supporting files work with both skills and preloaded subagent skills.
+`review-backend`, `review-frontend`, and `agent-browser` have already been restructured as part of the subagent migration. `review-backend` and `review-frontend` are now subagent definitions in `.claude/agents/`. The `agent-browser` skill is preloaded by the `@qa` subagent. Focus restructuring efforts on the remaining skills listed above.
 
 ## Definition of Done
 - [ ] All skills audited for line count
