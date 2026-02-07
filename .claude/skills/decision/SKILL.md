@@ -76,18 +76,26 @@ What should future developers/agents know about this decision?]
 
 ### 4. Update the Decision Index
 
-After creating the decision file, update `/decisions/CLAUDE.md` to add a new row to the index table:
+**MANDATORY** — You MUST update `/decisions/CLAUDE.md` immediately after creating the decision file. Add a new row to the index table:
 
 ```markdown
 | [filename.md](filename.md) | Title | YYYY-MM-DD | Brief one-line summary |
 ```
 
-### 5. Remind About Committing
+**Do NOT consider the decision complete until the index is updated.** The decision file and the index update must be committed together.
 
-After creating the decision file, remind the user to:
-- Include the decision file in their next commit
-- Include the updated `CLAUDE.md` index
-- Commit alongside the related code changes
+### 5. Commit Both Files
+
+Commit the decision file AND the updated index together:
+
+```bash
+git add decisions/<new-decision-file>.md decisions/CLAUDE.md
+git commit --no-gpg-sign -m "docs: Add ADR for <title>
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+If committing alongside related code changes, include both decision files in that commit.
 
 ## Example
 

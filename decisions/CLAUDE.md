@@ -12,6 +12,8 @@ This directory contains Architecture Decision Records (ADRs). See [README.md](RE
 | [20260120134659-devcontainer-network-isolation-and-permission-model.md](20260120134659-devcontainer-network-isolation-and-permission-model.md) | Devcontainer Network Isolation and Permission Model | 2026-01-20 | Implemented iptables firewall in devcontainer with domain allowlist for AI agent sandboxing |
 | [20260121140000-bun-orm-for-database-access.md](20260121140000-bun-orm-for-database-access.md) | Bun ORM for Database Access | 2026-01-21 | Adopted Bun as SQL-first ORM built on pgx for PostgreSQL access |
 | [20260122001044-dnsmasq-dynamic-firewall-whitelisting.md](20260122001044-dnsmasq-dynamic-firewall-whitelisting.md) | dnsmasq for Dynamic Firewall Whitelisting | 2026-01-22 | Added dnsmasq for dynamic DNS-based firewall rules to handle Go module proxy IP changes |
+| [20260123000000-shadcn-ui-component-library.md](20260123000000-shadcn-ui-component-library.md) | shadcn/ui Component Library | 2026-01-23 | Adopted shadcn/ui as the component library for the frontend |
+| [20260207200000-implement-subagent-for-bean-execution.md](20260207200000-implement-subagent-for-bean-execution.md) | Implement Subagent for Bean Execution | 2026-02-07 | Introduced @implement subagent to execute bean implementation plans in isolated context, completing the refine → implement → qa → review pipeline |
 
 ## Maintenance
 
