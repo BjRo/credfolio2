@@ -1,11 +1,11 @@
 ---
 # credfolio2-cm82
 title: 'Polish PDF viewer: site header, dark background, theme handling'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T14:32:39Z
-updated_at: 2026-02-07T14:50:52Z
+updated_at: 2026-02-07T15:32:12Z
 parent: credfolio2-klgo
 ---
 
