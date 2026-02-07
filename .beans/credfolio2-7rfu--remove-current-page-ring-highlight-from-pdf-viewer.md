@@ -1,10 +1,11 @@
 ---
 # credfolio2-7rfu
 title: Remove current page ring highlight from PDF viewer
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-02-07T14:28:19Z
-updated_at: 2026-02-07T14:28:19Z
+updated_at: 2026-02-07T14:37:03Z
 parent: credfolio2-klgo
 ---
 
@@ -16,9 +17,9 @@ The PDF viewer shows a `ring-2 ring-primary/30` border around the "current" page
 
 ## Checklist
 
-- [ ] Remove the `ring-2 ring-primary/30` conditional class from the page wrapper div in `PDFViewer.tsx` (line ~222)
-- [ ] Update or remove any tests that assert the ring styling
-- [ ] Verify visually that pages render cleanly without the ring
+- [x] Remove the `ring-2 ring-primary/30` conditional class from the page wrapper div in `PDFViewer.tsx` (line ~222)
+- [x] Update or remove any tests that assert the ring styling
+- [x] Verify visually that pages render cleanly without the ring
 
 ## Technical Notes
 
@@ -27,10 +28,10 @@ The PDF viewer shows a `ring-2 ring-primary/30` border around the "current" page
 - Simply remove the conditional — the `shadow-md bg-white` classes provide enough visual separation between pages
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification with agent-browser (for UI changes)
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)

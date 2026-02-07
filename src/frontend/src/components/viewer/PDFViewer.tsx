@@ -7,7 +7,6 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
-import { cn } from "@/lib/utils";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -217,10 +216,7 @@ export function PDFViewer({ fileUrl, highlightText, onHighlightResult }: PDFView
                     pageRefs.current.set(pageNumber, el);
                   }
                 }}
-                className={cn(
-                  "shadow-md bg-white", // Intentionally bg-white: PDF pages are white documents even in dark mode
-                  pageNumber === currentPage && "ring-2 ring-primary/30"
-                )}
+                className="shadow-md bg-white" // Intentionally bg-white: PDF pages are white documents even in dark mode
               >
                 <Page
                   pageNumber={pageNumber}
