@@ -81,5 +81,5 @@ Make it clear in the template (or in the decision skill description) what qualif
 - [x] `pnpm test` passes with no failures
 - [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced) — N/A, no architectural changes
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool) — N/A, no source code changes
