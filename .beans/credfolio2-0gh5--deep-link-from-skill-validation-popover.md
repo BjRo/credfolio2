@@ -28,22 +28,22 @@ The testimonials section (credfolio2-kahb) already deep-links each testimonial t
 ## Checklist
 
 ### Backend / GraphQL Query Changes
-- [ ] Update `GetSkillValidations` query in `queries.graphql` to include `referenceLetter { id file { id url } }` (file sub-selection is missing today)
-- [ ] Update `GetExperienceValidations` query similarly to include `referenceLetter.file { id url }`
-- [ ] Run GraphQL codegen (`pnpm --filter frontend codegen`) to regenerate types
+- [x] Update `GetSkillValidations` query in `queries.graphql` to include `referenceLetter { id file { id url } }` (file sub-selection is missing today)
+- [x] Update `GetExperienceValidations` query similarly to include `referenceLetter.file { id url }`
+- [x] Run GraphQL codegen (`pnpm --filter frontend codegen`) to regenerate types
 
 ### Frontend: ValidationPopover Changes
-- [ ] Import `buildViewerUrl` from `@/lib/viewer` in `ValidationPopover.tsx`
-- [ ] Add per-validation "View in source →" link after each validation's quote snippet:
+- [x] Import `buildViewerUrl` from `@/lib/viewer` in `ValidationPopover.tsx`
+- [x] Add per-validation "View in source →" link after each validation's quote snippet:
   - Compute URL: `buildViewerUrl(referenceLetter.id, validation.quoteSnippet)`
   - Only show when `referenceLetter?.id` and `referenceLetter?.file?.url` both exist
   - Style: small text link (`text-xs text-primary hover:underline`), opens in new tab
   - Place it after the blockquote, within the validation entry div
-- [ ] Remove the bottom "View full testimonials →" anchor link entirely
-- [ ] Handle edge case: if a validation has no quote snippet, link to the viewer without highlight
+- [x] Remove the bottom "View full testimonials →" anchor link entirely
+- [x] Handle edge case: if a validation has no quote snippet, link to the viewer without highlight
 
 ### Tests
-- [ ] Add/update tests in `ValidationPopover.test.tsx`:
+- [x] Add/update tests in `ValidationPopover.test.tsx`:
   - Test that "View in source →" link appears for validations with reference letter + file
   - Test that link is absent when no file exists
   - Test that the old "View full testimonials →" link is gone
@@ -57,10 +57,10 @@ The testimonials section (credfolio2-kahb) already deep-links each testimonial t
 - Pattern reference: `TestimonialsSection.tsx` lines 328-334 show how `getSourceUrl` uses `buildViewerUrl`
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Visual verification with agent-browser (for UI changes)
-- [ ] All other checklist items above are completed
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)

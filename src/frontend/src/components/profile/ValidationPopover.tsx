@@ -10,6 +10,7 @@ import {
   GetExperienceValidationsDocument,
   GetSkillValidationsDocument,
 } from "@/graphql/generated/graphql";
+import { buildViewerUrl } from "@/lib/viewer";
 
 interface ValidationPopoverProps {
   /** The ID of the skill or experience to show validations for */
@@ -136,6 +137,12 @@ function ValidationPopoverContent({
             const relationship = author?.relationship
               ? RELATIONSHIP_LABELS[author.relationship]
               : "Reference";
+            const letterId = validation.referenceLetter?.id;
+            const hasFile = !!validation.referenceLetter?.file?.url;
+            const sourceUrl =
+              letterId && hasFile
+                ? buildViewerUrl(letterId, validation.quoteSnippet ?? undefined)
+                : undefined;
 
             return (
               <div key={validation.id} className="flex items-start gap-2 text-sm">
@@ -153,18 +160,20 @@ function ValidationPopoverContent({
                       &ldquo;{validation.quoteSnippet}&rdquo;
                     </blockquote>
                   )}
+                  {sourceUrl && (
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-1 text-xs text-primary hover:underline"
+                    >
+                      View in source →
+                    </a>
+                  )}
                 </div>
               </div>
             );
           })}
-
-          {/* Link to testimonials section */}
-          <a
-            href="#testimonials"
-            className="block text-xs text-primary hover:underline pt-1 border-t border-border/50"
-          >
-            View full testimonials →
-          </a>
         </div>
       )}
     </div>
