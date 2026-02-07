@@ -1,11 +1,11 @@
 ---
 # credfolio2-ik4e
 title: Create QA subagent for feature verification
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-02-07T15:57:50Z
-updated_at: 2026-02-07T16:23:33Z
+updated_at: 2026-02-07T16:47:41Z
 parent: credfolio2-ynmd
 blocking:
     - credfolio2-xflj
@@ -32,11 +32,11 @@ Visual verification with agent-browser produces verbose output (screenshots, DOM
 - Update CLAUDE.md references to visual verification to point to the QA subagent
 
 ## Definition of Done
-- [ ] Subagent file created at `.claude/agents/qa.md`
-- [ ] `agent-browser` skill preloaded into the subagent
-- [ ] Subagent can verify a feature and return a pass/fail summary
-- [ ] Verification output stays out of the main conversation context
-- [ ] `agent-browser` skill reviewed for invocation settings
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] Subagent file created at `.claude/agents/qa.md`
+- [x] `agent-browser` skill preloaded into the subagent
+- [x] Subagent can verify a feature and return a pass/fail summary
+- [x] Verification output stays out of the main conversation context
+- [x] `agent-browser` skill reviewed for invocation settings
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review

@@ -7,7 +7,7 @@
 1. **Feature branch**: You MUST be on a feature branch, NOT main
 2. **Run lint**: `pnpm lint` — fix all errors
 3. **Run tests**: `pnpm test` — all tests must pass
-4. **Visual verification** (for ANY UI changes): Use `/skill agent-browser` to verify the feature works in the browser
+4. **Visual verification** (for ANY UI changes): Use the `@qa` subagent (via Task tool) to verify the feature works in the browser
 5. **Bean checklist**: Ensure ALL checklist items in the bean are checked off
 6. **Push and create PR**: Push your branch and create a PR for human review
 7. **Run automated code reviews**: Launch `@review-backend` and/or `@review-frontend` as subagents via Task tool — address any critical findings
@@ -206,7 +206,7 @@ This project follows a strict workflow. See `/skill dev-workflow` for the full p
 - [ ] Tests written (TDD: write tests before implementation)
 - [ ] `pnpm lint` passes with no errors
 - [ ] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
+- [ ] Visual verification with `@qa` subagent (for UI changes)
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
