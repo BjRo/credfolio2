@@ -1,11 +1,11 @@
 ---
 # credfolio2-5mkd
 title: Text Search & Highlight in PDF Viewer
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-07T09:29:14Z
-updated_at: 2026-02-07T10:21:40Z
+updated_at: 2026-02-07T10:38:06Z
 parent: credfolio2-klgo
 blocking:
     - credfolio2-owyl
