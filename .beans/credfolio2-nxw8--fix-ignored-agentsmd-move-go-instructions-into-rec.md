@@ -1,10 +1,11 @@
 ---
 # credfolio2-nxw8
 title: Fix ignored Agents.md — move Go instructions into recognized memory
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-02-07T16:05:55Z
-updated_at: 2026-02-07T16:05:55Z
+updated_at: 2026-02-07T19:07:13Z
 parent: credfolio2-ynmd
 ---
 
