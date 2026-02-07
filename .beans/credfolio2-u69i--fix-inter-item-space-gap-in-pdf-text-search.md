@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-02-07T12:09:06Z
-updated_at: 2026-02-07T13:04:29Z
+updated_at: 2026-02-07T13:09:13Z
 ---
 
 ## Problem
