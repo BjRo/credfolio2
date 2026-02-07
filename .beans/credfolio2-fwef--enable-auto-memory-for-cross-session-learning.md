@@ -1,11 +1,11 @@
 ---
 # credfolio2-fwef
 title: Enable auto-memory for cross-session learning
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:00:40Z
-updated_at: 2026-02-07T20:40:43Z
+updated_at: 2026-02-07T21:00:58Z
 parent: credfolio2-ynmd
 ---
 
