@@ -112,4 +112,4 @@ Yellow on white PDF pages (always white even in dark mode per existing conventio
 - [x] Visual verification with agent-browser (N/A — component not yet mounted in any route; that's credfolio2-owyl)
 - [x] All other checklist items above are completed
 - [x] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [x] Automated code review passed (`@review-frontend` — approved with minor suggestions, all addressed)
