@@ -26,12 +26,12 @@ The review-backend skill currently runs in the main conversation context. Review
 - Remove the old skill (or keep as a thin wrapper that delegates, TBD)
 
 ## Definition of Done
-- [ ] Subagent file created at `.claude/agents/review-backend.md`
-- [ ] Old skill removed or converted to delegate to the subagent
+- [x] Subagent file created at `.claude/agents/review-backend.md`
+- [x] Old skill removed or converted to delegate to the subagent
 - [ ] Subagent can be invoked and posts review comments to a PR
-- [ ] Review output stays out of the main conversation context
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] Review output stays out of the main conversation context
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
 
 ## Implementation Plan
