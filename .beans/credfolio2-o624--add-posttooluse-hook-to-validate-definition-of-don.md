@@ -1,11 +1,11 @@
 ---
 # credfolio2-o624
 title: Add PostToolUse hook to validate Definition of Done on bean creation
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:25:29Z
-updated_at: 2026-02-07T18:42:12Z
+updated_at: 2026-02-07T18:56:49Z
 parent: credfolio2-ynmd
 ---
 
