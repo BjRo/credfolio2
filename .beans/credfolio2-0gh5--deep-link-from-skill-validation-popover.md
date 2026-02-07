@@ -1,11 +1,11 @@
 ---
 # credfolio2-0gh5
 title: Deep Link from Skill Validation Popover
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-07T09:29:33Z
-updated_at: 2026-02-07T13:18:01Z
+updated_at: 2026-02-07T14:35:33Z
 parent: credfolio2-klgo
 ---
 
