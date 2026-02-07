@@ -36,8 +36,8 @@ This complements CLAUDE.md (what we write for Claude) with what Claude learns on
 - [x] `CLAUDE_CODE_DISABLE_AUTO_MEMORY=0` configured in devcontainer
 - [x] Verified auto-memory directory is created on session start
 - [x] Documented in devcontainer README that auto-memory is enabled
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
 
 ## Implementation Plan
