@@ -302,6 +302,10 @@ query GetSkillValidations($skillId: ID!) {
     createdAt
     referenceLetter {
       id
+      file {
+        id
+        url
+      }
       extractedData {
         author {
           name
@@ -321,6 +325,10 @@ query GetExperienceValidations($experienceId: ID!) {
     createdAt
     referenceLetter {
       id
+      file {
+        id
+        url
+      }
       extractedData {
         author {
           name
