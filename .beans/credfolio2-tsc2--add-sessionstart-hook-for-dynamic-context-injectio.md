@@ -281,7 +281,7 @@ None — the plan is complete and all ambiguities have been resolved through cod
 - [x] Hook registered in `.claude/settings.json` for SessionStart (alongside existing `beans prime` hook)
 - [x] Verified context appears on session start, resume, and after compaction
 - [x] Script runs in under 2 seconds
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
