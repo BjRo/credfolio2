@@ -284,4 +284,4 @@ None — the plan is complete and all ambiguities have been resolved through cod
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
+- [x] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
