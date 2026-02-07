@@ -1,11 +1,11 @@
 ---
 # credfolio2-fbrc
 title: Audit & restructure large skills to use supporting files
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:01:38Z
-updated_at: 2026-02-07T20:33:49Z
+updated_at: 2026-02-07T20:33:53Z
 parent: credfolio2-ynmd
 ---
 
