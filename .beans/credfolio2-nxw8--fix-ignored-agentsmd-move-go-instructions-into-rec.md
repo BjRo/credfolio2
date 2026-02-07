@@ -1,10 +1,11 @@
 ---
 # credfolio2-nxw8
 title: Fix ignored Agents.md — move Go instructions into recognized memory
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-02-07T16:05:55Z
-updated_at: 2026-02-07T16:05:55Z
+updated_at: 2026-02-07T19:07:13Z
 parent: credfolio2-ynmd
 ---
 
@@ -54,10 +55,10 @@ Delete the original `Agents.md` after migration.
 This overlaps with credfolio2-zsm2 (Refactor CLAUDE.md into modular rules). Can be done as part of that task or independently — the fix is small and self-contained.
 
 ## Definition of Done
-- [ ] `.claude/rules/golang.md` created with path-scoped Go instructions
-- [ ] Content from `Agents.md` migrated
-- [ ] Original `Agents.md` deleted
-- [ ] Verified rules load when working on `src/backend/` files
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] `.claude/rules/golang.md` created with path-scoped Go instructions
+- [x] Content from `Agents.md` migrated
+- [x] Original `Agents.md` deleted
+- [x] Verified rules load when working on `src/backend/` files
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Branch pushed and PR created for human review

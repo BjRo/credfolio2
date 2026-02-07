@@ -1,3 +1,9 @@
+---
+paths:
+  - "src/backend/**"
+  - "**/*.go"
+---
+
 # For developing in Golang:
 
 - To see source files from a dependency, or to answer questions about a dependency, run `go mod download -json MODULE` and use the returned `Dir` path to read the files.
