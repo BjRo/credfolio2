@@ -199,18 +199,9 @@ This project follows a strict workflow. See `/skill dev-workflow` for the full p
 
 ### Mandatory Bean Checklist
 
-**Every bean MUST include this "Definition of Done" section:**
+**Every bean MUST include a "Definition of Done" section.** A PostToolUse hook automatically validates this on `beans create` commands.
 
-```markdown
-## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
-```
+@.claude/templates/definition-of-done.md
 
 You cannot mark a bean as completed while it has unchecked items.
 

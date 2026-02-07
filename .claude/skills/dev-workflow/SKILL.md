@@ -265,7 +265,7 @@ gh pr create --title "..." --body "..."
 
 ## Mandatory Definition of Done
 
-**Every bean MUST include a "Definition of Done" checklist at the end of its body.** When creating a bean, copy the canonical template from the "Mandatory Bean Checklist" section in `CLAUDE.md`.
+**Every bean MUST include a "Definition of Done" checklist at the end of its body.** The canonical template is at `.claude/templates/definition-of-done.md`. A PostToolUse hook automatically validates this on `beans create` commands and will prompt you to add it if missing.
 
 **You CANNOT mark a bean as completed while it has unchecked items.** This structurally enforces compliance.
 

@@ -46,6 +46,17 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/validate-bean-dod.sh"
+          }
+        ]
+      }
+    ],
     "PreCompact": [
       {
         "hooks": [
