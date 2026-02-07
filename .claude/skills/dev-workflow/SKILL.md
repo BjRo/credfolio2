@@ -72,6 +72,8 @@ Follow the TDD skill (`/skill tdd`):
 
 Commit frequently with meaningful messages.
 
+**Option: Delegate to the implement agent** — For well-refined beans with detailed implementation plans, consider launching the `@implement` subagent via `/implement <bean-id>`. This runs the implementation in an isolated context, preserving the main conversation for high-level steering. The agent handles TDD, commits, and bean checklist updates. After it completes, continue with step 5 (Visual Verification).
+
 ### 5. Visual Verification via QA Subagent
 
 After implementation is complete, verify the feature works end-to-end by launching the `@qa` subagent. This keeps verbose browser automation output out of the main conversation context.

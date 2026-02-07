@@ -41,7 +41,7 @@ An "implement" agent fills the gap: **refine → implement → qa → review**.
 - [x] Create the agent configuration in `.claude/agents/`
 - [x] Create a skill (`/implement`) that invokes the agent with a bean ID
 - [ ] Test with a real bean implementation
-- [ ] Document usage in CLAUDE.md or relevant rules file
+- [x] Document usage in CLAUDE.md or relevant rules file
 
 ## Definition of Done
 - [ ] Tests written (TDD: write tests before implementation)
