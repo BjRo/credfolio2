@@ -69,16 +69,17 @@ Make it clear in the template (or in the decision skill description) what qualif
 - **`decisions/README.md`** — Already has matching "When to Document" criteria
 
 ## Checklist
-- [ ] Update DoD template with conditional ADR item
-- [ ] Update `/decision` skill description with clear trigger and exclusion criteria
-- [ ] Update hook test fixture (`DOD_BODY`) to include new ADR item
-- [ ] Run hook tests (`bash .claude/hooks/tests/test-validate-bean-dod.sh`) — all pass
-- [ ] Run `pnpm lint` and `pnpm test` — all pass
+- [x] Update DoD template with conditional ADR item
+- [x] Update `/decision` skill description with clear trigger and exclusion criteria
+- [x] Update hook test fixture (`DOD_BODY`) to include new ADR item
+- [x] Run hook tests (`bash .claude/hooks/tests/test-validate-bean-dod.sh`) — all pass
+- [x] Run `pnpm lint` and `pnpm test` — all pass
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced) — N/A, no architectural changes
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)

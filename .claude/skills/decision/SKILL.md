@@ -15,6 +15,18 @@ Use this skill when:
 - Deprecating existing approaches
 - Making significant technical choices that affect the codebase
 
+If none of the above apply to the work you just completed, skip this skill and mark the ADR checklist item in the Definition of Done as N/A.
+
+## When This Skill Does NOT Apply
+
+Do NOT create a decision record for:
+- Bug fixes that use existing patterns and dependencies
+- New features that follow established conventions without introducing new patterns
+- Routine refactoring that does not change design or architecture
+- Test additions or improvements
+- Documentation updates (unless documenting a new documentation strategy)
+- Configuration changes that follow existing patterns (e.g., adding a new route using the existing router)
+
 ## Process
 
 ### 1. Gather Information
