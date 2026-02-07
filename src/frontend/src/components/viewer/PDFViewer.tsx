@@ -148,13 +148,13 @@ export function PDFViewer({
       <div className="flex flex-wrap items-center border-b bg-background px-4 py-2 sticky top-0 z-10 gap-y-1">
         {/* Left: back button + title (passed from parent) */}
         {toolbarLeft && (
-          <div className="flex items-center gap-3 flex-1 min-w-0 md:flex-none md:mr-4">
+          <div className="flex items-center gap-3 basis-full md:basis-auto md:flex-none md:mr-4 min-w-0">
             {toolbarLeft}
           </div>
         )}
 
         {/* Right: page nav + zoom — pushed right on desktop */}
-        <div className="flex items-center justify-between flex-1 gap-2">
+        <div className="flex items-center justify-between md:justify-end flex-1 gap-2">
           {/* Page navigation */}
           <div className="flex items-center gap-1">
             <Button

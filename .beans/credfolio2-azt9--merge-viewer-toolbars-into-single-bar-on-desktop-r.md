@@ -1,10 +1,11 @@
 ---
 # credfolio2-azt9
 title: Merge viewer toolbars into single bar on desktop, responsive two-row on mobile
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-02-07T15:11:32Z
-updated_at: 2026-02-07T15:11:32Z
+updated_at: 2026-02-07T15:21:07Z
 parent: credfolio2-klgo
 ---
 
