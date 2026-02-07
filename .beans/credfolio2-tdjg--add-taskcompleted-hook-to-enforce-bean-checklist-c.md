@@ -258,6 +258,6 @@ None — the approach is well-defined in the bean and confirmed by source code a
 - [x] Tested: bean with unchecked items → completion blocked with helpful message
 - [x] Tested: bean with all items checked → completion allowed
 - [x] Tested: non-bean task → completion allowed (graceful fallback)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
