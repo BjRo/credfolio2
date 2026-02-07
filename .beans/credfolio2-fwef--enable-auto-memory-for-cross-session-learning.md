@@ -33,9 +33,9 @@ This complements CLAUDE.md (what we write for Claude) with what Claude learns on
 - Memory is user-local (not committed to git)
 
 ## Definition of Done
-- [ ] `CLAUDE_CODE_DISABLE_AUTO_MEMORY=0` configured in devcontainer
-- [ ] Verified auto-memory directory is created on session start
-- [ ] Documented in devcontainer README that auto-memory is enabled
+- [x] `CLAUDE_CODE_DISABLE_AUTO_MEMORY=0` configured in devcontainer
+- [x] Verified auto-memory directory is created on session start
+- [x] Documented in devcontainer README that auto-memory is enabled
 - [ ] `pnpm lint` passes with no errors
 - [ ] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
