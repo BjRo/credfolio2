@@ -46,4 +46,4 @@ Audit and harden the LLM extraction pipeline against prompt injection attacks. U
 - [ ] `pnpm test` passes with no failures
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)

@@ -12,7 +12,7 @@ Conduct a thorough review of the backend codebase to assess clarity, consistency
 
 ## Approach
 
-Use the `@review-backend` skill to perform the review. This skill provides staff-level Go/Backend code review covering maintainability, design, performance, and security. Run it against the backend codebase (not tied to a PR) to get a comprehensive assessment.
+Use the `@review-backend` subagent (via Task tool) to perform the review. This subagent provides staff-level Go/Backend code review covering maintainability, design, performance, and security. Run it against the backend codebase (not tied to a PR) to get a comprehensive assessment.
 
 ## Goals
 
@@ -32,7 +32,7 @@ Use the `@review-backend` skill to perform the review. This skill provides staff
 - `src/backend/migrations/` — database schema (for understanding the data model)
 
 ## Checklist
-- [ ] Run `@review-backend` against the backend codebase
+- [ ] Run `@review-backend` subagent (via Task tool) against the backend codebase
 - [ ] Audit Go types across layers (models, services, GraphQL) for clarity and redundancy
 - [ ] Trace and document each major flow (upload, detect, extract, import, reference letters)
 - [ ] Review GraphQL schema for consistency, naming, and API design
