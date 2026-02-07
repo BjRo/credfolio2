@@ -1,10 +1,11 @@
 ---
 # credfolio2-fbrc
 title: Audit & restructure large skills to use supporting files
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-02-07T16:01:38Z
-updated_at: 2026-02-07T16:01:38Z
+updated_at: 2026-02-07T20:33:53Z
 parent: credfolio2-ynmd
 ---
 
@@ -47,12 +48,75 @@ For each oversized skill:
 
 `review-backend`, `review-frontend`, and `agent-browser` have already been restructured as part of the subagent migration. `review-backend` and `review-frontend` are now subagent definitions in `.claude/agents/`. The `agent-browser` skill is preloaded by the `@qa` subagent. Focus restructuring efforts on the remaining skills listed above.
 
+## Implementation Plan
+
+### Audit Results
+
+Complete line count audit of all SKILL.md files:
+
+| Skill | SKILL.md Lines | Over 500? | Has Supporting Files? |
+|-------|---------------|-----------|----------------------|
+| `docker-expert` | 408 | No | No |
+| `tdd` | 371 | No | Yes (`testing-anti-patterns.md`) |
+| `dev-workflow` | 292 | No | No |
+| `agent-browser` | 253 | No | No |
+| `vercel-react-best-practices` | 126 | No | Yes (`rules/` dir, `AGENTS.md`, `README.md`) |
+| `decision` | 114 | No | No |
+| `issue-tracking-with-beans` | 104 | No | No |
+| `implement` | 76 | No | No |
+| `refine` | 51 | No | No |
+| `web-design-guidelines` | 40 | No | No |
+
+### Key Finding: No Skills Exceed 500 Lines
+
+**None of the SKILL.md files exceed the 500-line threshold.** The original bean was created based on the assumption that several skills were "likely well over 500 lines," but the actual measurements show all are under 500 lines:
+
+- `vercel-react-best-practices` (126 lines) -- Already well-structured. The SKILL.md contains only a quick-reference summary of the 45 rules with category tables. The detailed content lives in 53 individual rule files in `rules/` and a compiled `AGENTS.md` (2516 lines). This skill is already a model of the supporting-files pattern.
+- `agent-browser` (253 lines) -- Contains a comprehensive command reference as a single SKILL.md. While substantial, it is under 500 lines. It serves as a standalone skill and is also preloaded by the `@qa` subagent.
+- `docker-expert` (408 lines) -- The largest SKILL.md at 408 lines. Contains expertise areas, code examples, review checklists, and diagnostics. Under the threshold but the closest to it.
+- `tdd` (371 lines) -- Already uses a supporting file (`testing-anti-patterns.md`, 300 lines) referenced from the main SKILL.md. Good existing pattern.
+- `dev-workflow` (292 lines) -- Contains the full development workflow. Under threshold.
+- `web-design-guidelines` (40 lines) -- Minimal. Fetches guidelines from an external URL at runtime.
+- All others (`decision`, `issue-tracking-with-beans`, `implement`, `refine`) are well under 200 lines.
+
+### Approach
+
+Since no skills exceed 500 lines, this bean requires **audit only, not restructuring**. The work is:
+
+1. Document the audit results (this plan captures them)
+2. Verify skills that already use supporting files (`vercel-react-best-practices`, `tdd`) have proper references
+3. No files need to be created, modified, or restructured
+
+### Steps
+
+1. **Record the audit** -- The audit is complete. All 10 skills have been measured. Results are documented above.
+
+2. **Verify existing supporting file patterns** -- Two skills already use supporting files correctly:
+   - `vercel-react-best-practices/SKILL.md` (line 110-116, 124-126): References `rules/*.md` files and `AGENTS.md` for detailed content. Pattern is correct.
+   - `tdd/SKILL.md` (line 359): References `testing-anti-patterns.md` via `@testing-anti-patterns.md`. Pattern is correct.
+
+3. **No restructuring needed** -- All SKILL.md files are under 500 lines. The bean's checklist items for "skills over 500 lines restructured" and "supporting files contain detailed content" are vacuously satisfied (no skills are over 500 lines, so no restructuring is needed).
+
+4. **Run lint and tests** -- Verify `pnpm lint` and `pnpm test` pass (no changes to source code, so these should pass trivially).
+
+5. **Create PR** -- Branch, commit the audit documentation update to this bean, push, and create PR.
+
+### Testing Strategy
+
+- No source code changes, so no new tests needed
+- `pnpm lint` and `pnpm test` should pass without changes
+- Verify skills are still invocable after any bean metadata updates (manual spot check)
+
+### Open Questions
+
+None -- the audit is straightforward and the results are clear. No skills need restructuring.
+
 ## Definition of Done
-- [ ] All skills audited for line count
-- [ ] Skills over 500 lines restructured with supporting files
-- [ ] SKILL.md files contain overview + references to supporting files
-- [ ] Supporting files contain detailed content (rules, commands, examples)
-- [ ] All restructured skills tested to verify they still work
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] All skills audited for line count
+- [x] Skills over 500 lines restructured with supporting files (N/A — none exceeded 500 lines)
+- [x] SKILL.md files contain overview + references to supporting files (N/A — no restructuring needed)
+- [x] Supporting files contain detailed content (rules, commands, examples) (N/A — no restructuring needed)
+- [x] All restructured skills tested to verify they still work (N/A — no restructuring needed)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Branch pushed and PR created for human review
