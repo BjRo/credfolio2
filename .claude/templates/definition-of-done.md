@@ -5,5 +5,6 @@
 - [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
 - [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
 - [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [ ] Branch pushed to remote
+- [ ] PR created for human review
 - [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
