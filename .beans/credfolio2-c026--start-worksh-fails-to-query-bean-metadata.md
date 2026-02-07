@@ -43,6 +43,6 @@ Script errors with "Bean 'credfolio2-o624' not found" at step 2/5.
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] Visual verification via `@qa` subagent (via Task tool, for UI changes) — N/A, no UI changes
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review
 - [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)

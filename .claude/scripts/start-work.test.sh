@@ -56,7 +56,7 @@ assert_eq "null bean returns empty title" "" "$NULL_TITLE"
 echo ""
 echo "--- map_type_to_prefix ---"
 
-# Source the function from the script
+# Duplicated from start-work.sh (bash scripts can't be easily sourced without side effects)
 map_type_to_prefix() {
     case "$1" in
         feature)  echo "feat" ;;
