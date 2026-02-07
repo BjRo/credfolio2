@@ -199,7 +199,9 @@ This project follows a strict workflow. See `/skill dev-workflow` for the full p
 
 ### Mandatory Bean Checklist
 
-**Every bean MUST include a "Definition of Done" section.** The canonical template is at `.claude/templates/definition-of-done.md`. A PostToolUse hook automatically validates this on `beans create` commands.
+**Every bean MUST include a "Definition of Done" section.** A PostToolUse hook automatically validates this on `beans create` commands.
+
+@.claude/templates/definition-of-done.md
 
 You cannot mark a bean as completed while it has unchecked items.
 
