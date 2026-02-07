@@ -1,10 +1,11 @@
 ---
 # credfolio2-rlfd
 title: Add ADR documentation to Definition of Done template
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-02-07T16:33:12Z
-updated_at: 2026-02-07T16:33:12Z
+updated_at: 2026-02-07T19:23:32Z
 parent: credfolio2-ynmd
 ---
 
@@ -16,7 +17,7 @@ The `/decision` skill exists but rarely gets invoked because nothing prompts Cla
 
 ## What
 
-Add a conditional item to the Definition of Done template (`.claude/templates/definition-of-done.md` once credfolio2-o624 creates it, or CLAUDE.md in the meantime):
+Add a conditional item to the Definition of Done template (`.claude/templates/definition-of-done.md`):
 
 ```markdown
 ## Definition of Done
@@ -43,16 +44,42 @@ Make it clear in the template (or in the decision skill description) what qualif
 - Bug fixes using existing patterns
 - Adding features following established conventions
 - Routine refactoring without design changes
+- Test additions or improvements
+- Documentation updates (unless documenting a new documentation strategy)
+- Configuration changes that follow existing patterns
 
 ## Notes
 
 - The item is conditional ("if...") so Claude can check it off with "N/A — no architectural changes" when it doesn't apply
 - Also review the `/decision` skill description to make these trigger criteria explicit
-- Depends on credfolio2-o624 (DoD template file) if we want a single source of truth, but can also be added directly to CLAUDE.md now
+- CLAUDE.md includes the template via `@` reference on line 204, so it picks up changes automatically
+
+## Implementation Plan
+
+### Files to Modify
+
+1. **`.claude/templates/definition-of-done.md`** — Insert the conditional ADR checklist item between "Visual verification" and "All other checklist items"
+2. **`.claude/skills/decision/SKILL.md`** — Add a "When This Skill Does NOT Apply" section after the existing "When This Skill Applies" section with explicit exclusion criteria
+3. **`.claude/hooks/tests/test-validate-bean-dod.sh`** — Update hardcoded `DOD_BODY` variable to include the new ADR item so the hook test keeps passing
+
+### Files NOT Changed (and why)
+
+- **`validate-bean-dod.sh` hook** — Reads the template dynamically with `grep -qi`; handles the new item automatically
+- **`CLAUDE.md`** — Includes the template via `@` reference; updates itself
+- **`decisions/README.md`** — Already has matching "When to Document" criteria
+
+## Checklist
+- [x] Update DoD template with conditional ADR item
+- [x] Update `/decision` skill description with clear trigger and exclusion criteria
+- [x] Update hook test fixture (`DOD_BODY`) to include new ADR item
+- [x] Run hook tests (`bash .claude/hooks/tests/test-validate-bean-dod.sh`) — all pass
+- [x] Run `pnpm lint` and `pnpm test` — all pass
 
 ## Definition of Done
-- [ ] DoD template updated with conditional ADR item
-- [ ] Decision skill description updated with clear trigger criteria
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced) — N/A, no architectural changes
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool) — N/A, no source code changes
