@@ -1,11 +1,11 @@
 ---
 # credfolio2-pqsx
 title: Add @imports and architectural pointers to CLAUDE.md
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:17:24Z
-updated_at: 2026-02-07T20:21:49Z
+updated_at: 2026-02-07T20:27:02Z
 parent: credfolio2-ynmd
 ---
 
@@ -309,4 +309,4 @@ None -- all path corrections and import decisions have been resolved through cod
 - [x] Total CLAUDE.md size remains reasonable after enrichment (261 lines)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
