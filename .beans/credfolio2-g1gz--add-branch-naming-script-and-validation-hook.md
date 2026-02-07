@@ -71,13 +71,13 @@ The validation hook will share the PreToolUse(Bash) matcher with the existing pr
 - After both this bean and `credfolio2-e6q3` are done, the `scripts/` directory should contain only `init-db.sh`.
 
 ## Checklist
-- [ ] Move `scripts/start-work.sh` to `.claude/scripts/start-work.sh`
-- [ ] Refactor to accept only a bean ID (auto-derive type and description from bean metadata)
-- [ ] Create `.claude/hooks/validate-branch-name.sh`
-- [ ] Register the validation hook in `.claude/settings.json`
-- [ ] Update dev-workflow skill (`/workspace/.claude/skills/dev-workflow/SKILL.md`) to reference the new script location and interface
-- [ ] Tested: valid branch names pass, invalid ones are blocked with helpful message
-- [ ] Existing pre-commit hook still works alongside the new hook
+- [x] Move `scripts/start-work.sh` to `.claude/scripts/start-work.sh`
+- [x] Refactor to accept only a bean ID (auto-derive type and description from bean metadata)
+- [x] Create `.claude/hooks/validate-branch-name.sh`
+- [x] Register the validation hook in `.claude/settings.json`
+- [x] Update dev-workflow skill (`/workspace/.claude/skills/dev-workflow/SKILL.md`) to reference the new script location and interface
+- [x] Tested: valid branch names pass, invalid ones are blocked with helpful message
+- [x] Existing pre-commit hook still works alongside the new hook
 
 ## Implementation Plan
 
@@ -297,14 +297,14 @@ Since these are bash scripts (not Go or TypeScript), testing is done via manual 
 None -- all ambiguities have been resolved by the user's clarification.
 
 ## Definition of Done
-- [ ] `.claude/scripts/start-work.sh` created (moved and refactored from `scripts/start-work.sh`)
-- [ ] `.claude/hooks/validate-branch-name.sh` created and working
-- [ ] Hook registered in `.claude/settings.json`
-- [ ] Dev-workflow skill updated to reference the new script location and interface
-- [ ] Old `scripts/start-work.sh` deleted
-- [ ] Existing pre-commit hook still works alongside the new hook
-- [ ] Tested: valid branch names pass, invalid ones are blocked with helpful message
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `.claude/scripts/start-work.sh` created (moved and refactored from `scripts/start-work.sh`)
+- [x] `.claude/hooks/validate-branch-name.sh` created and working
+- [x] Hook registered in `.claude/settings.json`
+- [x] Dev-workflow skill updated to reference the new script location and interface
+- [x] Old `scripts/start-work.sh` deleted
+- [x] Existing pre-commit hook still works alongside the new hook
+- [x] Tested: valid branch names pass, invalid ones are blocked with helpful message
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)

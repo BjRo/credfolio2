@@ -14,20 +14,23 @@ Follow this workflow for all feature development. It ensures clean git history, 
 Use the automated script to set up your branch and mark the bean in-progress:
 
 ```bash
-./scripts/start-work.sh <bean-id> <type> <short-description>
+.claude/scripts/start-work.sh <bean-id>
 
 # Examples:
-./scripts/start-work.sh credfolio2-kdtx feat docker-compose
-./scripts/start-work.sh credfolio2-abc1 fix upload-validation
-./scripts/start-work.sh credfolio2-xyz9 refactor clean-handlers
+.claude/scripts/start-work.sh credfolio2-kdtx
+.claude/scripts/start-work.sh credfolio2-abc1
+.claude/scripts/start-work.sh credfolio2-xyz9
 ```
 
 This script automatically:
 - Ensures main is up-to-date
-- Creates a properly named feature branch
-- Verifies the bean exists
+- Queries the bean for its type and title
+- Derives the branch prefix (feature->feat, bug->fix, task->chore) and slugifies the title
+- Creates a properly named feature branch (e.g., `feat/credfolio2-abc1-add-user-auth`)
 - Marks the bean as in-progress
 - Commits the bean status change
+
+**Note**: A PreToolUse hook validates all branch-creation commands against the naming convention. Manual `git checkout -b` with non-conforming names will be blocked.
 
 ### Manual Steps (Reference)
 
@@ -226,7 +229,7 @@ git add .beans/ && git commit -m "chore: Mark <bean-id> as completed" && git pus
 
 ```bash
 # Start work (automated)
-./scripts/start-work.sh <bean-id> <type> <description>
+.claude/scripts/start-work.sh <bean-id>
 
 # During work (repeat TDD cycle)
 # 1. Write failing test
