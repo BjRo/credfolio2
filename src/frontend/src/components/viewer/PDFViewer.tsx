@@ -51,14 +51,13 @@ export function PDFViewer({ fileUrl, highlightText, onHighlightResult }: PDFView
   const [loadError, setLoadError] = useState<Error | null>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  const { getOnGetTextSuccess, customTextRenderer, getOnRenderTextLayerSuccess } = useTextHighlight(
-    {
+  const { getOnGetTextSuccess, getCustomTextRenderer, getOnRenderTextLayerSuccess } =
+    useTextHighlight({
       highlightText,
       numPages,
       onHighlightResult,
       pageRefs,
-    }
-  );
+    });
 
   const pageCallbacks = useMemo(() => {
     const callbacks = new Map<
@@ -66,16 +65,18 @@ export function PDFViewer({ fileUrl, highlightText, onHighlightResult }: PDFView
       {
         onGetTextSuccess: ReturnType<typeof getOnGetTextSuccess>;
         onRenderTextLayerSuccess: ReturnType<typeof getOnRenderTextLayerSuccess>;
+        customTextRenderer: ReturnType<typeof getCustomTextRenderer>;
       }
     >();
     for (let i = 1; i <= numPages; i++) {
       callbacks.set(i, {
         onGetTextSuccess: getOnGetTextSuccess(i),
         onRenderTextLayerSuccess: getOnRenderTextLayerSuccess(i),
+        customTextRenderer: getCustomTextRenderer(i),
       });
     }
     return callbacks;
-  }, [numPages, getOnGetTextSuccess, getOnRenderTextLayerSuccess]);
+  }, [numPages, getOnGetTextSuccess, getOnRenderTextLayerSuccess, getCustomTextRenderer]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     pageRefs.current.clear();
@@ -228,7 +229,7 @@ export function PDFViewer({ fileUrl, highlightText, onHighlightResult }: PDFView
                   renderAnnotationLayer={true}
                   loading={<div className="w-[612px] h-[792px] animate-pulse bg-muted rounded" />}
                   onGetTextSuccess={pageCallbacks.get(pageNumber)?.onGetTextSuccess}
-                  customTextRenderer={customTextRenderer}
+                  customTextRenderer={pageCallbacks.get(pageNumber)?.customTextRenderer}
                   onRenderTextLayerSuccess={pageCallbacks.get(pageNumber)?.onRenderTextLayerSuccess}
                 />
               </div>

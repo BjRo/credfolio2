@@ -17,7 +17,9 @@ interface CustomTextRendererParams {
 
 interface UseTextHighlightReturn {
   getOnGetTextSuccess: (pageNumber: number) => (textContent: TextContent) => void;
-  customTextRenderer: ((params: CustomTextRendererParams) => string) | undefined;
+  getCustomTextRenderer: (
+    pageNumber: number
+  ) => ((params: CustomTextRendererParams) => string) | undefined;
   getOnRenderTextLayerSuccess: (pageNumber: number) => () => void;
 }
 
@@ -111,23 +113,26 @@ export function useTextHighlight({
     [highlightText, numPages, onHighlightResult]
   );
 
-  const customTextRenderer = useMemo(() => {
-    if (!highlightText) return undefined;
+  const getCustomTextRenderer = useMemo(() => {
+    if (!highlightText) return () => undefined;
 
     // Including renderKey in deps (and referencing it here) forces useMemo to return
     // a new function identity after setRenderKey increments, which triggers react-pdf
     // to re-invoke customTextRenderer with the updated match data from refs.
     void renderKey;
 
-    return ({ str, itemIndex }: CustomTextRendererParams): string => {
-      // Find match data for any page containing this itemIndex
-      for (const pageMatchMap of matchDataRef.current.values()) {
-        const matchResult = pageMatchMap.get(itemIndex);
-        if (matchResult) {
-          return renderHighlightedText(str, matchResult.ranges);
+    return (pageNumber: number) => {
+      return ({ str, itemIndex }: CustomTextRendererParams): string => {
+        // Only look at match data for this specific page to avoid cross-page false positives
+        const pageMatchMap = matchDataRef.current.get(pageNumber);
+        if (pageMatchMap) {
+          const matchResult = pageMatchMap.get(itemIndex);
+          if (matchResult) {
+            return renderHighlightedText(str, matchResult.ranges);
+          }
         }
-      }
-      return str;
+        return str;
+      };
     };
   }, [highlightText, renderKey]);
 
@@ -150,7 +155,7 @@ export function useTextHighlight({
 
   return {
     getOnGetTextSuccess,
-    customTextRenderer,
+    getCustomTextRenderer,
     getOnRenderTextLayerSuccess,
   };
 }

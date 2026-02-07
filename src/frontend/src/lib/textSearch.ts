@@ -105,6 +105,12 @@ interface GlobalMappingEntry {
 /**
  * Find the first occurrence of searchText across concatenated text items.
  * Returns per-item HighlightRanges mapped back to original character positions.
+ *
+ * PDF text extraction often fragments text into items without explicit spaces
+ * at word boundaries, or splits words across items at line breaks. To handle
+ * all cases (mid-word splits, word-boundary splits, and mixed), we use
+ * flexible matching: spaces in the search text can optionally match either
+ * a literal space or nothing (zero-width) in the concatenated page text.
  */
 export function findMatchInPage(items: TextItem[], searchText: string): PageMatchResult | null {
   if (items.length === 0 || !searchText) return null;
@@ -112,29 +118,26 @@ export function findMatchInPage(items: TextItem[], searchText: string): PageMatc
   const normalizedSearch = normalizeText(searchText);
   if (!normalizedSearch) return null;
 
-  // Build concatenated normalized page text with global mapping
+  // Build concatenated page text without synthetic spaces
   const pageTextParts: string[] = [];
   const globalMapping: GlobalMappingEntry[] = [];
 
   for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
     const { normalized, mapping } = normalizeWithMapping(items[itemIdx].str);
-
     for (let j = 0; j < normalized.length; j++) {
       pageTextParts.push(normalized[j]);
-      globalMapping.push({
-        itemIndex: itemIdx,
-        originalCharIdx: mapping[j],
-      });
+      globalMapping.push({ itemIndex: itemIdx, originalCharIdx: mapping[j] });
     }
   }
 
   const pageText = pageTextParts.join("");
-  const matchStart = pageText.toLowerCase().indexOf(normalizedSearch.toLowerCase());
-  if (matchStart === -1) return null;
 
-  const matchEnd = matchStart + normalizedSearch.length;
+  // Use flexible matching where spaces in search text are optional
+  const match = flexibleIndexOf(pageText, normalizedSearch);
+  if (!match) return null;
 
-  // Group matched global indices by itemIndex
+  const { start: matchStart, end: matchEnd } = match;
+
   const rangeMap = new Map<number, { minOriginal: number; maxOriginal: number }>();
 
   for (let gi = matchStart; gi < matchEnd; gi++) {
@@ -152,18 +155,66 @@ export function findMatchInPage(items: TextItem[], searchText: string): PageMatc
   }
 
   const ranges: HighlightRange[] = [];
-  // Sort by itemIndex to maintain order
   const sortedEntries = [...rangeMap.entries()].sort(([a], [b]) => a - b);
 
   for (const [itemIndex, { minOriginal, maxOriginal }] of sortedEntries) {
-    ranges.push({
-      itemIndex,
-      startOffset: minOriginal,
-      endOffset: maxOriginal + 1,
-    });
+    ranges.push({ itemIndex, startOffset: minOriginal, endOffset: maxOriginal + 1 });
   }
 
   return { ranges };
+}
+
+/**
+ * Flexible search: find searchText in pageText where each space in searchText
+ * can optionally match either a literal space or nothing (zero-width).
+ * This handles PDF text items that split words across boundaries.
+ */
+function flexibleIndexOf(
+  pageText: string,
+  searchText: string
+): { start: number; end: number } | null {
+  const ptLower = pageText.toLowerCase();
+  const stLower = searchText.toLowerCase();
+
+  for (
+    let startPos = 0;
+    startPos <= ptLower.length - stLower.length + stLower.split(" ").length;
+    startPos++
+  ) {
+    const end = tryFlexMatch(ptLower, startPos, stLower);
+    if (end !== -1) {
+      return { start: startPos, end };
+    }
+  }
+  return null;
+}
+
+/**
+ * Try to match searchText starting at ptStart in pageText.
+ * Spaces in searchText can match a literal space or nothing.
+ * Returns the end position in pageText if matched, -1 otherwise.
+ */
+function tryFlexMatch(pageText: string, ptStart: number, searchText: string): number {
+  let pi = ptStart;
+  let si = 0;
+
+  while (si < searchText.length) {
+    if (searchText[si] === " ") {
+      // Space in search: optionally consume a space in page text
+      si++;
+      if (pi < pageText.length && pageText[pi] === " ") {
+        pi++;
+      }
+    } else {
+      if (pi >= pageText.length || pageText[pi] !== searchText[si]) {
+        return -1;
+      }
+      pi++;
+      si++;
+    }
+  }
+
+  return pi;
 }
 
 /**
