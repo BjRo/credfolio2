@@ -1,11 +1,11 @@
 ---
 # credfolio2-zsm2
 title: Refactor CLAUDE.md into modular rules
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T15:59:13Z
-updated_at: 2026-02-07T19:42:01Z
+updated_at: 2026-02-07T19:46:47Z
 parent: credfolio2-ynmd
 ---
 
