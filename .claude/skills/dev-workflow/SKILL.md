@@ -201,10 +201,10 @@ Task tool call:
 Once the PR is merged by a human, use the automated post-merge script:
 
 ```bash
-./scripts/post-merge.sh <bean-id>
+.claude/scripts/post-merge.sh <bean-id>
 
 # Example:
-./scripts/post-merge.sh credfolio2-abc1
+.claude/scripts/post-merge.sh credfolio2-abc1
 ```
 
 This script automatically:
@@ -250,7 +250,7 @@ gh pr create --title "..." --body "..."
 # Address any CRITICAL findings, then WAIT for human review and merge
 
 # After merge (from feature branch)
-./scripts/post-merge.sh <bean-id>
+.claude/scripts/post-merge.sh <bean-id>
 ```
 
 ## Rules

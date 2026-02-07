@@ -18,19 +18,19 @@ The `/post-merge` slash command (`.claude/commands/post-merge.md`) and `scripts/
 - `.claude/scripts/start-work.sh` — sister script already in the target directory; follow its conventions
 
 ## Checklist
-- [ ] Move `scripts/post-merge.sh` to `.claude/scripts/post-merge.sh`
-- [ ] Update `.claude/commands/post-merge.md` to instruct Claude to call `.claude/scripts/post-merge.sh <bean-id>` instead of manually executing each step
-- [ ] Ensure the slash command still validates the `$ARGUMENTS` bean ID before calling the script
-- [ ] Remove duplicated step-by-step instructions from the slash command
-- [ ] Update `.claude/skills/dev-workflow/SKILL.md` — change all 3 references from `./scripts/post-merge.sh` to `.claude/scripts/post-merge.sh` (lines 204, 207, 253)
-- [ ] Add `--no-gpg-sign` flag to `git commit` in `post-merge.sh` (align with project convention and `start-work.sh`)
-- [ ] Add `PROJECT_DIR` variable to `post-merge.sh` (follow `start-work.sh` pattern: `PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/workspace}"`)
-- [ ] Verify `scripts/` directory still contains `init-db.sh` — do NOT remove the directory (it is used by `docker-compose.yml`)
+- [x] Move `scripts/post-merge.sh` to `.claude/scripts/post-merge.sh`
+- [x] Update `.claude/commands/post-merge.md` to instruct Claude to call `.claude/scripts/post-merge.sh <bean-id>` instead of manually executing each step
+- [x] Ensure the slash command still validates the `$ARGUMENTS` bean ID before calling the script
+- [x] Remove duplicated step-by-step instructions from the slash command
+- [x] Update `.claude/skills/dev-workflow/SKILL.md` — change all 3 references from `./scripts/post-merge.sh` to `.claude/scripts/post-merge.sh` (lines 204, 207, 253)
+- [x] Add `--no-gpg-sign` flag to `git commit` in `post-merge.sh` (align with project convention and `start-work.sh`)
+- [x] Add `PROJECT_DIR` variable to `post-merge.sh` (follow `start-work.sh` pattern: `PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/workspace}"`)
+- [x] Verify `scripts/` directory still contains `init-db.sh` — do NOT remove the directory (it is used by `docker-compose.yml`)
 
 ## Definition of Done
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
 

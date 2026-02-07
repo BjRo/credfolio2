@@ -2,8 +2,10 @@
 set -e
 
 # Post-merge cleanup: verify merge, delete branches, complete bean
-# Usage: ./scripts/post-merge.sh <bean-id>
-# Example: ./scripts/post-merge.sh credfolio2-abc1
+# Usage: .claude/scripts/post-merge.sh <bean-id>
+# Example: .claude/scripts/post-merge.sh credfolio2-abc1
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/workspace}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -86,8 +88,9 @@ beans update "$BEAN_ID" --status completed
 
 # 7. Commit and push
 echo -e "\n${GREEN}[7/7]${NC} Committing and pushing bean status change..."
+cd "$PROJECT_DIR"
 git add .beans/
-git commit -m "chore: Mark ${BEAN_ID} as completed"
+git commit --no-gpg-sign -m "chore: Mark ${BEAN_ID} as completed"
 git push origin main
 
 echo -e "\n${GREEN}✓ Post-merge cleanup complete!${NC}"
