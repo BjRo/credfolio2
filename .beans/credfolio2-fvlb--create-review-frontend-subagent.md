@@ -30,14 +30,14 @@ Same as review-backend: review output is verbose and should be isolated from the
 - Consider whether `web-design-guidelines` and `vercel-react-best-practices` should have `user-invocable: false` and `disable-model-invocation: true` since they're now only consumed by this subagent
 
 ## Definition of Done
-- [ ] Subagent file created at `.claude/agents/review-frontend.md`
-- [ ] `web-design-guidelines` and `vercel-react-best-practices` skills preloaded
-- [ ] Old skill removed or converted to delegate to the subagent
+- [x] Subagent file created at `.claude/agents/review-frontend.md`
+- [x] `web-design-guidelines` and `vercel-react-best-practices` skills preloaded
+- [x] Old skill removed or converted to delegate to the subagent
 - [ ] Subagent can be invoked and posts review comments to a PR
-- [ ] Review output stays out of the main conversation context
-- [ ] Skills `web-design-guidelines` and `vercel-react-best-practices` reviewed for invocation settings
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] Review output stays out of the main conversation context
+- [x] Skills `web-design-guidelines` and `vercel-react-best-practices` reviewed for invocation settings
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
 
 ## Implementation Plan

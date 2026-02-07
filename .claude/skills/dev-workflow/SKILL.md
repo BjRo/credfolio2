@@ -188,12 +188,12 @@ Task tool call:
 For **@review-frontend**:
 ```
 Task tool call:
-  subagent_type: "general-purpose"
+  subagent_type: "review-frontend"
   description: "Frontend code review"
-  prompt: "You are the @review-frontend agent. Read the skill definition at .claude/skills/review-frontend/SKILL.md and follow its instructions to review the current PR. Post your findings as PR comments using the gh CLI."
+  prompt: "Review the current PR. Post your findings as PR comments using the gh CLI."
 ```
 
-**IMPORTANT**: Always launch these as subagents via the Task tool. Never invoke review skills directly in the main conversation — that defeats the purpose of keeping the context clean. `@review-backend` is a named agent (`.claude/agents/review-backend.md`); `@review-frontend` is invoked via a general-purpose subagent reading its skill definition.
+**IMPORTANT**: Always launch these as subagents via the Task tool. Never invoke review agents directly in the main conversation — that defeats the purpose of keeping the context clean. Both `@review-backend` and `@review-frontend` are named agents in `.claude/agents/`.
 
 **After the reviews complete:**
 - Read the review summaries returned by the subagents
