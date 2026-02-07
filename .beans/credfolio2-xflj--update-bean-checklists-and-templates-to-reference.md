@@ -1,11 +1,11 @@
 ---
 # credfolio2-xflj
 title: Update bean checklists and templates to reference new subagents
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:23:26Z
-updated_at: 2026-02-07T17:21:13Z
+updated_at: 2026-02-07T17:31:29Z
 parent: credfolio2-ynmd
 ---
 
