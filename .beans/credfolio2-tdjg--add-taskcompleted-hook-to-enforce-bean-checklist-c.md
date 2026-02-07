@@ -252,12 +252,12 @@ A comprehensive test script follows the pattern of the existing `test-validate-b
 None — the approach is well-defined in the bean and confirmed by source code analysis of Claude Code's hook system. The TaskCompleted hook input schema is: `{ session_id, transcript_path, cwd, permission_mode?, hook_event_name: "TaskCompleted", task_id, task_subject, task_description?, teammate_name?, team_name? }`. Exit code 2 blocks completion and shows stderr to the model. Exit code 0 allows.
 
 ## Definition of Done
-- [ ] Hook script created at `.claude/hooks/validate-bean-completion.sh`
-- [ ] Script reads bean body and detects unchecked checklist items
-- [ ] Hook registered in `.claude/settings.json`
-- [ ] Tested: bean with unchecked items → completion blocked with helpful message
-- [ ] Tested: bean with all items checked → completion allowed
-- [ ] Tested: non-bean task → completion allowed (graceful fallback)
+- [x] Hook script created at `.claude/hooks/validate-bean-completion.sh`
+- [x] Script reads bean body and detects unchecked checklist items
+- [x] Hook registered in `.claude/settings.json`
+- [x] Tested: bean with unchecked items → completion blocked with helpful message
+- [x] Tested: bean with all items checked → completion allowed
+- [x] Tested: non-bean task → completion allowed (graceful fallback)
 - [ ] `pnpm lint` passes with no errors
 - [ ] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
