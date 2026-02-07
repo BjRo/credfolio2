@@ -44,11 +44,11 @@ An "implement" agent fills the gap: **refine → implement → qa → review**.
 - [x] Document usage in CLAUDE.md or relevant rules file
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
-- [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
+- [x] Tests written (TDD: write tests before implementation) — N/A: config/docs only, no production code
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification via `@qa` subagent (via Task tool, for UI changes) — N/A: no UI changes
+- [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed and PR created for human review
 - [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
