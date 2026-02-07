@@ -215,6 +215,16 @@ describe("ViewerPage", () => {
       Object.defineProperty(window.history, "length", { value: 1, writable: true });
     });
 
+    it("viewer container accounts for header height", () => {
+      mockSearchParams = new URLSearchParams({
+        letterId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockUseQuery.mockReturnValue([{ fetching: false, data: mockLetterData, error: undefined }]);
+      const { container } = render(<ViewerPage />);
+      const viewerContainer = container.querySelector(".flex.flex-col");
+      expect(viewerContainer).not.toHaveClass("h-screen");
+    });
+
     it("navigates to home when back button is clicked with no history", async () => {
       const user = userEvent.setup();
       Object.defineProperty(window.history, "length", { value: 1, writable: true });

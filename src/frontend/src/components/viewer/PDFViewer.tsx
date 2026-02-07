@@ -199,7 +199,7 @@ export function PDFViewer({ fileUrl, highlightText, onHighlightResult }: PDFView
       </div>
 
       {/* PDF Content */}
-      <div className="flex-1 overflow-auto bg-muted/30">
+      <div className="flex-1 overflow-auto bg-neutral-700">
         <Document
           file={fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}

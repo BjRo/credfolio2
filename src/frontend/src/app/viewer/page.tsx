@@ -169,7 +169,7 @@ function ViewerPageContent() {
       : letter.authorTitle || letter.organization || null;
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-[calc(100dvh-var(--header-height))]">
       {/* Page toolbar */}
       <div className="flex items-center gap-3 border-b bg-background px-4 py-2">
         <Button variant="ghost" size="icon-sm" onClick={handleBack} aria-label="Go back">
