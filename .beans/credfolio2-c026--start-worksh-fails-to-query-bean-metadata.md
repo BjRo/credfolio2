@@ -1,11 +1,11 @@
 ---
 # credfolio2-c026
 title: start-work.sh fails to query bean metadata
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-07T18:43:13Z
-updated_at: 2026-02-07T18:43:13Z
+updated_at: 2026-02-07T19:02:40Z
 ---
 
 ## Problem
@@ -39,10 +39,10 @@ Script should query the bean successfully and create a feature branch.
 Script errors with "Bean 'credfolio2-o624' not found" at step 2/5.
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification via `@qa` subagent (via Task tool, for UI changes) — N/A, no UI changes
+- [x] All other checklist items above are completed
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)

@@ -74,9 +74,9 @@ git pull origin main
 echo -e "\n${GREEN}[2/5]${NC} Querying bean metadata..."
 BEAN_JSON=$(beans query "{ bean(id: \"${BEAN_ID}\") { id title status type } }" --json 2>&1)
 
-BEAN_TITLE=$(echo "$BEAN_JSON" | jq -r '.data.bean.title // empty')
-BEAN_TYPE=$(echo "$BEAN_JSON" | jq -r '.data.bean.type // empty')
-BEAN_STATUS=$(echo "$BEAN_JSON" | jq -r '.data.bean.status // empty')
+BEAN_TITLE=$(echo "$BEAN_JSON" | jq -r '.bean.title // empty')
+BEAN_TYPE=$(echo "$BEAN_JSON" | jq -r '.bean.type // empty')
+BEAN_STATUS=$(echo "$BEAN_JSON" | jq -r '.bean.status // empty')
 
 if [ -z "$BEAN_TITLE" ]; then
     echo -e "${RED}Error: Bean '${BEAN_ID}' not found${NC}"
