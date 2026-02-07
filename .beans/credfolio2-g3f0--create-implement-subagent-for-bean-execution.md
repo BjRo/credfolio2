@@ -1,11 +1,11 @@
 ---
 # credfolio2-g3f0
 title: Create implement subagent for bean execution
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-07T19:59:16Z
-updated_at: 2026-02-07T20:03:47Z
+updated_at: 2026-02-07T20:15:17Z
 parent: credfolio2-ynmd
 ---
 
