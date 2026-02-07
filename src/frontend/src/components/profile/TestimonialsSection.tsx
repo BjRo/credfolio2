@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { type GetTestimonialsQuery, TestimonialRelationship } from "@/graphql/generated/graphql";
 import { GRAPHQL_UPLOAD_ENDPOINT } from "@/lib/urql/client";
+import { buildViewerUrl } from "@/lib/viewer";
 import { AuthorEditModal } from "./AuthorEditModal";
 import { DeleteTestimonialDialog } from "./DeleteTestimonialDialog";
 
@@ -325,7 +326,12 @@ function TestimonialGroupCard({
   const hiddenCount = testimonials.length - COLLAPSE_THRESHOLD;
 
   // Get source URL for each testimonial (for the per-quote kebab menu)
-  const getSourceUrl = (testimonial: Testimonial) => testimonial.referenceLetter?.file?.url;
+  const getSourceUrl = (testimonial: Testimonial) => {
+    const letterId = testimonial.referenceLetter?.id;
+    const hasFile = !!testimonial.referenceLetter?.file?.url;
+    if (!letterId || !hasFile) return undefined;
+    return buildViewerUrl(letterId, testimonial.quote);
+  };
 
   const unknown = isUnknownAuthor(author);
   const canEditAuthor = onEditAuthor && !author.isLegacy;

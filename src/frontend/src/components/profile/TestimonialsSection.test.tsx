@@ -308,7 +308,7 @@ describe("TestimonialsSection", () => {
       expect(screen.getByRole("menuitem", { name: /view source document/i })).toBeInTheDocument();
     });
 
-    it("'View source document' links to the PDF file URL", async () => {
+    it("'View source document' links to the viewer with quote highlight", async () => {
       const user = userEvent.setup();
       render(<TestimonialsSection testimonials={mockTestimonialsWithSourceBadge} />);
 
@@ -316,11 +316,32 @@ describe("TestimonialsSection", () => {
       await user.click(menuButton);
 
       const viewSourceItem = screen.getByRole("menuitem", { name: /view source document/i });
-      // The menuitem should be a link
+      // The menuitem should link to the viewer page with letterId and highlight params
       expect(viewSourceItem.closest("a")).toHaveAttribute(
         "href",
-        "https://example.com/reference-letter.pdf"
+        "/viewer?letterId=ref-1&highlight=Great+team+player+with+excellent+leadership+skills."
       );
+    });
+
+    it("truncates long quotes in viewer URL highlight param", async () => {
+      const longQuote = "a".repeat(600);
+      const mockWithLongQuote = [
+        {
+          ...mockTestimonialsWithSourceBadge[0],
+          quote: longQuote,
+        },
+      ];
+      const user = userEvent.setup();
+      render(<TestimonialsSection testimonials={mockWithLongQuote} />);
+
+      const menuButton = screen.getByRole("button", { name: /more actions/i });
+      await user.click(menuButton);
+
+      const viewSourceItem = screen.getByRole("menuitem", { name: /view source document/i });
+      const href = viewSourceItem.closest("a")?.getAttribute("href") ?? "";
+      const params = new URLSearchParams(href.split("?")[1]);
+      expect(params.get("highlight")?.length).toBe(500);
+      expect(params.get("letterId")).toBe("ref-1");
     });
 
     it("'View source document' opens in a new tab", async () => {
