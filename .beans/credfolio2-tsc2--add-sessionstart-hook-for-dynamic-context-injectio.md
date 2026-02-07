@@ -1,11 +1,11 @@
 ---
 # credfolio2-tsc2
 title: Add SessionStart hook for dynamic context injection
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:08:12Z
-updated_at: 2026-02-07T18:25:35Z
+updated_at: 2026-02-07T18:31:59Z
 parent: credfolio2-ynmd
 ---
 
