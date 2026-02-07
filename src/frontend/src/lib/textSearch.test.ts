@@ -126,6 +126,40 @@ describe("findMatchInPage", () => {
     expect(result?.ranges).toHaveLength(3);
   });
 
+  it("injects space between items without boundary whitespace", () => {
+    // PDF often fragments text into items without explicit spaces at boundaries
+    const result = findMatchInPage(makeItems(["Great", "team player"]), "Great team player");
+    expect(result).not.toBeNull();
+    expect(result?.ranges).toHaveLength(2);
+    expect(result?.ranges[0]).toEqual({ itemIndex: 0, startOffset: 0, endOffset: 5 });
+    expect(result?.ranges[1]).toEqual({ itemIndex: 1, startOffset: 0, endOffset: 11 });
+  });
+
+  it("does not double-space when items already have boundary whitespace", () => {
+    // Item 0 ends with space — no synthetic space needed
+    const result = findMatchInPage(makeItems(["Great ", "team player"]), "Great team player");
+    expect(result).not.toBeNull();
+    expect(result?.ranges).toHaveLength(2);
+    expect(result?.ranges[0]).toEqual({ itemIndex: 0, startOffset: 0, endOffset: 6 });
+    expect(result?.ranges[1]).toEqual({ itemIndex: 1, startOffset: 0, endOffset: 11 });
+  });
+
+  it("does not inject space when next item starts with whitespace", () => {
+    const result = findMatchInPage(makeItems(["Great", " team player"]), "Great team player");
+    expect(result).not.toBeNull();
+    expect(result?.ranges).toHaveLength(2);
+  });
+
+  it("handles multiple items without boundary spaces", () => {
+    // Three items, none with boundary spaces
+    const result = findMatchInPage(
+      makeItems(["demonstrated", "excellent", "leadership"]),
+      "demonstrated excellent leadership"
+    );
+    expect(result).not.toBeNull();
+    expect(result?.ranges).toHaveLength(3);
+  });
+
   it("finds first match only", () => {
     const result = findMatchInPage(makeItems(["abc abc"]), "abc");
     expect(result).not.toBeNull();

@@ -105,6 +105,11 @@ interface GlobalMappingEntry {
 /**
  * Find the first occurrence of searchText across concatenated text items.
  * Returns per-item HighlightRanges mapped back to original character positions.
+ *
+ * PDF text extraction often fragments text into items without explicit spaces
+ * at word boundaries. To handle this, we try matching without synthetic spaces
+ * first (handles mid-word splits), then retry with synthetic spaces injected
+ * between adjacent items (handles word-boundary splits).
  */
 export function findMatchInPage(items: TextItem[], searchText: string): PageMatchResult | null {
   if (items.length === 0 || !searchText) return null;
@@ -112,19 +117,39 @@ export function findMatchInPage(items: TextItem[], searchText: string): PageMatc
   const normalizedSearch = normalizeText(searchText);
   if (!normalizedSearch) return null;
 
-  // Build concatenated normalized page text with global mapping
+  // Try without synthetic spaces first (handles mid-word splits like ["hel", "lo wor", "ld"])
+  return (
+    searchWithStrategy(items, normalizedSearch, false) ??
+    searchWithStrategy(items, normalizedSearch, true)
+  );
+}
+
+function searchWithStrategy(
+  items: TextItem[],
+  normalizedSearch: string,
+  injectSpaces: boolean
+): PageMatchResult | null {
   const pageTextParts: string[] = [];
   const globalMapping: GlobalMappingEntry[] = [];
 
   for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
     const { normalized, mapping } = normalizeWithMapping(items[itemIdx].str);
 
+    if (
+      injectSpaces &&
+      itemIdx > 0 &&
+      normalized.length > 0 &&
+      pageTextParts.length > 0 &&
+      !/\s/.test(pageTextParts[pageTextParts.length - 1]) &&
+      !/\s/.test(normalized[0])
+    ) {
+      pageTextParts.push(" ");
+      globalMapping.push({ itemIndex: -1, originalCharIdx: -1 });
+    }
+
     for (let j = 0; j < normalized.length; j++) {
       pageTextParts.push(normalized[j]);
-      globalMapping.push({
-        itemIndex: itemIdx,
-        originalCharIdx: mapping[j],
-      });
+      globalMapping.push({ itemIndex: itemIdx, originalCharIdx: mapping[j] });
     }
   }
 
@@ -134,11 +159,11 @@ export function findMatchInPage(items: TextItem[], searchText: string): PageMatc
 
   const matchEnd = matchStart + normalizedSearch.length;
 
-  // Group matched global indices by itemIndex
   const rangeMap = new Map<number, { minOriginal: number; maxOriginal: number }>();
 
   for (let gi = matchStart; gi < matchEnd; gi++) {
     const entry = globalMapping[gi];
+    if (entry.itemIndex === -1) continue;
     const existing = rangeMap.get(entry.itemIndex);
     if (existing) {
       existing.minOriginal = Math.min(existing.minOriginal, entry.originalCharIdx);
@@ -152,15 +177,10 @@ export function findMatchInPage(items: TextItem[], searchText: string): PageMatc
   }
 
   const ranges: HighlightRange[] = [];
-  // Sort by itemIndex to maintain order
   const sortedEntries = [...rangeMap.entries()].sort(([a], [b]) => a - b);
 
   for (const [itemIndex, { minOriginal, maxOriginal }] of sortedEntries) {
-    ranges.push({
-      itemIndex,
-      startOffset: minOriginal,
-      endOffset: maxOriginal + 1,
-    });
+    ranges.push({ itemIndex, startOffset: minOriginal, endOffset: maxOriginal + 1 });
   }
 
   return { ranges };
