@@ -1,11 +1,11 @@
 ---
 # credfolio2-owyl
 title: Viewer Route (/viewer page)
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-07T09:29:28Z
-updated_at: 2026-02-07T10:46:08Z
+updated_at: 2026-02-07T11:07:35Z
 parent: credfolio2-klgo
 blocking:
     - credfolio2-0gh5
