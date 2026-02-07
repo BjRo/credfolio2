@@ -114,7 +114,9 @@ export function useTextHighlight({
   const customTextRenderer = useMemo(() => {
     if (!highlightText) return undefined;
 
-    // renderKey is captured in closure to create new function identity on change
+    // Including renderKey in deps (and referencing it here) forces useMemo to return
+    // a new function identity after setRenderKey increments, which triggers react-pdf
+    // to re-invoke customTextRenderer with the updated match data from refs.
     void renderKey;
 
     return ({ str, itemIndex }: CustomTextRendererParams): string => {

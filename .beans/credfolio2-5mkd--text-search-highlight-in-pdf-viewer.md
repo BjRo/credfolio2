@@ -109,7 +109,7 @@ Yellow on white PDF pages (always white even in dark mode per existing conventio
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Visual verification with agent-browser (for UI changes)
+- [x] Visual verification with agent-browser (N/A — component not yet mounted in any route; that's credfolio2-owyl)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
 - [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)

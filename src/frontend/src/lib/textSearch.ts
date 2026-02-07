@@ -126,19 +126,6 @@ export function findMatchInPage(items: TextItem[], searchText: string): PageMatc
         originalCharIdx: mapping[j],
       });
     }
-
-    // Add a space between items (to allow cross-item matching)
-    // but don't add after the last item
-    if (itemIdx < items.length - 1 && normalized.length > 0) {
-      const lastChar = normalized[normalized.length - 1];
-      if (lastChar !== " ") {
-        // Don't add extra space if the item already ends with space
-        // Actually, for cross-item matching, we need items joined without extra
-        // separators — the original items may or may not have trailing spaces.
-        // We should NOT add separators; the text items represent the page text
-        // as-is, possibly with spaces already included.
-      }
-    }
   }
 
   const pageText = pageTextParts.join("");
