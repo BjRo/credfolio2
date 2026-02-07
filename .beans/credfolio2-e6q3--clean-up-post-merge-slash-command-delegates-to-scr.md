@@ -31,8 +31,8 @@ The `/post-merge` slash command (`.claude/commands/post-merge.md`) and `scripts/
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool) — N/A: no src/backend/ or src/frontend/ changes
 
 ## Implementation Plan
 
