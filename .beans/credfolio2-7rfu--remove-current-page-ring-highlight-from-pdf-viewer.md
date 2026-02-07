@@ -1,11 +1,11 @@
 ---
 # credfolio2-7rfu
 title: Remove current page ring highlight from PDF viewer
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T14:28:19Z
-updated_at: 2026-02-07T14:37:03Z
+updated_at: 2026-02-07T14:43:49Z
 parent: credfolio2-klgo
 ---
 
