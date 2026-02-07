@@ -74,7 +74,17 @@ pnpm test
 
 Fix any lint errors or test failures before finishing.
 
-### 5. Report Results
+### 5. Push the Branch
+
+After all tests and lint pass, push the branch to the remote:
+
+```bash
+git push -u origin $(git branch --show-current)
+```
+
+Update the bean checklist to mark "Branch pushed" as done.
+
+### 6. Report Results
 
 When done, provide a summary of:
 - What was implemented
@@ -96,7 +106,6 @@ When done, provide a summary of:
 - **Do NOT create PRs** — the main context handles this
 - **Do NOT launch QA, review-backend, or review-frontend agents** — the main context orchestrates these
 - **Do NOT mark the bean as completed** — the main context decides when the bean is done
-- **Do NOT push the branch** — the main context handles pushing and PR creation
 - **Do NOT merge anything into main** — always work on the feature branch
 
 ### Quality Rules

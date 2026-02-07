@@ -51,10 +51,10 @@ prompt: "Implement bean <BEAN_ID>. <Additional context from user>. Read the bean
 
 ## After the Agent Completes
 
-The implement agent handles code + tests + commits. You still need to:
+The implement agent handles code + tests + commits + push. You still need to:
 
 1. **Run QA** — Launch `@qa` subagent for visual verification (if UI changes)
-2. **Push and create PR** — `git push -u origin <branch>` then `gh pr create`
+2. **Create PR** — `gh pr create` with a summary of the changes
 3. **Run reviews** — Launch `@review-backend` and/or `@review-frontend`
 4. **Check off remaining DoD items** — Update the bean's Definition of Done
 
@@ -66,11 +66,12 @@ The implement agent handles code + tests + commits. You still need to:
 - Commits frequently with meaningful messages
 - Updates bean checklist items as they're completed
 - Runs `pnpm lint` and `pnpm test` at the end
+- Pushes the branch to remote
 - Reports a summary of what was done
 
 ## What the Agent Does NOT Do
 
-- Create PRs or push branches
+- Create PRs
 - Launch QA or review agents
 - Mark the bean as completed
 - Merge anything into main
