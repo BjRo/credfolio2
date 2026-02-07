@@ -33,12 +33,12 @@ Same as review-backend: review output is verbose and should be isolated from the
 - [x] Subagent file created at `.claude/agents/review-frontend.md`
 - [x] `web-design-guidelines` and `vercel-react-best-practices` skills preloaded
 - [x] Old skill removed or converted to delegate to the subagent
-- [ ] Subagent can be invoked and posts review comments to a PR
+- [x] Subagent can be invoked and posts review comments to a PR
 - [x] Review output stays out of the main conversation context
 - [x] Skills `web-design-guidelines` and `vercel-react-best-practices` reviewed for invocation settings
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
 
 ## Implementation Plan
 
