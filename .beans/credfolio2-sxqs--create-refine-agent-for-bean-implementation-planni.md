@@ -1,10 +1,11 @@
 ---
 # credfolio2-sxqs
 title: Create refine-agent for bean implementation planning
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-02-07T15:57:52Z
-updated_at: 2026-02-07T15:57:52Z
+updated_at: 2026-02-07T16:39:29Z
 parent: credfolio2-ynmd
 ---
 
