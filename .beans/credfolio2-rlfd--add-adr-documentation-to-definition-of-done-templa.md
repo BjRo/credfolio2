@@ -1,11 +1,11 @@
 ---
 # credfolio2-rlfd
 title: Add ADR documentation to Definition of Done template
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:33:12Z
-updated_at: 2026-02-07T19:23:32Z
+updated_at: 2026-02-07T19:35:50Z
 parent: credfolio2-ynmd
 ---
 
