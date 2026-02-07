@@ -61,4 +61,4 @@ This overlaps with credfolio2-zsm2 (Refactor CLAUDE.md into modular rules). Can 
 - [x] Verified rules load when working on `src/backend/` files
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
