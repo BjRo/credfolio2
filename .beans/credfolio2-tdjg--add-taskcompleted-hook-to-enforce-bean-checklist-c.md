@@ -1,11 +1,11 @@
 ---
 # credfolio2-tdjg
 title: Add TaskCompleted hook to enforce bean checklist completion
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:19:41Z
-updated_at: 2026-02-07T21:11:13Z
+updated_at: 2026-02-07T21:32:46Z
 parent: credfolio2-ynmd
 ---
 
