@@ -1,11 +1,11 @@
 ---
 # credfolio2-klgo
 title: Source Document Deep Linking
-status: draft
+status: in-progress
 type: epic
 priority: normal
 created_at: 2026-02-07T09:28:48Z
-updated_at: 2026-02-07T09:28:48Z
+updated_at: 2026-02-07T09:43:47Z
 parent: credfolio2-dwid
 ---
 
