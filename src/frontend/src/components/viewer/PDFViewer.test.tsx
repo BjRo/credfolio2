@@ -5,6 +5,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // Track Document and Page renders
 const mockOnDocumentLoadSuccess = vi.fn();
 
+// Store page callbacks so tests can trigger them
+let capturedPageProps: Map<
+  number,
+  {
+    onGetTextSuccess?: (textContent: unknown) => void;
+    customTextRenderer?: (params: { str: string; itemIndex: number }) => string;
+    onRenderTextLayerSuccess?: () => void;
+  }
+>;
+
 // Mock react-pdf to avoid canvas/worker dependencies in tests
 vi.mock("react-pdf", () => {
   const React = require("react");
@@ -34,6 +44,9 @@ vi.mock("react-pdf", () => {
       pageNumber,
       scale,
       renderTextLayer,
+      onGetTextSuccess,
+      customTextRenderer,
+      onRenderTextLayerSuccess,
     }: {
       pageNumber: number;
       scale?: number;
@@ -41,12 +54,28 @@ vi.mock("react-pdf", () => {
       renderTextLayer?: boolean;
       renderAnnotationLayer?: boolean;
       loading?: React.ReactNode;
+      onGetTextSuccess?: (textContent: unknown) => void;
+      customTextRenderer?: (params: { str: string; itemIndex: number }) => string;
+      onRenderTextLayerSuccess?: () => void;
     }) => {
+      // Store callbacks for test access
+      const React = require("react");
+      React.useEffect(() => {
+        if (capturedPageProps) {
+          capturedPageProps.set(pageNumber, {
+            onGetTextSuccess,
+            customTextRenderer,
+            onRenderTextLayerSuccess,
+          });
+        }
+      });
+
       return (
         <div
           data-testid={`pdf-page-${pageNumber}`}
           data-scale={scale}
           data-text-layer={renderTextLayer}
+          data-has-custom-renderer={!!customTextRenderer}
         >
           Page {pageNumber}
         </div>
@@ -63,6 +92,7 @@ import { PDFViewer } from "./PDFViewer";
 describe("PDFViewer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    capturedPageProps = new Map();
   });
 
   it("renders the PDF document component", () => {
@@ -219,5 +249,74 @@ describe("PDFViewer", () => {
     render(<PDFViewer fileUrl="https://example.com/test.pdf" />);
     const document = screen.getByTestId("pdf-document");
     expect(document).toBeInTheDocument();
+  });
+});
+
+describe("PDFViewer highlight integration", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    capturedPageProps = new Map();
+  });
+
+  it("does not set customTextRenderer when no highlightText", () => {
+    render(<PDFViewer fileUrl="https://example.com/test.pdf" />);
+
+    const page1 = screen.getByTestId("pdf-page-1");
+    expect(page1).toHaveAttribute("data-has-custom-renderer", "false");
+  });
+
+  it("sets customTextRenderer when highlightText is provided", () => {
+    render(<PDFViewer fileUrl="https://example.com/test.pdf" highlightText="hello" />);
+
+    const page1 = screen.getByTestId("pdf-page-1");
+    expect(page1).toHaveAttribute("data-has-custom-renderer", "true");
+  });
+
+  it("calls onHighlightResult callback when match is found", () => {
+    const onHighlightResult = vi.fn();
+    render(
+      <PDFViewer
+        fileUrl="https://example.com/test.pdf"
+        highlightText="hello"
+        onHighlightResult={onHighlightResult}
+      />
+    );
+
+    // Simulate text extraction completing for page 1
+    const page1Props = capturedPageProps.get(1);
+    expect(page1Props?.onGetTextSuccess).toBeInstanceOf(Function);
+
+    page1Props?.onGetTextSuccess?.({
+      items: [
+        {
+          str: "hello world",
+          dir: "ltr",
+          width: 100,
+          height: 12,
+          transform: [1, 0, 0, 1, 0, 0],
+          fontName: "Arial",
+          hasEOL: false,
+        },
+      ],
+      styles: {},
+    });
+
+    expect(onHighlightResult).toHaveBeenCalledWith(true);
+  });
+
+  it("passes onGetTextSuccess to each page", () => {
+    render(<PDFViewer fileUrl="https://example.com/test.pdf" highlightText="test" />);
+
+    expect(capturedPageProps.get(1)?.onGetTextSuccess).toBeInstanceOf(Function);
+    expect(capturedPageProps.get(2)?.onGetTextSuccess).toBeInstanceOf(Function);
+    expect(capturedPageProps.get(3)?.onGetTextSuccess).toBeInstanceOf(Function);
+  });
+
+  it("passes onRenderTextLayerSuccess to each page", () => {
+    render(<PDFViewer fileUrl="https://example.com/test.pdf" highlightText="test" />);
+
+    expect(capturedPageProps.get(1)?.onRenderTextLayerSuccess).toBeInstanceOf(Function);
+    expect(capturedPageProps.get(2)?.onRenderTextLayerSuccess).toBeInstanceOf(Function);
+    expect(capturedPageProps.get(3)?.onRenderTextLayerSuccess).toBeInstanceOf(Function);
   });
 });

@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTextHighlight } from "@/hooks/useTextHighlight";
 import { cn } from "@/lib/utils";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -16,7 +17,6 @@ const ZOOM_STEP = 0.25;
 
 interface PDFViewerProps {
   fileUrl: string;
-  // Used by Phase 2 (Text Search & Highlight) - accepted now to stabilize the interface
   highlightText?: string;
   onHighlightResult?: (found: boolean) => void;
 }
@@ -43,17 +43,39 @@ function ErrorDisplay({ error }: { error?: Error }) {
   );
 }
 
-export function PDFViewer({
-  fileUrl,
-  highlightText: _highlightText,
-  onHighlightResult: _onHighlightResult,
-}: PDFViewerProps) {
+export function PDFViewer({ fileUrl, highlightText, onHighlightResult }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [pageInputValue, setPageInputValue] = useState("1");
   const [loadError, setLoadError] = useState<Error | null>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  const { getOnGetTextSuccess, customTextRenderer, getOnRenderTextLayerSuccess } = useTextHighlight(
+    {
+      highlightText,
+      numPages,
+      onHighlightResult,
+      pageRefs,
+    }
+  );
+
+  const pageCallbacks = useMemo(() => {
+    const callbacks = new Map<
+      number,
+      {
+        onGetTextSuccess: ReturnType<typeof getOnGetTextSuccess>;
+        onRenderTextLayerSuccess: ReturnType<typeof getOnRenderTextLayerSuccess>;
+      }
+    >();
+    for (let i = 1; i <= numPages; i++) {
+      callbacks.set(i, {
+        onGetTextSuccess: getOnGetTextSuccess(i),
+        onRenderTextLayerSuccess: getOnRenderTextLayerSuccess(i),
+      });
+    }
+    return callbacks;
+  }, [numPages, getOnGetTextSuccess, getOnRenderTextLayerSuccess]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     pageRefs.current.clear();
@@ -205,6 +227,9 @@ export function PDFViewer({
                   renderTextLayer={true}
                   renderAnnotationLayer={true}
                   loading={<div className="w-[612px] h-[792px] animate-pulse bg-muted rounded" />}
+                  onGetTextSuccess={pageCallbacks.get(pageNumber)?.onGetTextSuccess}
+                  customTextRenderer={customTextRenderer}
+                  onRenderTextLayerSuccess={pageCallbacks.get(pageNumber)?.onRenderTextLayerSuccess}
                 />
               </div>
             ))}
