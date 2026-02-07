@@ -180,9 +180,9 @@ gh pr diff --name-only
 For **@review-backend**:
 ```
 Task tool call:
-  subagent_type: "general-purpose"
+  subagent_type: "review-backend"
   description: "Backend code review"
-  prompt: "You are the @review-backend agent. Read the skill definition at .claude/skills/review-backend/SKILL.md and follow its instructions to review the current PR. Post your findings as PR comments using the gh CLI."
+  prompt: "Review the current PR. Post your findings as PR comments using the gh CLI."
 ```
 
 For **@review-frontend**:
@@ -193,7 +193,7 @@ Task tool call:
   prompt: "You are the @review-frontend agent. Read the skill definition at .claude/skills/review-frontend/SKILL.md and follow its instructions to review the current PR. Post your findings as PR comments using the gh CLI."
 ```
 
-**IMPORTANT**: Always launch these as subagents via the Task tool. Never invoke `/skill review-backend` or `/skill review-frontend` directly in the main conversation — that defeats the purpose of keeping the context clean.
+**IMPORTANT**: Always launch these as subagents via the Task tool. Never invoke review skills directly in the main conversation — that defeats the purpose of keeping the context clean. `@review-backend` is a named agent (`.claude/agents/review-backend.md`); `@review-frontend` is invoked via a general-purpose subagent reading its skill definition.
 
 **After the reviews complete:**
 - Read the review summaries returned by the subagents

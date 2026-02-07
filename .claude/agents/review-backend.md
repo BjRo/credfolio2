@@ -1,6 +1,8 @@
 ---
 name: review-backend
-description: Staff-level Go/Backend code reviewer. Reviews backend code (Go, GraphQL API) for maintainability, design, performance, and security. Posts findings as PR review comments. Use after creating a PR to get automated backend code review.
+description: Staff-level Go/Backend code reviewer. Reviews backend code (Go, GraphQL API) for maintainability, design, performance, and security. Posts findings as PR review comments.
+tools: Read, Bash, Glob, Grep
+model: inherit
 ---
 
 # Backend Code Review — Staff-Level Go Engineer
