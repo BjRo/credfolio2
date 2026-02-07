@@ -107,9 +107,10 @@ interface GlobalMappingEntry {
  * Returns per-item HighlightRanges mapped back to original character positions.
  *
  * PDF text extraction often fragments text into items without explicit spaces
- * at word boundaries. To handle this, we try matching without synthetic spaces
- * first (handles mid-word splits), then retry with synthetic spaces injected
- * between adjacent items (handles word-boundary splits).
+ * at word boundaries, or splits words across items at line breaks. To handle
+ * all cases (mid-word splits, word-boundary splits, and mixed), we use
+ * flexible matching: spaces in the search text can optionally match either
+ * a literal space or nothing (zero-width) in the concatenated page text.
  */
 export function findMatchInPage(items: TextItem[], searchText: string): PageMatchResult | null {
   if (items.length === 0 || !searchText) return null;
@@ -117,36 +118,12 @@ export function findMatchInPage(items: TextItem[], searchText: string): PageMatc
   const normalizedSearch = normalizeText(searchText);
   if (!normalizedSearch) return null;
 
-  // Try without synthetic spaces first (handles mid-word splits like ["hel", "lo wor", "ld"])
-  return (
-    searchWithStrategy(items, normalizedSearch, false) ??
-    searchWithStrategy(items, normalizedSearch, true)
-  );
-}
-
-function searchWithStrategy(
-  items: TextItem[],
-  normalizedSearch: string,
-  injectSpaces: boolean
-): PageMatchResult | null {
+  // Build concatenated page text without synthetic spaces
   const pageTextParts: string[] = [];
   const globalMapping: GlobalMappingEntry[] = [];
 
   for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
     const { normalized, mapping } = normalizeWithMapping(items[itemIdx].str);
-
-    if (
-      injectSpaces &&
-      itemIdx > 0 &&
-      normalized.length > 0 &&
-      pageTextParts.length > 0 &&
-      !/\s/.test(pageTextParts[pageTextParts.length - 1]) &&
-      !/\s/.test(normalized[0])
-    ) {
-      pageTextParts.push(" ");
-      globalMapping.push({ itemIndex: -1, originalCharIdx: -1 });
-    }
-
     for (let j = 0; j < normalized.length; j++) {
       pageTextParts.push(normalized[j]);
       globalMapping.push({ itemIndex: itemIdx, originalCharIdx: mapping[j] });
@@ -154,16 +131,17 @@ function searchWithStrategy(
   }
 
   const pageText = pageTextParts.join("");
-  const matchStart = pageText.toLowerCase().indexOf(normalizedSearch.toLowerCase());
-  if (matchStart === -1) return null;
 
-  const matchEnd = matchStart + normalizedSearch.length;
+  // Use flexible matching where spaces in search text are optional
+  const match = flexibleIndexOf(pageText, normalizedSearch);
+  if (!match) return null;
+
+  const { start: matchStart, end: matchEnd } = match;
 
   const rangeMap = new Map<number, { minOriginal: number; maxOriginal: number }>();
 
   for (let gi = matchStart; gi < matchEnd; gi++) {
     const entry = globalMapping[gi];
-    if (entry.itemIndex === -1) continue;
     const existing = rangeMap.get(entry.itemIndex);
     if (existing) {
       existing.minOriginal = Math.min(existing.minOriginal, entry.originalCharIdx);
@@ -184,6 +162,59 @@ function searchWithStrategy(
   }
 
   return { ranges };
+}
+
+/**
+ * Flexible search: find searchText in pageText where each space in searchText
+ * can optionally match either a literal space or nothing (zero-width).
+ * This handles PDF text items that split words across boundaries.
+ */
+function flexibleIndexOf(
+  pageText: string,
+  searchText: string
+): { start: number; end: number } | null {
+  const ptLower = pageText.toLowerCase();
+  const stLower = searchText.toLowerCase();
+
+  for (
+    let startPos = 0;
+    startPos <= ptLower.length - stLower.length + stLower.split(" ").length;
+    startPos++
+  ) {
+    const end = tryFlexMatch(ptLower, startPos, stLower);
+    if (end !== -1) {
+      return { start: startPos, end };
+    }
+  }
+  return null;
+}
+
+/**
+ * Try to match searchText starting at ptStart in pageText.
+ * Spaces in searchText can match a literal space or nothing.
+ * Returns the end position in pageText if matched, -1 otherwise.
+ */
+function tryFlexMatch(pageText: string, ptStart: number, searchText: string): number {
+  let pi = ptStart;
+  let si = 0;
+
+  while (si < searchText.length) {
+    if (searchText[si] === " ") {
+      // Space in search: optionally consume a space in page text
+      si++;
+      if (pi < pageText.length && pageText[pi] === " ") {
+        pi++;
+      }
+    } else {
+      if (pi >= pageText.length || pageText[pi] !== searchText[si]) {
+        return -1;
+      }
+      pi++;
+      si++;
+    }
+  }
+
+  return pi;
 }
 
 /**

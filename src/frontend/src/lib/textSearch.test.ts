@@ -160,6 +160,38 @@ describe("findMatchInPage", () => {
     expect(result?.ranges).toHaveLength(3);
   });
 
+  it("handles mixed boundaries: mid-word split AND word-boundary split in same match", () => {
+    // Real PDF scenario: "highly" split at line break ("h" + "ighly valued.")
+    // while previous boundary is a word split ("...and" + "h")
+    const result = findMatchInPage(
+      makeItems(["domains was rare and", "h", "ighly valued."]),
+      "rare and highly valued."
+    );
+    expect(result).not.toBeNull();
+    expect(result?.ranges).toHaveLength(3);
+    // "rare and" from first item (starts at index 12: "domains was rare and")
+    expect(result?.ranges[0]).toEqual({ itemIndex: 0, startOffset: 12, endOffset: 20 });
+    // "h" from second item
+    expect(result?.ranges[1]).toEqual({ itemIndex: 1, startOffset: 0, endOffset: 1 });
+    // "ighly valued." from third item
+    expect(result?.ranges[2]).toEqual({ itemIndex: 2, startOffset: 0, endOffset: 13 });
+  });
+
+  it("handles the full real-world quote with mixed splits", () => {
+    // Simulates the actual PDF text items for the failing quote
+    const result = findMatchInPage(
+      makeItems([
+        "responsibility with outstanding initiative, reliability, and attention to quality. His ability to",
+        "operate effectively across technical, operational, and strategic domains was rare and",
+        "h",
+        "ighly valued.",
+      ]),
+      "His ability to operate effectively across technical, operational, and strategic domains was rare and highly valued."
+    );
+    expect(result).not.toBeNull();
+    expect(result?.ranges).toHaveLength(4);
+  });
+
   it("finds first match only", () => {
     const result = findMatchInPage(makeItems(["abc abc"]), "abc");
     expect(result).not.toBeNull();

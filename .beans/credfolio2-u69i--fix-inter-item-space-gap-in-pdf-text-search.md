@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-02-07T12:09:06Z
-updated_at: 2026-02-07T12:18:35Z
+updated_at: 2026-02-07T12:46:11Z
 ---
 
 ## Problem
@@ -44,13 +44,32 @@ Specifically, after processing each item in the concatenation loop, check:
 
 The highlight range grouping already filters by itemIndex, so sentinel entries won't affect rendering.
 
-## Actual Fix
+## Actual Fix (v1 — insufficient)
 
 Refactored `findMatchInPage` to use a two-pass strategy via `searchWithStrategy`:
 1. First try WITHOUT synthetic spaces (handles mid-word splits like `["hel", "lo wor", "ld"]`)
 2. If no match, retry WITH synthetic spaces injected between items (handles word-boundary splits like `["Great", "team player"]`)
 
 Sentinel mapping entries (`itemIndex: -1`) are skipped during range grouping so highlight rendering is unaffected.
+
+### Problem with v1
+
+The two-pass strategy fails when item boundaries are **mixed** — some need spaces (word boundary) and some don't (mid-word split). Real PDF example:
+
+- Item 123: `"...domains was rare and"` (word boundary)
+- Item 124: `"h"` (mid-word split — "highly" broken at line break)
+- Item 125: `"ighly valued."` (mid-word continuation)
+
+Strategy 1 (no spaces): `"...rare andhighly valued."` → "and highly" not found (missing space)
+Strategy 2 (all spaces): `"...rare and h ighly valued."` → "highly" not found (spurious space)
+
+## Actual Fix (v2 — flexible matching)
+
+Replace the two-pass binary strategy with **flexible matching**: spaces in the search text can optionally match either a literal space OR nothing (zero-width) in the concatenated page text. This handles all boundary types in a single pass:
+
+- Mid-word splits: `["hel", "lo"]` → concat `"hello"` → search `"hello"` ✓
+- Word-boundary splits: `["Great", "team"]` → concat `"Greatteam"` → search `"Great team"` ✓ (space matches nothing)
+- Mixed splits: `["...and", "h", "ighly"]` → concat `"andhighly"` → search `"and highly"` ✓ (space matches nothing between "and" and "h", no space needed between "h" and "ighly")
 
 ## Checklist
 
@@ -61,12 +80,18 @@ Sentinel mapping entries (`itemIndex: -1`) are skipped during range grouping so 
 - [x] Fix `findMatchInPage` to use two-pass strategy with synthetic spaces
 - [x] Verify existing tests still pass (no regression) — all 36 textSearch tests pass
 - [x] Test with real PDF via agent-browser (no reference letters in fixture; unit tests cover the fix)
+- [x] Add failing test: mixed boundary (mid-word + word-boundary splits in same match)
+- [x] Replace two-pass strategy with flexible matching in `findMatchInPage`
+- [x] Fix cross-page false positives: make `customTextRenderer` page-aware
+- [x] Add cross-page isolation test in `useTextHighlight.test.ts`
+- [x] Verify all existing tests still pass with new approach (467 tests passing)
+- [x] Test with real PDF via agent-browser (both failing URLs now highlight correctly, zero false positives)
 
 ## Definition of Done
 - [x] Tests written (TDD: write tests before implementation)
 - [x] `pnpm lint` passes with no errors
-- [x] `pnpm test` passes with no failures (464 total)
-- [x] Visual verification with agent-browser (page renders, no JS errors; no reference letter fixtures available for end-to-end highlight test)
+- [x] `pnpm test` passes with no failures (467 total)
+- [x] Visual verification with agent-browser (both previously-failing URLs now highlight correctly, zero false positives)
 - [x] All other checklist items above are completed
-- [x] Branch pushed and PR created for human review (PR #105, same branch as kahb)
-- [x] Automated code review passed (`@review-frontend` — LGTM, no critical findings)
+- [ ] Branch pushed and PR created for human review
+- [ ] Automated code review passed (`@review-frontend`)
