@@ -10,4 +10,5 @@ paths:
 - Mise provides version consistency between local dev and devcontainer
 - Other tools installed manually: golangci-lint, migrate, beans, delta, agent-browser
 - Includes: git, gh, fzf, zsh, postgresql-client, and development tools
+- Auto-memory enabled via `CLAUDE_CODE_DISABLE_AUTO_MEMORY=0` in `containerEnv` -- Claude writes session learnings to `~/.claude/projects/<project>/memory/`
 - Rebuild required when Dockerfile changes

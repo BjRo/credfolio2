@@ -74,3 +74,29 @@ Bypass mode is also configured at the extension level in [`devcontainer.json`](d
 ### Rebuilding the Container
 
 No manual reconfiguration needed — user settings are baked into the image and project settings come from the repo.
+
+## Auto-Memory
+
+Claude Code's auto-memory feature is explicitly enabled via `CLAUDE_CODE_DISABLE_AUTO_MEMORY=0` in `containerEnv`. This lets Claude write notes for itself as it works -- project patterns, debugging insights, architecture decisions, and conventions discovered during sessions. These notes persist and load automatically in future sessions, reducing repeated exploration.
+
+### How It Works
+
+- Memory is stored in `~/.claude/projects/<project>/memory/`
+- `MEMORY.md` is the entrypoint -- the first 200 lines are loaded at session start
+- Topic files (e.g., `debugging.md`, `api-conventions.md`) are loaded on-demand when relevant
+- Claude curates MEMORY.md as a concise index and moves details to topic files
+
+### Persistence
+
+Memory persists across container rebuilds via the Docker volume mount:
+
+```
+source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume
+```
+
+This is the same volume that stores Claude Code's user-level settings.
+
+### Important Notes
+
+- Memory is **user-local** and not committed to git -- it complements `CLAUDE.md` (what humans write for Claude) with what Claude learns on its own
+- To disable auto-memory, set `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` in `containerEnv` in [`devcontainer.json`](devcontainer.json)
