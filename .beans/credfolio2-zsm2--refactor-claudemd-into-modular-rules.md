@@ -267,10 +267,10 @@ None -- the scope is well-defined and all decisions are resolved.
 ---
 
 ## Definition of Done
-- [ ] `.claude/rules/` directory created with modular rule files
-- [ ] Path-specific scoping applied where appropriate
-- [ ] Root CLAUDE.md reduced to essential always-needed content
-- [ ] No information lost — all content preserved across files
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `.claude/rules/` directory created with modular rule files
+- [x] Path-specific scoping applied where appropriate
+- [x] Root CLAUDE.md reduced to essential always-needed content
+- [x] No information lost — all content preserved across files
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
