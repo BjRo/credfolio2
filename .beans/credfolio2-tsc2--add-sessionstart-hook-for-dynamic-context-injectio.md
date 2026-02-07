@@ -273,14 +273,14 @@ Create a single bash script that gracefully gathers git and beans context, never
 None — the plan is complete and all ambiguities have been resolved through codebase analysis.
 
 ## Definition of Done
-- [ ] Hook script created at `.claude/hooks/session-context.sh`
-- [ ] Script is executable (`chmod +x`)
-- [ ] Script extracts branch, bean, and recent commits
-- [ ] Script handles edge cases: main branch, detached HEAD, missing bean, naming convention mismatch
-- [ ] Script never exits non-zero (graceful degradation)
-- [ ] Hook registered in `.claude/settings.json` for SessionStart (alongside existing `beans prime` hook)
-- [ ] Verified context appears on session start, resume, and after compaction
-- [ ] Script runs in under 2 seconds
+- [x] Hook script created at `.claude/hooks/session-context.sh`
+- [x] Script is executable (`chmod +x`)
+- [x] Script extracts branch, bean, and recent commits
+- [x] Script handles edge cases: main branch, detached HEAD, missing bean, naming convention mismatch
+- [x] Script never exits non-zero (graceful degradation)
+- [x] Hook registered in `.claude/settings.json` for SessionStart (alongside existing `beans prime` hook)
+- [x] Verified context appears on session start, resume, and after compaction
+- [x] Script runs in under 2 seconds
 - [ ] `pnpm lint` passes with no errors
 - [ ] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
