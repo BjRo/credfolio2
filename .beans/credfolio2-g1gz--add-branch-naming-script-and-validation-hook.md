@@ -306,5 +306,5 @@ None -- all ambiguities have been resolved by the user's clarification.
 - [x] Tested: valid branch names pass, invalid ones are blocked with helpful message
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
+- [x] Branch pushed and PR created for human review
+- [x] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (N/A — no src/ changes)
