@@ -68,5 +68,5 @@ Sentinel mapping entries (`itemIndex: -1`) are skipped during range grouping so 
 - [x] `pnpm test` passes with no failures (464 total)
 - [x] Visual verification with agent-browser (page renders, no JS errors; no reference letter fixtures available for end-to-end highlight test)
 - [x] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed (`@review-backend` and/or `@review-frontend`)
+- [x] Branch pushed and PR created for human review (PR #105, same branch as kahb)
+- [x] Automated code review passed (`@review-frontend` — LGTM, no critical findings)
