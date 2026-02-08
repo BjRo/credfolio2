@@ -274,8 +274,10 @@ func TestDocumentExtractor_ExtractLetterData(t *testing.T) {
 	if len(result.Testimonials) != 2 {
 		t.Errorf("len(Testimonials) = %d, want 2", len(result.Testimonials))
 	}
-	if result.Testimonials[0].Quote != "Jane's leadership during our cloud migration was exceptional." {
-		t.Errorf("Testimonials[0].Quote unexpected: %q", result.Testimonials[0].Quote)
+	// Apostrophes are now HTML-escaped by validation layer
+	expectedQuote := "Jane&#39;s leadership during our cloud migration was exceptional."
+	if result.Testimonials[0].Quote != expectedQuote {
+		t.Errorf("Testimonials[0].Quote unexpected: %q, want %q", result.Testimonials[0].Quote, expectedQuote)
 	}
 	if len(result.Testimonials[0].SkillsMentioned) != 2 {
 		t.Errorf("len(Testimonials[0].SkillsMentioned) = %d, want 2", len(result.Testimonials[0].SkillsMentioned))
