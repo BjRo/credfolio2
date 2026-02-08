@@ -1,11 +1,11 @@
 ---
 # credfolio2-qd8a
 title: Prevent completion with new TODO comments
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-08T14:25:29Z
-updated_at: 2026-02-08T14:37:22Z
+updated_at: 2026-02-08T14:44:40Z
 ---
 
 Add validation to prevent marking beans as completed when new TODO comments have been introduced in the code during that work. This ensures all work is actually finished before marking a bean as done.
