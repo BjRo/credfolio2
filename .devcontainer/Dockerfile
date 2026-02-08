@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \
   ca-certificates \
   less \
+  locales \
   git \
   procps \
   sudo \
@@ -51,6 +52,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libpango-1.0-0 \
   libcairo2 \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Generate en_US.UTF-8 locale
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen en_US.UTF-8
+
+# Set default locale
+ENV LANG=en_US.UTF-8
 
 # Install mise from official apt repository
 RUN apt-get update && \
