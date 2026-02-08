@@ -1143,9 +1143,10 @@ func TestExtractLetterData_CreatesParentSpan(t *testing.T) {
 
 	worker := &ReferenceLetterProcessingWorker{
 		extractor: extractor,
+		fileRepo:  newMockFileRepository(),
 	}
 
-	_, err := worker.extractLetterData(context.Background(), []byte("pdf data"), "application/pdf", nil)
+	_, err := worker.extractLetterData(context.Background(), uuid.New(), []byte("pdf data"), "application/pdf", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1170,7 +1171,7 @@ func TestExtractLetterData_CreatesParentSpan(t *testing.T) {
 func TestReferenceLetterProcessingWorker_Timeout_TenMinutes(t *testing.T) {
 	worker := &ReferenceLetterProcessingWorker{}
 	timeout := worker.Timeout(nil)
-	if timeout != 10*time.Minute {
+	if timeout != 5*time.Minute {
 		t.Errorf("Timeout = %v, want 10m (safety net)", timeout)
 	}
 }

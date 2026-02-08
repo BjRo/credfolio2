@@ -58,9 +58,10 @@ func NewDocumentDetectionWorker(
 }
 
 // Timeout returns the maximum duration for a detection job.
-// Detection involves text extraction + classification, which is lighter than full extraction.
+// Detection involves text extraction + lightweight classification: 2 minutes is ample.
+// Text extraction may be skipped if already cached from a previous run.
 func (w *DocumentDetectionWorker) Timeout(*river.Job[DocumentDetectionArgs]) time.Duration {
-	return 5 * time.Minute
+	return 2 * time.Minute
 }
 
 // Work processes a document for content detection.

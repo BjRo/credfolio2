@@ -44,8 +44,10 @@ type LLMConfig struct {
 	ReferenceExtractionModel string
 
 	// DetectionModel specifies the provider and model for lightweight document content detection.
-	// Format: "provider/model" (e.g., "openai/gpt-4o-mini").
-	// Defaults to "openai/gpt-4o-mini" for fast, cheap classification.
+	// Format: "provider/model" (e.g., "openai/gpt-4o-mini" or "anthropic/claude-haiku-4-5-20251001").
+	// Defaults to "openai/gpt-4o-mini" for fast, cheap classification (~10x cheaper than Sonnet).
+	// Detection is a simple classification task that doesn't require expensive models.
+	// Haiku is also suitable: "anthropic/claude-haiku-4-5-20251001"
 	DetectionModel string
 }
 

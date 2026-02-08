@@ -78,12 +78,11 @@ func NewReferenceLetterProcessingWorker(
 	}
 }
 
-// Timeout overrides River's default 60s job timeout with a 10-minute safety net.
-// LLM extraction can take several minutes for structured output; the primary
-// timeout is handled by the resilient provider layer (300s). This River timeout
-// serves as an outer safety net to prevent worker pool exhaustion.
+// Timeout overrides River's default 60s job timeout.
+// Letter processing: text extraction (may be skipped if cached) + structured extraction.
+// 5 minutes is sufficient; the primary timeout is handled by the resilient provider layer (300s).
 func (w *ReferenceLetterProcessingWorker) Timeout(*river.Job[ReferenceLetterProcessingArgs]) time.Duration {
-	return 10 * time.Minute
+	return 5 * time.Minute
 }
 
 // Work processes a reference letter and extracts credibility data using LLM.
@@ -168,7 +167,7 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 	profileSkills, _ := w.getProfileSkillsContext(ctx, letter.UserID)
 
 	// Extract credibility data using LLM with profile skills context
-	extractedData, err := w.extractLetterData(ctx, data, contentType, profileSkills)
+	extractedData, err := w.extractLetterData(ctx, args.FileID, data, contentType, profileSkills)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to extract letter data: %v", err)
 		w.log.Error("Letter extraction failed",
@@ -213,16 +212,28 @@ func (w *ReferenceLetterProcessingWorker) Work(ctx context.Context, job *river.J
 // extractLetterData uses the LLM to extract structured credibility data from the reference letter.
 // The profileSkills parameter provides context about existing profile skills, enabling the LLM to
 // distinguish between mentions of existing skills (for validation) and newly discovered skills.
-func (w *ReferenceLetterProcessingWorker) extractLetterData(ctx context.Context, data []byte, contentType string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
+func (w *ReferenceLetterProcessingWorker) extractLetterData(ctx context.Context, fileID uuid.UUID, data []byte, contentType string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
 	ctx, span := otel.Tracer("credfolio").Start(ctx, "reference_letter_extraction")
 	defer span.End()
 
-	// First, extract text from the document
-	text, err := w.extractor.ExtractText(ctx, data, contentType)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to extract text: %w", err)
+	var text string
+
+	// Check if we already have extracted text from the detection phase
+	file, err := w.fileRepo.GetByID(ctx, fileID)
+	if err == nil && file != nil && file.ExtractedText != nil && *file.ExtractedText != "" {
+		w.log.Info("Reusing extracted text from detection phase",
+			logger.Feature("jobs"),
+			logger.String("file_id", fileID.String()),
+		)
+		text = *file.ExtractedText
+	} else {
+		// Extract text from the document
+		text, err = w.extractor.ExtractText(ctx, data, contentType)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return nil, fmt.Errorf("failed to extract text: %w", err)
+		}
 	}
 
 	// Then, use LLM to extract structured credibility data from the text

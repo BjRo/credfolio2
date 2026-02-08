@@ -66,12 +66,11 @@ func NewResumeProcessingWorker(
 	}
 }
 
-// Timeout overrides River's default 60s job timeout with a 10-minute safety net.
-// LLM extraction can take several minutes for structured output; the primary
-// timeout is handled by the resilient provider layer (300s). This River timeout
-// serves as an outer safety net to prevent worker pool exhaustion.
+// Timeout overrides River's default 60s job timeout.
+// Resume processing: text extraction (may be skipped if cached) + structured extraction + materialization.
+// 5 minutes is sufficient; the primary timeout is handled by the resilient provider layer (300s).
 func (w *ResumeProcessingWorker) Timeout(*river.Job[ResumeProcessingArgs]) time.Duration {
-	return 10 * time.Minute
+	return 5 * time.Minute
 }
 
 // Work processes a resume and extracts profile data using LLM.
@@ -141,7 +140,7 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 	}
 
 	// Extract profile data using LLM
-	extractedData, err := w.extractResumeData(ctx, data, contentType)
+	extractedData, err := w.extractResumeData(ctx, args.FileID, data, contentType)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to extract resume data: %v", err)
 		w.log.Error("Resume extraction failed",
@@ -210,16 +209,28 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 }
 
 // extractResumeData uses the LLM to extract structured data from the resume.
-func (w *ResumeProcessingWorker) extractResumeData(ctx context.Context, data []byte, contentType string) (*domain.ResumeExtractedData, error) {
+func (w *ResumeProcessingWorker) extractResumeData(ctx context.Context, fileID uuid.UUID, data []byte, contentType string) (*domain.ResumeExtractedData, error) {
 	ctx, span := otel.Tracer("credfolio").Start(ctx, "resume_extraction")
 	defer span.End()
 
-	// First, extract text from the document
-	text, err := w.extractor.ExtractText(ctx, data, contentType)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to extract text: %w", err)
+	var text string
+
+	// Check if we already have extracted text from the detection phase
+	file, err := w.fileRepo.GetByID(ctx, fileID)
+	if err == nil && file != nil && file.ExtractedText != nil && *file.ExtractedText != "" {
+		w.log.Info("Reusing extracted text from detection phase",
+			logger.Feature("jobs"),
+			logger.String("file_id", fileID.String()),
+		)
+		text = *file.ExtractedText
+	} else {
+		// Extract text from the document
+		text, err = w.extractor.ExtractText(ctx, data, contentType)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return nil, fmt.Errorf("failed to extract text: %w", err)
+		}
 	}
 
 	// Then, use LLM to extract structured profile data from the text

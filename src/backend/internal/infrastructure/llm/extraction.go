@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -308,7 +309,7 @@ var resumeOutputSchema = map[string]any{
 		},
 		"summary": map[string]any{
 			"type":        "string",
-			"description": "Professional summary or objective. If none is explicitly present, synthesize a brief 2-3 sentence summary from the candidate's experience and skills.",
+			"description": "Professional summary or objective if explicitly present in the resume. Only extract existing summary text - do not synthesize or generate summaries.",
 		},
 		"experience": map[string]any{
 			"type":        "array",
@@ -481,6 +482,19 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("LLM extraction failed: %w", err)
+	}
+
+	// Check if response needs cleanup (indicates LLM output quality issue)
+	needsMarkdownCleanup := strings.Contains(resp.Content, "```")
+	needsCommaCleanup := trailingCommaRegex.MatchString(resp.Content)
+	if (needsMarkdownCleanup || needsCommaCleanup) && e.config.Logger != nil {
+		e.config.Logger.Warning("LLM response required cleanup",
+			logger.Feature("llm"),
+			logger.String("operation", "resume_extraction"),
+			logger.Bool("markdown_block", needsMarkdownCleanup),
+			logger.Bool("trailing_commas", needsCommaCleanup),
+			logger.String("model", resp.Model),
+		)
 	}
 
 	// Clean up the JSON response
@@ -659,6 +673,7 @@ type LetterTemplateData struct {
 //
 //nolint:gocyclo // Complex extraction logic with multiple validation paths
 func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
+	startTime := time.Now() // Track start time for metadata
 	ctx, span := otel.Tracer(tracerName).Start(ctx, "letter_data_extraction",
 		otelTrace.WithAttributes(
 			attribute.Int("text_length", len(text)),
@@ -707,6 +722,19 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("LLM extraction failed: %w", err)
+	}
+
+	// Check if response needs cleanup (indicates LLM output quality issue)
+	needsMarkdownCleanup := strings.Contains(resp.Content, "```")
+	needsCommaCleanup := trailingCommaRegex.MatchString(resp.Content)
+	if (needsMarkdownCleanup || needsCommaCleanup) && e.config.Logger != nil {
+		e.config.Logger.Warning("LLM response required cleanup",
+			logger.Feature("llm"),
+			logger.String("operation", "letter_extraction"),
+			logger.Bool("markdown_block", needsMarkdownCleanup),
+			logger.Bool("trailing_commas", needsCommaCleanup),
+			logger.String("model", resp.Model),
+		)
 	}
 
 	// Clean up the JSON response
@@ -823,8 +851,16 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 		data.DiscoveredSkills = []domain.DiscoveredSkill{}
 	}
 
-	// Set model version from the actual LLM response so callers don't need to hardcode it
-	data.Metadata.ModelVersion = resp.Model
+	// Populate full extraction metadata
+	durationMs := time.Since(startTime).Milliseconds()
+	data.Metadata = domain.ExtractionMetadata{
+		ExtractedAt:   time.Now(),
+		ModelVersion:  resp.Model,
+		PromptVersion: domain.LetterExtractionPromptVersion,
+		InputTokens:   resp.InputTokens,
+		OutputTokens:  resp.OutputTokens,
+		DurationMs:    durationMs,
+	}
 
 	// Validate and sanitize extracted data before returning
 	validator := NewExtractedDataValidator()
@@ -914,6 +950,19 @@ func (e *DocumentExtractor) DetectDocumentContent(ctx context.Context, text stri
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("LLM detection failed: %w", err)
+	}
+
+	// Check if response needs cleanup (indicates LLM output quality issue)
+	needsMarkdownCleanup := strings.Contains(resp.Content, "```")
+	needsCommaCleanup := trailingCommaRegex.MatchString(resp.Content)
+	if (needsMarkdownCleanup || needsCommaCleanup) && e.config.Logger != nil {
+		e.config.Logger.Warning("LLM response required cleanup",
+			logger.Feature("llm"),
+			logger.String("operation", "document_detection"),
+			logger.Bool("markdown_block", needsMarkdownCleanup),
+			logger.Bool("trailing_commas", needsCommaCleanup),
+			logger.String("model", resp.Model),
+		)
 	}
 
 	// Clean up the JSON response

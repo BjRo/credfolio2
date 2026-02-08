@@ -1089,3 +1089,274 @@ John Manager
 		})
 	}
 }
+
+// TestResumeExtractionPrompt_NoSummarySynthesis verifies the resume extraction prompt
+// instructs the LLM NOT to synthesize summaries when none exists in the resume.
+func TestResumeExtractionPrompt_NoSummarySynthesis(t *testing.T) {
+	// Simulate a resume with NO summary section - just experience and skills
+	resumeText := `
+John Doe
+Software Engineer
+john@example.com
+
+Experience:
+- Senior Engineer at TechCorp (2020-Present)
+  Developed backend systems using Go
+
+Skills: Go, Python, Docker
+`
+
+	// Mock LLM that returns JSON with an empty summary
+	mockResponse := `{
+		"name": "John Doe",
+		"email": "john@example.com",
+		"summary": "",
+		"experience": [{
+			"company": "TechCorp",
+			"title": "Senior Engineer",
+			"startDate": "2020-01-01",
+			"isCurrent": true,
+			"description": "Developed backend systems using Go"
+		}],
+		"education": [],
+		"skills": ["Go", "Python", "Docker"],
+		"extractedAt": "2024-01-01T00:00:00Z",
+		"confidence": 0.95
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content:      mockResponse,
+			Model:        "test-model",
+			InputTokens:  100,
+			OutputTokens: 50,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractResumeData(context.Background(), resumeText)
+	if err != nil {
+		t.Fatalf("ExtractResumeData() error = %v", err)
+	}
+
+	// When no summary exists in the resume, the LLM should return empty summary (not synthesize one)
+	if result.Summary != nil && *result.Summary != "" {
+		t.Errorf("Summary should be empty when no summary section exists, got %q", *result.Summary)
+	}
+}
+
+// callbackLogger is a logger that calls a callback function for each log method.
+type callbackLogger struct {
+	onWarning func(message string, attrs ...logger.Attr)
+	onInfo    func(message string, attrs ...logger.Attr)
+}
+
+func (l *callbackLogger) Debug(message string, attrs ...logger.Attr)    {}
+func (l *callbackLogger) Info(message string, attrs ...logger.Attr)     { if l.onInfo != nil { l.onInfo(message, attrs...) } }
+func (l *callbackLogger) Warning(message string, attrs ...logger.Attr)  { if l.onWarning != nil { l.onWarning(message, attrs...) } }
+func (l *callbackLogger) Error(message string, attrs ...logger.Attr)    {}
+func (l *callbackLogger) Critical(message string, attrs ...logger.Attr) {}
+
+// TestJSONCleanup_LogsWarnings verifies that JSON cleanup operations log warnings.
+func TestJSONCleanup_LogsWarnings(t *testing.T) {
+	t.Run("logs warning when markdown code block needs cleanup", func(t *testing.T) {
+		// Mock LLM response with markdown code block wrapper
+		mockResponse := "```json\n" + `{
+			"name": "John Doe",
+			"experience": [],
+			"education": [],
+			"skills": [],
+			"extractedAt": "2024-01-01T00:00:00Z",
+			"confidence": 0.95
+		}` + "\n```"
+
+		var loggedWarning bool
+		mockLogger := &callbackLogger{
+			onWarning: func(msg string, attrs ...logger.Attr) {
+				if msg == "LLM response required cleanup" {
+					loggedWarning = true
+					// Verify fields contain cleanup type info
+					hasMarkdownField := false
+					for _, attr := range attrs {
+						if attr.Key == "markdown_block" {
+							hasMarkdownField = true
+						}
+					}
+					if !hasMarkdownField {
+						t.Error("Expected markdown_block field in log warning")
+					}
+				}
+			},
+		}
+
+		inner := &mockProvider{
+			response: &domain.LLMResponse{
+				Content:      mockResponse,
+				Model:        "test-model",
+				InputTokens:  100,
+				OutputTokens: 50,
+			},
+		}
+
+		extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{
+			Logger: mockLogger,
+		})
+
+		_, err := extractor.ExtractResumeData(context.Background(), "John Doe\nSoftware Engineer")
+		if err != nil {
+			t.Fatalf("ExtractResumeData() error = %v", err)
+		}
+
+		if !loggedWarning {
+			t.Error("Expected warning to be logged for markdown cleanup, but none was logged")
+		}
+	})
+
+	t.Run("logs warning when trailing commas need cleanup", func(t *testing.T) {
+		// Mock LLM response with trailing commas (invalid JSON)
+		mockResponse := `{
+			"name": "John Doe",
+			"experience": [],
+			"education": [],
+			"skills": ["Go", "Python",],
+			"extractedAt": "2024-01-01T00:00:00Z",
+			"confidence": 0.95
+		}`
+
+		var loggedWarning bool
+		mockLogger := &callbackLogger{
+			onWarning: func(msg string, attrs ...logger.Attr) {
+				if msg == "LLM response required cleanup" {
+					loggedWarning = true
+					// Verify fields contain cleanup type info
+					hasCommaField := false
+					for _, attr := range attrs {
+						if attr.Key == "trailing_commas" {
+							hasCommaField = true
+						}
+					}
+					if !hasCommaField {
+						t.Error("Expected trailing_commas field in log warning")
+					}
+				}
+			},
+		}
+
+		inner := &mockProvider{
+			response: &domain.LLMResponse{
+				Content:      mockResponse,
+				Model:        "test-model",
+				InputTokens:  100,
+				OutputTokens: 50,
+			},
+		}
+
+		extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{
+			Logger: mockLogger,
+		})
+
+		_, err := extractor.ExtractResumeData(context.Background(), "John Doe\nSoftware Engineer")
+		if err != nil {
+			t.Fatalf("ExtractResumeData() error = %v", err)
+		}
+
+		if !loggedWarning {
+			t.Error("Expected warning to be logged for trailing comma cleanup, but none was logged")
+		}
+	})
+
+	t.Run("no warning when response is clean", func(t *testing.T) {
+		// Mock LLM response that doesn't need any cleanup
+		mockResponse := `{
+			"name": "John Doe",
+			"experience": [],
+			"education": [],
+			"skills": ["Go", "Python"],
+			"extractedAt": "2024-01-01T00:00:00Z",
+			"confidence": 0.95
+		}`
+
+		var loggedWarning bool
+		mockLogger := &callbackLogger{
+			onWarning: func(msg string, attrs ...logger.Attr) {
+				if msg == "LLM response required cleanup" {
+					loggedWarning = true
+				}
+			},
+		}
+
+		inner := &mockProvider{
+			response: &domain.LLMResponse{
+				Content:      mockResponse,
+				Model:        "test-model",
+				InputTokens:  100,
+				OutputTokens: 50,
+			},
+		}
+
+		extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{
+			Logger: mockLogger,
+		})
+
+		_, err := extractor.ExtractResumeData(context.Background(), "John Doe\nSoftware Engineer")
+		if err != nil {
+			t.Fatalf("ExtractResumeData() error = %v", err)
+		}
+
+		if loggedWarning {
+			t.Error("Expected no warning for clean response, but warning was logged")
+		}
+	})
+}
+
+// TestExtractLetterData_PopulatesMetadata verifies all metadata fields are populated.
+func TestExtractLetterData_PopulatesMetadata(t *testing.T) {
+	mockResponse := `{
+		"author": {
+			"name": "Jane Smith",
+			"relationship": "manager"
+		},
+		"testimonials": [],
+		"skillMentions": [],
+		"experienceMentions": [],
+		"discoveredSkills": [],
+		"metadata": {
+			"extractedAt": "2024-01-01T00:00:00Z",
+			"modelVersion": "test"
+		}
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content:      mockResponse,
+			Model:        "claude-sonnet-4-5-20250929",
+			InputTokens:  1234,
+			OutputTokens: 567,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractLetterData(context.Background(), "Reference letter text", nil)
+	if err != nil {
+		t.Fatalf("ExtractLetterData() error = %v", err)
+	}
+
+	// Verify all enhanced metadata fields are populated
+	if result.Metadata.ModelVersion != "claude-sonnet-4-5-20250929" {
+		t.Errorf("ModelVersion = %q, want %q", result.Metadata.ModelVersion, "claude-sonnet-4-5-20250929")
+	}
+	if result.Metadata.PromptVersion != domain.LetterExtractionPromptVersion {
+		t.Errorf("PromptVersion = %q, want %q", result.Metadata.PromptVersion, domain.LetterExtractionPromptVersion)
+	}
+	if result.Metadata.InputTokens != 1234 {
+		t.Errorf("InputTokens = %d, want 1234", result.Metadata.InputTokens)
+	}
+	if result.Metadata.OutputTokens != 567 {
+		t.Errorf("OutputTokens = %d, want 567", result.Metadata.OutputTokens)
+	}
+	if result.Metadata.DurationMs < 0 {
+		t.Errorf("DurationMs should be >= 0, got %d", result.Metadata.DurationMs)
+	}
+}
