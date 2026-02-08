@@ -1145,3 +1145,167 @@ Skills: Go, Python, Docker
 		t.Errorf("Summary should be empty when no summary section exists, got %q", *result.Summary)
 	}
 }
+
+// callbackLogger is a logger that calls a callback function for each log method.
+type callbackLogger struct {
+	onWarning func(message string, attrs ...logger.Attr)
+	onInfo    func(message string, attrs ...logger.Attr)
+}
+
+func (l *callbackLogger) Debug(message string, attrs ...logger.Attr)    {}
+func (l *callbackLogger) Info(message string, attrs ...logger.Attr)     { if l.onInfo != nil { l.onInfo(message, attrs...) } }
+func (l *callbackLogger) Warning(message string, attrs ...logger.Attr)  { if l.onWarning != nil { l.onWarning(message, attrs...) } }
+func (l *callbackLogger) Error(message string, attrs ...logger.Attr)    {}
+func (l *callbackLogger) Critical(message string, attrs ...logger.Attr) {}
+
+// TestJSONCleanup_LogsWarnings verifies that JSON cleanup operations log warnings.
+func TestJSONCleanup_LogsWarnings(t *testing.T) {
+	t.Run("logs warning when markdown code block needs cleanup", func(t *testing.T) {
+		// Mock LLM response with markdown code block wrapper
+		mockResponse := "```json\n" + `{
+			"name": "John Doe",
+			"experience": [],
+			"education": [],
+			"skills": [],
+			"extractedAt": "2024-01-01T00:00:00Z",
+			"confidence": 0.95
+		}` + "\n```"
+
+		var loggedWarning bool
+		mockLogger := &callbackLogger{
+			onWarning: func(msg string, attrs ...logger.Attr) {
+				if msg == "LLM response required cleanup" {
+					loggedWarning = true
+					// Verify fields contain cleanup type info
+					hasMarkdownField := false
+					for _, attr := range attrs {
+						if attr.Key == "markdown_block" {
+							hasMarkdownField = true
+						}
+					}
+					if !hasMarkdownField {
+						t.Error("Expected markdown_block field in log warning")
+					}
+				}
+			},
+		}
+
+		inner := &mockProvider{
+			response: &domain.LLMResponse{
+				Content:      mockResponse,
+				Model:        "test-model",
+				InputTokens:  100,
+				OutputTokens: 50,
+			},
+		}
+
+		extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{
+			Logger: mockLogger,
+		})
+
+		_, err := extractor.ExtractResumeData(context.Background(), "John Doe\nSoftware Engineer")
+		if err != nil {
+			t.Fatalf("ExtractResumeData() error = %v", err)
+		}
+
+		if !loggedWarning {
+			t.Error("Expected warning to be logged for markdown cleanup, but none was logged")
+		}
+	})
+
+	t.Run("logs warning when trailing commas need cleanup", func(t *testing.T) {
+		// Mock LLM response with trailing commas (invalid JSON)
+		mockResponse := `{
+			"name": "John Doe",
+			"experience": [],
+			"education": [],
+			"skills": ["Go", "Python",],
+			"extractedAt": "2024-01-01T00:00:00Z",
+			"confidence": 0.95
+		}`
+
+		var loggedWarning bool
+		mockLogger := &callbackLogger{
+			onWarning: func(msg string, attrs ...logger.Attr) {
+				if msg == "LLM response required cleanup" {
+					loggedWarning = true
+					// Verify fields contain cleanup type info
+					hasCommaField := false
+					for _, attr := range attrs {
+						if attr.Key == "trailing_commas" {
+							hasCommaField = true
+						}
+					}
+					if !hasCommaField {
+						t.Error("Expected trailing_commas field in log warning")
+					}
+				}
+			},
+		}
+
+		inner := &mockProvider{
+			response: &domain.LLMResponse{
+				Content:      mockResponse,
+				Model:        "test-model",
+				InputTokens:  100,
+				OutputTokens: 50,
+			},
+		}
+
+		extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{
+			Logger: mockLogger,
+		})
+
+		_, err := extractor.ExtractResumeData(context.Background(), "John Doe\nSoftware Engineer")
+		if err != nil {
+			t.Fatalf("ExtractResumeData() error = %v", err)
+		}
+
+		if !loggedWarning {
+			t.Error("Expected warning to be logged for trailing comma cleanup, but none was logged")
+		}
+	})
+
+	t.Run("no warning when response is clean", func(t *testing.T) {
+		// Mock LLM response that doesn't need any cleanup
+		mockResponse := `{
+			"name": "John Doe",
+			"experience": [],
+			"education": [],
+			"skills": ["Go", "Python"],
+			"extractedAt": "2024-01-01T00:00:00Z",
+			"confidence": 0.95
+		}`
+
+		var loggedWarning bool
+		mockLogger := &callbackLogger{
+			onWarning: func(msg string, attrs ...logger.Attr) {
+				if msg == "LLM response required cleanup" {
+					loggedWarning = true
+				}
+			},
+		}
+
+		inner := &mockProvider{
+			response: &domain.LLMResponse{
+				Content:      mockResponse,
+				Model:        "test-model",
+				InputTokens:  100,
+				OutputTokens: 50,
+			},
+		}
+
+		extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{
+			Logger: mockLogger,
+		})
+
+		_, err := extractor.ExtractResumeData(context.Background(), "John Doe\nSoftware Engineer")
+		if err != nil {
+			t.Fatalf("ExtractResumeData() error = %v", err)
+		}
+
+		if loggedWarning {
+			t.Error("Expected no warning for clean response, but warning was logged")
+		}
+	})
+}

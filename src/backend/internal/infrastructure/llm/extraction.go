@@ -483,6 +483,19 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 		return nil, fmt.Errorf("LLM extraction failed: %w", err)
 	}
 
+	// Check if response needs cleanup (indicates LLM output quality issue)
+	needsMarkdownCleanup := strings.Contains(resp.Content, "```")
+	needsCommaCleanup := trailingCommaRegex.MatchString(resp.Content)
+	if (needsMarkdownCleanup || needsCommaCleanup) && e.config.Logger != nil {
+		e.config.Logger.Warning("LLM response required cleanup",
+			logger.Feature("llm"),
+			logger.String("operation", "resume_extraction"),
+			logger.Bool("markdown_block", needsMarkdownCleanup),
+			logger.Bool("trailing_commas", needsCommaCleanup),
+			logger.String("model", resp.Model),
+		)
+	}
+
 	// Clean up the JSON response
 	jsonContent := stripMarkdownCodeBlock(resp.Content)
 	jsonContent = fixTrailingCommas(jsonContent)
@@ -709,6 +722,19 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 		return nil, fmt.Errorf("LLM extraction failed: %w", err)
 	}
 
+	// Check if response needs cleanup (indicates LLM output quality issue)
+	needsMarkdownCleanup := strings.Contains(resp.Content, "```")
+	needsCommaCleanup := trailingCommaRegex.MatchString(resp.Content)
+	if (needsMarkdownCleanup || needsCommaCleanup) && e.config.Logger != nil {
+		e.config.Logger.Warning("LLM response required cleanup",
+			logger.Feature("llm"),
+			logger.String("operation", "letter_extraction"),
+			logger.Bool("markdown_block", needsMarkdownCleanup),
+			logger.Bool("trailing_commas", needsCommaCleanup),
+			logger.String("model", resp.Model),
+		)
+	}
+
 	// Clean up the JSON response
 	jsonContent := stripMarkdownCodeBlock(resp.Content)
 	jsonContent = fixTrailingCommas(jsonContent)
@@ -914,6 +940,19 @@ func (e *DocumentExtractor) DetectDocumentContent(ctx context.Context, text stri
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("LLM detection failed: %w", err)
+	}
+
+	// Check if response needs cleanup (indicates LLM output quality issue)
+	needsMarkdownCleanup := strings.Contains(resp.Content, "```")
+	needsCommaCleanup := trailingCommaRegex.MatchString(resp.Content)
+	if (needsMarkdownCleanup || needsCommaCleanup) && e.config.Logger != nil {
+		e.config.Logger.Warning("LLM response required cleanup",
+			logger.Feature("llm"),
+			logger.String("operation", "document_detection"),
+			logger.Bool("markdown_block", needsMarkdownCleanup),
+			logger.Bool("trailing_commas", needsCommaCleanup),
+			logger.String("model", resp.Model),
+		)
 	}
 
 	// Clean up the JSON response
