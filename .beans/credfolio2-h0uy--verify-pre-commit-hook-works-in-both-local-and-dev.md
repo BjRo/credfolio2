@@ -201,14 +201,14 @@ The other two hooks (`validate-bean-dod.sh`, `validate-bean-completion.sh`) each
 - **`git merge --commit` false positive**: The current regex matches `git merge --commit` because `commit` appears as a substring. The tightened regex (step 4) fixes this by requiring `commit` to appear as a git subcommand (after `git` and optional flags), not as a flag value. Verify this with the unit tests.
 
 ## Definition of Done
-- [ ] Hook registration verified in both environments
-- [ ] Script reviewed for portability issues
-- [ ] Hook input parsing verified for all commit command variants
-- [ ] End-to-end test: lint failure blocks commit in devcontainer
-- [ ] End-to-end test: test failure blocks commit in devcontainer
-- [ ] End-to-end test: clean code allows commit in devcontainer
-- [ ] Any issues found are fixed
-- [ ] Failure modes documented or addressed (e.g., timeout added)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] Hook registration verified in both environments
+- [x] Script reviewed for portability issues
+- [x] Hook input parsing verified for all commit command variants
+- [x] End-to-end test: lint failure blocks commit in devcontainer
+- [x] End-to-end test: test failure blocks commit in devcontainer
+- [x] End-to-end test: clean code allows commit in devcontainer
+- [x] Any issues found are fixed
+- [x] Failure modes documented or addressed (e.g., timeout added)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
