@@ -1,11 +1,11 @@
 ---
 # credfolio2-offq
 title: Fix LLM security vulnerabilities
-status: in-progress
+status: completed
 type: task
 priority: critical
 created_at: 2026-02-08T11:03:02Z
-updated_at: 2026-02-08T11:25:32Z
+updated_at: 2026-02-08T11:59:51Z
 parent: credfolio2-nihn
 ---
 
