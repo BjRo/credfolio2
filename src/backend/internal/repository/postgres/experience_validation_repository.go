@@ -118,7 +118,13 @@ func (r *ExperienceValidationRepository) BatchCountByProfileExperienceIDs(ctx co
 		return nil, err
 	}
 
-	counts := make(map[uuid.UUID]int, len(results))
+	// Initialize all IDs to 0 so callers can distinguish "no validations" from "ID not queried"
+	counts := make(map[uuid.UUID]int, len(profileExperienceIDs))
+	for _, id := range profileExperienceIDs {
+		counts[id] = 0
+	}
+
+	// Update with actual counts from query
 	for _, r := range results {
 		counts[r.ProfileExperienceID] = r.Count
 	}

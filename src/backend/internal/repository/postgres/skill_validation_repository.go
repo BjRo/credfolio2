@@ -132,7 +132,13 @@ func (r *SkillValidationRepository) BatchCountByProfileSkillIDs(ctx context.Cont
 		return nil, err
 	}
 
-	counts := make(map[uuid.UUID]int, len(results))
+	// Initialize all IDs to 0 so callers can distinguish "no validations" from "ID not queried"
+	counts := make(map[uuid.UUID]int, len(profileSkillIDs))
+	for _, id := range profileSkillIDs {
+		counts[id] = 0
+	}
+
+	// Update with actual counts from query
 	for _, r := range results {
 		counts[r.ProfileSkillID] = r.Count
 	}

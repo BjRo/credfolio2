@@ -9,6 +9,11 @@ export default async function Home() {
   const client = createUrqlClient(GRAPHQL_ENDPOINT);
   const result = await client.query(GetProfileDocument, { userId: DEMO_USER_ID }).toPromise();
 
+  // Handle errors gracefully (backend down, network issues, etc.)
+  if (result.error) {
+    redirect("/upload");
+  }
+
   const profile = result.data?.profileByUserId;
 
   // Server-side redirect (no loading spinner, instant navigation)
