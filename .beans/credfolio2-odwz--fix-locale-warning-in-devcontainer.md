@@ -25,8 +25,8 @@ This happens because the locale isn't properly generated or configured in the de
 3. Update devcontainer configuration to ensure it persists across rebuilds
 
 ## Checklist
-- [ ] Verify current locale settings with `locale` and `locale -a`
-- [ ] Update `.devcontainer/devcontainer.json` or Dockerfile to generate locales
+- [x] Verify current locale settings with `locale` and `locale -a`
+- [x] Update `.devcontainer/devcontainer.json` or Dockerfile to generate locales
 - [ ] Test that the warning no longer appears after rebuild
 - [ ] Verify existing functionality still works
 
