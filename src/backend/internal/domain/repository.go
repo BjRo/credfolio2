@@ -76,6 +76,10 @@ type AuthorRepository interface {
 	// GetByID retrieves an author by its ID.
 	GetByID(ctx context.Context, id uuid.UUID) (*Author, error)
 
+	// GetByIDs retrieves multiple authors by their IDs in a single query.
+	// Returns a map of ID -> Author for efficient lookup. Missing IDs will not be in the map.
+	GetByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*Author, error)
+
 	// GetByProfileID retrieves all authors for a profile.
 	GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*Author, error)
 
@@ -136,6 +140,11 @@ type SkillValidationRepository interface {
 
 	// CountByProfileSkillID returns the number of validations for a skill.
 	CountByProfileSkillID(ctx context.Context, profileSkillID uuid.UUID) (int, error)
+
+	// BatchCountByProfileSkillIDs returns validation counts for multiple skills in one query.
+	// The returned map uses profile_skill_id as key and count as value.
+	// Skills with zero validations will not appear in the map.
+	BatchCountByProfileSkillIDs(ctx context.Context, profileSkillIDs []uuid.UUID) (map[uuid.UUID]int, error)
 }
 
 // ExperienceValidationRepository defines operations for experience validation persistence.
@@ -160,4 +169,9 @@ type ExperienceValidationRepository interface {
 
 	// CountByProfileExperienceID returns the number of validations for an experience.
 	CountByProfileExperienceID(ctx context.Context, profileExperienceID uuid.UUID) (int, error)
+
+	// BatchCountByProfileExperienceIDs returns validation counts for multiple experiences in one query.
+	// The returned map uses profile_experience_id as key and count as value.
+	// Experiences with zero validations will not appear in the map.
+	BatchCountByProfileExperienceIDs(ctx context.Context, profileExperienceIDs []uuid.UUID) (map[uuid.UUID]int, error)
 }

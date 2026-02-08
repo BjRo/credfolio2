@@ -15,7 +15,7 @@ import {
   WorkExperienceSection,
 } from "@/components/profile";
 import { Button } from "@/components/ui/button";
-import { GetProfileByIdDocument, GetTestimonialsDocument } from "@/graphql/generated/graphql";
+import { GetProfileByIdDocument } from "@/graphql/generated/graphql";
 
 export default function ProfilePage() {
   const params = useParams();
@@ -32,21 +32,12 @@ export default function ProfilePage() {
   const profile = profileResult.data?.profile;
   const userId = profile?.user?.id;
 
-  // Fetch testimonials for the profile
-  const [testimonialsResult, reexecuteTestimonialsQuery] = useQuery({
-    query: GetTestimonialsDocument,
-    variables: { profileId },
-    pause: !profile,
-    requestPolicy: "network-only",
-  });
-
-  const testimonials = testimonialsResult.data?.testimonials ?? [];
-  const testimonialsLoading = testimonialsResult.fetching;
+  // Use testimonials from profile query (no separate fetch needed)
+  const testimonials = profile?.testimonials ?? [];
 
   const handleMutationSuccess = useCallback(() => {
     reexecuteProfileQuery({ requestPolicy: "network-only" });
-    reexecuteTestimonialsQuery({ requestPolicy: "network-only" });
-  }, [reexecuteProfileQuery, reexecuteTestimonialsQuery]);
+  }, [reexecuteProfileQuery]);
 
   const handleReferenceUploadSuccess = useCallback(
     (referenceLetterld: string) => {
@@ -141,7 +132,7 @@ export default function ProfilePage() {
 
         <TestimonialsSection
           testimonials={testimonials}
-          isLoading={testimonialsLoading}
+          isLoading={false}
           onAddReference={handleAddReference}
           onTestimonialDeleted={handleMutationSuccess}
           onAuthorUpdated={handleMutationSuccess}

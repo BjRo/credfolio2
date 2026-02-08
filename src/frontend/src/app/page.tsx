@@ -1,43 +1,24 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useQuery } from "urql";
+import { redirect } from "next/navigation";
 import { GetProfileDocument } from "@/graphql/generated/graphql";
+import { createUrqlClient, GRAPHQL_ENDPOINT } from "@/lib/urql/client";
 
 const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";
 
-export default function Home() {
-  const router = useRouter();
-  const [result] = useQuery({
-    query: GetProfileDocument,
-    variables: { userId: DEMO_USER_ID },
-  });
+export default async function Home() {
+  // Server-side GraphQL query
+  const client = createUrqlClient(GRAPHQL_ENDPOINT);
+  const result = await client.query(GetProfileDocument, { userId: DEMO_USER_ID }).toPromise();
 
-  const { fetching, data } = result;
-
-  const profile = data?.profileByUserId;
-
-  useEffect(() => {
-    if (fetching) return;
-    if (profile) {
-      router.push(`/profile/${profile.id}`);
-    } else {
-      router.push("/upload");
-    }
-  }, [fetching, profile, router]);
-
-  if (fetching) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/50">
-        <output className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full block" />
-      </div>
-    );
+  // Handle errors gracefully (backend down, network issues, etc.)
+  if (result.error) {
+    redirect("/upload");
   }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50">
-      <p className="text-muted-foreground">Redirecting...</p>
-    </div>
-  );
+  const profile = result.data?.profileByUserId;
+
+  // Server-side redirect (no loading spinner, instant navigation)
+  if (profile) {
+    redirect(`/profile/${profile.id}`);
+  }
+  redirect("/upload");
 }

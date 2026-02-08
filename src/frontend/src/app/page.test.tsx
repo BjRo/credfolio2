@@ -1,75 +1,68 @@
-import { render, screen } from "@testing-library/react";
-import { useQuery } from "urql";
-import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { redirect } from "next/navigation";
+import { describe, expect, it, vi } from "vitest";
+import { createUrqlClient } from "@/lib/urql/client";
 import Home from "./page";
 
-// Mock urql's useQuery
-vi.mock("urql", () => ({
-  useQuery: vi.fn(),
-}));
-
-// Mock next/navigation
-const mockPush = vi.fn();
+// Mock next/navigation redirect
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  redirect: vi.fn(),
 }));
 
-const mockUseQuery = useQuery as Mock;
+// Mock urql client
+vi.mock("@/lib/urql/client", () => ({
+  createUrqlClient: vi.fn(),
+  GRAPHQL_ENDPOINT: "http://localhost:8080/graphql",
+}));
 
-describe("Home Page", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+const mockCreateUrqlClient = createUrqlClient as unknown as ReturnType<typeof vi.fn>;
+const mockRedirect = redirect as unknown as ReturnType<typeof vi.fn>;
+
+describe("Home Page (Server Component)", () => {
+  it("redirects to upload page when user has no profile", async () => {
+    // Mock urql client to return no profile
+    const mockQuery = vi.fn().mockReturnValue({
+      toPromise: vi.fn().mockResolvedValue({
+        data: { profileByUserId: null },
+      }),
+    });
+    mockCreateUrqlClient.mockReturnValue({ query: mockQuery } as never);
+
+    // Call the server component
+    await Home();
+
+    // Verify redirect was called with /upload
+    expect(mockRedirect).toHaveBeenCalledWith("/upload");
   });
 
-  it("shows loading state while fetching profile", () => {
-    mockUseQuery.mockReturnValue([{ fetching: true, data: undefined, error: undefined }]);
-    render(<Home />);
-    expect(screen.getByRole("status")).toBeInTheDocument();
-  });
-
-  it("redirects to upload page when user has no profile", () => {
-    mockUseQuery.mockReturnValue([
-      { fetching: false, data: { profileByUserId: null }, error: undefined },
-    ]);
-    render(<Home />);
-    expect(mockPush).toHaveBeenCalledWith("/upload");
-  });
-
-  it("redirects to upload page when profile query returns no data", () => {
-    mockUseQuery.mockReturnValue([{ fetching: false, data: undefined, error: undefined }]);
-    render(<Home />);
-    expect(mockPush).toHaveBeenCalledWith("/upload");
-  });
-
-  it("redirects to profile page when profile exists", () => {
-    mockUseQuery.mockReturnValue([
-      {
-        fetching: false,
+  it("redirects to profile page when profile exists", async () => {
+    // Mock urql client to return a profile
+    const mockQuery = vi.fn().mockReturnValue({
+      toPromise: vi.fn().mockResolvedValue({
         data: { profileByUserId: { id: "profile-123" } },
-        error: undefined,
-      },
-    ]);
-    render(<Home />);
-    expect(mockPush).toHaveBeenCalledWith("/profile/profile-123");
+      }),
+    });
+    mockCreateUrqlClient.mockReturnValue({ query: mockQuery } as never);
+
+    // Call the server component
+    await Home();
+
+    // Verify redirect was called with profile ID
+    expect(mockRedirect).toHaveBeenCalledWith("/profile/profile-123");
   });
 
-  it("shows redirecting message when profile exists", () => {
-    mockUseQuery.mockReturnValue([
-      {
-        fetching: false,
-        data: { profileByUserId: { id: "profile-456" } },
-        error: undefined,
-      },
-    ]);
-    render(<Home />);
-    expect(screen.getByText(/Redirecting/i)).toBeInTheDocument();
-  });
+  it("redirects to upload page when query returns undefined data", async () => {
+    // Mock urql client to return undefined
+    const mockQuery = vi.fn().mockReturnValue({
+      toPromise: vi.fn().mockResolvedValue({
+        data: undefined,
+      }),
+    });
+    mockCreateUrqlClient.mockReturnValue({ query: mockQuery } as never);
 
-  it("redirects to upload page when query returns an error", () => {
-    mockUseQuery.mockReturnValue([
-      { fetching: false, data: undefined, error: new Error("Network error") },
-    ]);
-    render(<Home />);
-    expect(mockPush).toHaveBeenCalledWith("/upload");
+    // Call the server component
+    await Home();
+
+    // Verify redirect was called with /upload
+    expect(mockRedirect).toHaveBeenCalledWith("/upload");
   });
 });

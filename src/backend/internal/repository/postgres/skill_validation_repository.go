@@ -109,5 +109,42 @@ func (r *SkillValidationRepository) CountByProfileSkillID(ctx context.Context, p
 	return count, nil
 }
 
+// BatchCountByProfileSkillIDs returns validation counts for multiple skills in one query.
+func (r *SkillValidationRepository) BatchCountByProfileSkillIDs(ctx context.Context, profileSkillIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	if len(profileSkillIDs) == 0 {
+		return map[uuid.UUID]int{}, nil
+	}
+
+	type Result struct {
+		ProfileSkillID uuid.UUID `bun:"profile_skill_id"`
+		Count          int       `bun:"count"`
+	}
+
+	var results []Result
+	err := r.db.NewSelect().
+		Model((*domain.SkillValidation)(nil)).
+		Column("profile_skill_id").
+		ColumnExpr("COUNT(*) as count").
+		Where("profile_skill_id IN (?)", bun.In(profileSkillIDs)).
+		Group("profile_skill_id").
+		Scan(ctx, &results)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize all IDs to 0 so callers can distinguish "no validations" from "ID not queried"
+	counts := make(map[uuid.UUID]int, len(profileSkillIDs))
+	for _, id := range profileSkillIDs {
+		counts[id] = 0
+	}
+
+	// Update with actual counts from query
+	for _, r := range results {
+		counts[r.ProfileSkillID] = r.Count
+	}
+
+	return counts, nil
+}
+
 // Compile-time check that SkillValidationRepository implements domain.SkillValidationRepository.
 var _ domain.SkillValidationRepository = (*SkillValidationRepository)(nil)

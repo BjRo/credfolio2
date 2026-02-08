@@ -214,6 +214,10 @@ type ProfileSkillRepository interface {
 	// GetByID retrieves a profile skill by its ID.
 	GetByID(ctx context.Context, id uuid.UUID) (*ProfileSkill, error)
 
+	// GetByIDs retrieves multiple profile skills by their IDs in a single query.
+	// Returns a map of ID -> ProfileSkill for efficient lookup. Missing IDs will not be in the map.
+	GetByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*ProfileSkill, error)
+
 	// GetByProfileID retrieves all profile skills for a profile, ordered by display order.
 	GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*ProfileSkill, error)
 

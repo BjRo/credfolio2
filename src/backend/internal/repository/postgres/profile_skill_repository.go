@@ -52,6 +52,30 @@ func (r *ProfileSkillRepository) GetByID(ctx context.Context, id uuid.UUID) (*do
 	return skill, nil
 }
 
+// GetByIDs retrieves multiple profile skills by their IDs in a single query.
+func (r *ProfileSkillRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*domain.ProfileSkill, error) {
+	if len(ids) == 0 {
+		return map[uuid.UUID]*domain.ProfileSkill{}, nil
+	}
+
+	var skills []*domain.ProfileSkill
+	err := r.db.NewSelect().
+		Model(&skills).
+		Where("id IN (?)", bun.In(ids)).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build map for efficient lookup
+	result := make(map[uuid.UUID]*domain.ProfileSkill, len(skills))
+	for _, skill := range skills {
+		result[skill.ID] = skill
+	}
+
+	return result, nil
+}
+
 // GetByProfileID retrieves all profile skills for a profile, ordered by display order.
 func (r *ProfileSkillRepository) GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*domain.ProfileSkill, error) {
 	var skills []*domain.ProfileSkill

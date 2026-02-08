@@ -313,3 +313,137 @@ func TestExperienceValidationRepository_DeleteByReferenceLetterID(t *testing.T) 
 		t.Errorf("expected 0 validations after delete, got %d", len(remaining))
 	}
 }
+
+func TestExperienceValidationRepository_BatchCountByProfileExperienceIDs(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	cleanupTestData(t, db)
+
+	userRepo := postgres.NewUserRepository(db)
+	profileRepo := postgres.NewProfileRepository(db)
+	experienceRepo := postgres.NewProfileExperienceRepository(db)
+	letterRepo := postgres.NewReferenceLetterRepository(db)
+	validationRepo := postgres.NewExperienceValidationRepository(db)
+	ctx := context.Background()
+
+	// Create user and profile
+	user := &domain.User{
+		Email:        "expvalidationbatch@example.com",
+		PasswordHash: "hashed_password",
+	}
+	if err := userRepo.Create(ctx, user); err != nil {
+		t.Fatalf("Create user failed: %v", err)
+	}
+
+	profile := &domain.Profile{
+		UserID: user.ID,
+	}
+	if err := profileRepo.Create(ctx, profile); err != nil {
+		t.Fatalf("Create profile failed: %v", err)
+	}
+
+	// Create 3 experiences with different validation counts
+	exp1 := &domain.ProfileExperience{
+		ProfileID:    profile.ID,
+		Company:      "Batch Corp 1",
+		Title:        "Engineer",
+		DisplayOrder: 0,
+		Source:       domain.ExperienceSourceManual,
+	}
+	if err := experienceRepo.Create(ctx, exp1); err != nil {
+		t.Fatalf("Create exp1 failed: %v", err)
+	}
+
+	exp2 := &domain.ProfileExperience{
+		ProfileID:    profile.ID,
+		Company:      "Batch Corp 2",
+		Title:        "Manager",
+		DisplayOrder: 1,
+		Source:       domain.ExperienceSourceManual,
+	}
+	if err := experienceRepo.Create(ctx, exp2); err != nil {
+		t.Fatalf("Create exp2 failed: %v", err)
+	}
+
+	exp3 := &domain.ProfileExperience{
+		ProfileID:    profile.ID,
+		Company:      "Batch Corp 3",
+		Title:        "Director",
+		DisplayOrder: 2,
+		Source:       domain.ExperienceSourceManual,
+	}
+	if err := experienceRepo.Create(ctx, exp3); err != nil {
+		t.Fatalf("Create exp3 failed: %v", err)
+	}
+
+	// Create validations: exp1=2, exp2=0, exp3=3
+	for i := 0; i < 2; i++ {
+		letter := &domain.ReferenceLetter{
+			UserID: user.ID,
+			Status: domain.ReferenceLetterStatusCompleted,
+		}
+		if err := letterRepo.Create(ctx, letter); err != nil {
+			t.Fatalf("Create letter failed: %v", err)
+		}
+		validation := &domain.ExperienceValidation{
+			ProfileExperienceID: exp1.ID,
+			ReferenceLetterID:   letter.ID,
+		}
+		if err := validationRepo.Create(ctx, validation); err != nil {
+			t.Fatalf("Create validation for exp1 failed: %v", err)
+		}
+	}
+
+	for i := 0; i < 3; i++ {
+		letter := &domain.ReferenceLetter{
+			UserID: user.ID,
+			Status: domain.ReferenceLetterStatusCompleted,
+		}
+		if err := letterRepo.Create(ctx, letter); err != nil {
+			t.Fatalf("Create letter failed: %v", err)
+		}
+		validation := &domain.ExperienceValidation{
+			ProfileExperienceID: exp3.ID,
+			ReferenceLetterID:   letter.ID,
+		}
+		if err := validationRepo.Create(ctx, validation); err != nil {
+			t.Fatalf("Create validation for exp3 failed: %v", err)
+		}
+	}
+
+	// Batch count all experiences in one query
+	counts, err := validationRepo.BatchCountByProfileExperienceIDs(ctx, []uuid.UUID{exp1.ID, exp2.ID, exp3.ID})
+	if err != nil {
+		t.Fatalf("BatchCountByProfileExperienceIDs failed: %v", err)
+	}
+
+	// Verify counts
+	if counts[exp1.ID] != 2 {
+		t.Errorf("expected exp1 count=2, got %d", counts[exp1.ID])
+	}
+	if counts[exp2.ID] != 0 {
+		t.Errorf("expected exp2 count=0, got %d", counts[exp2.ID])
+	}
+	if counts[exp3.ID] != 3 {
+		t.Errorf("expected exp3 count=3, got %d", counts[exp3.ID])
+	}
+}
+
+func TestExperienceValidationRepository_BatchCountByProfileExperienceIDs_EmptyInput(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	cleanupTestData(t, db)
+
+	validationRepo := postgres.NewExperienceValidationRepository(db)
+	ctx := context.Background()
+
+	// Empty input should return empty map
+	counts, err := validationRepo.BatchCountByProfileExperienceIDs(ctx, []uuid.UUID{})
+	if err != nil {
+		t.Fatalf("BatchCountByProfileExperienceIDs failed: %v", err)
+	}
+
+	if len(counts) != 0 {
+		t.Errorf("expected empty map, got %d entries", len(counts))
+	}
+}

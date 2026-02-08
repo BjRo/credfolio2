@@ -89,6 +89,12 @@ export function DocumentUpload({ userId, onUploadComplete, onError }: DocumentUp
       formData.append("0", file);
 
       try {
+        // NOTE: We use XMLHttpRequest instead of urql for file uploads because:
+        // 1. Next.js rewrites (/api/graphql) don't correctly handle multipart/form-data
+        // 2. This follows the GraphQL multipart request spec (https://github.com/jaydenseric/graphql-multipart-request-spec)
+        // 3. XMLHttpRequest provides progress events for upload feedback
+        // 4. Direct connection to backend avoids proxy limitations
+        // See: src/frontend/src/lib/urql/client.ts for endpoint configuration
         const result = await new Promise<UploadForDetectionResult>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
 

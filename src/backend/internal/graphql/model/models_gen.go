@@ -528,9 +528,11 @@ type Profile struct {
 	// Education entries.
 	Educations []*ProfileEducation `json:"educations"`
 	// Skill entries.
-	Skills    []*ProfileSkill `json:"skills"`
-	CreatedAt time.Time       `json:"createdAt"`
-	UpdatedAt time.Time       `json:"updatedAt"`
+	Skills []*ProfileSkill `json:"skills"`
+	// Testimonials from reference letters.
+	Testimonials []*Testimonial `json:"testimonials"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
 }
 
 // An education entry in a user's profile.

@@ -259,6 +259,34 @@ query GetProfileById($id: ID!) {
       createdAt
       updatedAt
     }
+    testimonials {
+      id
+      quote
+      author {
+        id
+        name
+        title
+        company
+        linkedInUrl
+        imageUrl
+      }
+      authorName
+      authorTitle
+      authorCompany
+      relationship
+      createdAt
+      validatedSkills {
+        id
+        name
+      }
+      referenceLetter {
+        id
+        file {
+          id
+          url
+        }
+      }
+    }
     createdAt
     updatedAt
   }

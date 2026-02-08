@@ -43,6 +43,7 @@ type ResolverRoot interface {
 	ExperienceValidation() ExperienceValidationResolver
 	File() FileResolver
 	Mutation() MutationResolver
+	Profile() ProfileResolver
 	ProfileExperience() ProfileExperienceResolver
 	ProfileSkill() ProfileSkillResolver
 	Query() QueryResolver
@@ -300,6 +301,7 @@ type ComplexityRoot struct {
 		ProfilePhotoURL func(childComplexity int) int
 		Skills          func(childComplexity int) int
 		Summary         func(childComplexity int) int
+		Testimonials    func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
 		User            func(childComplexity int) int
 	}
@@ -515,6 +517,9 @@ type MutationResolver interface {
 	UploadAuthorImage(ctx context.Context, authorID string, file graphql.Upload) (model.UploadAuthorImageResponse, error)
 	UpdateAuthor(ctx context.Context, id string, input model.UpdateAuthorInput) (*model.Author, error)
 	DeleteTestimonial(ctx context.Context, id string) (*model.DeleteResult, error)
+}
+type ProfileResolver interface {
+	Testimonials(ctx context.Context, obj *model.Profile) ([]*model.Testimonial, error)
 }
 type ProfileExperienceResolver interface {
 	ValidationCount(ctx context.Context, obj *model.ProfileExperience) (int, error)
@@ -1596,6 +1601,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Profile.Summary(childComplexity), true
+	case "Profile.testimonials":
+		if e.complexity.Profile.Testimonials == nil {
+			break
+		}
+
+		return e.complexity.Profile.Testimonials(childComplexity), true
 	case "Profile.updatedAt":
 		if e.complexity.Profile.UpdatedAt == nil {
 			break
@@ -3076,6 +3087,8 @@ type Profile {
   educations: [ProfileEducation!]!
   """Skill entries."""
   skills: [ProfileSkill!]!
+  """Testimonials from reference letters."""
+  testimonials: [Testimonial!]!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -5094,6 +5107,8 @@ func (ec *executionContext) fieldContext_ApplyValidationsResult_profile(_ contex
 				return ec.fieldContext_Profile_educations(ctx, field)
 			case "skills":
 				return ec.fieldContext_Profile_skills(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Profile_testimonials(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Profile_createdAt(ctx, field)
 			case "updatedAt":
@@ -8244,6 +8259,8 @@ func (ec *executionContext) fieldContext_ImportDocumentResultsResult_profile(_ c
 				return ec.fieldContext_Profile_educations(ctx, field)
 			case "skills":
 				return ec.fieldContext_Profile_skills(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Profile_testimonials(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Profile_createdAt(ctx, field)
 			case "updatedAt":
@@ -9887,6 +9904,57 @@ func (ec *executionContext) fieldContext_Profile_skills(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Profile_testimonials(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Profile_testimonials,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Profile().Testimonials(ctx, obj)
+		},
+		nil,
+		ec.marshalNTestimonial2ᚕᚖbackendᚋinternalᚋgraphqlᚋmodelᚐTestimonialᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Profile_testimonials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Profile",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Testimonial_id(ctx, field)
+			case "quote":
+				return ec.fieldContext_Testimonial_quote(ctx, field)
+			case "author":
+				return ec.fieldContext_Testimonial_author(ctx, field)
+			case "authorName":
+				return ec.fieldContext_Testimonial_authorName(ctx, field)
+			case "authorTitle":
+				return ec.fieldContext_Testimonial_authorTitle(ctx, field)
+			case "authorCompany":
+				return ec.fieldContext_Testimonial_authorCompany(ctx, field)
+			case "relationship":
+				return ec.fieldContext_Testimonial_relationship(ctx, field)
+			case "referenceLetter":
+				return ec.fieldContext_Testimonial_referenceLetter(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Testimonial_createdAt(ctx, field)
+			case "validatedSkills":
+				return ec.fieldContext_Testimonial_validatedSkills(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Testimonial", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Profile_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Profile) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10774,6 +10842,8 @@ func (ec *executionContext) fieldContext_ProfileHeaderResult_profile(_ context.C
 				return ec.fieldContext_Profile_educations(ctx, field)
 			case "skills":
 				return ec.fieldContext_Profile_skills(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Profile_testimonials(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Profile_createdAt(ctx, field)
 			case "updatedAt":
@@ -11639,6 +11709,8 @@ func (ec *executionContext) fieldContext_Query_profile(ctx context.Context, fiel
 				return ec.fieldContext_Profile_educations(ctx, field)
 			case "skills":
 				return ec.fieldContext_Profile_skills(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Profile_testimonials(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Profile_createdAt(ctx, field)
 			case "updatedAt":
@@ -11708,6 +11780,8 @@ func (ec *executionContext) fieldContext_Query_profileByUserId(ctx context.Conte
 				return ec.fieldContext_Profile_educations(ctx, field)
 			case "skills":
 				return ec.fieldContext_Profile_skills(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Profile_testimonials(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Profile_createdAt(ctx, field)
 			case "updatedAt":
@@ -14510,6 +14584,8 @@ func (ec *executionContext) fieldContext_UploadProfilePhotoResult_profile(_ cont
 				return ec.fieldContext_Profile_educations(ctx, field)
 			case "skills":
 				return ec.fieldContext_Profile_skills(ctx, field)
+			case "testimonials":
+				return ec.fieldContext_Profile_testimonials(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Profile_createdAt(ctx, field)
 			case "updatedAt":
@@ -19294,12 +19370,12 @@ func (ec *executionContext) _Profile(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._Profile_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "user":
 			out.Values[i] = ec._Profile_user(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._Profile_name(ctx, field, obj)
@@ -19316,27 +19392,63 @@ func (ec *executionContext) _Profile(ctx context.Context, sel ast.SelectionSet, 
 		case "experiences":
 			out.Values[i] = ec._Profile_experiences(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "educations":
 			out.Values[i] = ec._Profile_educations(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "skills":
 			out.Values[i] = ec._Profile_skills(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "testimonials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Profile_testimonials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._Profile_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "updatedAt":
 			out.Values[i] = ec._Profile_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

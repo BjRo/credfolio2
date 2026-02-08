@@ -216,6 +216,8 @@ export function ReferenceLetterUploadModal({
       formData.append("0", file);
 
       try {
+        // NOTE: Uses XMLHttpRequest for file uploads (see DocumentUpload.tsx for detailed explanation)
+        // Follows GraphQL multipart request spec for file uploads with progress tracking.
         const result = await new Promise<UploadFileResult | DuplicateFileDetected>(
           (resolve, reject) => {
             const xhr = new XMLHttpRequest();

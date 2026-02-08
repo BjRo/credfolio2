@@ -2955,6 +2955,60 @@ func (r *mutationResolver) DeleteTestimonial(ctx context.Context, id string) (*m
 	}, nil
 }
 
+// Testimonials is the resolver for the testimonials field.
+func (r *profileResolver) Testimonials(ctx context.Context, obj *model.Profile) ([]*model.Testimonial, error) {
+	profileID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid profile ID: %w", err)
+	}
+
+	testimonials, err := r.testimonialRepo.GetByProfileID(ctx, profileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load testimonials: %w", err)
+	}
+
+	// Convert domain testimonials to GraphQL model
+	// The nested fields (author, referenceLetter, validatedSkills) are resolved
+	// by their respective field resolvers in gqlgen
+	result := make([]*model.Testimonial, len(testimonials))
+	for i, t := range testimonials {
+		var relationship model.TestimonialRelationship
+		switch t.Relationship {
+		case domain.TestimonialRelationshipManager:
+			relationship = model.TestimonialRelationshipManager
+		case domain.TestimonialRelationshipPeer:
+			relationship = model.TestimonialRelationshipPeer
+		case domain.TestimonialRelationshipDirectReport:
+			relationship = model.TestimonialRelationshipDirectReport
+		case domain.TestimonialRelationshipClient:
+			relationship = model.TestimonialRelationshipClient
+		default:
+			relationship = model.TestimonialRelationshipOther
+		}
+
+		authorName := ""
+		if t.AuthorName != nil {
+			authorName = *t.AuthorName
+		}
+
+		result[i] = &model.Testimonial{
+			ID:            t.ID.String(),
+			Quote:         t.Quote,
+			AuthorName:    authorName,
+			AuthorTitle:   t.AuthorTitle,
+			AuthorCompany: t.AuthorCompany,
+			Relationship:  relationship,
+			CreatedAt:     t.CreatedAt,
+			// These fields will be resolved by their field resolvers:
+			// - Author (via testimonialResolver.Author)
+			// - ReferenceLetter (via testimonialResolver.ReferenceLetter)
+			// - ValidatedSkills (via testimonialResolver.ValidatedSkills)
+		}
+	}
+
+	return result, nil
+}
+
 // ValidationCount is the resolver for the validationCount field.
 func (r *profileExperienceResolver) ValidationCount(ctx context.Context, obj *model.ProfileExperience) (int, error) {
 	expID, err := uuid.Parse(obj.ID)
@@ -3367,25 +3421,28 @@ func (r *queryResolver) Testimonials(ctx context.Context, profileID string) ([]*
 	}
 
 	// Collect unique reference letter IDs and author IDs
-	refLetterIDs := make(map[uuid.UUID]struct{})
-	authorIDs := make(map[uuid.UUID]struct{})
+	refLetterIDs := make([]uuid.UUID, 0)
+	authorIDs := make([]uuid.UUID, 0)
+	authorIDSet := make(map[uuid.UUID]struct{})
+	refLetterIDSet := make(map[uuid.UUID]struct{})
+
 	for _, t := range testimonials {
-		refLetterIDs[t.ReferenceLetterID] = struct{}{}
+		if _, exists := refLetterIDSet[t.ReferenceLetterID]; !exists {
+			refLetterIDs = append(refLetterIDs, t.ReferenceLetterID)
+			refLetterIDSet[t.ReferenceLetterID] = struct{}{}
+		}
 		if t.AuthorID != nil {
-			authorIDs[*t.AuthorID] = struct{}{}
+			if _, exists := authorIDSet[*t.AuthorID]; !exists {
+				authorIDs = append(authorIDs, *t.AuthorID)
+				authorIDSet[*t.AuthorID] = struct{}{}
+			}
 		}
 	}
 
-	// Load authors and build map
-	authorsMap := make(map[uuid.UUID]*domain.Author)
-	for authorID := range authorIDs {
-		author, err := r.authorRepo.GetByID(ctx, authorID)
-		if err != nil {
-			continue // Skip on error
-		}
-		if author != nil {
-			authorsMap[authorID] = author
-		}
+	// Batch load all authors in one query
+	authorsMap, err := r.authorRepo.GetByIDs(ctx, authorIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch load authors: %w", err)
 	}
 
 	// Attach authors to testimonials
@@ -3399,24 +3456,43 @@ func (r *queryResolver) Testimonials(ctx context.Context, profileID string) ([]*
 
 	// Build map of reference letter ID -> validated skills
 	validatedSkillsByRefLetter := make(map[string][]*model.ProfileSkill)
-	for refLetterID := range refLetterIDs {
+
+	// Collect all skill IDs from all reference letters first
+	allSkillIDs := make([]uuid.UUID, 0)
+	skillIDSet := make(map[uuid.UUID]struct{})
+	skillValidationsByLetter := make(map[uuid.UUID][]*domain.SkillValidation)
+
+	for _, refLetterID := range refLetterIDs {
 		// Get skill validations for this reference letter
 		skillValidations, err := r.skillValidationRepo.GetByReferenceLetterID(ctx, refLetterID)
 		if err != nil {
-			// Log but don't fail - validated skills are supplementary
-			continue
+			return nil, fmt.Errorf("failed to get skill validations for letter %s: %w", refLetterID, err)
 		}
+		skillValidationsByLetter[refLetterID] = skillValidations
 
-		// Get the profile skills for each validation
+		// Collect skill IDs
+		for _, sv := range skillValidations {
+			if _, exists := skillIDSet[sv.ProfileSkillID]; !exists {
+				allSkillIDs = append(allSkillIDs, sv.ProfileSkillID)
+				skillIDSet[sv.ProfileSkillID] = struct{}{}
+			}
+		}
+	}
+
+	// Batch load all profile skills in one query
+	skillsMap, err := r.profileSkillRepo.GetByIDs(ctx, allSkillIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch load profile skills: %w", err)
+	}
+
+	// Build the validated skills map using the loaded skills
+	for refLetterID, skillValidations := range skillValidationsByLetter {
 		var skills []*model.ProfileSkill
 		for _, sv := range skillValidations {
-			profileSkill, err := r.profileSkillRepo.GetByID(ctx, sv.ProfileSkillID)
-			if err != nil {
-				continue // Skip if skill was deleted
+			if profileSkill, ok := skillsMap[sv.ProfileSkillID]; ok {
+				skills = append(skills, toGraphQLProfileSkill(profileSkill))
 			}
-			skills = append(skills, toGraphQLProfileSkill(profileSkill))
 		}
-
 		validatedSkillsByRefLetter[refLetterID.String()] = skills
 	}
 
@@ -4033,6 +4109,9 @@ func (r *Resolver) File() generated.FileResolver { return &fileResolver{r} }
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
+// Profile returns generated.ProfileResolver implementation.
+func (r *Resolver) Profile() generated.ProfileResolver { return &profileResolver{r} }
+
 // ProfileExperience returns generated.ProfileExperienceResolver implementation.
 func (r *Resolver) ProfileExperience() generated.ProfileExperienceResolver {
 	return &profileExperienceResolver{r}
@@ -4055,10 +4134,9 @@ func (r *Resolver) Testimonial() generated.TestimonialResolver { return &testimo
 type experienceValidationResolver struct{ *Resolver }
 type fileResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type profileResolver struct{ *Resolver }
 type profileExperienceResolver struct{ *Resolver }
 type profileSkillResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type skillValidationResolver struct{ *Resolver }
 type testimonialResolver struct{ *Resolver }
-
-// !!! WARNING !!!
