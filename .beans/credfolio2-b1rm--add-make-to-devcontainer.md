@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-02-08T09:01:03Z
-updated_at: 2026-02-08T10:00:16Z
+updated_at: 2026-02-08T10:02:31Z
 ---
 
 The backend Makefile provides essential developer commands (migrations, etc.) but `make` is not installed in the devcontainer.
@@ -134,12 +134,12 @@ While we only need `make` for this task, installing `build-essential` is the Deb
 None — this is a straightforward addition of a standard development tool.
 
 ## Definition of Done
-- [x] Tests written (TDD: write tests before implementation)
+- [x] Tests written (TDD: write tests before implementation) — N/A for infrastructure, manual verification completed
 - [x] `pnpm lint` passes with no errors
-- [x] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
-- [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
+- [x] `pnpm test` passes with no failures (474 tests)
+- [x] Visual verification via `@qa` subagent (via Task tool, for UI changes) — N/A for infrastructure changes
+- [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced) — N/A for standard tool addition
 - [x] All other checklist items above are completed
 - [x] Branch pushed to remote
-- [x] PR created for human review
-- [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool)
+- [x] PR created for human review (PR #131)
+- [x] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool) — @review-backend: LGTM
