@@ -2,10 +2,13 @@ package postgres_test
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"backend/internal/domain"
 	"backend/internal/repository/postgres"
@@ -100,7 +103,25 @@ func TestAuthorRepository_Create_DuplicatePrevention(t *testing.T) {
 	}
 	err := authorRepo.Create(ctx, author2)
 	if err == nil {
-		t.Error("expected error when creating duplicate author, got nil")
+		t.Fatal("expected error when creating duplicate author, got nil")
+	}
+
+	// Verify it's a unique constraint violation (PostgreSQL error code 23505)
+	// Note: errors.As unwraps through Bun's pgdriver.Error to get the underlying pgconn.PgError
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code != "23505" {
+			t.Errorf("expected unique violation error code 23505, got %s", pgErr.Code)
+		}
+		if pgErr.ConstraintName != "idx_authors_profile_name_company" {
+			t.Errorf("expected constraint name %q, got %q", "idx_authors_profile_name_company", pgErr.ConstraintName)
+		}
+	} else {
+		// If we can't unwrap to pgconn.PgError, at least verify the error mentions the constraint
+		errMsg := err.Error()
+		if !strings.Contains(errMsg, "duplicate key") && !strings.Contains(errMsg, "23505") {
+			t.Errorf("error doesn't appear to be a unique constraint violation: %v", err)
+		}
 	}
 }
 

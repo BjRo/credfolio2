@@ -90,6 +90,12 @@ func (s *MaterializationService) MaterializeResumeData(
 		return nil, err
 	}
 
+	// TODO: Wrap delete+create cycle in a transaction for atomicity.
+	// This requires refactoring materialize* helper methods to accept repository parameters
+	// so we can pass transactional repository instances. See credfolio2-72p8 for full context.
+	// For now, this remains a known limitation: a crash between delete and create could
+	// temporarily lose data until the job is retried.
+
 	// Delete any existing entries from this resume (idempotent re-processing)
 	if delErr := s.profileExpRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
 		return nil, fmt.Errorf("failed to delete existing experiences for resume: %w", delErr)

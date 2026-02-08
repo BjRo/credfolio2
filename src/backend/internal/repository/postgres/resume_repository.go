@@ -13,11 +13,11 @@ import (
 
 // ResumeRepository implements domain.ResumeRepository using PostgreSQL.
 type ResumeRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewResumeRepository creates a new PostgreSQL resume repository.
-func NewResumeRepository(db *bun.DB) *ResumeRepository {
+func NewResumeRepository(db bun.IDB) *ResumeRepository {
 	return &ResumeRepository{db: db}
 }
 

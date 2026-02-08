@@ -13,11 +13,11 @@ import (
 
 // SkillValidationRepository implements domain.SkillValidationRepository using PostgreSQL.
 type SkillValidationRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewSkillValidationRepository creates a new PostgreSQL skill validation repository.
-func NewSkillValidationRepository(db *bun.DB) *SkillValidationRepository {
+func NewSkillValidationRepository(db bun.IDB) *SkillValidationRepository {
 	return &SkillValidationRepository{db: db}
 }
 

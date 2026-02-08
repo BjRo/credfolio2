@@ -15,11 +15,12 @@ import (
 
 // AuthorRepository implements domain.AuthorRepository using PostgreSQL.
 type AuthorRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewAuthorRepository creates a new PostgreSQL author repository.
-func NewAuthorRepository(db *bun.DB) *AuthorRepository {
+// Accepts bun.IDB to support both regular DB operations and transactions.
+func NewAuthorRepository(db bun.IDB) *AuthorRepository {
 	return &AuthorRepository{db: db}
 }
 
@@ -30,34 +31,25 @@ func (r *AuthorRepository) Create(ctx context.Context, author *domain.Author) er
 }
 
 // Upsert creates a new author or returns the existing one if already exists.
-// Uses ON CONFLICT DO NOTHING + RETURNING to handle race conditions safely.
+// Uses ON CONFLICT DO UPDATE to safely handle concurrent inserts without a race condition.
+// Returns the inserted author on success, or the existing author if a conflict occurred.
 func (r *AuthorRepository) Upsert(ctx context.Context, author *domain.Author) (*domain.Author, error) {
-	// Try insert with ON CONFLICT DO NOTHING and RETURNING to detect if insert happened
-	// Note: The unique constraint is on (profile_id, name, COALESCE(company, ''))
-	var inserted domain.Author
+	// Use ON CONFLICT DO UPDATE with a no-op update to return the existing row on conflict
+	// This avoids the race condition of DO NOTHING (which returns no rows) + separate SELECT
+	// The unique index is on (profile_id, name, COALESCE(company, ''))
+	// We qualify with table name to reference existing value: "SET updated_at = a.updated_at"
+	var result domain.Author
 	err := r.db.NewInsert().
 		Model(author).
-		On("CONFLICT (profile_id, name, COALESCE(company, '')) DO NOTHING").
+		On("CONFLICT (profile_id, name, COALESCE(company, '')) DO UPDATE SET updated_at = a.updated_at").
 		Returning("*").
-		Scan(ctx, &inserted)
+		Scan(ctx, &result)
 
 	if err != nil {
-		// If no rows returned (conflict occurred), fetch existing author
-		if errors.Is(err, sql.ErrNoRows) {
-			existing, findErr := r.FindByNameAndCompany(ctx, author.ProfileID, author.Name, author.Company)
-			if findErr != nil {
-				return nil, fmt.Errorf("failed to find existing author after conflict: %w", findErr)
-			}
-			if existing == nil {
-				return nil, fmt.Errorf("author not found after conflict (should be impossible)")
-			}
-			return existing, nil
-		}
-		return nil, err
+		return nil, fmt.Errorf("upsert author (profile=%s, name=%s): %w", author.ProfileID, author.Name, err)
 	}
 
-	// Insert succeeded, return the inserted author
-	return &inserted, nil
+	return &result, nil
 }
 
 // GetByID retrieves an author by its ID.
