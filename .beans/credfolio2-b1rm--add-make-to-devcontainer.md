@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-02-08T09:01:03Z
-updated_at: 2026-02-08T10:02:56Z
+updated_at: 2026-02-08T10:04:07Z
 ---
 
 The backend Makefile provides essential developer commands (migrations, etc.) but `make` is not installed in the devcontainer.
