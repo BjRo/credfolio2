@@ -47,8 +47,8 @@ Inspect the `help` target in `src/backend/Makefile`. The issue is likely in the 
 ## Definition of Done
 - [x] `make help` (from `src/backend/`) shows correct target names
 - [x] All documented targets work as shown in help output (verified targets exist, `make` not installed in devcontainer)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
 
 ## Implementation Plan
