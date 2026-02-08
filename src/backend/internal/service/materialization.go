@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/uptrace/bun"
 
 	"backend/internal/domain"
 )
@@ -29,6 +30,7 @@ type CrossReferenceResult struct {
 // It is used by both the ResumeProcessingWorker (auto-materialization) and the
 // importDocumentResults mutation (user-confirmed import).
 type MaterializationService struct {
+	db               *bun.DB
 	profileRepo      domain.ProfileRepository
 	profileExpRepo   domain.ProfileExperienceRepository
 	profileEduRepo   domain.ProfileEducationRepository
@@ -40,7 +42,10 @@ type MaterializationService struct {
 }
 
 // NewMaterializationService creates a new MaterializationService.
+// The db parameter is optional (can be nil) for testing with mocks.
+// For production use, it's required for transaction support.
 func NewMaterializationService(
+	db *bun.DB,
 	profileRepo domain.ProfileRepository,
 	profileExpRepo domain.ProfileExperienceRepository,
 	profileEduRepo domain.ProfileEducationRepository,
@@ -51,6 +56,7 @@ func NewMaterializationService(
 	expValRepo domain.ExperienceValidationRepository,
 ) *MaterializationService {
 	return &MaterializationService{
+		db:               db,
 		profileRepo:      profileRepo,
 		profileExpRepo:   profileExpRepo,
 		profileEduRepo:   profileEduRepo,

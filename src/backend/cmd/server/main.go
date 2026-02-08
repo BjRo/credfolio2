@@ -101,7 +101,7 @@ func run(log logger.Logger) error {
 	workers := river.NewWorkers()
 
 	// Create shared materialization service
-	materializationSvc := service.NewMaterializationService(profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo)
+	materializationSvc := service.NewMaterializationService(db, profileRepo, profileExpRepo, profileEduRepo, profileSkillRepo, authorRepo, testimonialRepo, skillValidationRepo, expValidationRepo)
 
 	// Register processing workers only if LLM is configured
 	if extractor != nil {
