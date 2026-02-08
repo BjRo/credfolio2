@@ -1,11 +1,11 @@
 ---
 # credfolio2-af07
 title: Create @review-ai subagent for LLM code review
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-08T08:38:58Z
-updated_at: 2026-02-08T08:43:03Z
+updated_at: 2026-02-08T08:51:50Z
 ---
 
 Create a new review subagent specialized in reviewing LLM-related code changes (prompts, model selection, extraction schemas, safety). This complements the existing @review-backend and @review-frontend agents by focusing on AI/ML-specific concerns.
