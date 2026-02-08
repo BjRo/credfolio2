@@ -29,11 +29,10 @@ sleep 5
 If you need to restart them, kill stale processes first:
 
 ```bash
-pkill -f "turbo run dev" 2>/dev/null
-pkill -f "go run cmd/server" 2>/dev/null
-pkill -f "next dev" 2>/dev/null
-fuser -k 8080/tcp 3000/tcp 2>/dev/null
-sleep 2
+# Stop any running dev servers
+.claude/scripts/stop-dev.sh
+
+# Start fresh
 cd /workspace && pnpm dev &
 sleep 5
 ```
