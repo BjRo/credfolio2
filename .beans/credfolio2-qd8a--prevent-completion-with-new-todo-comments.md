@@ -67,14 +67,14 @@ Update this bean's Definition of Done section to include the new checklist item 
 ### Testing Strategy
 
 **Validation tests**:
-- [ ] New checklist item appears in template
-- [ ] PostToolUse hook enforces template includes new item
-- [ ] TaskCompleted hook blocks completion if TODO item unchecked
-- [ ] Manual verification: `git diff main...HEAD | grep -i "^+.*TODO\|FIXME\|HACK\|XXX"` works correctly
+- [x] New checklist item appears in template
+- [x] PostToolUse hook enforces template includes new item
+- [x] TaskCompleted hook blocks completion if TODO item unchecked (verified by existing hook logic)
+- [x] Manual verification: `git diff main...HEAD | grep -i "^+.*TODO\|FIXME\|HACK\|XXX"` works correctly
 
 **Regression check**:
-- [ ] Existing hooks still work (`validate-bean-dod.sh`, `validate-bean-completion.sh`)
-- [ ] New beans created with `beans create` are blocked if DoD missing
+- [x] Existing hooks still work (`validate-bean-dod.sh`, `validate-bean-completion.sh`)
+- [x] New beans created with `beans create` are blocked if DoD missing
 
 ### Advantages of This Approach
 
