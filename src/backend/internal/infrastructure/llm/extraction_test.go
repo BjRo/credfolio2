@@ -3,10 +3,12 @@ package llm_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"backend/internal/domain"
 	"backend/internal/infrastructure/llm"
+	"backend/internal/logger"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -852,6 +854,154 @@ Skills: Testing
 				t.Error("Name should not be empty")
 			}
 		})
+	}
+}
+
+// TestExtractResumeData_TruncationLogsOriginalSize verifies that truncation warnings
+// log the original size before truncation, not the truncated size.
+func TestExtractResumeData_TruncationLogsOriginalSize(t *testing.T) {
+	mockLog := &mockLogger{}
+
+	// Create a text that exceeds maxResumeTextSize (50KB)
+	largeText := strings.Repeat("a", 60*1024) // 60KB
+
+	jsonResponse := `{
+		"name": "Test User",
+		"email": "",
+		"phone": "",
+		"location": "",
+		"summary": "",
+		"experience": [],
+		"education": [],
+		"skills": [],
+		"confidence": 0.9
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content: jsonResponse,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{
+		Logger: mockLog,
+	})
+
+	_, err := extractor.ExtractResumeData(context.Background(), largeText)
+	if err != nil {
+		t.Fatalf("ExtractResumeData() error = %v", err)
+	}
+
+	// Verify a warning was logged
+	entries := mockLog.getEntries()
+	found := false
+	for _, entry := range entries {
+		if entry.Severity == logger.Warning && strings.Contains(entry.Message, "truncated") {
+			found = true
+			// Check that original_size is the ORIGINAL size (60KB), not truncated size (50KB)
+			var originalSize *int
+			var maxSize *int
+			for _, attr := range entry.Attrs {
+				if attr.Key == "original_size" {
+					if val, ok := attr.Value.(int); ok {
+						originalSize = &val
+					}
+				}
+				if attr.Key == "max_size" {
+					if val, ok := attr.Value.(int); ok {
+						maxSize = &val
+					}
+				}
+			}
+
+			if originalSize == nil {
+				t.Error("expected original_size attribute in log entry")
+			} else if *originalSize != 60*1024 {
+				t.Errorf("original_size = %d, want %d (60KB, not the truncated 50KB)", *originalSize, 60*1024)
+			}
+
+			if maxSize == nil {
+				t.Error("expected max_size attribute in log entry")
+			} else if *maxSize != 50*1024 {
+				t.Errorf("max_size = %d, want %d", *maxSize, 50*1024)
+			}
+		}
+	}
+
+	if !found {
+		t.Error("expected truncation warning to be logged")
+	}
+}
+
+// TestExtractLetterData_TruncationLogsOriginalSize verifies that letter truncation
+// logs the original size before truncation.
+func TestExtractLetterData_TruncationLogsOriginalSize(t *testing.T) {
+	mockLog := &mockLogger{}
+
+	// Create a text that exceeds maxLetterTextSize (100KB)
+	largeText := strings.Repeat("a", 120*1024) // 120KB
+
+	jsonResponse := `{
+		"author": {"name": "Author", "title": "", "company": "", "relationship": "peer"},
+		"testimonials": [],
+		"skillMentions": [],
+		"experienceMentions": [],
+		"discoveredSkills": []
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content: jsonResponse,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{
+		Logger: mockLog,
+	})
+
+	_, err := extractor.ExtractLetterData(context.Background(), largeText, nil)
+	if err != nil {
+		t.Fatalf("ExtractLetterData() error = %v", err)
+	}
+
+	// Verify a warning was logged
+	entries := mockLog.getEntries()
+	found := false
+	for _, entry := range entries {
+		if entry.Severity == logger.Warning && strings.Contains(entry.Message, "truncated") {
+			found = true
+			// Check that original_size is the ORIGINAL size (120KB), not truncated size (100KB)
+			var originalSize *int
+			var maxSize *int
+			for _, attr := range entry.Attrs {
+				if attr.Key == "original_size" {
+					if val, ok := attr.Value.(int); ok {
+						originalSize = &val
+					}
+				}
+				if attr.Key == "max_size" {
+					if val, ok := attr.Value.(int); ok {
+						maxSize = &val
+					}
+				}
+			}
+
+			if originalSize == nil {
+				t.Error("expected original_size attribute in log entry")
+			} else if *originalSize != 120*1024 {
+				t.Errorf("original_size = %d, want %d (120KB, not the truncated 100KB)", *originalSize, 120*1024)
+			}
+
+			if maxSize == nil {
+				t.Error("expected max_size attribute in log entry")
+			} else if *maxSize != 100*1024 {
+				t.Errorf("max_size = %d, want %d", *maxSize, 100*1024)
+			}
+		}
+	}
+
+	if !found {
+		t.Error("expected truncation warning to be logged")
 	}
 }
 

@@ -446,12 +446,13 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 
 	// Enforce document size limit to prevent cost/performance DoS
 	if len(text) > maxResumeTextSize {
+		originalSize := len(text)
 		span.SetAttributes(attribute.Bool("truncated", true))
 		text = text[:maxResumeTextSize]
 		if e.config.Logger != nil {
 			e.config.Logger.Warning("Resume text truncated due to size limit",
 				logger.Feature("llm"),
-				logger.Int("original_size", len(text)),
+				logger.Int("original_size", originalSize),
 				logger.Int("max_size", maxResumeTextSize),
 			)
 		}
@@ -667,12 +668,13 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 
 	// Enforce document size limit to prevent cost/performance DoS
 	if len(text) > maxLetterTextSize {
+		originalSize := len(text)
 		span.SetAttributes(attribute.Bool("truncated", true))
 		text = text[:maxLetterTextSize]
 		if e.config.Logger != nil {
 			e.config.Logger.Warning("Letter text truncated due to size limit",
 				logger.Feature("llm"),
-				logger.Int("original_size", len(text)),
+				logger.Int("original_size", originalSize),
 				logger.Int("max_size", maxLetterTextSize),
 			)
 		}
