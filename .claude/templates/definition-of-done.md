@@ -1,5 +1,6 @@
 ## Definition of Done
 - [ ] Tests written (TDD: write tests before implementation)
+- [ ] No new TODO/FIXME/HACK/XXX comments introduced (verify with `git diff main...HEAD | grep -i "^+.*TODO\|FIXME\|HACK\|XXX"`)
 - [ ] `pnpm lint` passes with no errors
 - [ ] `pnpm test` passes with no failures
 - [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
