@@ -1,11 +1,11 @@
 ---
 # credfolio2-duun
 title: Fix Makefile help output showing wrong target names
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-07T16:30:46Z
-updated_at: 2026-02-08T08:55:51Z
+updated_at: 2026-02-08T10:05:03Z
 parent: credfolio2-ynmd
 ---
 
