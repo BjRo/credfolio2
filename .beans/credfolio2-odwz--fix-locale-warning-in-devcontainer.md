@@ -1,11 +1,11 @@
 ---
 # credfolio2-odwz
 title: Fix locale warning in devcontainer
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-08T10:06:18Z
-updated_at: 2026-02-08T10:09:19Z
+updated_at: 2026-02-08T10:16:26Z
 parent: credfolio2-ynmd
 ---
 
