@@ -52,10 +52,10 @@ Create `.claude/scripts/reset-db.sh` that:
 - Consider adding a permission rule in allow list
 
 ## Definition of Done
-- [ ] Script created at `.claude/scripts/reset-db.sh`
-- [ ] Script supports dev, test, and all environments
-- [ ] Script drops, recreates, and migrates the database
-- [ ] Script works in the devcontainer (no make dependency)
+- [x] Script created at `.claude/scripts/reset-db.sh`
+- [x] Script supports dev, test, and all environments
+- [x] Script drops, recreates, and migrates the database
+- [x] Script works in the devcontainer (no make dependency)
 - [ ] CLAUDE.md updated to reference the script
 - [ ] `pnpm lint` passes with no errors
 - [ ] `pnpm test` passes with no failures
