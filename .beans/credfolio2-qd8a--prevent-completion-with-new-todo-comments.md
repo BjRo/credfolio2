@@ -103,5 +103,5 @@ This tradeoff is acceptable because:
 - [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
 - [x] All other checklist items above are completed
 - [x] Branch pushed to remote
-- [ ] PR created for human review
+- [x] PR created for human review
 - [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool)
