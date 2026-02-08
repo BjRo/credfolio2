@@ -1,11 +1,11 @@
 ---
 # credfolio2-h0uy
 title: Verify pre-commit hook works in both local and devcontainer environments
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:15:18Z
-updated_at: 2026-02-08T08:18:57Z
+updated_at: 2026-02-08T08:34:52Z
 parent: credfolio2-ynmd
 ---
 
