@@ -10,6 +10,7 @@ import (
 	"github.com/uptrace/bun"
 
 	"backend/internal/domain"
+	"backend/internal/repository/postgres"
 )
 
 // MaterializationResult contains counts of materialized items.
@@ -90,12 +91,71 @@ func (s *MaterializationService) MaterializeResumeData(
 		return nil, err
 	}
 
-	// TODO: Wrap delete+create cycle in a transaction for atomicity.
-	// This requires refactoring materialize* helper methods to accept repository parameters
-	// so we can pass transactional repository instances. See credfolio2-72p8 for full context.
-	// For now, this remains a known limitation: a crash between delete and create could
-	// temporarily lose data until the job is retried.
+	result := &MaterializationResult{}
 
+	// If db is nil (testing with mocks), fall back to non-transactional behavior
+	if s.db == nil {
+		return s.materializeResumeDataWithoutTx(ctx, resumeID, profile.ID, data, result)
+	}
+
+	// Wrap delete+create cycle in a transaction for atomicity
+	// This ensures that if any step fails, all changes are rolled back (no partial state)
+	txErr := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		// Create transactional repository instances
+		txExpRepo := postgres.NewProfileExperienceRepository(tx)
+		txEduRepo := postgres.NewProfileEducationRepository(tx)
+		txSkillRepo := postgres.NewProfileSkillRepository(tx)
+
+		// Delete any existing entries from this resume (idempotent re-processing)
+		if delErr := txExpRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
+			return fmt.Errorf("failed to delete existing experiences for resume: %w", delErr)
+		}
+		if delErr := txEduRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
+			return fmt.Errorf("failed to delete existing education for resume: %w", delErr)
+		}
+		if delErr := txSkillRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
+			return fmt.Errorf("failed to delete existing skills for resume: %w", delErr)
+		}
+
+		var errors []error
+
+		// Materialize experiences using transactional repository
+		if expCount, expErr := s.materializeExperiencesWithRepo(ctx, txExpRepo, resumeID, profile.ID, data.Experience); expErr != nil {
+			errors = append(errors, fmt.Errorf("experiences: %w", expErr))
+		} else {
+			result.Experiences = expCount
+		}
+
+		// Materialize education using transactional repository
+		if eduCount, eduErr := s.materializeEducationWithRepo(ctx, txEduRepo, resumeID, profile.ID, data.Education); eduErr != nil {
+			errors = append(errors, fmt.Errorf("education: %w", eduErr))
+		} else {
+			result.Educations = eduCount
+		}
+
+		// Materialize skills using transactional repository
+		if skillCount, skillErr := s.materializeSkillsWithRepo(ctx, txSkillRepo, resumeID, profile.ID, data.Skills); skillErr != nil {
+			errors = append(errors, fmt.Errorf("skills: %w", skillErr))
+		} else {
+			result.Skills = skillCount
+		}
+
+		if len(errors) > 0 {
+			return fmt.Errorf("materialization errors: %v", errors)
+		}
+
+		return nil
+	})
+
+	if txErr != nil {
+		return result, txErr
+	}
+
+	return result, nil
+}
+
+// materializeResumeDataWithoutTx is the fallback for tests that use mocks (no db)
+func (s *MaterializationService) materializeResumeDataWithoutTx(ctx context.Context, resumeID, profileID uuid.UUID, data *domain.ResumeExtractedData, result *MaterializationResult) (*MaterializationResult, error) {
 	// Delete any existing entries from this resume (idempotent re-processing)
 	if delErr := s.profileExpRepo.DeleteBySourceResumeID(ctx, resumeID); delErr != nil {
 		return nil, fmt.Errorf("failed to delete existing experiences for resume: %w", delErr)
@@ -107,22 +167,21 @@ func (s *MaterializationService) MaterializeResumeData(
 		return nil, fmt.Errorf("failed to delete existing skills for resume: %w", delErr)
 	}
 
-	result := &MaterializationResult{}
 	var errors []error
 
-	if expCount, expErr := s.materializeExperiences(ctx, resumeID, profile.ID, data.Experience); expErr != nil {
+	if expCount, expErr := s.materializeExperiences(ctx, resumeID, profileID, data.Experience); expErr != nil {
 		errors = append(errors, fmt.Errorf("experiences: %w", expErr))
 	} else {
 		result.Experiences = expCount
 	}
 
-	if eduCount, eduErr := s.materializeEducation(ctx, resumeID, profile.ID, data.Education); eduErr != nil {
+	if eduCount, eduErr := s.materializeEducation(ctx, resumeID, profileID, data.Education); eduErr != nil {
 		errors = append(errors, fmt.Errorf("education: %w", eduErr))
 	} else {
 		result.Educations = eduCount
 	}
 
-	if skillCount, skillErr := s.materializeSkills(ctx, resumeID, profile.ID, data.Skills); skillErr != nil {
+	if skillCount, skillErr := s.materializeSkills(ctx, resumeID, profileID, data.Skills); skillErr != nil {
 		errors = append(errors, fmt.Errorf("skills: %w", skillErr))
 	} else {
 		result.Skills = skillCount
@@ -135,8 +194,14 @@ func (s *MaterializationService) MaterializeResumeData(
 	return result, nil
 }
 
+// materializeExperiences is the legacy method that uses the service's repository
 func (s *MaterializationService) materializeExperiences(ctx context.Context, resumeID, profileID uuid.UUID, experiences []domain.WorkExperience) (int, error) {
-	displayOrder, err := s.profileExpRepo.GetNextDisplayOrder(ctx, profileID)
+	return s.materializeExperiencesWithRepo(ctx, s.profileExpRepo, resumeID, profileID, experiences)
+}
+
+// materializeExperiencesWithRepo accepts a repository parameter for transaction support
+func (s *MaterializationService) materializeExperiencesWithRepo(ctx context.Context, repo domain.ProfileExperienceRepository, resumeID, profileID uuid.UUID, experiences []domain.WorkExperience) (int, error) {
+	displayOrder, err := repo.GetNextDisplayOrder(ctx, profileID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get next experience display order: %w", err)
 	}
@@ -162,15 +227,21 @@ func (s *MaterializationService) materializeExperiences(ctx context.Context, res
 			SourceResumeID: &resumeID,
 			OriginalData:   originalJSON,
 		}
-		if createErr := s.profileExpRepo.Create(ctx, profileExp); createErr != nil {
+		if createErr := repo.Create(ctx, profileExp); createErr != nil {
 			return i, fmt.Errorf("failed to create experience for %s at %s: %w", exp.Title, exp.Company, createErr)
 		}
 	}
 	return len(experiences), nil
 }
 
+// materializeEducation is the legacy method that uses the service's repository
 func (s *MaterializationService) materializeEducation(ctx context.Context, resumeID, profileID uuid.UUID, educations []domain.Education) (int, error) {
-	displayOrder, err := s.profileEduRepo.GetNextDisplayOrder(ctx, profileID)
+	return s.materializeEducationWithRepo(ctx, s.profileEduRepo, resumeID, profileID, educations)
+}
+
+// materializeEducationWithRepo accepts a repository parameter for transaction support
+func (s *MaterializationService) materializeEducationWithRepo(ctx context.Context, repo domain.ProfileEducationRepository, resumeID, profileID uuid.UUID, educations []domain.Education) (int, error) {
+	displayOrder, err := repo.GetNextDisplayOrder(ctx, profileID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get next education display order: %w", err)
 	}
@@ -201,15 +272,21 @@ func (s *MaterializationService) materializeEducation(ctx context.Context, resum
 			SourceResumeID: &resumeID,
 			OriginalData:   originalJSON,
 		}
-		if createErr := s.profileEduRepo.Create(ctx, profileEdu); createErr != nil {
+		if createErr := repo.Create(ctx, profileEdu); createErr != nil {
 			return i, fmt.Errorf("failed to create education for %s: %w", edu.Institution, createErr)
 		}
 	}
 	return len(educations), nil
 }
 
+// materializeSkills is the legacy method that uses the service's repository
 func (s *MaterializationService) materializeSkills(ctx context.Context, resumeID, profileID uuid.UUID, skills []string) (int, error) {
-	displayOrder, err := s.profileSkillRepo.GetNextDisplayOrder(ctx, profileID)
+	return s.materializeSkillsWithRepo(ctx, s.profileSkillRepo, resumeID, profileID, skills)
+}
+
+// materializeSkillsWithRepo accepts a repository parameter for transaction support
+func (s *MaterializationService) materializeSkillsWithRepo(ctx context.Context, repo domain.ProfileSkillRepository, resumeID, profileID uuid.UUID, skills []string) (int, error) {
+	displayOrder, err := repo.GetNextDisplayOrder(ctx, profileID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get next skill display order: %w", err)
 	}
@@ -227,7 +304,7 @@ func (s *MaterializationService) materializeSkills(ctx context.Context, resumeID
 			Source:         domain.ExperienceSourceResumeExtracted,
 			SourceResumeID: &resumeID,
 		}
-		if createErr := s.profileSkillRepo.CreateIgnoreDuplicate(ctx, profileSkill); createErr != nil {
+		if createErr := repo.CreateIgnoreDuplicate(ctx, profileSkill); createErr != nil {
 			return i, fmt.Errorf("failed to create skill %q: %w", skillName, createErr)
 		}
 	}
@@ -271,19 +348,90 @@ func (s *MaterializationService) MaterializeReferenceLetterData(
 		return nil, fmt.Errorf("failed to get or create profile: %w", err)
 	}
 
+	result := &MaterializationResult{}
+
+	// If db is nil (testing with mocks), fall back to non-transactional behavior
+	if s.db == nil {
+		return s.materializeReferenceLetterDataWithoutTx(ctx, referenceLetterID, profile.ID, data, result)
+	}
+
+	// Wrap delete+create cycle in a transaction for atomicity
+	// This ensures that if any step fails, all changes are rolled back (no partial state)
+	txErr := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		// Create transactional repository instances
+		txTestimonialRepo := postgres.NewTestimonialRepository(tx)
+		txSkillRepo := postgres.NewProfileSkillRepository(tx)
+		txSkillValRepo := postgres.NewSkillValidationRepository(tx)
+		txAuthorRepo := postgres.NewAuthorRepository(tx)
+
+		// Delete any existing testimonials from this reference letter (idempotent re-processing)
+		if delErr := txTestimonialRepo.DeleteByReferenceLetterID(ctx, referenceLetterID); delErr != nil {
+			return fmt.Errorf("failed to delete existing testimonials for reference letter: %w", delErr)
+		}
+
+		// Materialize discovered skills as ProfileSkill records
+		if len(data.DiscoveredSkills) > 0 {
+			skillCount, skillErr := s.materializeDiscoveredSkillsWithRepos(ctx, txSkillRepo, txSkillValRepo, referenceLetterID, profile.ID, data.DiscoveredSkills)
+			if skillErr != nil {
+				return fmt.Errorf("failed to materialize discovered skills: %w", skillErr)
+			}
+			result.Skills = skillCount
+		}
+
+		if len(data.Testimonials) == 0 {
+			return nil
+		}
+
+		// Find or create the Author entity
+		author, err := s.findOrCreateAuthorWithRepo(ctx, txAuthorRepo, profile.ID, &data.Author)
+		if err != nil {
+			return fmt.Errorf("failed to find or create author: %w", err)
+		}
+
+		// Create testimonial records
+		for _, extracted := range data.Testimonials {
+			testimonial := &domain.Testimonial{
+				ID:                uuid.New(),
+				ProfileID:         profile.ID,
+				ReferenceLetterID: referenceLetterID,
+				Quote:             extracted.Quote,
+				Relationship:      mapAuthorRelationship(data.Author.Relationship),
+				SkillsMentioned:   extracted.SkillsMentioned,
+				AuthorName:        &data.Author.Name,
+				AuthorTitle:       data.Author.Title,
+				AuthorCompany:     data.Author.Company,
+			}
+
+			if author != nil {
+				testimonial.AuthorID = &author.ID
+			}
+
+			if createErr := txTestimonialRepo.Create(ctx, testimonial); createErr != nil {
+				return fmt.Errorf("failed to create testimonial: %w", createErr)
+			}
+			result.Testimonials++
+		}
+
+		return nil
+	})
+
+	if txErr != nil {
+		return result, txErr
+	}
+
+	return result, nil
+}
+
+// materializeReferenceLetterDataWithoutTx is the fallback for tests that use mocks (no db)
+func (s *MaterializationService) materializeReferenceLetterDataWithoutTx(ctx context.Context, referenceLetterID, profileID uuid.UUID, data *domain.ExtractedLetterData, result *MaterializationResult) (*MaterializationResult, error) {
 	// Delete any existing testimonials from this reference letter (idempotent re-processing)
-	// TODO: Wrap delete + create cycle in a DB transaction for atomicity. A crash between
-	// delete and the last create could leave the user with lost testimonials. Same pattern
-	// exists in MaterializeResumeData — address both together.
 	if delErr := s.testimonialRepo.DeleteByReferenceLetterID(ctx, referenceLetterID); delErr != nil {
 		return nil, fmt.Errorf("failed to delete existing testimonials for reference letter: %w", delErr)
 	}
 
-	result := &MaterializationResult{}
-
 	// Materialize discovered skills as ProfileSkill records
 	if len(data.DiscoveredSkills) > 0 {
-		skillCount, skillErr := s.materializeDiscoveredSkills(ctx, referenceLetterID, profile.ID, data.DiscoveredSkills)
+		skillCount, skillErr := s.materializeDiscoveredSkills(ctx, referenceLetterID, profileID, data.DiscoveredSkills)
 		if skillErr != nil {
 			return result, fmt.Errorf("failed to materialize discovered skills: %w", skillErr)
 		}
@@ -295,7 +443,7 @@ func (s *MaterializationService) MaterializeReferenceLetterData(
 	}
 
 	// Find or create the Author entity
-	author, err := s.findOrCreateAuthor(ctx, profile.ID, &data.Author)
+	author, err := s.findOrCreateAuthor(ctx, profileID, &data.Author)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find or create author: %w", err)
 	}
@@ -304,7 +452,7 @@ func (s *MaterializationService) MaterializeReferenceLetterData(
 	for _, extracted := range data.Testimonials {
 		testimonial := &domain.Testimonial{
 			ID:                uuid.New(),
-			ProfileID:         profile.ID,
+			ProfileID:         profileID,
 			ReferenceLetterID: referenceLetterID,
 			Quote:             extracted.Quote,
 			Relationship:      mapAuthorRelationship(data.Author.Relationship),
@@ -327,15 +475,28 @@ func (s *MaterializationService) MaterializeReferenceLetterData(
 	return result, nil
 }
 
-// materializeDiscoveredSkills creates ProfileSkill records for skills discovered in a reference letter.
-// For each skill, it also creates a SkillValidation record linking the skill to the reference letter.
+// materializeDiscoveredSkills is the legacy method that uses the service's repositories
 func (s *MaterializationService) materializeDiscoveredSkills(
 	ctx context.Context,
 	referenceLetterID uuid.UUID,
 	profileID uuid.UUID,
 	discoveredSkills []domain.DiscoveredSkill,
 ) (int, error) {
-	displayOrder, err := s.profileSkillRepo.GetNextDisplayOrder(ctx, profileID)
+	return s.materializeDiscoveredSkillsWithRepos(ctx, s.profileSkillRepo, s.skillValRepo, referenceLetterID, profileID, discoveredSkills)
+}
+
+// materializeDiscoveredSkillsWithRepos accepts repository parameters for transaction support
+// Creates ProfileSkill records for skills discovered in a reference letter.
+// For each skill, it also creates a SkillValidation record linking the skill to the reference letter.
+func (s *MaterializationService) materializeDiscoveredSkillsWithRepos(
+	ctx context.Context,
+	skillRepo domain.ProfileSkillRepository,
+	skillValRepo domain.SkillValidationRepository,
+	referenceLetterID uuid.UUID,
+	profileID uuid.UUID,
+	discoveredSkills []domain.DiscoveredSkill,
+) (int, error) {
+	displayOrder, err := skillRepo.GetNextDisplayOrder(ctx, profileID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get next skill display order: %w", err)
 	}
@@ -359,7 +520,7 @@ func (s *MaterializationService) materializeDiscoveredSkills(
 			SourceReferenceLetterID: &refLetterID,
 		}
 
-		if createErr := s.profileSkillRepo.CreateIgnoreDuplicate(ctx, skill); createErr != nil {
+		if createErr := skillRepo.CreateIgnoreDuplicate(ctx, skill); createErr != nil {
 			return count, fmt.Errorf("failed to create discovered skill %q: %w", ds.Skill, createErr)
 		}
 
@@ -372,7 +533,7 @@ func (s *MaterializationService) materializeDiscoveredSkills(
 				ReferenceLetterID: referenceLetterID,
 				QuoteSnippet:      &quote,
 			}
-			if valErr := s.skillValRepo.Create(ctx, validation); valErr != nil {
+			if valErr := skillValRepo.Create(ctx, validation); valErr != nil {
 				// Non-fatal: skill was created, validation is bonus
 				if !strings.Contains(valErr.Error(), "duplicate") && !strings.Contains(valErr.Error(), "unique constraint") {
 					return count, fmt.Errorf("failed to create skill validation for %q: %w", ds.Skill, valErr)
@@ -385,11 +546,17 @@ func (s *MaterializationService) materializeDiscoveredSkills(
 	return count, nil
 }
 
-// findOrCreateAuthor finds an existing author by name and company, or creates a new one.
+// findOrCreateAuthor is the legacy method that uses the service's repository
+func (s *MaterializationService) findOrCreateAuthor(ctx context.Context, profileID uuid.UUID, extracted *domain.ExtractedAuthor) (*domain.Author, error) {
+	return s.findOrCreateAuthorWithRepo(ctx, s.authorRepo, profileID, extracted)
+}
+
+// findOrCreateAuthorWithRepo accepts a repository parameter for transaction support
+// Finds an existing author by name and company, or creates a new one.
 // Uses database upsert to eliminate TOCTOU race conditions by relying on the unique constraint.
 // TODO: Consider updating existing author's Title when reusing, so newer reference letters
 // with updated titles (e.g., promotions) refresh the canonical Author entity.
-func (s *MaterializationService) findOrCreateAuthor(ctx context.Context, profileID uuid.UUID, extracted *domain.ExtractedAuthor) (*domain.Author, error) {
+func (s *MaterializationService) findOrCreateAuthorWithRepo(ctx context.Context, authorRepo domain.AuthorRepository, profileID uuid.UUID, extracted *domain.ExtractedAuthor) (*domain.Author, error) {
 	author := &domain.Author{
 		ID:        uuid.New(),
 		ProfileID: profileID,
@@ -398,7 +565,7 @@ func (s *MaterializationService) findOrCreateAuthor(ctx context.Context, profile
 		Company:   extracted.Company,
 	}
 
-	result, err := s.authorRepo.Upsert(ctx, author)
+	result, err := authorRepo.Upsert(ctx, author)
 	if err != nil {
 		return nil, fmt.Errorf("failed to upsert author: %w", err)
 	}
