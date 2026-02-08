@@ -4,6 +4,7 @@ import (
 	"html"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"backend/internal/domain"
 )
@@ -162,11 +163,36 @@ func sanitizeString(s string, maxLen int) string {
 	// Trim whitespace
 	s = strings.TrimSpace(s)
 
-	// Truncate if too long
+	// Truncate if too long - use UTF-8 aware truncation
 	if len(s) > maxLen {
-		s = s[:maxLen]
+		s = truncateUTF8(s, maxLen)
 	}
 
+	return s
+}
+
+// truncateUTF8 truncates a string to a maximum byte length while preserving UTF-8 character boundaries.
+// It ensures the resulting string is valid UTF-8 by not splitting multi-byte characters.
+func truncateUTF8(s string, maxBytes int) string {
+	if maxBytes <= 0 {
+		return ""
+	}
+	if len(s) <= maxBytes {
+		return s
+	}
+
+	// Walk through the string and find the last complete character that fits
+	byteCount := 0
+	for i := range s {
+		_, size := utf8.DecodeRuneInString(s[i:])
+		if byteCount+size > maxBytes {
+			// Adding this character would exceed the limit
+			return s[:i]
+		}
+		byteCount += size
+	}
+
+	// If we got here, the whole string fits
 	return s
 }
 

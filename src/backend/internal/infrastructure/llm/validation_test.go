@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"backend/internal/domain"
 )
@@ -678,6 +679,122 @@ func TestValidateLetterData_DiscoveredSkills(t *testing.T) {
 
 		if len(data.DiscoveredSkills) != maxSkillsCount {
 			t.Errorf("expected %d discovered skills, got %d", maxSkillsCount, len(data.DiscoveredSkills))
+		}
+	})
+}
+
+// TestSanitizeString_UTF8Truncation tests that string truncation preserves UTF-8 character boundaries.
+func TestSanitizeString_UTF8Truncation(t *testing.T) {
+	t.Run("truncates ASCII without corruption", func(t *testing.T) {
+		input := strings.Repeat("a", 100)
+		result := sanitizeString(input, 50)
+		if len(result) != 50 {
+			t.Errorf("expected length 50, got %d", len(result))
+		}
+		if !strings.HasPrefix(input, result) {
+			t.Error("truncated string should be prefix of original")
+		}
+	})
+
+	t.Run("truncates at UTF-8 boundary for emoji", func(t *testing.T) {
+		// Emoji are typically 4 bytes in UTF-8
+		// Test: 46 'a' chars + 1 emoji (4 bytes) = 50 bytes total
+		// Truncating at 48 bytes should NOT split the emoji
+		input := strings.Repeat("a", 46) + "😀" // 46 + 4 = 50 bytes
+		result := sanitizeString(input, 48)
+
+		// Result should be valid UTF-8
+		if !utf8.ValidString(result) {
+			t.Error("truncated string contains invalid UTF-8")
+		}
+
+		// Result should be <= 48 bytes
+		if len(result) > 48 {
+			t.Errorf("expected length <= 48, got %d", len(result))
+		}
+
+		// Should not contain the emoji (it would need to be split)
+		if strings.Contains(result, "😀") {
+			// If it contains the emoji, that's fine too (truncated before it)
+			// But the total length must still be <= 48
+			if len(result) > 48 {
+				t.Errorf("result contains emoji but exceeds max length: %d > 48", len(result))
+			}
+		}
+
+		// Most importantly: no replacement character (�) which indicates corruption
+		if strings.Contains(result, "�") {
+			t.Error("truncated string contains replacement character - UTF-8 corruption detected")
+		}
+	})
+
+	t.Run("truncates at UTF-8 boundary for Chinese characters", func(t *testing.T) {
+		// Chinese characters are typically 3 bytes in UTF-8
+		// "你好世界" = 4 chars * 3 bytes = 12 bytes
+		input := "你好世界" + strings.Repeat("a", 10) // 12 + 10 = 22 bytes
+		result := sanitizeString(input, 14) // Should fit "你好世界" (12 bytes) + maybe some 'a'
+
+		// Result should be valid UTF-8
+		if !utf8.ValidString(result) {
+			t.Error("truncated string contains invalid UTF-8")
+		}
+
+		// Should be <= 14 bytes
+		if len(result) > 14 {
+			t.Errorf("expected length <= 14, got %d", len(result))
+		}
+
+		// No corruption marker
+		if strings.Contains(result, "�") {
+			t.Error("truncated string contains replacement character - UTF-8 corruption detected")
+		}
+	})
+
+	t.Run("truncates at UTF-8 boundary for accented characters", func(t *testing.T) {
+		// "José" = J(1) + o(1) + s(1) + é(2) = 5 bytes
+		input := "José" + strings.Repeat("a", 10) // 5 + 10 = 15 bytes
+		result := sanitizeString(input, 4) // Should NOT split the é
+
+		// Result should be valid UTF-8
+		if !utf8.ValidString(result) {
+			t.Error("truncated string contains invalid UTF-8")
+		}
+
+		// Should be <= 4 bytes
+		if len(result) > 4 {
+			t.Errorf("expected length <= 4, got %d", len(result))
+		}
+
+		// No corruption
+		if strings.Contains(result, "�") {
+			t.Error("truncated string contains replacement character - UTF-8 corruption detected")
+		}
+
+		// Should be "Jos" (3 bytes), not "Jos�" (corrupted)
+		if result != "Jos" {
+			t.Errorf("expected 'Jos', got %q", result)
+		}
+	})
+
+	t.Run("handles string shorter than max length", func(t *testing.T) {
+		input := "short"
+		result := sanitizeString(input, 100)
+		if result != input {
+			t.Errorf("expected %q, got %q", input, result)
+		}
+	})
+
+	t.Run("handles empty string", func(t *testing.T) {
+		result := sanitizeString("", 10)
+		if result != "" {
+			t.Errorf("expected empty string, got %q", result)
+		}
+	})
+
+	t.Run("handles max length of 0", func(t *testing.T) {
+		result := sanitizeString("test", 0)
+		if result != "" {
+			t.Errorf("expected empty string, got %q", result)
 		}
 	})
 }
