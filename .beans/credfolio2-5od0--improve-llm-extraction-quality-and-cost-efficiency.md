@@ -14,7 +14,7 @@ Address LLM accuracy, data quality, and cost optimization opportunities identifi
 ## Important Issues (from @review-ai)
 
 1. **Resume Summary Synthesis** - LLM generates summary instead of extracting (hallucination risk)
-2. **Unknown Author Acceptance** - System accepts "Unknown" as valid author name (data quality issue)
+2. **Unknown Author Rejection** - System rejected "Unknown" authors, blocking German-style reference letters (user workflow regression)
 3. **JSON Cleanup Masking Quality** - Aggressive cleanup hides LLM output quality problems
 4. **Duplicate Text Extraction** - Same text extracted multiple times (cost/performance waste)
 
@@ -27,9 +27,9 @@ Address LLM accuracy, data quality, and cost optimization opportunities identifi
 
 ## Impact
 
-- **Accuracy**: Hallucination risk in summaries, poor data quality from unknown authors
-- **Cost**: Unnecessarily expensive model for simple classification, duplicate processing
-- **Observability**: Can't track prompt effectiveness or LLM performance over time
+- **Accuracy**: Fixed hallucination risk in summaries, allowed unknown authors for German-style letters
+- **Cost**: Optimized with cheaper models, eliminated duplicate text extraction
+- **Observability**: Added prompt versioning, metadata tracking for cost analysis
 
 ## Files Affected
 
@@ -45,7 +45,7 @@ Address LLM accuracy, data quality, and cost optimization opportunities identifi
 
 ### Data Quality
 - [x] Resume summaries extracted from text, not synthesized by LLM
-- [x] "Unknown" authors rejected, require actual name extraction
+- [x] "Unknown" authors **allowed** to support German-style reference letters (users can edit post-import)
 - [x] JSON cleanup logs warnings when aggressive fixes needed (indicates prompt issues)
 - [x] Text extraction deduplicated to avoid redundant LLM calls
 
@@ -143,27 +143,20 @@ The implementation follows a conservative approach: make existing functionality 
 
 - Update prompt version constant to `v1.1.0` after making this change
 
-#### 3. Reject Unknown Authors (Data Quality)
-**Goal:** Require actual author names from reference letters
+#### 3. Allow Unknown Authors for German-Style Letters (User Workflow Fix)
+**Goal:** Support German reference letters that don't contain explicit author names
 
-- Modify `/workspace/src/backend/internal/infrastructure/llm/prompts/reference_letter_extraction_system.txt` line 9:
-  - CHANGE: "If the author's name cannot be determined from the letter, use exactly \"unknown\" (lowercase)"
-  - TO: "If the author's name cannot be clearly determined from the letter, return an error. Do not accept letters without a clear author name."
+**CHANGED BASED ON USER FEEDBACK:** Initial plan was to reject unknown authors, but user reported this breaks German-style reference letters which often omit author names. Changed approach to allow "Unknown" and enable post-import editing.
 
-- Add validation in `/workspace/src/backend/internal/infrastructure/llm/validation.go` lines 92-96:
-  ```go
-  // Validate author name (required and not "unknown")
-  authorName := strings.ToLower(strings.TrimSpace(data.Author.Name))
-  if authorName == "" || authorName == "unknown" {
-      return &domain.ValidationError{
-          Field: "author.name", 
-          Message: "author name must be present and cannot be 'unknown'", 
-          Err: domain.ErrInvalidAuthor,
-      }
-  }
-  ```
+- Modify `/workspace/src/backend/internal/infrastructure/llm/prompts/reference_letter_extraction_system.txt` line 12:
+  - CHANGE: "Do not accept letters without a clear author name."
+  - TO: "If the author's name cannot be clearly determined from the letter (e.g., German-style reference letters often omit author names), use \"Unknown\" as the name. The user can edit this later."
 
-- Update prompt version constant to `v1.1.0` after making this change
+- **Remove** validation rejection in `/workspace/src/backend/internal/infrastructure/llm/validation.go`:
+  - Keep empty name check (still required)
+  - Remove "unknown" check to allow German-style letters through
+
+- Update prompt version constant to `v1.2.0` after making this change (v1.1.0 was the brief rejection version)
 
 #### 4. Log JSON Cleanup Warnings (Quality Monitoring)
 **Goal:** Surface when aggressive cleanup is needed (indicates prompt/model issues)
@@ -321,8 +314,8 @@ None — all requirements are clear from the codebase review and acceptance crit
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
 - [N/A] Visual verification via `@qa` subagent (via Task tool, for UI changes)
-- [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
+- [N/A] ADR written via `/decision` skill — Not needed: no new dependencies or architectural changes, just improvements to existing patterns
 - [x] All other checklist items above are completed
 - [x] Branch pushed to remote
-- [ ] PR created for human review
-- [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool)
+- [x] PR created for human review (PR #138)
+- [x] Automated code review passed via `@review-backend` and `@review-ai` subagents — Critical fixes applied in commit 83d70ce
