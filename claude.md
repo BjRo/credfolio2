@@ -100,6 +100,9 @@ cd src/frontend && pnpm dev    # Next.js on :3000
 cd src/backend && pnpm dev     # Go server on :8080
 cd src/backend && pnpm build   # Compiles to bin/server
 
+# Dev server control
+.claude/scripts/stop-dev.sh    # Stop all dev servers
+
 # Cleanup
 pnpm clean                     # Clean all packages
 rm -rf .turbo                  # Clear Turborepo cache
