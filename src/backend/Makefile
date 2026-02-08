@@ -34,7 +34,7 @@ help: ## Show this help
 	@echo "Environment: CREDFOLIO_ENV=$(CREDFOLIO_ENV) (database: $(POSTGRES_DB))"
 	@echo "Set CREDFOLIO_ENV=test to run against test database"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  make %-20s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sed 's/^[^:]*://' | awk 'BEGIN {FS = ":.*## "}; {printf "  make %-20s %s\n", $$1, $$2}'
 
 migration: ## Create a new migration (usage: make migration name=create_users)
 ifndef name
