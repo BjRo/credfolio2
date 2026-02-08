@@ -14,11 +14,11 @@ import (
 
 // UserRepository implements domain.UserRepository using PostgreSQL.
 type UserRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewUserRepository creates a new PostgreSQL user repository.
-func NewUserRepository(db *bun.DB) *UserRepository {
+func NewUserRepository(db bun.IDB) *UserRepository {
 	return &UserRepository{db: db}
 }
 

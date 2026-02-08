@@ -13,11 +13,11 @@ import (
 
 // ExperienceValidationRepository implements domain.ExperienceValidationRepository using PostgreSQL.
 type ExperienceValidationRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewExperienceValidationRepository creates a new PostgreSQL experience validation repository.
-func NewExperienceValidationRepository(db *bun.DB) *ExperienceValidationRepository {
+func NewExperienceValidationRepository(db bun.IDB) *ExperienceValidationRepository {
 	return &ExperienceValidationRepository{db: db}
 }
 

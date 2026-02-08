@@ -13,11 +13,11 @@ import (
 
 // FileRepository implements domain.FileRepository using PostgreSQL.
 type FileRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewFileRepository creates a new PostgreSQL file repository.
-func NewFileRepository(db *bun.DB) *FileRepository {
+func NewFileRepository(db bun.IDB) *FileRepository {
 	return &FileRepository{db: db}
 }
 

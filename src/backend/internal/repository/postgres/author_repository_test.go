@@ -2,9 +2,13 @@ package postgres_test
 
 import (
 	"context"
+	"errors"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"backend/internal/domain"
 	"backend/internal/repository/postgres"
@@ -99,7 +103,25 @@ func TestAuthorRepository_Create_DuplicatePrevention(t *testing.T) {
 	}
 	err := authorRepo.Create(ctx, author2)
 	if err == nil {
-		t.Error("expected error when creating duplicate author, got nil")
+		t.Fatal("expected error when creating duplicate author, got nil")
+	}
+
+	// Verify it's a unique constraint violation (PostgreSQL error code 23505)
+	// Note: errors.As unwraps through Bun's pgdriver.Error to get the underlying pgconn.PgError
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code != "23505" {
+			t.Errorf("expected unique violation error code 23505, got %s", pgErr.Code)
+		}
+		if pgErr.ConstraintName != "idx_authors_profile_name_company" {
+			t.Errorf("expected constraint name %q, got %q", "idx_authors_profile_name_company", pgErr.ConstraintName)
+		}
+	} else {
+		// If we can't unwrap to pgconn.PgError, at least verify the error mentions the constraint
+		errMsg := err.Error()
+		if !strings.Contains(errMsg, "duplicate key") && !strings.Contains(errMsg, "23505") {
+			t.Errorf("error doesn't appear to be a unique constraint violation: %v", err)
+		}
 	}
 }
 
@@ -485,5 +507,88 @@ func TestAuthorRepository_Delete(t *testing.T) {
 	}
 	if deleted != nil {
 		t.Error("expected author to be deleted, but found it")
+	}
+}
+
+func TestAuthorRepository_Upsert_Concurrent(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	cleanupTestData(t, db)
+
+	userRepo := postgres.NewUserRepository(db)
+	profileRepo := postgres.NewProfileRepository(db)
+	authorRepo := postgres.NewAuthorRepository(db)
+	ctx := context.Background()
+
+	// Create user and profile
+	user := &domain.User{
+		Email:        "authorupsert@example.com",
+		PasswordHash: "hashed_password",
+	}
+	if err := userRepo.Create(ctx, user); err != nil {
+		t.Fatalf("Create user failed: %v", err)
+	}
+
+	profile := &domain.Profile{
+		UserID: user.ID,
+	}
+	if err := profileRepo.Create(ctx, profile); err != nil {
+		t.Fatalf("Create profile failed: %v", err)
+	}
+
+	// Simulate concurrent upserts (same name + company)
+	authorData := &domain.Author{
+		ID:        uuid.New(),
+		ProfileID: profile.ID,
+		Name:      "Jane Concurrent",
+		Company:   strPtr("ConcurrentCo"),
+	}
+
+	// Clone for second goroutine
+	authorData2 := &domain.Author{
+		ID:        uuid.New(),
+		ProfileID: profile.ID,
+		Name:      "Jane Concurrent",
+		Company:   strPtr("ConcurrentCo"),
+	}
+
+	var author1, author2 *domain.Author
+	var err1, err2 error
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Launch two goroutines that both try to upsert the same author
+	go func() {
+		defer wg.Done()
+		author1, err1 = authorRepo.Upsert(ctx, authorData)
+	}()
+
+	go func() {
+		defer wg.Done()
+		author2, err2 = authorRepo.Upsert(ctx, authorData2)
+	}()
+
+	wg.Wait()
+
+	// Both should succeed
+	if err1 != nil {
+		t.Fatalf("first upsert failed: %v", err1)
+	}
+	if err2 != nil {
+		t.Fatalf("second upsert failed: %v", err2)
+	}
+
+	// Both should return the same author ID (no duplicates)
+	if author1.ID != author2.ID {
+		t.Errorf("concurrent upserts created duplicates: %s vs %s", author1.ID, author2.ID)
+	}
+
+	// Verify only one author exists in database
+	authors, err := authorRepo.GetByProfileID(ctx, profile.ID)
+	if err != nil {
+		t.Fatalf("GetByProfileID failed: %v", err)
+	}
+	if len(authors) != 1 {
+		t.Errorf("expected 1 author, got %d (duplicate created)", len(authors))
 	}
 }

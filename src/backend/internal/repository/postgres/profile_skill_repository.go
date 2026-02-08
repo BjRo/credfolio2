@@ -14,11 +14,11 @@ import (
 
 // ProfileSkillRepository implements domain.ProfileSkillRepository using PostgreSQL.
 type ProfileSkillRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewProfileSkillRepository creates a new PostgreSQL profile skill repository.
-func NewProfileSkillRepository(db *bun.DB) *ProfileSkillRepository {
+func NewProfileSkillRepository(db bun.IDB) *ProfileSkillRepository {
 	return &ProfileSkillRepository{db: db}
 }
 

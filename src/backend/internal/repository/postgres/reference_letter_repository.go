@@ -13,11 +13,11 @@ import (
 
 // ReferenceLetterRepository implements domain.ReferenceLetterRepository using PostgreSQL.
 type ReferenceLetterRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewReferenceLetterRepository creates a new PostgreSQL reference letter repository.
-func NewReferenceLetterRepository(db *bun.DB) *ReferenceLetterRepository {
+func NewReferenceLetterRepository(db bun.IDB) *ReferenceLetterRepository {
 	return &ReferenceLetterRepository{db: db}
 }
 

@@ -13,11 +13,11 @@ import (
 
 // TestimonialRepository implements domain.TestimonialRepository using PostgreSQL.
 type TestimonialRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewTestimonialRepository creates a new PostgreSQL testimonial repository.
-func NewTestimonialRepository(db *bun.DB) *TestimonialRepository {
+func NewTestimonialRepository(db bun.IDB) *TestimonialRepository {
 	return &TestimonialRepository{db: db}
 }
 

@@ -14,11 +14,11 @@ import (
 
 // ProfileExperienceRepository implements domain.ProfileExperienceRepository using PostgreSQL.
 type ProfileExperienceRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewProfileExperienceRepository creates a new PostgreSQL profile experience repository.
-func NewProfileExperienceRepository(db *bun.DB) *ProfileExperienceRepository {
+func NewProfileExperienceRepository(db bun.IDB) *ProfileExperienceRepository {
 	return &ProfileExperienceRepository{db: db}
 }
 

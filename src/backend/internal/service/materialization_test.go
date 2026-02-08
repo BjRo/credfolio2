@@ -294,6 +294,22 @@ func (r *mockAuthorRepository) Create(_ context.Context, author *domain.Author) 
 	return nil
 }
 
+func (r *mockAuthorRepository) Upsert(ctx context.Context, author *domain.Author) (*domain.Author, error) {
+	// Check if author already exists
+	existing, err := r.FindByNameAndCompany(ctx, author.ProfileID, author.Name, author.Company)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return existing, nil
+	}
+	// Create new author
+	if err := r.Create(ctx, author); err != nil {
+		return nil, err
+	}
+	return author, nil
+}
+
 func (r *mockAuthorRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Author, error) {
 	a, ok := r.authors[id]
 	if !ok {
@@ -547,7 +563,7 @@ func newTestService() (*MaterializationService, *mockProfileRepository, *mockPro
 	skillRepo := newMockProfileSkillRepository()
 	authorRepo := newMockAuthorRepository()
 	testimonialRepo := newMockTestimonialRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, newMockSkillValidationRepository(), newMockExpValidationRepository())
+	svc := NewMaterializationService(nil, profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, newMockSkillValidationRepository(), newMockExpValidationRepository())
 	return svc, profileRepo, expRepo, eduRepo, skillRepo
 }
 
@@ -558,7 +574,7 @@ func newTestServiceWithRefs() (*MaterializationService, *mockProfileRepository, 
 	skillRepo := newMockProfileSkillRepository()
 	authorRepo := newMockAuthorRepository()
 	testimonialRepo := newMockTestimonialRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, newMockSkillValidationRepository(), newMockExpValidationRepository())
+	svc := NewMaterializationService(nil, profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, newMockSkillValidationRepository(), newMockExpValidationRepository())
 	return svc, profileRepo, authorRepo, testimonialRepo
 }
 
@@ -1047,7 +1063,7 @@ func TestMaterializePartialSuccess_ExperiencesFail(t *testing.T) {
 	expRepo := &mockFailingProfileExperienceRepository{newMockProfileExperienceRepository()}
 	eduRepo := newMockProfileEducationRepository()
 	skillRepo := newMockProfileSkillRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExpValidationRepository())
+	svc := NewMaterializationService(nil, profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExpValidationRepository())
 
 	data := &domain.ResumeExtractedData{
 		Experience: []domain.WorkExperience{
@@ -1094,7 +1110,7 @@ func TestMaterializePartialSuccess_SkillsFail(t *testing.T) {
 	expRepo := newMockProfileExperienceRepository()
 	eduRepo := newMockProfileEducationRepository()
 	skillRepo := &mockFailingProfileSkillRepository{newMockProfileSkillRepository()}
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExpValidationRepository())
+	svc := NewMaterializationService(nil, profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), newMockSkillValidationRepository(), newMockExpValidationRepository())
 
 	data := &domain.ResumeExtractedData{
 		Experience: []domain.WorkExperience{
@@ -1439,7 +1455,7 @@ func newTestServiceWithAll() (*MaterializationService, *mockProfileRepository, *
 	testimonialRepo := newMockTestimonialRepository()
 	skillValRepo := newMockSkillValidationRepository()
 	expValRepo := newMockExpValidationRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, skillValRepo, expValRepo)
+	svc := NewMaterializationService(nil, profileRepo, expRepo, eduRepo, skillRepo, authorRepo, testimonialRepo, skillValRepo, expValRepo)
 	return svc, profileRepo, skillRepo, skillValRepo, testimonialRepo
 }
 
@@ -1639,7 +1655,7 @@ func TestCrossReferenceValidationsMatchesSkills(t *testing.T) {
 	skillRepo := newMockProfileSkillRepository()
 	skillValRepo := newMockSkillValidationRepository()
 	expValRepo := newMockExpValidationRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+	svc := NewMaterializationService(nil, profileRepo, expRepo, eduRepo, skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
 
 	profileID := uuid.New()
 
@@ -1701,7 +1717,7 @@ func TestCrossReferenceValidationsCaseInsensitive(t *testing.T) {
 	skillRepo := newMockProfileSkillRepository()
 	skillValRepo := newMockSkillValidationRepository()
 	expValRepo := newMockExpValidationRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+	svc := NewMaterializationService(nil, profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
 
 	profileID := uuid.New()
 
@@ -1741,7 +1757,7 @@ func TestCrossReferenceValidationsMatchesDiscoveredSkills(t *testing.T) {
 	skillRepo := newMockProfileSkillRepository()
 	skillValRepo := newMockSkillValidationRepository()
 	expValRepo := newMockExpValidationRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+	svc := NewMaterializationService(nil, profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
 
 	profileID := uuid.New()
 
@@ -1781,7 +1797,7 @@ func TestCrossReferenceValidationsDeduplicatesAcrossSources(t *testing.T) {
 	skillRepo := newMockProfileSkillRepository()
 	skillValRepo := newMockSkillValidationRepository()
 	expValRepo := newMockExpValidationRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+	svc := NewMaterializationService(nil, profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
 
 	profileID := uuid.New()
 
@@ -1819,7 +1835,7 @@ func TestCrossReferenceValidationsSubstringMatching(t *testing.T) {
 	skillRepo := newMockProfileSkillRepository()
 	skillValRepo := newMockSkillValidationRepository()
 	expValRepo := newMockExpValidationRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+	svc := NewMaterializationService(nil, profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
 
 	profileID := uuid.New()
 
@@ -1950,7 +1966,7 @@ func TestCrossReferenceValidationsMultipleRolesAtSameCompany(t *testing.T) {
 	skillRepo := newMockProfileSkillRepository()
 	skillValRepo := newMockSkillValidationRepository()
 	expValRepo := newMockExpValidationRepository()
-	svc := NewMaterializationService(profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
+	svc := NewMaterializationService(nil, profileRepo, expRepo, newMockProfileEducationRepository(), skillRepo, newMockAuthorRepository(), newMockTestimonialRepository(), skillValRepo, expValRepo)
 
 	profileID := uuid.New()
 

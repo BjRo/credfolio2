@@ -14,11 +14,11 @@ import (
 
 // ProfileEducationRepository implements domain.ProfileEducationRepository using PostgreSQL.
 type ProfileEducationRepository struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 // NewProfileEducationRepository creates a new PostgreSQL profile education repository.
-func NewProfileEducationRepository(db *bun.DB) *ProfileEducationRepository {
+func NewProfileEducationRepository(db bun.IDB) *ProfileEducationRepository {
 	return &ProfileEducationRepository{db: db}
 }
 
