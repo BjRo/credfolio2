@@ -72,3 +72,55 @@ To avoid typing the password repeatedly, set `PGPASSWORD`:
 export PGPASSWORD=credfolio_dev
 psql -h credfolio2-postgres -U credfolio -d credfolio_dev
 ```
+
+## Database Reset Script
+
+The `.claude/scripts/reset-db.sh` script provides a safe, one-command way to reset databases. It drops the database, recreates it, and runs all migrations.
+
+### Usage
+
+```bash
+.claude/scripts/reset-db.sh [environment]
+```
+
+### Arguments
+
+| Environment | Behavior | Confirmation Required |
+|-------------|----------|----------------------|
+| `dev` (default) | Reset `credfolio_dev` | Yes |
+| `test` | Reset `credfolio_test` | No |
+| `all` | Reset both databases | Yes |
+
+### Examples
+
+```bash
+# Reset dev database (prompts for confirmation)
+.claude/scripts/reset-db.sh
+
+# Reset test database (no prompt, auto-proceeds)
+.claude/scripts/reset-db.sh test
+
+# Reset both databases (prompts for confirmation)
+.claude/scripts/reset-db.sh all
+```
+
+### What It Does
+
+1. Drops the target database (if exists)
+2. Creates a fresh database
+3. Runs all migrations from `src/backend/migrations/`
+4. Displays the final migration version
+
+### Safety Features
+
+- **Confirmation prompts** protect the dev database from accidental wipes
+- Test database auto-proceeds (no prompt) for CI/automation workflows
+- Clear color-coded output shows progress and status
+- Script uses `set -e` to abort on errors
+
+### When to Use
+
+- Reset development database to clean state
+- Clear test database between test runs
+- Fix migration issues by starting fresh
+- Remove accumulated test data

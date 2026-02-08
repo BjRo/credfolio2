@@ -103,6 +103,11 @@ cd src/backend && pnpm build   # Compiles to bin/server
 # Cleanup
 pnpm clean                     # Clean all packages
 rm -rf .turbo                  # Clear Turborepo cache
+
+# Database reset (requires confirmation for dev)
+.claude/scripts/reset-db.sh          # Reset dev database
+.claude/scripts/reset-db.sh test     # Reset test database
+.claude/scripts/reset-db.sh all      # Reset both databases
 ```
 
 ## Important Context
