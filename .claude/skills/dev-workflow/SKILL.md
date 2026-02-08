@@ -161,7 +161,8 @@ gh pr diff --name-only
 
 - If `src/backend/` files changed → launch **@review-backend**
 - If `src/frontend/` files changed → launch **@review-frontend**
-- If both changed → launch **both in parallel**
+- If LLM-related files changed (`src/backend/internal/infrastructure/llm/**` or `src/backend/internal/job/*_processing.go`) → launch **@review-ai**
+- If multiple areas changed → launch **all relevant reviewers in parallel**
 
 **Launch the reviewers using the Task tool** (use exactly these parameters):
 
@@ -181,7 +182,15 @@ Task tool call:
   prompt: "Review the current PR. Post your findings as PR comments using the gh CLI."
 ```
 
-**IMPORTANT**: Always launch these as subagents via the Task tool. Never invoke review agents directly in the main conversation — that defeats the purpose of keeping the context clean. Both `@review-backend` and `@review-frontend` are named agents in `.claude/agents/`.
+For **@review-ai** (when LLM-related files changed):
+```
+Task tool call:
+  subagent_type: "review-ai"
+  description: "LLM code review"
+  prompt: "Review the current PR for LLM-specific concerns (prompts, model selection, extraction safety). Post your findings as PR comments using the gh CLI."
+```
+
+**IMPORTANT**: Always launch these as subagents via the Task tool. Never invoke review agents directly in the main conversation — that defeats the purpose of keeping the context clean. All review agents (`@review-backend`, `@review-frontend`, `@review-ai`) are named agents in `.claude/agents/`.
 
 **After the reviews complete:**
 - Read the review summaries returned by the subagents
