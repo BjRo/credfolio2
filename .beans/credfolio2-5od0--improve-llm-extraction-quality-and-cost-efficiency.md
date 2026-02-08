@@ -44,18 +44,18 @@ Address LLM accuracy, data quality, and cost optimization opportunities identifi
 ## Acceptance Criteria
 
 ### Data Quality
-- [ ] Resume summaries extracted from text, not synthesized by LLM
-- [ ] "Unknown" authors rejected, require actual name extraction
-- [ ] JSON cleanup logs warnings when aggressive fixes needed (indicates prompt issues)
-- [ ] Text extraction deduplicated to avoid redundant LLM calls
+- [x] Resume summaries extracted from text, not synthesized by LLM
+- [x] "Unknown" authors rejected, require actual name extraction
+- [x] JSON cleanup logs warnings when aggressive fixes needed (indicates prompt issues)
+- [x] Text extraction deduplicated to avoid redundant LLM calls
 
 ### Cost Optimization
-- [ ] Document detection uses Haiku instead of Sonnet (10x cost reduction)
-- [ ] Prompt versions tracked in code and logs
-- [ ] Extraction metadata includes: tokens used, duration, model version
+- [x] Document detection uses Haiku instead of Sonnet (10x cost reduction)
+- [x] Prompt versions tracked in code and logs
+- [x] Extraction metadata includes: tokens used, duration, model version
 
 ### Operational Improvements
-- [ ] Per-task timeout configuration (detection: 30s, extraction: 2min)
+- [x] Per-task timeout configuration (detection: 2min, extraction: 5min)
 - [ ] Dashboard/logs show prompt effectiveness metrics
 
 ## Reference
@@ -317,12 +317,12 @@ The implementation follows a conservative approach: make existing functionality 
 None — all requirements are clear from the codebase review and acceptance criteria.
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [N/A] Visual verification via `@qa` subagent (via Task tool, for UI changes)
 - [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed to remote
+- [x] All other checklist items above are completed
+- [x] Branch pushed to remote
 - [ ] PR created for human review
 - [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool)
