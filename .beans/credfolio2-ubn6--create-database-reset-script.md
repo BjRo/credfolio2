@@ -57,8 +57,8 @@ Create `.claude/scripts/reset-db.sh` that:
 - [x] Script drops, recreates, and migrates the database
 - [x] Script works in the devcontainer (no make dependency)
 - [x] CLAUDE.md updated to reference the script
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
 
 ---
