@@ -1089,3 +1089,59 @@ John Manager
 		})
 	}
 }
+
+// TestResumeExtractionPrompt_NoSummarySynthesis verifies the resume extraction prompt
+// instructs the LLM NOT to synthesize summaries when none exists in the resume.
+func TestResumeExtractionPrompt_NoSummarySynthesis(t *testing.T) {
+	// Simulate a resume with NO summary section - just experience and skills
+	resumeText := `
+John Doe
+Software Engineer
+john@example.com
+
+Experience:
+- Senior Engineer at TechCorp (2020-Present)
+  Developed backend systems using Go
+
+Skills: Go, Python, Docker
+`
+
+	// Mock LLM that returns JSON with an empty summary
+	mockResponse := `{
+		"name": "John Doe",
+		"email": "john@example.com",
+		"summary": "",
+		"experience": [{
+			"company": "TechCorp",
+			"title": "Senior Engineer",
+			"startDate": "2020-01-01",
+			"isCurrent": true,
+			"description": "Developed backend systems using Go"
+		}],
+		"education": [],
+		"skills": ["Go", "Python", "Docker"],
+		"extractedAt": "2024-01-01T00:00:00Z",
+		"confidence": 0.95
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content:      mockResponse,
+			Model:        "test-model",
+			InputTokens:  100,
+			OutputTokens: 50,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractResumeData(context.Background(), resumeText)
+	if err != nil {
+		t.Fatalf("ExtractResumeData() error = %v", err)
+	}
+
+	// When no summary exists in the resume, the LLM should return empty summary (not synthesize one)
+	if result.Summary != nil && *result.Summary != "" {
+		t.Errorf("Summary should be empty when no summary section exists, got %q", *result.Summary)
+	}
+}
