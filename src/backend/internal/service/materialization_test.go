@@ -294,6 +294,22 @@ func (r *mockAuthorRepository) Create(_ context.Context, author *domain.Author) 
 	return nil
 }
 
+func (r *mockAuthorRepository) Upsert(ctx context.Context, author *domain.Author) (*domain.Author, error) {
+	// Check if author already exists
+	existing, err := r.FindByNameAndCompany(ctx, author.ProfileID, author.Name, author.Company)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return existing, nil
+	}
+	// Create new author
+	if err := r.Create(ctx, author); err != nil {
+		return nil, err
+	}
+	return author, nil
+}
+
 func (r *mockAuthorRepository) GetByID(_ context.Context, id uuid.UUID) (*domain.Author, error) {
 	a, ok := r.authors[id]
 	if !ok {

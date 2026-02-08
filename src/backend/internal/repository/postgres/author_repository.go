@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,6 +27,37 @@ func NewAuthorRepository(db *bun.DB) *AuthorRepository {
 func (r *AuthorRepository) Create(ctx context.Context, author *domain.Author) error {
 	_, err := r.db.NewInsert().Model(author).Exec(ctx)
 	return err
+}
+
+// Upsert creates a new author or returns the existing one if already exists.
+// Uses ON CONFLICT DO NOTHING + RETURNING to handle race conditions safely.
+func (r *AuthorRepository) Upsert(ctx context.Context, author *domain.Author) (*domain.Author, error) {
+	// Try insert with ON CONFLICT DO NOTHING and RETURNING to detect if insert happened
+	// Note: The unique constraint is on (profile_id, name, COALESCE(company, ''))
+	var inserted domain.Author
+	err := r.db.NewInsert().
+		Model(author).
+		On("CONFLICT (profile_id, name, COALESCE(company, '')) DO NOTHING").
+		Returning("*").
+		Scan(ctx, &inserted)
+
+	if err != nil {
+		// If no rows returned (conflict occurred), fetch existing author
+		if errors.Is(err, sql.ErrNoRows) {
+			existing, findErr := r.FindByNameAndCompany(ctx, author.ProfileID, author.Name, author.Company)
+			if findErr != nil {
+				return nil, fmt.Errorf("failed to find existing author after conflict: %w", findErr)
+			}
+			if existing == nil {
+				return nil, fmt.Errorf("author not found after conflict (should be impossible)")
+			}
+			return existing, nil
+		}
+		return nil, err
+	}
+
+	// Insert succeeded, return the inserted author
+	return &inserted, nil
 }
 
 // GetByID retrieves an author by its ID.

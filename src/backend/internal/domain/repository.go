@@ -69,6 +69,10 @@ type AuthorRepository interface {
 	// Create persists a new author.
 	Create(ctx context.Context, author *Author) error
 
+	// Upsert creates a new author or returns the existing one if a duplicate exists.
+	// This handles concurrent creation attempts safely using the database unique constraint.
+	Upsert(ctx context.Context, author *Author) (*Author, error)
+
 	// GetByID retrieves an author by its ID.
 	GetByID(ctx context.Context, id uuid.UUID) (*Author, error)
 
