@@ -21,6 +21,13 @@ import (
 
 const tracerName = "credfolio"
 
+// Document size limits (in bytes) to prevent cost/performance DoS.
+// 50KB ≈ 12,500 tokens, 100KB ≈ 25,000 tokens
+const (
+	maxResumeTextSize = 50 * 1024  // 50KB
+	maxLetterTextSize = 100 * 1024 // 100KB
+)
+
 // Embedded prompts from external files for easier maintenance and review.
 // Prompts are split into system (instructions) and user (content) for better
 // token caching and clearer separation of concerns.
@@ -437,6 +444,20 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 	)
 	defer span.End()
 
+	// Enforce document size limit to prevent cost/performance DoS
+	if len(text) > maxResumeTextSize {
+		originalSize := len(text)
+		span.SetAttributes(attribute.Bool("truncated", true))
+		text = text[:maxResumeTextSize]
+		if e.config.Logger != nil {
+			e.config.Logger.Warning("Resume text truncated due to size limit",
+				logger.Feature("llm"),
+				logger.Int("original_size", originalSize),
+				logger.Int("max_size", maxResumeTextSize),
+			)
+		}
+	}
+
 	// Get the appropriate provider for resume extraction
 	provider := e.getProviderForChain(e.config.ResumeExtractionChain)
 
@@ -481,6 +502,14 @@ func (e *DocumentExtractor) ExtractResumeData(ctx context.Context, text string) 
 	}
 	if data.Skills == nil {
 		data.Skills = []string{}
+	}
+
+	// Validate and sanitize extracted data before returning
+	validator := NewExtractedDataValidator()
+	if err := validator.ValidateResumeData(&data); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "validation failed")
+		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
 	return &data, nil
@@ -637,6 +666,20 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 	)
 	defer span.End()
 
+	// Enforce document size limit to prevent cost/performance DoS
+	if len(text) > maxLetterTextSize {
+		originalSize := len(text)
+		span.SetAttributes(attribute.Bool("truncated", true))
+		text = text[:maxLetterTextSize]
+		if e.config.Logger != nil {
+			e.config.Logger.Warning("Letter text truncated due to size limit",
+				logger.Feature("llm"),
+				logger.Int("original_size", originalSize),
+				logger.Int("max_size", maxLetterTextSize),
+			)
+		}
+	}
+
 	// Get the appropriate provider for reference letter extraction
 	chain := e.config.ReferenceExtractionChain
 	if len(chain) == 0 {
@@ -782,6 +825,14 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 
 	// Set model version from the actual LLM response so callers don't need to hardcode it
 	data.Metadata.ModelVersion = resp.Model
+
+	// Validate and sanitize extracted data before returning
+	validator := NewExtractedDataValidator()
+	if err := validator.ValidateLetterData(data); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "validation failed")
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
 
 	return data, nil
 }
