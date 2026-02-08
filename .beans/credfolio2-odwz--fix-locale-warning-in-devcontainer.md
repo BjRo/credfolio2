@@ -97,6 +97,6 @@ This approach ensures the fix persists across container rebuilds, as it's baked 
 - [x] Visual verification via `@qa` subagent (via Task tool, for UI changes) — N/A: No UI changes
 - [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced) — N/A: Minor config fix
 - [ ] All other checklist items above are completed — Pending devcontainer rebuild
-- [ ] Branch pushed to remote
-- [ ] PR created for human review
+- [x] Branch pushed to remote
+- [x] PR created for human review
 - [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool) — N/A: No code changes
