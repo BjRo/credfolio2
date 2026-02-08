@@ -1,11 +1,11 @@
 ---
 # credfolio2-72p8
 title: Fix data integrity issues
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-02-08T11:04:00Z
-updated_at: 2026-02-08T13:34:40Z
+updated_at: 2026-02-08T14:18:41Z
 parent: credfolio2-nihn
 ---
 
