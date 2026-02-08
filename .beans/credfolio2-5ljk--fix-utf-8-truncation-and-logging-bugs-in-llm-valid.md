@@ -1,11 +1,11 @@
 ---
 # credfolio2-5ljk
 title: Fix UTF-8 truncation and logging bugs in LLM validation
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-02-08T11:45:49Z
-updated_at: 2026-02-08T11:46:24Z
+updated_at: 2026-02-08T11:55:14Z
 ---
 
 Fix critical issues found in code review of PR #137 (credfolio2-offq).
