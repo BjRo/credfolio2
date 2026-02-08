@@ -2955,6 +2955,60 @@ func (r *mutationResolver) DeleteTestimonial(ctx context.Context, id string) (*m
 	}, nil
 }
 
+// Testimonials is the resolver for the testimonials field.
+func (r *profileResolver) Testimonials(ctx context.Context, obj *model.Profile) ([]*model.Testimonial, error) {
+	profileID, err := uuid.Parse(obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid profile ID: %w", err)
+	}
+
+	testimonials, err := r.testimonialRepo.GetByProfileID(ctx, profileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load testimonials: %w", err)
+	}
+
+	// Convert domain testimonials to GraphQL model
+	// The nested fields (author, referenceLetter, validatedSkills) are resolved
+	// by their respective field resolvers in gqlgen
+	result := make([]*model.Testimonial, len(testimonials))
+	for i, t := range testimonials {
+		var relationship model.TestimonialRelationship
+		switch t.Relationship {
+		case domain.TestimonialRelationshipManager:
+			relationship = model.TestimonialRelationshipManager
+		case domain.TestimonialRelationshipPeer:
+			relationship = model.TestimonialRelationshipPeer
+		case domain.TestimonialRelationshipDirectReport:
+			relationship = model.TestimonialRelationshipDirectReport
+		case domain.TestimonialRelationshipClient:
+			relationship = model.TestimonialRelationshipClient
+		default:
+			relationship = model.TestimonialRelationshipOther
+		}
+
+		authorName := ""
+		if t.AuthorName != nil {
+			authorName = *t.AuthorName
+		}
+
+		result[i] = &model.Testimonial{
+			ID:            t.ID.String(),
+			Quote:         t.Quote,
+			AuthorName:    authorName,
+			AuthorTitle:   t.AuthorTitle,
+			AuthorCompany: t.AuthorCompany,
+			Relationship:  relationship,
+			CreatedAt:     t.CreatedAt,
+			// These fields will be resolved by their field resolvers:
+			// - Author (via testimonialResolver.Author)
+			// - ReferenceLetter (via testimonialResolver.ReferenceLetter)
+			// - ValidatedSkills (via testimonialResolver.ValidatedSkills)
+		}
+	}
+
+	return result, nil
+}
+
 // ValidationCount is the resolver for the validationCount field.
 func (r *profileExperienceResolver) ValidationCount(ctx context.Context, obj *model.ProfileExperience) (int, error) {
 	expID, err := uuid.Parse(obj.ID)
@@ -4033,6 +4087,9 @@ func (r *Resolver) File() generated.FileResolver { return &fileResolver{r} }
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
+// Profile returns generated.ProfileResolver implementation.
+func (r *Resolver) Profile() generated.ProfileResolver { return &profileResolver{r} }
+
 // ProfileExperience returns generated.ProfileExperienceResolver implementation.
 func (r *Resolver) ProfileExperience() generated.ProfileExperienceResolver {
 	return &profileExperienceResolver{r}
@@ -4055,10 +4112,9 @@ func (r *Resolver) Testimonial() generated.TestimonialResolver { return &testimo
 type experienceValidationResolver struct{ *Resolver }
 type fileResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type profileResolver struct{ *Resolver }
 type profileExperienceResolver struct{ *Resolver }
 type profileSkillResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type skillValidationResolver struct{ *Resolver }
 type testimonialResolver struct{ *Resolver }
-
-// !!! WARNING !!!

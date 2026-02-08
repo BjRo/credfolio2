@@ -69,6 +69,10 @@ models:
     fields:
       url:
         resolver: true
+  Profile:
+    fields:
+      testimonials:
+        resolver: true
   ProfileSkill:
     fields:
       validationCount:

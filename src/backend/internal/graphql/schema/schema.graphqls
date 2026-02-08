@@ -486,6 +486,8 @@ type Profile {
   educations: [ProfileEducation!]!
   """Skill entries."""
   skills: [ProfileSkill!]!
+  """Testimonials from reference letters."""
+  testimonials: [Testimonial!]!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
