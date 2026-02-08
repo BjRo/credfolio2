@@ -24,7 +24,7 @@ Add `make` to the devcontainer by updating `.devcontainer/devcontainer.json`:
 Discovered while implementing credfolio2-duun (Makefile help fix)
 
 ## Checklist
-- [ ] Add `make` to devcontainer configuration
+- [x] Add `make` to devcontainer configuration
 - [ ] Rebuild devcontainer and verify `make` is available
 - [ ] Test `make help` from `src/backend/` directory
 - [ ] Manually verify at least one migration target works
