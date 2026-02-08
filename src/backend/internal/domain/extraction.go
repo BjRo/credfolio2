@@ -3,6 +3,19 @@ package domain
 
 import "time"
 
+// Prompt version constants track which version of each prompt was used for extraction.
+// Version format: vMAJOR.MINOR.PATCH (semantic versioning)
+// Increment when changing prompt behavior:
+//   - MAJOR: Breaking changes to output schema or fundamental approach
+//   - MINOR: Significant prompt improvements or new instructions
+//   - PATCH: Clarifications, typo fixes, minor wording changes
+const (
+	ResumeExtractionPromptVersion    = "v1.1.0" // Changed: summary extraction-only (no synthesis)
+	LetterExtractionPromptVersion    = "v1.1.0" // Changed: reject unknown authors
+	DocumentDetectionPromptVersion   = "v1.0.0" // Unchanged
+	DocumentExtractionPromptVersion  = "v1.0.0" // Unchanged
+)
+
 // AuthorRelationship represents the relationship type between letter author and candidate.
 type AuthorRelationship string
 
@@ -60,7 +73,11 @@ type ExtractedExperienceMention struct {
 type ExtractionMetadata struct { //nolint:govet // Field ordering prioritizes JSON serialization over memory alignment
 	ExtractedAt      time.Time `json:"extractedAt"`
 	ModelVersion     string    `json:"modelVersion"`
-	ProcessingTimeMs *int      `json:"processingTimeMs,omitempty"`
+	PromptVersion    string    `json:"promptVersion"`
+	InputTokens      int       `json:"inputTokens"`
+	OutputTokens     int       `json:"outputTokens"`
+	DurationMs       int64     `json:"durationMs"`
+	ProcessingTimeMs *int      `json:"processingTimeMs,omitempty"` // Deprecated: use DurationMs
 }
 
 // DiscoveredSkill represents a skill discovered in a reference letter that may not be on the profile.
