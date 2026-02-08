@@ -25,11 +25,12 @@ This epic contains child beans for each major finding category from the comprehe
 
 Each child bean addresses a specific category of findings and will be refined separately:
 
-1. **Security Fixes** - LLM prompt injection, output validation, DoS protection
-2. **Performance Optimizations** - N+1 queries, frontend waterfalls, caching
-3. **Data Integrity** - Race conditions, transactions, author deduplication
-4. **Type System Improvements** - Enum consolidation, type correctness
-5. **Code Quality** - Dead code removal, duplication, GraphQL fragments
+1. **credfolio2-offq: Security Fixes** (CRITICAL) - LLM prompt injection, output validation, DoS protection
+2. **credfolio2-35s5: Performance Optimizations** (HIGH) - N+1 queries, frontend waterfalls, caching
+3. **credfolio2-72p8: Data Integrity** (HIGH) - Race conditions, transactions, author deduplication
+4. **credfolio2-v27d: Type System Improvements** (NORMAL) - Enum consolidation, type correctness
+5. **credfolio2-6ps0: Code Quality** (LOW) - Dead code removal, duplication, GraphQL fragments
+6. **credfolio2-5od0: LLM Quality & Cost** (NORMAL) - Extraction accuracy, data quality, Haiku for detection, prompt versioning
 
 ## Timeline
 
