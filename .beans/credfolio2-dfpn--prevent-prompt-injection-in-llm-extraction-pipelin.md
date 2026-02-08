@@ -1,13 +1,34 @@
 ---
 # credfolio2-dfpn
 title: Prevent prompt injection in LLM extraction pipeline
-status: todo
+status: scrapped
 type: task
 priority: high
 created_at: 2026-02-06T12:06:14Z
-updated_at: 2026-02-06T12:06:14Z
+updated_at: 2026-02-08T12:01:23Z
 parent: credfolio2-wxn8
 ---
+
+**DUPLICATE - Completed via credfolio2-offq and credfolio2-5ljk**
+
+This bean requested prompt injection hardening for the LLM extraction pipeline. All requested work was completed in PR #137:
+
+- ✅ Audited all prompts incorporating user-provided text
+- ✅ Added XML tag delimiters and anti-injection directives to all 6 prompt files
+- ✅ Implemented output validation layer with HTML escaping and sanitization
+- ✅ Added input length limits (50KB resumes, 100KB letters)
+- ✅ Added prompt injection tests verifying defenses work
+- ✅ UTF-8-safe truncation to prevent character corruption
+
+See beans:
+- credfolio2-offq: Fix LLM security vulnerabilities (main implementation)
+- credfolio2-5ljk: Fix UTF-8 truncation and logging bugs (critical follow-up)
+
+Both beans are completed and merged via PR #137.
+
+---
+
+## Original Description
 
 Audit and harden the LLM extraction pipeline against prompt injection attacks. Uploaded documents (resumes, reference letters) contain user-provided text that is passed directly to LLM prompts. A malicious document could embed instructions that manipulate extraction results or cause unintended behavior.
 
@@ -31,19 +52,3 @@ Audit and harden the LLM extraction pipeline against prompt injection attacks. U
 - Input length limits to prevent oversized injection payloads
 - Output schema validation (reject responses that don't match expected structure)
 - Sandboxing user content in XML/markdown code blocks within prompts
-
-## Checklist
-- [ ] Audit all prompts that incorporate user-provided document text
-- [ ] Add clear delimiters and anti-injection directives to all prompts
-- [ ] Implement output schema validation for all LLM responses
-- [ ] Add input length limits for extracted text passed to LLM
-- [ ] Test with known prompt injection payloads (craft test documents)
-- [ ] Document the hardening measures applied
-
-## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed and PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
