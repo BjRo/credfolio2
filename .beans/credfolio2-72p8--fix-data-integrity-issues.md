@@ -29,9 +29,9 @@ Address data integrity and concurrency issues in the backend.
 
 ## Acceptance Criteria
 
-- [ ] Author creation uses database-level unique constraint + upsert pattern
+- [x] Author creation uses database-level unique constraint + upsert pattern
 - [ ] Delete+create operations wrapped in database transaction
-- [ ] Tests verify concurrent author creation doesn't create duplicates
+- [x] Tests verify concurrent author creation doesn't create duplicates
 - [ ] Tests verify transaction rollback on failure
 
 ## Reference

@@ -374,21 +374,10 @@ func (s *MaterializationService) materializeDiscoveredSkills(
 }
 
 // findOrCreateAuthor finds an existing author by name and company, or creates a new one.
-// TODO: Add a unique DB constraint on (profile_id, name, company) to guard against
-// duplicate authors from concurrent imports (TOCTOU race in the find-then-create pattern).
+// Uses database upsert to eliminate TOCTOU race conditions by relying on the unique constraint.
 // TODO: Consider updating existing author's Title when reusing, so newer reference letters
 // with updated titles (e.g., promotions) refresh the canonical Author entity.
 func (s *MaterializationService) findOrCreateAuthor(ctx context.Context, profileID uuid.UUID, extracted *domain.ExtractedAuthor) (*domain.Author, error) {
-	// Try to find existing author with same name and company
-	existing, err := s.authorRepo.FindByNameAndCompany(ctx, profileID, extracted.Name, extracted.Company)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find existing author: %w", err)
-	}
-	if existing != nil {
-		return existing, nil
-	}
-
-	// Create new author
 	author := &domain.Author{
 		ID:        uuid.New(),
 		ProfileID: profileID,
@@ -396,10 +385,13 @@ func (s *MaterializationService) findOrCreateAuthor(ctx context.Context, profile
 		Title:     extracted.Title,
 		Company:   extracted.Company,
 	}
-	if createErr := s.authorRepo.Create(ctx, author); createErr != nil {
-		return nil, fmt.Errorf("failed to create author: %w", createErr)
+
+	result, err := s.authorRepo.Upsert(ctx, author)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert author: %w", err)
 	}
-	return author, nil
+
+	return result, nil
 }
 
 // populateProfileHeader fills empty profile header fields from extracted resume data.
