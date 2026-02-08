@@ -11,7 +11,7 @@ import "time"
 //   - PATCH: Clarifications, typo fixes, minor wording changes
 const (
 	ResumeExtractionPromptVersion    = "v1.1.0" // Changed: summary extraction-only (no synthesis)
-	LetterExtractionPromptVersion    = "v1.1.0" // Changed: reject unknown authors
+	LetterExtractionPromptVersion    = "v1.2.0" // Changed: allow unknown authors for German-style letters
 	DocumentDetectionPromptVersion   = "v1.0.0" // Unchanged
 	DocumentExtractionPromptVersion  = "v1.0.0" // Unchanged
 )

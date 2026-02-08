@@ -435,35 +435,11 @@ func TestValidateLetterData_RequiredFields(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects unknown author name", func(t *testing.T) {
-		data := &domain.ExtractedLetterData{
-			Author: domain.ExtractedAuthor{
-				Name:         "unknown",
-				Relationship: domain.AuthorRelationshipManager,
-			},
-			Metadata: domain.ExtractionMetadata{
-				ExtractedAt:  time.Now(),
-				ModelVersion: "test",
-			},
-		}
-
-		err := validator.ValidateLetterData(data)
-		if err == nil {
-			t.Fatal("expected validation error for 'unknown' author name")
-		}
-
-		var valErr *domain.ValidationError
-		if !errors.As(err, &valErr) {
-			t.Fatalf("expected ValidationError, got %T", err)
-		}
-
-		if valErr.Field != "author.name" {
-			t.Errorf("expected field 'author.name', got %q", valErr.Field)
-		}
-	})
-
-	t.Run("rejects Unknown author name (case insensitive)", func(t *testing.T) {
-		testCases := []string{"Unknown", "UNKNOWN", "UnKnOwN"}
+	t.Run("accepts unknown author name for German-style letters", func(t *testing.T) {
+		// German reference letters often don't contain explicit author names
+		// We allow "unknown" to support these legitimate use cases
+		// Users can edit the author name post-import
+		testCases := []string{"Unknown", "unknown", "UNKNOWN", "UnKnOwN"}
 		for _, name := range testCases {
 			data := &domain.ExtractedLetterData{
 				Author: domain.ExtractedAuthor{
@@ -477,8 +453,13 @@ func TestValidateLetterData_RequiredFields(t *testing.T) {
 			}
 
 			err := validator.ValidateLetterData(data)
-			if err == nil {
-				t.Errorf("expected validation error for author name %q", name)
+			if err != nil {
+				t.Errorf("expected no error for author name %q (German-style letters support), got %v", name, err)
+			}
+
+			// Verify the name is preserved (sanitized but not rejected)
+			if data.Author.Name == "" {
+				t.Errorf("author name should be preserved, got empty string")
 			}
 		}
 	})
