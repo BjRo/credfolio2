@@ -1,11 +1,11 @@
 ---
 # credfolio2-ubn6
 title: Create database reset script
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T16:29:34Z
-updated_at: 2026-02-08T10:21:04Z
+updated_at: 2026-02-08T10:28:58Z
 parent: credfolio2-ynmd
 ---
 
