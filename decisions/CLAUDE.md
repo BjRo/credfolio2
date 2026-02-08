@@ -14,6 +14,7 @@ This directory contains Architecture Decision Records (ADRs). See [README.md](RE
 | [20260122001044-dnsmasq-dynamic-firewall-whitelisting.md](20260122001044-dnsmasq-dynamic-firewall-whitelisting.md) | dnsmasq for Dynamic Firewall Whitelisting | 2026-01-22 | Added dnsmasq for dynamic DNS-based firewall rules to handle Go module proxy IP changes |
 | [20260123000000-shadcn-ui-component-library.md](20260123000000-shadcn-ui-component-library.md) | shadcn/ui Component Library | 2026-01-23 | Adopted shadcn/ui as the component library for the frontend |
 | [20260207200000-implement-subagent-for-bean-execution.md](20260207200000-implement-subagent-for-bean-execution.md) | Implement Subagent for Bean Execution | 2026-02-07 | Introduced @implement subagent to execute bean implementation plans in isolated context, completing the refine → implement → qa → review pipeline |
+| [20260208004529-add-review-ai-subagent-for-llm-code-review.md](20260208004529-add-review-ai-subagent-for-llm-code-review.md) | Add @review-ai Subagent for LLM Code Review | 2026-02-08 | Introduced @review-ai specialized reviewer for LLM code focusing on prompt injection, schema design, model selection, and evaluation strategies |
 
 ## Maintenance
 

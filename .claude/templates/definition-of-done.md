@@ -7,4 +7,4 @@
 - [ ] All other checklist items above are completed
 - [ ] Branch pushed to remote
 - [ ] PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
+- [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool)

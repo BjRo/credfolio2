@@ -10,7 +10,7 @@
 4. **Visual verification** (for ANY UI changes): Use the `@qa` subagent (via Task tool) to verify the feature works in the browser
 5. **Bean checklist**: Ensure ALL checklist items in the bean are checked off
 6. **Push and create PR**: Push your branch and create a PR for human review
-7. **Run automated code reviews**: Launch `@review-backend` and/or `@review-frontend` as subagents via Task tool — address any critical findings
+7. **Run automated code reviews**: Launch `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) as subagents via Task tool — address any critical findings
 
 **DO NOT skip these steps.**
 **DO NOT commit directly to main.**
