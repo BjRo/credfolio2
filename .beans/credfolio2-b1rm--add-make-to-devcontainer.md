@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-02-08T09:01:03Z
-updated_at: 2026-02-08T09:03:53Z
+updated_at: 2026-02-08T10:00:16Z
 ---
 
 The backend Makefile provides essential developer commands (migrations, etc.) but `make` is not installed in the devcontainer.
@@ -25,9 +25,9 @@ Discovered while implementing credfolio2-duun (Makefile help fix)
 
 ## Checklist
 - [x] Add `make` to devcontainer configuration
-- [ ] Rebuild devcontainer and verify `make` is available
-- [ ] Test `make help` from `src/backend/` directory
-- [ ] Manually verify at least one migration target works
+- [x] Rebuild devcontainer and verify `make` is available
+- [x] Test `make help` from `src/backend/` directory
+- [x] Manually verify at least one migration target works
 
 ## Implementation Plan
 
@@ -132,3 +132,14 @@ While we only need `make` for this task, installing `build-essential` is the Deb
 ### Open Questions
 
 None — this is a straightforward addition of a standard development tool.
+
+## Definition of Done
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
+- [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
+- [x] All other checklist items above are completed
+- [x] Branch pushed to remote
+- [x] PR created for human review
+- [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool)
