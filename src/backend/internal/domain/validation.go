@@ -10,6 +10,7 @@ var (
 	ErrFieldTooLong     = errors.New("field exceeds maximum length")
 	ErrInvalidCharacter = errors.New("field contains invalid characters")
 	ErrEmptyRequired    = errors.New("required field is empty")
+	ErrInvalidAuthor    = errors.New("invalid author name")
 )
 
 // ValidationError wraps field-specific validation failures.

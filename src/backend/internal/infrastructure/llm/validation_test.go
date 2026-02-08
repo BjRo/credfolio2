@@ -435,6 +435,54 @@ func TestValidateLetterData_RequiredFields(t *testing.T) {
 		}
 	})
 
+	t.Run("rejects unknown author name", func(t *testing.T) {
+		data := &domain.ExtractedLetterData{
+			Author: domain.ExtractedAuthor{
+				Name:         "unknown",
+				Relationship: domain.AuthorRelationshipManager,
+			},
+			Metadata: domain.ExtractionMetadata{
+				ExtractedAt:  time.Now(),
+				ModelVersion: "test",
+			},
+		}
+
+		err := validator.ValidateLetterData(data)
+		if err == nil {
+			t.Fatal("expected validation error for 'unknown' author name")
+		}
+
+		var valErr *domain.ValidationError
+		if !errors.As(err, &valErr) {
+			t.Fatalf("expected ValidationError, got %T", err)
+		}
+
+		if valErr.Field != "author.name" {
+			t.Errorf("expected field 'author.name', got %q", valErr.Field)
+		}
+	})
+
+	t.Run("rejects Unknown author name (case insensitive)", func(t *testing.T) {
+		testCases := []string{"Unknown", "UNKNOWN", "UnKnOwN"}
+		for _, name := range testCases {
+			data := &domain.ExtractedLetterData{
+				Author: domain.ExtractedAuthor{
+					Name:         name,
+					Relationship: domain.AuthorRelationshipManager,
+				},
+				Metadata: domain.ExtractionMetadata{
+					ExtractedAt:  time.Now(),
+					ModelVersion: "test",
+				},
+			}
+
+			err := validator.ValidateLetterData(data)
+			if err == nil {
+				t.Errorf("expected validation error for author name %q", name)
+			}
+		}
+	})
+
 	t.Run("accepts valid author name", func(t *testing.T) {
 		data := &domain.ExtractedLetterData{
 			Author: domain.ExtractedAuthor{

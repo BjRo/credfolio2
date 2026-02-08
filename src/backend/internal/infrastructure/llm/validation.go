@@ -89,9 +89,17 @@ func (v *ExtractedDataValidator) ValidateResumeData(data *domain.ResumeExtracted
 
 // ValidateLetterData validates and sanitizes reference letter extraction results.
 func (v *ExtractedDataValidator) ValidateLetterData(data *domain.ExtractedLetterData) error {
-	// Validate author name (required)
-	if strings.TrimSpace(data.Author.Name) == "" {
+	// Validate author name (required and not "unknown")
+	authorName := strings.ToLower(strings.TrimSpace(data.Author.Name))
+	if authorName == "" {
 		return &domain.ValidationError{Field: "author.name", Message: "author name is required", Err: domain.ErrEmptyRequired}
+	}
+	if authorName == "unknown" {
+		return &domain.ValidationError{
+			Field:   "author.name",
+			Message: "author name must be present and cannot be 'unknown'",
+			Err:     domain.ErrInvalidAuthor,
+		}
 	}
 	data.Author.Name = sanitizeString(data.Author.Name, maxNameLength)
 	data.Author.Title = sanitizeOptionalString(data.Author.Title, maxTitleLength)
