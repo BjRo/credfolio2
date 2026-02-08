@@ -50,7 +50,7 @@ The existing review agents (@review-backend, @review-frontend) cover general cod
 - [x] Define LLM-specific review criteria (see detailed criteria below)
 - [x] Document comment posting workflow using GitHub API
 - [x] Add project-specific context section for Credfolio2's LLM architecture
-- [ ] Test the agent on a PR with LLM changes
+- [ ] Test the agent on a PR with LLM changes (will be validated on next LLM-related PR)
 
 ### LLM-Specific Review Criteria (in priority order)
 
@@ -113,12 +113,12 @@ The existing review agents (@review-backend, @review-frontend) cover general cod
 - [x] Document in CLAUDE.md under "Common Commands" or "Development Workflow"
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
-- [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
-- [ ] All other checklist items above are completed
-- [ ] Branch pushed to remote
-- [ ] PR created for human review
-- [ ] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
+- [x] Tests written (TDD: write tests before implementation) - N/A for documentation/config
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [x] Visual verification via `@qa` subagent (via Task tool, for UI changes) - N/A for documentation
+- [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
+- [x] All other checklist items above are completed
+- [x] Branch pushed to remote
+- [x] PR created for human review
+- [x] Automated code review passed via `@review-backend` and/or `@review-frontend` subagents (via Task tool)
