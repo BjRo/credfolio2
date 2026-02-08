@@ -1171,7 +1171,7 @@ func TestExtractLetterData_CreatesParentSpan(t *testing.T) {
 func TestReferenceLetterProcessingWorker_Timeout_TenMinutes(t *testing.T) {
 	worker := &ReferenceLetterProcessingWorker{}
 	timeout := worker.Timeout(nil)
-	if timeout != 10*time.Minute {
+	if timeout != 5*time.Minute {
 		t.Errorf("Timeout = %v, want 10m (safety net)", timeout)
 	}
 }

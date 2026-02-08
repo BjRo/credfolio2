@@ -60,8 +60,8 @@ func TestDocumentDetectionWorker_Timeout(t *testing.T) {
 		&mockDetectionExtractor{}, testLogger(),
 	)
 	timeout := worker.Timeout(nil)
-	if timeout != 5*time.Minute {
-		t.Errorf("Timeout = %v, want 5m", timeout)
+	if timeout != 2*time.Minute {
+		t.Errorf("Timeout = %v, want 2m", timeout)
 	}
 }
 

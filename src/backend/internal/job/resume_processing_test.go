@@ -122,7 +122,7 @@ func TestExtractResumeData_CreatesParentSpan(t *testing.T) {
 func TestResumeProcessingWorker_Timeout_TenMinutes(t *testing.T) {
 	worker := &ResumeProcessingWorker{}
 	timeout := worker.Timeout(nil)
-	if timeout != 10*time.Minute {
+	if timeout != 5*time.Minute {
 		t.Errorf("Timeout = %v, want 10m (safety net)", timeout)
 	}
 }
