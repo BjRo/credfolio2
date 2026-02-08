@@ -41,9 +41,9 @@ The script should be idempotent — safe to run even if nothing is running.
 - [x] Script handles all process types (turbo, go, next)
 - [x] Script is idempotent (no errors if nothing is running)
 - [x] Script verifies ports are free after cleanup
-- [ ] CLAUDE.md updated to reference the script
-- [ ] `.claude/rules/dev-servers.md` updated to reference the script
-- [ ] `.claude/agents/qa.md` updated to reference the script
+- [x] CLAUDE.md updated to reference the script
+- [x] `.claude/rules/dev-servers.md` updated to reference the script
+- [x] `.claude/agents/qa.md` updated to reference the script
 - [ ] `pnpm lint` passes with no errors
 - [ ] `pnpm test` passes with no failures
 - [ ] Branch pushed and PR created for human review
