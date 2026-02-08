@@ -65,6 +65,30 @@ func (r *AuthorRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.A
 	return author, nil
 }
 
+// GetByIDs retrieves multiple authors by their IDs in a single query.
+func (r *AuthorRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*domain.Author, error) {
+	if len(ids) == 0 {
+		return map[uuid.UUID]*domain.Author{}, nil
+	}
+
+	var authors []*domain.Author
+	err := r.db.NewSelect().
+		Model(&authors).
+		Where("id IN (?)", bun.In(ids)).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build map for efficient lookup
+	result := make(map[uuid.UUID]*domain.Author, len(authors))
+	for _, author := range authors {
+		result[author.ID] = author
+	}
+
+	return result, nil
+}
+
 // GetByProfileID retrieves all authors for a profile.
 func (r *AuthorRepository) GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*domain.Author, error) {
 	var authors []*domain.Author

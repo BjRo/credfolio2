@@ -76,6 +76,10 @@ type AuthorRepository interface {
 	// GetByID retrieves an author by its ID.
 	GetByID(ctx context.Context, id uuid.UUID) (*Author, error)
 
+	// GetByIDs retrieves multiple authors by their IDs in a single query.
+	// Returns a map of ID -> Author for efficient lookup. Missing IDs will not be in the map.
+	GetByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*Author, error)
+
 	// GetByProfileID retrieves all authors for a profile.
 	GetByProfileID(ctx context.Context, profileID uuid.UUID) ([]*Author, error)
 

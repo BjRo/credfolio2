@@ -238,6 +238,16 @@ func (r *mockProfileSkillRepository) GetByID(_ context.Context, id uuid.UUID) (*
 	return skill, nil
 }
 
+func (r *mockProfileSkillRepository) GetByIDs(_ context.Context, ids []uuid.UUID) (map[uuid.UUID]*domain.ProfileSkill, error) {
+	result := make(map[uuid.UUID]*domain.ProfileSkill)
+	for _, id := range ids {
+		if skill, ok := r.skills[id]; ok {
+			result[id] = skill
+		}
+	}
+	return result, nil
+}
+
 func (r *mockProfileSkillRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.ProfileSkill, error) {
 	var result []*domain.ProfileSkill
 	for _, skill := range r.skills {
@@ -316,6 +326,16 @@ func (r *mockAuthorRepository) GetByID(_ context.Context, id uuid.UUID) (*domain
 		return nil, nil
 	}
 	return a, nil
+}
+
+func (r *mockAuthorRepository) GetByIDs(_ context.Context, ids []uuid.UUID) (map[uuid.UUID]*domain.Author, error) {
+	result := make(map[uuid.UUID]*domain.Author)
+	for _, id := range ids {
+		if author, ok := r.authors[id]; ok {
+			result[id] = author
+		}
+	}
+	return result, nil
 }
 
 func (r *mockAuthorRepository) GetByProfileID(_ context.Context, profileID uuid.UUID) ([]*domain.Author, error) {

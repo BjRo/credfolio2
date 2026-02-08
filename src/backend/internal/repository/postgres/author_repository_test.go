@@ -592,3 +592,113 @@ func TestAuthorRepository_Upsert_Concurrent(t *testing.T) {
 		t.Errorf("expected 1 author, got %d (duplicate created)", len(authors))
 	}
 }
+
+func TestAuthorRepository_GetByIDs(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	cleanupTestData(t, db)
+
+	userRepo := postgres.NewUserRepository(db)
+	profileRepo := postgres.NewProfileRepository(db)
+	authorRepo := postgres.NewAuthorRepository(db)
+	ctx := context.Background()
+
+	// Create user and profile
+	user := &domain.User{
+		Email:        "authorbatch@example.com",
+		PasswordHash: "hashed_password",
+	}
+	if err := userRepo.Create(ctx, user); err != nil {
+		t.Fatalf("Create user failed: %v", err)
+	}
+
+	profile := &domain.Profile{
+		UserID: user.ID,
+	}
+	if err := profileRepo.Create(ctx, profile); err != nil {
+		t.Fatalf("Create profile failed: %v", err)
+	}
+
+	// Create 3 authors
+	author1 := &domain.Author{
+		ProfileID: profile.ID,
+		Name:      "Author One",
+		Company:   strPtr("Company A"),
+	}
+	if err := authorRepo.Create(ctx, author1); err != nil {
+		t.Fatalf("Create author1 failed: %v", err)
+	}
+
+	author2 := &domain.Author{
+		ProfileID: profile.ID,
+		Name:      "Author Two",
+		Company:   strPtr("Company B"),
+	}
+	if err := authorRepo.Create(ctx, author2); err != nil {
+		t.Fatalf("Create author2 failed: %v", err)
+	}
+
+	author3 := &domain.Author{
+		ProfileID: profile.ID,
+		Name:      "Author Three",
+		Company:   strPtr("Company C"),
+	}
+	if err := authorRepo.Create(ctx, author3); err != nil {
+		t.Fatalf("Create author3 failed: %v", err)
+	}
+
+	// Batch get all 3 authors plus one non-existent ID
+	nonExistentID := uuid.New()
+	authors, err := authorRepo.GetByIDs(ctx, []uuid.UUID{author1.ID, author2.ID, author3.ID, nonExistentID})
+	if err != nil {
+		t.Fatalf("GetByIDs failed: %v", err)
+	}
+
+	// Verify we got 3 authors (non-existent ID should not be in map)
+	if len(authors) != 3 {
+		t.Errorf("expected 3 authors, got %d", len(authors))
+	}
+
+	// Verify each author is in the map with correct data
+	if a, ok := authors[author1.ID]; !ok {
+		t.Errorf("author1 not found in results")
+	} else if a.Name != "Author One" {
+		t.Errorf("author1 name mismatch: got %s, want Author One", a.Name)
+	}
+
+	if a, ok := authors[author2.ID]; !ok {
+		t.Errorf("author2 not found in results")
+	} else if a.Name != "Author Two" {
+		t.Errorf("author2 name mismatch: got %s, want Author Two", a.Name)
+	}
+
+	if a, ok := authors[author3.ID]; !ok {
+		t.Errorf("author3 not found in results")
+	} else if a.Name != "Author Three" {
+		t.Errorf("author3 name mismatch: got %s, want Author Three", a.Name)
+	}
+
+	// Verify non-existent ID is not in map
+	if _, ok := authors[nonExistentID]; ok {
+		t.Errorf("non-existent ID should not be in results")
+	}
+}
+
+func TestAuthorRepository_GetByIDs_EmptyInput(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+	cleanupTestData(t, db)
+
+	authorRepo := postgres.NewAuthorRepository(db)
+	ctx := context.Background()
+
+	// Empty input should return empty map
+	authors, err := authorRepo.GetByIDs(ctx, []uuid.UUID{})
+	if err != nil {
+		t.Fatalf("GetByIDs with empty input failed: %v", err)
+	}
+
+	if len(authors) != 0 {
+		t.Errorf("expected empty map, got %d entries", len(authors))
+	}
+}
