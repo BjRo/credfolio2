@@ -1,11 +1,11 @@
 ---
 # credfolio2-b1rm
 title: Add make to devcontainer
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-08T09:01:03Z
-updated_at: 2026-02-08T10:02:31Z
+updated_at: 2026-02-08T10:02:56Z
 ---
 
 The backend Makefile provides essential developer commands (migrations, etc.) but `make` is not installed in the devcontainer.
