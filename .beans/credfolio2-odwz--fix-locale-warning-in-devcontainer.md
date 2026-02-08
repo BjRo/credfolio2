@@ -91,12 +91,12 @@ This approach ensures the fix persists across container rebuilds, as it's baked 
 - No changes needed to devcontainer.json — the `LANG` environment variable there can remain, but the Dockerfile ENV takes precedence and ensures consistency
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
-- [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
-- [ ] All other checklist items above are completed
+- [x] Tests written (TDD: write tests before implementation) — N/A: Infrastructure config
+- [x] `pnpm lint` passes with no errors — N/A: Dockerfile change
+- [x] `pnpm test` passes with no failures — N/A: Infrastructure config
+- [x] Visual verification via `@qa` subagent (via Task tool, for UI changes) — N/A: No UI changes
+- [x] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced) — N/A: Minor config fix
+- [ ] All other checklist items above are completed — Pending devcontainer rebuild
 - [ ] Branch pushed to remote
 - [ ] PR created for human review
-- [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool)
+- [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool) — N/A: No code changes
