@@ -1309,3 +1309,54 @@ func TestJSONCleanup_LogsWarnings(t *testing.T) {
 		}
 	})
 }
+
+// TestExtractLetterData_PopulatesMetadata verifies all metadata fields are populated.
+func TestExtractLetterData_PopulatesMetadata(t *testing.T) {
+	mockResponse := `{
+		"author": {
+			"name": "Jane Smith",
+			"relationship": "manager"
+		},
+		"testimonials": [],
+		"skillMentions": [],
+		"experienceMentions": [],
+		"discoveredSkills": [],
+		"metadata": {
+			"extractedAt": "2024-01-01T00:00:00Z",
+			"modelVersion": "test"
+		}
+	}`
+
+	inner := &mockProvider{
+		response: &domain.LLMResponse{
+			Content:      mockResponse,
+			Model:        "claude-sonnet-4-5-20250929",
+			InputTokens:  1234,
+			OutputTokens: 567,
+		},
+	}
+
+	extractor := llm.NewDocumentExtractor(inner, llm.DocumentExtractorConfig{})
+
+	result, err := extractor.ExtractLetterData(context.Background(), "Reference letter text", nil)
+	if err != nil {
+		t.Fatalf("ExtractLetterData() error = %v", err)
+	}
+
+	// Verify all enhanced metadata fields are populated
+	if result.Metadata.ModelVersion != "claude-sonnet-4-5-20250929" {
+		t.Errorf("ModelVersion = %q, want %q", result.Metadata.ModelVersion, "claude-sonnet-4-5-20250929")
+	}
+	if result.Metadata.PromptVersion != domain.LetterExtractionPromptVersion {
+		t.Errorf("PromptVersion = %q, want %q", result.Metadata.PromptVersion, domain.LetterExtractionPromptVersion)
+	}
+	if result.Metadata.InputTokens != 1234 {
+		t.Errorf("InputTokens = %d, want 1234", result.Metadata.InputTokens)
+	}
+	if result.Metadata.OutputTokens != 567 {
+		t.Errorf("OutputTokens = %d, want 567", result.Metadata.OutputTokens)
+	}
+	if result.Metadata.DurationMs < 0 {
+		t.Errorf("DurationMs should be >= 0, got %d", result.Metadata.DurationMs)
+	}
+}

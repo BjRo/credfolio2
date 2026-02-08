@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -672,6 +673,7 @@ type LetterTemplateData struct {
 //
 //nolint:gocyclo // Complex extraction logic with multiple validation paths
 func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, profileSkills []domain.ProfileSkillContext) (*domain.ExtractedLetterData, error) {
+	startTime := time.Now() // Track start time for metadata
 	ctx, span := otel.Tracer(tracerName).Start(ctx, "letter_data_extraction",
 		otelTrace.WithAttributes(
 			attribute.Int("text_length", len(text)),
@@ -849,8 +851,16 @@ func (e *DocumentExtractor) ExtractLetterData(ctx context.Context, text string, 
 		data.DiscoveredSkills = []domain.DiscoveredSkill{}
 	}
 
-	// Set model version from the actual LLM response so callers don't need to hardcode it
-	data.Metadata.ModelVersion = resp.Model
+	// Populate full extraction metadata
+	durationMs := time.Since(startTime).Milliseconds()
+	data.Metadata = domain.ExtractionMetadata{
+		ExtractedAt:   time.Now(),
+		ModelVersion:  resp.Model,
+		PromptVersion: domain.LetterExtractionPromptVersion,
+		InputTokens:   resp.InputTokens,
+		OutputTokens:  resp.OutputTokens,
+		DurationMs:    durationMs,
+	}
 
 	// Validate and sanitize extracted data before returning
 	validator := NewExtractedDataValidator()
