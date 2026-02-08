@@ -211,4 +211,4 @@ The other two hooks (`validate-bean-dod.sh`, `validate-bean-completion.sh`) each
 - [x] Failure modes documented or addressed (e.g., timeout added)
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
