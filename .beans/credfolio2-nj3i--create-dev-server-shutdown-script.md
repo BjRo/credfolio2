@@ -46,7 +46,7 @@ The script should be idempotent — safe to run even if nothing is running.
 - [x] `.claude/agents/qa.md` updated to reference the script
 - [x] `pnpm lint` passes with no errors
 - [x] `pnpm test` passes with no failures
-- [ ] Branch pushed and PR created for human review
+- [x] Branch pushed and PR created for human review
 
 ## Implementation Plan
 
