@@ -31,10 +31,10 @@ Address critical security vulnerabilities in LLM integration identified in codeb
 
 ## Acceptance Criteria
 
-- [ ] All prompts use XML tags or markdown code blocks to isolate user content
-- [ ] All extracted fields validated and sanitized before database persistence
-- [ ] Document size limits enforced (50KB resumes, 100KB letters)
-- [ ] Tests verify prompt injection attempts are blocked
+- [x] All prompts use XML tags or markdown code blocks to isolate user content
+- [x] All extracted fields validated and sanitized before database persistence
+- [x] Document size limits enforced (50KB resumes, 100KB letters)
+- [x] Tests verify prompt injection attempts are blocked
 
 ## Reference
 
@@ -588,12 +588,12 @@ Run existing integration tests that exercise the full extraction flow - they sho
 None - the plan is complete and ready for implementation.
 
 ## Definition of Done
-- [ ] Tests written (TDD: write tests before implementation)
-- [ ] `pnpm lint` passes with no errors
-- [ ] `pnpm test` passes with no failures
-- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes)
+- [x] Tests written (TDD: write tests before implementation)
+- [x] `pnpm lint` passes with no errors
+- [x] `pnpm test` passes with no failures
+- [ ] Visual verification via `@qa` subagent (via Task tool, for UI changes) - N/A no UI changes
 - [ ] ADR written via `/decision` skill (if new dependencies, patterns, or architectural changes were introduced)
-- [ ] All other checklist items above are completed
+- [x] All other checklist items above are completed
 - [ ] Branch pushed to remote
 - [ ] PR created for human review
 - [ ] Automated code review passed via `@review-backend`, `@review-frontend`, and/or `@review-ai` (for LLM changes) subagents (via Task tool)
