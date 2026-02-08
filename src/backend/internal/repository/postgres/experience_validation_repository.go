@@ -95,5 +95,36 @@ func (r *ExperienceValidationRepository) CountByProfileExperienceID(ctx context.
 	return count, nil
 }
 
+// BatchCountByProfileExperienceIDs returns validation counts for multiple experiences in one query.
+func (r *ExperienceValidationRepository) BatchCountByProfileExperienceIDs(ctx context.Context, profileExperienceIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	if len(profileExperienceIDs) == 0 {
+		return map[uuid.UUID]int{}, nil
+	}
+
+	type Result struct {
+		ProfileExperienceID uuid.UUID `bun:"profile_experience_id"`
+		Count               int       `bun:"count"`
+	}
+
+	var results []Result
+	err := r.db.NewSelect().
+		Model((*domain.ExperienceValidation)(nil)).
+		Column("profile_experience_id").
+		ColumnExpr("COUNT(*) as count").
+		Where("profile_experience_id IN (?)", bun.In(profileExperienceIDs)).
+		Group("profile_experience_id").
+		Scan(ctx, &results)
+	if err != nil {
+		return nil, err
+	}
+
+	counts := make(map[uuid.UUID]int, len(results))
+	for _, r := range results {
+		counts[r.ProfileExperienceID] = r.Count
+	}
+
+	return counts, nil
+}
+
 // Compile-time check that ExperienceValidationRepository implements domain.ExperienceValidationRepository.
 var _ domain.ExperienceValidationRepository = (*ExperienceValidationRepository)(nil)

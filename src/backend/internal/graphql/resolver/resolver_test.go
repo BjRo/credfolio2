@@ -802,6 +802,22 @@ func (r *mockSkillValidationRepository) CountByProfileSkillID(_ context.Context,
 	return count, nil
 }
 
+func (r *mockSkillValidationRepository) BatchCountByProfileSkillIDs(_ context.Context, profileSkillIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	counts := make(map[uuid.UUID]int)
+	for _, id := range profileSkillIDs {
+		count := 0
+		for _, v := range r.validations {
+			if v.ProfileSkillID == id {
+				count++
+			}
+		}
+		if count > 0 {
+			counts[id] = count
+		}
+	}
+	return counts, nil
+}
+
 // mockExperienceValidationRepository is a mock implementation of domain.ExperienceValidationRepository.
 type mockExperienceValidationRepository struct {
 	validations map[uuid.UUID]*domain.ExperienceValidation
@@ -869,6 +885,22 @@ func (r *mockExperienceValidationRepository) CountByProfileExperienceID(_ contex
 		}
 	}
 	return count, nil
+}
+
+func (r *mockExperienceValidationRepository) BatchCountByProfileExperienceIDs(_ context.Context, profileExpIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	counts := make(map[uuid.UUID]int)
+	for _, id := range profileExpIDs {
+		count := 0
+		for _, v := range r.validations {
+			if v.ProfileExperienceID == id {
+				count++
+			}
+		}
+		if count > 0 {
+			counts[id] = count
+		}
+	}
+	return counts, nil
 }
 
 // testLogger returns a logger that discards all output (for tests).

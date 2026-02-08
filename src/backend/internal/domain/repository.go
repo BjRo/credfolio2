@@ -136,6 +136,11 @@ type SkillValidationRepository interface {
 
 	// CountByProfileSkillID returns the number of validations for a skill.
 	CountByProfileSkillID(ctx context.Context, profileSkillID uuid.UUID) (int, error)
+
+	// BatchCountByProfileSkillIDs returns validation counts for multiple skills in one query.
+	// The returned map uses profile_skill_id as key and count as value.
+	// Skills with zero validations will not appear in the map.
+	BatchCountByProfileSkillIDs(ctx context.Context, profileSkillIDs []uuid.UUID) (map[uuid.UUID]int, error)
 }
 
 // ExperienceValidationRepository defines operations for experience validation persistence.
@@ -160,4 +165,9 @@ type ExperienceValidationRepository interface {
 
 	// CountByProfileExperienceID returns the number of validations for an experience.
 	CountByProfileExperienceID(ctx context.Context, profileExperienceID uuid.UUID) (int, error)
+
+	// BatchCountByProfileExperienceIDs returns validation counts for multiple experiences in one query.
+	// The returned map uses profile_experience_id as key and count as value.
+	// Experiences with zero validations will not appear in the map.
+	BatchCountByProfileExperienceIDs(ctx context.Context, profileExperienceIDs []uuid.UUID) (map[uuid.UUID]int, error)
 }

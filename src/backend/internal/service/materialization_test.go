@@ -483,6 +483,22 @@ func (r *mockSkillValidationRepository) CountByProfileSkillID(_ context.Context,
 	return count, nil
 }
 
+func (r *mockSkillValidationRepository) BatchCountByProfileSkillIDs(_ context.Context, profileSkillIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	counts := make(map[uuid.UUID]int)
+	for _, id := range profileSkillIDs {
+		count := 0
+		for _, v := range r.validations {
+			if v.ProfileSkillID == id {
+				count++
+			}
+		}
+		if count > 0 {
+			counts[id] = count
+		}
+	}
+	return counts, nil
+}
+
 func (r *mockSkillValidationRepository) Delete(_ context.Context, id uuid.UUID) error {
 	delete(r.validations, id)
 	return nil
@@ -549,6 +565,22 @@ func (r *mockExpValidationRepository) CountByProfileExperienceID(_ context.Conte
 		}
 	}
 	return count, nil
+}
+
+func (r *mockExpValidationRepository) BatchCountByProfileExperienceIDs(_ context.Context, profileExpIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	counts := make(map[uuid.UUID]int)
+	for _, id := range profileExpIDs {
+		count := 0
+		for _, v := range r.validations {
+			if v.ProfileExperienceID == id {
+				count++
+			}
+		}
+		if count > 0 {
+			counts[id] = count
+		}
+	}
+	return counts, nil
 }
 
 func (r *mockExpValidationRepository) Delete(_ context.Context, id uuid.UUID) error {
