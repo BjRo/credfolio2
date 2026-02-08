@@ -1,11 +1,11 @@
 ---
 # credfolio2-5od0
 title: Improve LLM extraction quality and cost efficiency
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-08T11:10:03Z
-updated_at: 2026-02-08T12:09:44Z
+updated_at: 2026-02-08T13:27:46Z
 parent: credfolio2-nihn
 ---
 
