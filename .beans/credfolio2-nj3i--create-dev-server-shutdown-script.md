@@ -37,10 +37,10 @@ The script should be idempotent — safe to run even if nothing is running.
 - Consider adding a permission rule: `Bash(.claude/scripts/stop-dev.sh)` in allow list
 
 ## Definition of Done
-- [ ] Script created at `.claude/scripts/stop-dev.sh`
-- [ ] Script handles all process types (turbo, go, next)
-- [ ] Script is idempotent (no errors if nothing is running)
-- [ ] Script verifies ports are free after cleanup
+- [x] Script created at `.claude/scripts/stop-dev.sh`
+- [x] Script handles all process types (turbo, go, next)
+- [x] Script is idempotent (no errors if nothing is running)
+- [x] Script verifies ports are free after cleanup
 - [ ] CLAUDE.md updated to reference the script
 - [ ] `.claude/rules/dev-servers.md` updated to reference the script
 - [ ] `.claude/agents/qa.md` updated to reference the script
