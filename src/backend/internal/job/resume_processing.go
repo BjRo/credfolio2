@@ -141,7 +141,7 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 	}
 
 	// Extract profile data using LLM
-	extractedData, err := w.extractResumeData(ctx, data, contentType)
+	extractedData, err := w.extractResumeData(ctx, args.FileID, data, contentType)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to extract resume data: %v", err)
 		w.log.Error("Resume extraction failed",
@@ -210,16 +210,28 @@ func (w *ResumeProcessingWorker) Work(ctx context.Context, job *river.Job[Resume
 }
 
 // extractResumeData uses the LLM to extract structured data from the resume.
-func (w *ResumeProcessingWorker) extractResumeData(ctx context.Context, data []byte, contentType string) (*domain.ResumeExtractedData, error) {
+func (w *ResumeProcessingWorker) extractResumeData(ctx context.Context, fileID uuid.UUID, data []byte, contentType string) (*domain.ResumeExtractedData, error) {
 	ctx, span := otel.Tracer("credfolio").Start(ctx, "resume_extraction")
 	defer span.End()
 
-	// First, extract text from the document
-	text, err := w.extractor.ExtractText(ctx, data, contentType)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("failed to extract text: %w", err)
+	var text string
+
+	// Check if we already have extracted text from the detection phase
+	file, err := w.fileRepo.GetByID(ctx, fileID)
+	if err == nil && file != nil && file.ExtractedText != nil && *file.ExtractedText != "" {
+		w.log.Info("Reusing extracted text from detection phase",
+			logger.Feature("jobs"),
+			logger.String("file_id", fileID.String()),
+		)
+		text = *file.ExtractedText
+	} else {
+		// Extract text from the document
+		text, err = w.extractor.ExtractText(ctx, data, contentType)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return nil, fmt.Errorf("failed to extract text: %w", err)
+		}
 	}
 
 	// Then, use LLM to extract structured profile data from the text

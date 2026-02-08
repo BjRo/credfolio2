@@ -2,9 +2,11 @@ package job
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
@@ -36,6 +38,34 @@ func (e *resumeMockExtractor) DetectDocumentContent(_ context.Context, _ string)
 	return nil, nil
 }
 
+// resumeMockFileRepository implements domain.FileRepository for testing.
+type resumeMockFileRepository struct{}
+
+func (m *resumeMockFileRepository) Create(_ context.Context, _ *domain.File) error {
+	return nil
+}
+
+func (m *resumeMockFileRepository) GetByID(_ context.Context, _ uuid.UUID) (*domain.File, error) {
+	// Return nil to force extraction (no cached text)
+	return nil, fmt.Errorf("not found")
+}
+
+func (m *resumeMockFileRepository) GetByUserID(_ context.Context, _ uuid.UUID) ([]*domain.File, error) {
+	return nil, nil
+}
+
+func (m *resumeMockFileRepository) GetByUserIDAndContentHash(_ context.Context, _ uuid.UUID, _ string) (*domain.File, error) {
+	return nil, fmt.Errorf("not found")
+}
+
+func (m *resumeMockFileRepository) Update(_ context.Context, _ *domain.File) error {
+	return nil
+}
+
+func (m *resumeMockFileRepository) Delete(_ context.Context, _ uuid.UUID) error {
+	return nil
+}
+
 func setupTestTracingForJobs(t *testing.T) *tracetest.InMemoryExporter {
 	t.Helper()
 	exporter := tracetest.NewInMemoryExporter()
@@ -64,9 +94,10 @@ func TestExtractResumeData_CreatesParentSpan(t *testing.T) {
 
 	worker := &ResumeProcessingWorker{
 		extractor: extractor,
+		fileRepo:  &resumeMockFileRepository{},
 	}
 
-	_, err := worker.extractResumeData(context.Background(), []byte("pdf data"), "application/pdf")
+	_, err := worker.extractResumeData(context.Background(), uuid.New(), []byte("pdf data"), "application/pdf")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

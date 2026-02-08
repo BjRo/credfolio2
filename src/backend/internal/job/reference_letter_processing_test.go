@@ -1143,9 +1143,10 @@ func TestExtractLetterData_CreatesParentSpan(t *testing.T) {
 
 	worker := &ReferenceLetterProcessingWorker{
 		extractor: extractor,
+		fileRepo:  newMockFileRepository(),
 	}
 
-	_, err := worker.extractLetterData(context.Background(), []byte("pdf data"), "application/pdf", nil)
+	_, err := worker.extractLetterData(context.Background(), uuid.New(), []byte("pdf data"), "application/pdf", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
